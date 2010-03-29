@@ -128,6 +128,7 @@ class Resource(object):
         if method is None:
             return HttpNotImplemented
         
+        request = convert_post_to_put(request)
         response = method(request)
         
         if not isinstance(response, HttpResponse):
@@ -146,6 +147,7 @@ class Resource(object):
         if method is None:
             return HttpNotImplemented
         
+        request = convert_post_to_put(request)
         response = method(request)
         
         if not isinstance(response, HttpResponse):
