@@ -7,7 +7,7 @@ from tastypie.representations.models import ModelRepresentation
 
 class BasicRepresentation(Representation):
     name = fields.CharField(attribute='name')
-    view_count = fields.IntegerField(default=0)
+    view_count = fields.IntegerField(attribute='view_count', default=0)
     date_joined = fields.DateTimeField(null=True)
     
     def dehydrate_date_joined(self, obj):
@@ -62,10 +62,26 @@ class RepresentationTestCase(TestCase):
         self.assertEqual(basic.fields['date_joined'].value, None)
         
         basic.full_dehydrate(test_object_1)
-        # FIXME: These tests fail incorrectly.
         self.assertEqual(basic.fields['name'].value, 'Daniel')
         self.assertEqual(basic.fields['view_count'].value, 12)
         self.assertEqual(basic.fields['date_joined'].value.year, 2010)
+        self.assertEqual(basic.fields['date_joined'].value.day, 30)
+        
+        # Now check the fallback behaviors.
+        test_object_2 = TestObject()
+        test_object_2.name = 'Daniel'
+        basic_2 = BasicRepresentation()
+        
+        # Sanity check.
+        self.assertEqual(basic_2.fields['name'].value, None)
+        self.assertEqual(basic_2.fields['view_count'].value, None)
+        self.assertEqual(basic_2.fields['date_joined'].value, None)
+        
+        basic_2.full_dehydrate(test_object_2)
+        self.assertEqual(basic_2.fields['name'].value, 'Daniel')
+        self.assertEqual(basic_2.fields['view_count'].value, 0)
+        self.assertEqual(basic_2.fields['date_joined'].value.year, 2010)
+        self.assertEqual(basic_2.fields['date_joined'].value.day, 27)
     
     def test_full_hydrate(self):
         pass

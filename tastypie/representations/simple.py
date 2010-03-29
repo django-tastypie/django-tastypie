@@ -1,19 +1,20 @@
+from django.utils.copycompat import deepcopy
 from tastypie.fields import ApiField
 
 
 class DeclarativeMetaclass(type):
     def __new__(cls, name, bases, attrs):
-        attrs['fields'] = {}
+        attrs['base_fields'] = {}
         
         # Inherit any fields from parent(s).
         try:
             parents = [b for b in bases if issubclass(b, Representation)]
             
             for p in parents:
-                fields = getattr(p, 'fields', None)
+                fields = getattr(p, 'base_fields', None)
                 
                 if fields:
-                    attrs['fields'].update(fields)
+                    attrs['base_fields'].update(fields)
         except NameError:
             pass
         
@@ -21,7 +22,7 @@ class DeclarativeMetaclass(type):
             if isinstance(obj, ApiField):
                 field = attrs.pop(field_name)
                 field.instance_name = field_name
-                attrs['fields'][field_name] = field
+                attrs['base_fields'][field_name] = field
         
         return super(DeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
 
@@ -33,6 +34,11 @@ class Representation(object):
     Should be pure data (fields + data object).
     """
     __metaclass__ = DeclarativeMetaclass
+    
+    def __init__(self):
+        # Use a copy of the field instances, not the ones actually stored on
+        # the class.
+        self.fields = deepcopy(self.base_fields)
     
     @classmethod
     def get_list(cls, **kwargs):
@@ -60,24 +66,21 @@ class Representation(object):
         raise NotImplementedError
     
     def full_dehydrate(self, obj):
-        dehydrated_object = {}
-        
         # Dehydrate each field.
         for field_name, field_object in self.fields.items():
-            dehydrated_object[field_name] = field_object.dehydrate(obj)
+            self.fields[field_name].value = field_object.dehydrate(obj)
         
         # Run through optional overrides.
         for field_name in self.fields:
             method = getattr(self, "dehydrate_%s" % field_name, None)
             
             if method:
-                dehydrated_object[field_name] = method(obj)
+                self.fields[field_name].value = method(obj)
         
-        dehydrated_object.update(self.dehydrate(obj))
-        return dehydrated_object
+        self.dehydrate(obj)
     
     def dehydrate(self, obj):
-        return {}
+        pass
     
     def full_hydrate(self, data):
         self.hydrate(data)
@@ -93,5 +96,5 @@ class Representation(object):
                 self.fields[key].value = method(data)
     
     def hydrate(self, data):
-        return None
+        pass
     

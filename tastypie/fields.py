@@ -45,9 +45,6 @@ class ApiField(object):
             current_object = obj
             
             for attr in attrs:
-                if not hasattr(current_object, attr):
-                    raise ApiFieldError("The model '%s' does not have a attribute '%s'." % (repr(current_object), attr))
-                
                 current_object = getattr(current_object, attr, None)
                 
                 if current_object is None:
