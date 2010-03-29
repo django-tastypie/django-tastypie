@@ -1,6 +1,15 @@
-from django.corte.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured
 from django.core.serializers import json, xml_serializer, pyyaml
 from django.template import loader, Context
+from django.utils import simplejson
+try:
+    import lxml
+except ImportError:
+    lxml = None
+try:
+    import yaml
+except ImportError:
+    yaml = None
 
 
 class Serializer(object):
@@ -26,27 +35,35 @@ class Serializer(object):
             except KeyError:
                 raise ImproperlyConfigured("Content type for specified type '%s' not found. Please provide it at either the class level or via the arguments." % format)
     
-    # FIXME:
-    #   - Determine how to pass data. On __init__ or per-method? Leaning
-    #     toward per-method.
-    
     def to_json(self, data):
-        pass
+        return simplejson.dump(data, cls=json.DjangoJSONEncoder, sort_keys=True)
     
     def from_json(self, content):
-        pass
+        return simplejson.loads(content)
     
     def to_xml(self, data):
-        pass
+        if lxml is None:
+            raise ImproperlyConfigured("Usage of the XML aspects requires lxml.")
+        
+        # FIXME: This is incomplete and will likely be painful.
     
     def from_xml(self, content):
-        pass
+        if lxml is None:
+            raise ImproperlyConfigured("Usage of the XML aspects requires lxml.")
+        
+        # FIXME: This is incomplete and will likely be painful.
     
     def to_yaml(self, data):
-        pass
+        if yaml is None:
+            raise ImproperlyConfigured("Usage of the YAML aspects requires yaml.")
+        
+        return yaml.dump(data, Dumper=pyyaml.DjangoSafeDumper)
     
     def from_yaml(self, content):
-        pass
+        if yaml is None:
+            raise ImproperlyConfigured("Usage of the YAML aspects requires yaml.")
+        
+        return yaml.load(content)
     
     def to_html(self, data):
         pass
