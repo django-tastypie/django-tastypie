@@ -246,3 +246,28 @@ class Resource(object):
             return HttpAccepted()
         except:
             return HttpGone()
+
+
+# Based off of ``piston.utils.coerce_put_post``. Similarly BSD-licensed.
+# And no, the irony is not lost on me.
+def convert_post_to_put(request):
+    """
+    Force Django to process the PUT.
+    """
+    if request.method == "PUT":
+        if hasattr(request, '_post'):
+            del request._post
+            del request._files
+        
+        try:
+            request.method = "POST"
+            request._load_post_and_files()
+            request.method = "PUT"
+        except AttributeError:
+            request.META['REQUEST_METHOD'] = 'POST'
+            request._load_post_and_files()
+            request.META['REQUEST_METHOD'] = 'PUT'
+            
+        request.PUT = request.POST
+    
+    return request
