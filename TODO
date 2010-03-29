@@ -1,0 +1,37 @@
+TODO
+====
+
+To demo-able:
+-------------
+
+- Finish the ``ModelRepresentation`` implementation.
+    - CRUD methods should be simple, relying on data to be pre-populated.
+    - The ``dehydrate/hydrate`` should be called as soon/late as possible
+      to make sure the representation is fully populated for serialization.
+    - ForeignKey/ManyToManyField are do-able, but require either the registry
+      pattern or overriding the representation. There should also be a way to
+      control "depth" (if sub-representations are allowed to traverse their
+      relations).
+- Re-integrate the changes from the above into ``Resource``.
+- Finish serialization bits.
+    - Implement the simple case for all.
+    - Serialize either a list or an object.
+    - Make sure the representation (specifically the ``dehydrate``) is what is
+      handed to the serializer, so that more complex things are possible.
+- Tests.
+- Examples.
+
+
+Longer-term:
+------------
+
+- Registry for the full API to make the complete Barkeeper's Friend possible.
+- FK/M2M representation fields.
+- Authentication
+    - Maybe not subclass but provide a delegate?
+    - ``AuthenticatedResource``
+    - ``DjangoAuthResource``
+    - ``OauthResource``
+- Implement throttling.
+- Implement API keys/tokens.
+- Documentation.
