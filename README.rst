@@ -10,7 +10,9 @@ Requirements
 
 * Python 2.4+
 * Django 1.0+
+* lxml (http://codespeak.net/lxml/) if using the XML serializer
 * mimeparse (http://code.google.com/p/mimeparse/)
+* pyyaml (http://pyyaml.org/) if using the YAML serializer
 
 
 Why tastypie?
