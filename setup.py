@@ -13,6 +13,9 @@ setup(
         'tastypie',
         'tastypie.representations',
     ],
+    package_data={
+        'tastypie': ['templates/tastypie/*'],
+    },
     requires=[
         'mimeparse',
     ],
