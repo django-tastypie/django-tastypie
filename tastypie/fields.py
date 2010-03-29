@@ -97,7 +97,7 @@ class ApiField(object):
 
 class CharField(ApiField):
     def dehydrate(self, obj):
-        return self.convert(super(CharField, self).prepare(obj))
+        return self.convert(super(CharField, self).dehydrate(obj))
     
     def convert(self, value):
         if value is None:
@@ -108,7 +108,7 @@ class CharField(ApiField):
 
 class IntegerField(ApiField):
     def dehydrate(self, obj):
-        return self.convert(super(IntegerField, self).prepare(obj))
+        return self.convert(super(IntegerField, self).dehydrate(obj))
     
     def convert(self, value):
         if value is None:
@@ -119,7 +119,7 @@ class IntegerField(ApiField):
 
 class FloatField(ApiField):
     def dehydrate(self, obj):
-        return self.convert(super(FloatField, self).prepare(obj))
+        return self.convert(super(FloatField, self).dehydrate(obj))
     
     def convert(self, value):
         if value is None:
@@ -130,7 +130,7 @@ class FloatField(ApiField):
 
 class BooleanField(ApiField):
     def dehydrate(self, obj):
-        return self.convert(super(BooleanField, self).prepare(obj))
+        return self.convert(super(BooleanField, self).dehydrate(obj))
     
     def convert(self, value):
         if value is None:

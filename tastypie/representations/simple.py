@@ -20,7 +20,7 @@ class DeclarativeMetaclass(type):
         for field_name, obj in attrs.items():
             if isinstance(obj, ApiField):
                 field = attrs.pop(field_name)
-                field.set_instance_name(field_name)
+                field.instance_name = field_name
                 attrs['fields'][field_name] = field
         
         return super(DeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
@@ -64,16 +64,16 @@ class Representation(object):
         
         # Dehydrate each field.
         for field_name, field_object in self.fields.items():
-            dehydrated_object[field_name] = field_object.dehydrate()
+            dehydrated_object[field_name] = field_object.dehydrate(obj)
         
         # Run through optional overrides.
         for field_name in self.fields:
             method = getattr(self, "dehydrate_%s" % field_name, None)
             
             if method:
-                dehydrated_object[field_name] = method()
+                dehydrated_object[field_name] = method(obj)
         
-        dehydrated_object.update(self.dehydrate())
+        dehydrated_object.update(self.dehydrate(obj))
         return dehydrated_object
     
     def dehydrate(self, obj):
@@ -84,13 +84,13 @@ class Representation(object):
         
         for key, value in data.items():
             if key in self.fields:
-                self.fields[key] = value
+                self.fields[key].value = value
         
         for key, value in data.items():
             method = getattr(self, "hydrate_%s" % key, None)
             
             if method:
-                self.fields[key] = method(data)
+                self.fields[key].value = method(data)
     
     def hydrate(self, data):
         return None
