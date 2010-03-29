@@ -134,7 +134,7 @@ class ModelRepresentation(Representation):
         
         self.full_dehydrate(model)
     
-    def create(self, data_dict):
+    def create(self, data_dict={}):
         self.full_hydrate(data_dict)
         newbie = self.model()
         
@@ -143,7 +143,7 @@ class ModelRepresentation(Representation):
         
         newbie.save()
     
-    def update(self, **kwargs):
+    def update(self, data_dict={}, **kwargs):
         try:
             model = self.queryset.get(**kwargs)
         except ObjectDoesNotExist:

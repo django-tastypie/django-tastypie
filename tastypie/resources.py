@@ -182,22 +182,25 @@ class Resource(object):
         Replaces a collection of resources with another collection.
         Return ``HttpAccepted`` (204 No Content).
         """
-        self.representation.delete()
-        self.representation.update()
-        return HttpAccepted()
+        # self.representation.delete()
+        # self.representation.update()
+        # return HttpAccepted()
+        raise NotImplementedError
     
     def put_detail(self, request, obj_id):
         """
         If a new resource is created, return ``HttpCreated`` (201 Created).
         If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
         """
+        # FIXME: Forced for now but needs content-type detection and error-handling.
+        deserialized = self.serializer.from_json(request.raw_post_data)
+        representation = self.representation()
+        
         try:
-            # FIXME: Should proxy through the representation?
-            obj = self.representation.get(obj_id)
-            resource = self.representation.update(obj)
+            resource = representation.update(pk=obj_id, data_dict=deserialized)
             return HttpAccepted()
         except:
-            resource = self.representation.create(obj)
+            resource = representation.create(data_dict=deserialized)
             # FIXME: Include charset here.
             return HttpCreated(location=resource.get_resource_uri())
     
@@ -207,8 +210,11 @@ class Resource(object):
         """
         # TODO: What to do if the resource already exists at that id? Quietly
         #       update or complain loudly?
-        results = self.representation.create(obj)
-        return HttpCreated(location=results.get_resource_uri())
+        # FIXME: Forced for now but needs content-type detection and error-handling.
+        deserialized = self.serializer.from_json(request.raw_post_data)
+        representation = self.representation()
+        resource = self.representation.create(deserialized)
+        return HttpCreated(location=resource.get_resource_uri())
     
     def post_detail(self, request, obj_id):
         """
@@ -225,17 +231,18 @@ class Resource(object):
         """
         # TODO: What range ought to be deleted? This seems particularly
         #       dangerous.
-        self.representation.delete()
+        representation = self.representation()
+        representation.queryset.all().delete()
         return HttpAccepted()
     
     def delete_detail(self, request, obj_id):
         """
         If the resource is deleted, return ``HttpAccepted`` (204 No Content).
         """
+        representation = self.representation()
+        
         try:
-            # FIXME: Should proxy through the representation?
-            obj = self.representation.get(obj_id)
-            self.representation.delete(obj)
+            representation.delete(pk=obj_id)
             return HttpAccepted()
         except:
             return HttpGone()
