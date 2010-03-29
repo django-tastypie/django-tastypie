@@ -95,9 +95,6 @@ class Resource(object):
         )
         return urlpatterns
     
-    def urls(self):
-        return self.get_urls()
-    
     # FIXME:
     #   - Barkeeper's Friend links?
     
