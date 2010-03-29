@@ -1,13 +1,15 @@
 from django.core.exceptions import ImproperlyConfigured
-from django.core.serializers import json, xml_serializer, pyyaml
+from django.core.serializers import json
 from django.template import loader, Context
 from django.utils import simplejson
 try:
     import lxml
+    from django.core.serializers import xml_serializer
 except ImportError:
     lxml = None
 try:
     import yaml
+    from django.core.serializers import pyyaml
 except ImportError:
     yaml = None
 
@@ -17,12 +19,13 @@ class Serializer(object):
     content_types = {
         'json': 'application/json',
         'xml': 'application/xml',
-        'yaml': '',
+        'yaml': 'text/yaml',
         'html': 'text/html',
     }
-    supported_formats = []
     
     def __init__(self, formats=None, content_types=None):
+        self.supported_formats = []
+        
         if formats is not None:
             self.formats = formats
         
@@ -36,7 +39,7 @@ class Serializer(object):
                 raise ImproperlyConfigured("Content type for specified type '%s' not found. Please provide it at either the class level or via the arguments." % format)
     
     def to_json(self, data):
-        return simplejson.dump(data, cls=json.DjangoJSONEncoder, sort_keys=True)
+        return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True)
     
     def from_json(self, content):
         return simplejson.loads(content)
