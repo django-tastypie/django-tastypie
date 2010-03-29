@@ -1,4 +1,5 @@
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
+from tastypie.exceptions import NotFound
 from tastypie.fields import *
 from tastypie.representations.simple import Representation
 
@@ -112,4 +113,54 @@ class ModelRepresentation(Representation):
             final_fields[f.name].instance_name = f.name
         
         return final_fields
+    
+    @classmethod
+    def get_list(cls, **kwargs):
+        model_list = cls.queryset.filter(**kwargs)
+        representations = []
+        
+        for model in model_list:
+            represent = cls()
+            represent.full_dehydrate(model)
+            representations.append(represent)
+        
+        return representations
+    
+    def get(self, **kwargs):
+        try:
+            model = self.queryset.get(**kwargs)
+        except ObjectDoesNotExist:
+            raise NotFound("A model instance matching the provided arguments could not be found.")
+        
+        self.full_dehydrate(model)
+    
+    def create(self, data_dict):
+        self.full_hydrate(data_dict)
+        newbie = self.model()
+        
+        for field_name, field_object in self.fields:
+            setattr(newbie, field_object.attribute, field_object.data)
+        
+        newbie.save()
+    
+    def update(self, **kwargs):
+        try:
+            model = self.queryset.get(**kwargs)
+        except ObjectDoesNotExist:
+            raise NotFound("A model instance matching the provided arguments could not be found.")
+        
+        self.full_hydrate(data_dict)
+        
+        for field_name, field_object in self.fields:
+            setattr(model, field_object.attribute, field_object.data)
+        
+        model.save()
+    
+    def delete(self):
+        try:
+            model = self.queryset.get(**kwargs)
+        except ObjectDoesNotExist:
+            raise NotFound("A model instance matching the provided arguments could not be found.")
+        
+        model.delete()
     

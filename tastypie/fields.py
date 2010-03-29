@@ -20,6 +20,7 @@ class ApiField(object):
         self.attribute = attribute
         self._default = default
         self.null = null
+        self.value = None
     
     def has_default(self):
         """Returns a boolean of whether this field has a default value."""
@@ -33,9 +34,7 @@ class ApiField(object):
         
         return self._default
     
-    # DRL_FIXME: Rename this method?
-    # DRL_FIXME: Also provide an equal, yet-opposite method.
-    def prepare(self, obj):
+    def dehydrate(self, obj):
         """
         Takes data from the provided object and prepares it for storage in the
         index.
@@ -47,7 +46,7 @@ class ApiField(object):
             
             for attr in attrs:
                 if not hasattr(current_object, attr):
-                    raise SearchFieldError("The model '%s' does not have a attribute '%s'." % (repr(current_object), attr))
+                    raise ApiFieldError("The model '%s' does not have a attribute '%s'." % (repr(current_object), attr))
                 
                 current_object = getattr(current_object, attr, None)
                 
@@ -63,7 +62,7 @@ class ApiField(object):
                         # accesses will fail misreably.
                         break
                     else:
-                        raise SearchFieldError("The model '%s' has an empty attribute '%s' and doesn't allow a default or null value." % (repr(current_object), attr))
+                        raise ApiFieldError("The model '%s' has an empty attribute '%s' and doesn't allow a default or null value." % (repr(current_object), attr))
             
             if callable(current_object):
                 return current_object()
@@ -75,7 +74,7 @@ class ApiField(object):
         else:
             return None
     
-    def compress(self, value):
+    def convert(self, value):
         """
         Handles conversion between the data found and the type of the field.
         
@@ -83,10 +82,21 @@ class ApiField(object):
         data coercion.
         """
         return value
+    
+    def hydrate(self, data):
+        if not self.instance_name in data:
+            if self.has_default():
+                return self._default
+            elif self.null:
+                return None
+            else:
+                raise ApiFieldError("The data provided does not have a '%s' key and doesn't allow a default or null value." % self.instance_name)
+        
+        return data[self.instance_name]
 
 
-class CharField(SearchField):
-    def prepare(self, obj):
+class CharField(ApiField):
+    def dehydrate(self, obj):
         return self.convert(super(CharField, self).prepare(obj))
     
     def convert(self, value):
@@ -96,8 +106,8 @@ class CharField(SearchField):
         return unicode(value)
 
 
-class IntegerField(SearchField):
-    def prepare(self, obj):
+class IntegerField(ApiField):
+    def dehydrate(self, obj):
         return self.convert(super(IntegerField, self).prepare(obj))
     
     def convert(self, value):
@@ -107,8 +117,8 @@ class IntegerField(SearchField):
         return int(value)
 
 
-class FloatField(SearchField):
-    def prepare(self, obj):
+class FloatField(ApiField):
+    def dehydrate(self, obj):
         return self.convert(super(FloatField, self).prepare(obj))
     
     def convert(self, value):
@@ -118,8 +128,8 @@ class FloatField(SearchField):
         return float(value)
 
 
-class BooleanField(SearchField):
-    def prepare(self, obj):
+class BooleanField(ApiField):
+    def dehydrate(self, obj):
         return self.convert(super(BooleanField, self).prepare(obj))
     
     def convert(self, value):
@@ -129,7 +139,7 @@ class BooleanField(SearchField):
         return bool(value)
 
 
-class DateField(SearchField):
+class DateField(ApiField):
     def convert(self, value):
         if value is None:
             return None
@@ -146,7 +156,7 @@ class DateField(SearchField):
         return value
 
 
-class DateTimeField(SearchField):
+class DateTimeField(ApiField):
     def convert(self, value):
         if value is None:
             return None

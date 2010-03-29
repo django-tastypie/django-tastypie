@@ -104,7 +104,7 @@ class Resource(object):
     def determine_format(self, request):
         # First, check if they forced the format.
         if request.GET.get('format'):
-            if request.GET['format'] in self.serializer.supported_formats
+            if request.GET['format'] in self.serializer.supported_formats:
                 return request.GET.get('format')
         
         # Try to fallback on the Accepts header.
@@ -199,7 +199,7 @@ class Resource(object):
         except:
             resource = self.representation.create(obj)
             # FIXME: Include charset here.
-            return HttpCreated(location=results.get_resource_uri())
+            return HttpCreated(location=resource.get_resource_uri())
     
     def post_list(self, request):
         """
