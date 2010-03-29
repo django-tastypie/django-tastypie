@@ -36,8 +36,8 @@ class ApiField(object):
     
     def dehydrate(self, obj):
         """
-        Takes data from the provided object and prepares it for storage in the
-        index.
+        Takes data from the provided object and prepares it for the
+        representation.
         """
         if self.attribute is not None:
             # Check for `__` in the field for looking through the relation.
