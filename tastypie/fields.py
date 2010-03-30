@@ -80,16 +80,16 @@ class ApiField(object):
         """
         return value
     
-    def hydrate(self, data):
-        if not self.instance_name in data:
+    def hydrate(self):
+        if self.value is None:
             if self.has_default():
                 return self._default
             elif self.null:
                 return None
             else:
-                raise ApiFieldError("The data provided does not have a '%s' key and doesn't allow a default or null value." % self.instance_name)
+                raise ApiFieldError("The '%s' field has no data and doesn't allow a default or null value." % self.instance_name)
         
-        return data[self.instance_name]
+        return self.value
 
 
 class CharField(ApiField):

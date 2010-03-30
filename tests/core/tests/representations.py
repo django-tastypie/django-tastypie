@@ -5,16 +5,31 @@ from tastypie.representations.simple import Representation
 from tastypie.representations.models import ModelRepresentation
 
 
+class TestObject(object):
+    name = None
+    view_count = None
+    date_joined = None
+
+
 class BasicRepresentation(Representation):
     name = fields.CharField(attribute='name')
     view_count = fields.IntegerField(attribute='view_count', default=0)
     date_joined = fields.DateTimeField(null=True)
     
+    class Meta:
+        object_class = TestObject
+    
     def dehydrate_date_joined(self, obj):
-        if hasattr(obj, 'date_joined'):
+        if getattr(obj, 'date_joined', None) is not None:
             return obj.date_joined
         
+        if self.fields['date_joined'].value is not None:
+            return self.fields['date_joined'].value
+        
         return datetime.datetime(2010, 3, 27, 22, 30, 0)
+    
+    def hydrate_date_joined(self):
+        self.instance.date_joined = self.fields['date_joined'].value
 
 
 class AnotherBasicRepresentation(BasicRepresentation):
@@ -45,9 +60,6 @@ class RepresentationTestCase(TestCase):
         self.assertEqual(isinstance(another.fields['is_active'], fields.BooleanField), True)
     
     def test_full_dehydrate(self):
-        class TestObject(object):
-            pass
-        
         test_object_1 = TestObject()
         test_object_1.name = 'Daniel'
         test_object_1.view_count = 12
@@ -82,9 +94,75 @@ class RepresentationTestCase(TestCase):
         self.assertEqual(basic_2.fields['view_count'].value, 0)
         self.assertEqual(basic_2.fields['date_joined'].value.year, 2010)
         self.assertEqual(basic_2.fields['date_joined'].value.day, 27)
+        
+        test_object_3 = TestObject()
+        test_object_3.name = 'Joe'
+        test_object_3.view_count = 5
+        test_object_3.created = datetime.datetime(2010, 3, 29, 11, 0, 0)
+        test_object_3.is_active = False
+        another_1 = AnotherBasicRepresentation()
+        
+        # Sanity check.
+        self.assertEqual(another_1.fields['name'].value, None)
+        self.assertEqual(another_1.fields['view_count'].value, None)
+        self.assertEqual(another_1.fields['date_joined'].value, None)
+        self.assertEqual(another_1.fields['is_active'].value, None)
+        
+        another_1.full_dehydrate(test_object_3)
+        self.assertEqual(another_1.fields['name'].value, 'Joe')
+        self.assertEqual(another_1.fields['view_count'].value, 5)
+        self.assertEqual(another_1.fields['date_joined'].value.year, 2010)
+        self.assertEqual(another_1.fields['date_joined'].value.day, 29)
+        self.assertEqual(another_1.fields['is_active'].value, False)
     
     def test_full_hydrate(self):
-        pass
+        basic = BasicRepresentation()
+        
+        # Sanity check.
+        self.assertEqual(basic.fields['name'].value, None)
+        self.assertEqual(basic.fields['view_count'].value, None)
+        self.assertEqual(basic.fields['date_joined'].value, None)
+        
+        basic = BasicRepresentation(
+            name='Daniel',
+            view_count=6,
+            date_joined=datetime.datetime(2010, 2, 15, 12, 0, 0)
+        )
+        
+        # Sanity check.
+        self.assertEqual(basic.fields['name'].value, 'Daniel')
+        self.assertEqual(basic.fields['view_count'].value, 6)
+        self.assertEqual(basic.fields['date_joined'].value, datetime.datetime(2010, 2, 15, 12, 0, 0))
+        self.assertEqual(basic.instance, None)
+        
+        # Now load up the data.
+        basic.full_hydrate()
+        
+        self.assertEqual(basic.fields['name'].value, 'Daniel')
+        self.assertEqual(basic.fields['view_count'].value, 6)
+        self.assertEqual(basic.fields['date_joined'].value, datetime.datetime(2010, 2, 15, 12, 0, 0))
+        self.assertEqual(basic.instance.name, 'Daniel')
+        self.assertEqual(basic.instance.view_count, 6)
+        self.assertEqual(basic.instance.date_joined, datetime.datetime(2010, 2, 15, 12, 0, 0))
+    
+    def test_get_list(self):
+        self.assertRaises(NotImplementedError, BasicRepresentation.get_list)
+    
+    def test_get(self):
+        basic = BasicRepresentation()
+        self.assertRaises(NotImplementedError, basic.get, obj_id=1)
+    
+    def test_create(self):
+        basic = BasicRepresentation()
+        self.assertRaises(NotImplementedError, basic.create)
+    
+    def test_update(self):
+        basic = BasicRepresentation()
+        self.assertRaises(NotImplementedError, basic.update)
+    
+    def test_delete(self):
+        basic = BasicRepresentation()
+        self.assertRaises(NotImplementedError, basic.delete)
 
 
 class ModelRepresentationTestCase(TestCase):

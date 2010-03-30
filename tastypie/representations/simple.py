@@ -35,10 +35,29 @@ class Representation(object):
     """
     __metaclass__ = DeclarativeMetaclass
     
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        self._meta = getattr(self, 'Meta', None)
+        
+        if not self._meta:
+            raise ImproperlyConfigured("An inner Meta class is required to configure %s." % repr(self))
+        
+        self.object_class = getattr(self._meta, 'object_class', None)
+        
+        if self.object_class is None:
+            raise ImproperlyConfigured("Using the Representation requires providing an object_class in the inner Meta class.")
+        
+        self.instance = None
+        
         # Use a copy of the field instances, not the ones actually stored on
         # the class.
         self.fields = deepcopy(self.base_fields)
+        
+        # Now that we have fields, populate fields via kwargs if found.
+        # TODO: Unrecognized fields get silently ignored and throw away.
+        #       Seems like this could go either way on behavior.
+        for key, value in kwargs.items():
+            if key in self.fields:
+                self.fields[key].value = value
     
     @classmethod
     def get_list(cls, **kwargs):
@@ -47,7 +66,7 @@ class Representation(object):
     def get(self, **kwargs):
         raise NotImplementedError
     
-    def create(self, data_dict):
+    def create(self):
         raise NotImplementedError
     
     def update(self, **kwargs):
@@ -66,6 +85,10 @@ class Representation(object):
         raise NotImplementedError
     
     def full_dehydrate(self, obj):
+        """
+        Given an object instance, extract the information from it to populate
+        the representation.
+        """
         # Dehydrate each field.
         for field_name, field_object in self.fields.items():
             self.fields[field_name].value = field_object.dehydrate(obj)
@@ -82,19 +105,26 @@ class Representation(object):
     def dehydrate(self, obj):
         pass
     
-    def full_hydrate(self, data):
-        self.hydrate(data)
+    def full_hydrate(self):
+        """
+        Given a populated representation, distill it and turn it back into
+        a full-fledged object instance.
+        """
+        if self.instance is None:
+            self.instance = self.object_class()
         
-        for key, value in data.items():
-            if key in self.fields:
-                self.fields[key].value = value
+        for field_name, field_object in self.fields.items():
+            if field_object.attribute:
+                setattr(self.instance, field_object.attribute, field_object.hydrate())
         
-        for key, value in data.items():
-            method = getattr(self, "hydrate_%s" % key, None)
+        for field_name, field_object in self.fields.items():
+            method = getattr(self, "hydrate_%s" % field_name, None)
             
             if method:
-                self.fields[key].value = method(data)
+                method()
+        
+        self.hydrate()
     
-    def hydrate(self, data):
+    def hydrate(self):
         pass
     

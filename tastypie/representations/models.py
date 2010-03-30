@@ -46,20 +46,17 @@ class ModelRepresentation(Representation):
         # Introspect the model, adding/removing fields as needed.
         # Adds/Excludes should happen only if the fields are not already
         # defined in `self.fields`.
-        self._meta = getattr(self, 'Meta', None)
+        self.queryset = getattr(self._meta, 'queryset', None)
         
-        if self._meta:
-            self.queryset = getattr(self._meta, 'queryset', None)
-            
-            if self.queryset is None:
-                raise ImproperlyConfigured("Using the ModelRepresentation requires providing a model.")
-            
-            self.model = self.queryset.model
-            fields = getattr(self._meta, 'fields', [])
-            excludes = getattr(self._meta, 'excludes', [])
-            
-            # Add in the new fields.
-            self.fields.update(self.get_fields(fields, excludes))
+        if self.queryset is None:
+            raise ImproperlyConfigured("Using the ModelRepresentation requires providing a model.")
+        
+        self.object_class = self.queryset.model
+        fields = getattr(self._meta, 'fields', [])
+        excludes = getattr(self._meta, 'excludes', [])
+        
+        # Add in the new fields.
+        self.fields.update(self.get_fields(fields, excludes))
     
     def should_skip_field(self, field):
         """
@@ -128,39 +125,31 @@ class ModelRepresentation(Representation):
     
     def get(self, **kwargs):
         try:
-            model = self.queryset.get(**kwargs)
+            self.instance = self.queryset.get(**kwargs)
         except ObjectDoesNotExist:
             raise NotFound("A model instance matching the provided arguments could not be found.")
         
-        self.full_dehydrate(model)
+        self.full_dehydrate(self.instance)
     
-    def create(self, data_dict={}):
-        self.full_hydrate(data_dict)
-        newbie = self.model()
-        
-        for field_name, field_object in self.fields:
-            setattr(newbie, field_object.attribute, field_object.data)
-        
-        newbie.save()
+    def create(self):
+        self.instance = self.model()
+        self.full_hydrate()
+        self.instance.save()
     
-    def update(self, data_dict={}, **kwargs):
+    def update(self, **kwargs):
         try:
-            model = self.queryset.get(**kwargs)
+            self.instance = self.queryset.get(**kwargs)
         except ObjectDoesNotExist:
             raise NotFound("A model instance matching the provided arguments could not be found.")
         
-        self.full_hydrate(data_dict)
-        
-        for field_name, field_object in self.fields:
-            setattr(model, field_object.attribute, field_object.data)
-        
-        model.save()
+        self.full_hydrate()
+        self.instance.save()
     
     def delete(self):
         try:
-            model = self.queryset.get(**kwargs)
+            self.instance = self.queryset.get(**kwargs)
         except ObjectDoesNotExist:
             raise NotFound("A model instance matching the provided arguments could not be found.")
         
-        model.delete()
+        self.instance.delete()
     
