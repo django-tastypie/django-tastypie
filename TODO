@@ -1,19 +1,9 @@
 TODO
 ====
 
-To demo-able:
--------------
-
-- Tests.
-- Examples.
-
-
-Longer-term:
-------------
 
 - XML serialization/deserialization is not implemented and needs to be a
   high priority.
-- ``Resource`` needs to do content-type negotiation on the PUT/POST data.
 - Finish the ``ModelRepresentation`` implementation.
     - ForeignKey/ManyToManyField are do-able, but require either the registry
       pattern or overriding the representation. There should also be a way to

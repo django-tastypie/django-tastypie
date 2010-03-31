@@ -6,7 +6,9 @@ from django.db import models
 class Note(models.Model):
     user = models.ForeignKey(User, related_name='notes')
     title = models.CharField(max_length=255)
+    slug = models.SlugField()
     content = models.TextField()
+    is_active = models.BooleanField(default=True)
     created = models.DateTimeField(default=datetime.datetime.now)
     updated = models.DateTimeField(default=datetime.datetime.now)
     

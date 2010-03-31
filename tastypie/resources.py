@@ -28,7 +28,7 @@ class Resource(object):
     detail_allowed_methods = ['get', 'post', 'put', 'delete']
     per_page = 20
     url_prefix = None
-    default_format = 'text/html'
+    default_format = 'application/json'
     
     def __init__(self, representation=None, list_representation=None,
                  detail_representation=None, serializer=None,

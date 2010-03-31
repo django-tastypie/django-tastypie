@@ -99,7 +99,7 @@ class ResourceTestCase(TestCase):
         request = HttpRequest()
         
         # Default.
-        self.assertEqual(resource.determine_format(request), 'text/html')
+        self.assertEqual(resource.determine_format(request), 'application/json')
         
         # Test forcing the ``format`` parameter.
         request.GET = {'format': 'json'}
@@ -112,7 +112,7 @@ class ResourceTestCase(TestCase):
         self.assertEqual(resource.determine_format(request), 'text/yaml')
         
         request.GET = {'format': 'foo'}
-        self.assertEqual(resource.determine_format(request), 'text/html')
+        self.assertEqual(resource.determine_format(request), 'application/json')
         
         # Test the ``Accept`` header.
         request.META = {'HTTP_ACCEPT': 'application/json'}
