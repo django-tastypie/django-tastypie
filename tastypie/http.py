@@ -25,6 +25,10 @@ class HttpNotModified(HttpResponse):
     status_code = 304
 
 
+class HttpUnauthorized(HttpResponse):
+    status_code = 401
+
+
 class HttpMethodNotAllowed(HttpResponse):
     status_code = 405
 

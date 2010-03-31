@@ -1,7 +1,10 @@
+import base64
+from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import reverse
 from django.http import HttpRequest, QueryDict
 from django.test import TestCase
+from tastypie.authentication import BasicAuthentication
 from tastypie.representations.models import ModelRepresentation
 from tastypie.resources import Resource
 from tastypie.serializers import Serializer
@@ -254,3 +257,41 @@ class ResourceTestCase(TestCase):
         resp = resource.dispatch_detail(request, obj_id=1)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30 20:05:00", "is_active": true, "slug": "first-post", "title": "First Post!", "updated": "2010-03-30 20:05:00"}')
+
+
+class BasicAuthResourceTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+    
+    def test_dispatch_list(self):
+        resource = NoteResource(authentication=BasicAuthentication())
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+        
+        resp = resource.dispatch_list(request)
+        self.assertEqual(resp.status_code, 401)
+        
+        john_doe = User.objects.get(username='johndoe')
+        john_doe.set_password('pass')
+        john_doe.save()
+        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('johndoe:pass')
+        
+        resp = resource.dispatch_list(request)
+        self.assertEqual(resp.status_code, 200)
+    
+    def test_dispatch_detail(self):
+        resource = NoteResource(authentication=BasicAuthentication())
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+        
+        resp = resource.dispatch_detail(request, obj_id=1)
+        self.assertEqual(resp.status_code, 401)
+        
+        john_doe = User.objects.get(username='johndoe')
+        john_doe.set_password('pass')
+        john_doe.save()
+        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('johndoe:pass')
+        
+        resp = resource.dispatch_list(request)
+        self.assertEqual(resp.status_code, 200)

@@ -3,8 +3,9 @@ from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import Paginator, InvalidPage
 from django.http import Http404, HttpResponse, HttpResponseRedirect
+from tastypie.authentication import Authentication
 from tastypie.exceptions import NotFound
-from tastypie.http import HttpCreated, HttpAccepted, HttpSeeOther, HttpNotModified, HttpConflict, HttpGone, HttpMethodNotAllowed, HttpNotImplemented
+from tastypie.http import HttpCreated, HttpAccepted, HttpSeeOther, HttpNotModified, HttpConflict, HttpGone, HttpMethodNotAllowed, HttpNotImplemented, HttpUnauthorized
 from tastypie.serializers import Serializer
 
 
@@ -23,6 +24,7 @@ class Resource(object):
     list_representation = None
     detail_representation = None
     serializer = Serializer()
+    authentication = Authentication()
     allowed_methods = None
     list_allowed_methods = ['get', 'post', 'put', 'delete']
     detail_allowed_methods = ['get', 'post', 'put', 'delete']
@@ -32,8 +34,9 @@ class Resource(object):
     
     def __init__(self, representation=None, list_representation=None,
                  detail_representation=None, serializer=None,
-                 allowed_methods=None, list_allowed_methods=None,
-                 detail_allowed_methods=None, per_page=None, url_prefix=None):
+                 authentication=None, allowed_methods=None,
+                 list_allowed_methods=None, detail_allowed_methods=None,
+                 per_page=None, url_prefix=None):
         # Shortcut to specify both via arguments.
         if representation is not None:
             self.representation = representation
@@ -51,6 +54,9 @@ class Resource(object):
         
         if serializer is not None:
             self.serializer = serializer
+        
+        if authentication is not None:
+            self.authentication = authentication
         
         # Shortcut to specify both via arguments.
         if allowed_methods is not None:
@@ -128,12 +134,20 @@ class Resource(object):
         request_method = request.method.lower()
         
         if not request_method in self.list_allowed_methods:
-            return HttpMethodNotAllowed
+            return HttpMethodNotAllowed()
         
         method = getattr(self, "%s_list" % request_method, None)
         
         if method is None:
-            return HttpNotImplemented
+            return HttpNotImplemented()
+        
+        auth_result = self.authentication.is_authenticated(request)
+        
+        if isinstance(auth_result, HttpResponse):
+            return auth_result
+        
+        if not auth_result is True:
+            return HttpUnauthorized()
         
         request = convert_post_to_put(request)
         response = method(request)
@@ -153,6 +167,14 @@ class Resource(object):
         
         if method is None:
             return HttpNotImplemented
+        
+        auth_result = self.authentication.is_authenticated(request)
+        
+        if isinstance(auth_result, HttpResponse):
+            return auth_result
+        
+        if not auth_result is True:
+            return HttpUnauthorized()
         
         request = convert_post_to_put(request)
         response = method(request, **kwargs)
