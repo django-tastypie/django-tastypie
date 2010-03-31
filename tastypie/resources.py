@@ -169,11 +169,9 @@ class Resource(object):
         object_list = {
             'results': [],
         }
-        # FIXME: Hack until ``get_list`` becomes a class method again.
-        representation = self.representation()
         
         # FIXME: Need to solve pagination.
-        for result in representation.get_list()[:self.per_page]:
+        for result in self.representation.get_list()[:self.per_page]:
             object_list['results'].append(result.to_dict())
         
         desired_format = self.determine_format(request)

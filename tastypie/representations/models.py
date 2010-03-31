@@ -42,15 +42,11 @@ class ModelRepresentation(Representation):
                 return User.objects.get_or_create(username=obj.author)
     """
     def __init__(self, *args, **kwargs):
-        self._meta = getattr(self, 'Meta', None)
-        
-        if not self._meta:
-            raise ImproperlyConfigured("An inner Meta class is required to configure %s." % repr(self))
+        self.queryset = getattr(self._meta, 'queryset', None)
         
         # Introspect the model, adding/removing fields as needed.
         # Adds/Excludes should happen only if the fields are not already
         # defined in `self.fields`.
-        self.queryset = getattr(self._meta, 'queryset', None)
         self.instance = None
         
         if self.queryset is None:
@@ -129,13 +125,13 @@ class ModelRepresentation(Representation):
     
     # FIXME: This ought to be a classmethod, but assigning the queryset to the
     #        class is problematic given the existing code.
-    # @classmethod
-    def get_list(self, **kwargs):
-        model_list = self.queryset.filter(**kwargs)
+    @classmethod
+    def get_list(cls, **kwargs):
+        model_list = cls._meta.queryset.filter(**kwargs)
         representations = []
         
         for model in model_list:
-            represent = self.__class__()
+            represent = cls()
             represent.full_dehydrate(model)
             representations.append(represent)
         
