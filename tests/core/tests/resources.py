@@ -1,4 +1,5 @@
 from django.core.exceptions import ImproperlyConfigured
+from django.core.urlresolvers import reverse
 from django.http import HttpRequest, QueryDict
 from django.test import TestCase
 from tastypie.representations.models import ModelRepresentation
@@ -10,11 +11,17 @@ from core.models import Note
 class NoteRepresentation(ModelRepresentation):
     class Meta:
         queryset = Note.objects.filter(is_active=True)
+    
+    def get_resource_uri(self):
+        return '/api/v1/notes/%s/' % self.instance.id
 
 
 class DetailedNoteRepresentation(ModelRepresentation):
     class Meta:
         queryset = Note.objects.filter(is_active=True)
+    
+    def get_resource_uri(self):
+        return '/api/v1/notes/%s/' % self.instance.id
 
 
 class CustomSerializer(Serializer):
@@ -152,25 +159,91 @@ class ResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 410)
     
     def test_put_list(self):
-        pass
+        resource = NoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        
+        resp = resource.post_detail(request, 2)
+        self.assertEqual(resp.status_code, 501)
     
     def test_put_detail(self):
-        pass
+        self.assertEqual(Note.objects.count(), 6)
+        resource = NoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request._raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
+        
+        resp = resource.put_detail(request, obj_id=10)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(Note.objects.count(), 7)
+        new_note = Note.objects.get(slug='cat-is-back')
+        self.assertEqual(new_note.content, "The cat is back. The dog coughed him up out back.")
+        
+        request._raw_post_data = '{"content": "The cat is gone again. I think it was the rabbits that ate him this time.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Gone", "updated": "2010-04-03 20:05:00"}'
+        
+        resp = resource.put_detail(request, obj_id=10)
+        self.assertEqual(resp.status_code, 204)
+        self.assertEqual(Note.objects.count(), 7)
+        new_note = Note.objects.get(slug='cat-is-back')
+        self.assertEqual(new_note.content, u'The cat is gone again. I think it was the rabbits that ate him this time.')
     
     def test_post_list(self):
-        pass
+        self.assertEqual(Note.objects.count(), 6)
+        resource = NoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request._raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
+        
+        resp = resource.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(Note.objects.count(), 7)
+        new_note = Note.objects.get(slug='cat-is-back')
+        self.assertEqual(new_note.content, "The cat is back. The dog coughed him up out back.")
     
     def test_post_detail(self):
-        pass
+        resource = NoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        
+        resp = resource.post_detail(request, 2)
+        self.assertEqual(resp.status_code, 501)
     
     def test_delete_list(self):
-        pass
+        self.assertEqual(Note.objects.count(), 6)
+        resource = NoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'DELETE'
+        
+        resp = resource.delete_list(request)
+        self.assertEqual(resp.status_code, 204)
+        # Only the non-actives are left alive.
+        self.assertEqual(Note.objects.count(), 2)
     
     def test_delete_detail(self):
-        pass
+        self.assertEqual(Note.objects.count(), 6)
+        resource = NoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'DELETE'
+        
+        resp = resource.delete_detail(request, 2)
+        self.assertEqual(resp.status_code, 204)
+        self.assertEqual(Note.objects.count(), 5)
     
     def test_dispatch_list(self):
-        pass
+        resource = NoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+        
+        resp = resource.dispatch_list(request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"results": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30 20:05:00", "is_active": true, "slug": "first-post", "title": "First Post!", "updated": "2010-03-30 20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31 20:05:00", "is_active": true, "slug": "another-post", "title": "Another Post", "updated": "2010-03-31 20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01 20:05:00", "is_active": true, "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01 20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02 10:05:00", "is_active": true, "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02 10:05:00"}]}')
     
     def test_dispatch_detail(self):
         resource = NoteResource()

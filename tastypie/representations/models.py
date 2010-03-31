@@ -149,8 +149,12 @@ class ModelRepresentation(Representation):
         
         self.full_dehydrate(self.instance)
     
-    def create(self):
+    def create(self, **kwargs):
         self.instance = self.object_class()
+        
+        for key, value in kwargs.items():
+            setattr(self.instance, key, value)
+        
         self.full_hydrate()
         self.instance.save()
     

@@ -60,6 +60,21 @@ class Serializer(object):
         serialized = getattr(self, "to_%s" % desired_format)(representation)
         return serialized
     
+    def deserialize(self, content, format='application/json'):
+        desired_format = None
+        
+        for short_format, long_format in self.content_types.items():
+            if format == long_format:
+                if hasattr(self, "from_%s" % short_format):
+                    desired_format = short_format
+                    break
+        
+        if desired_format is None:
+            raise UnsupportedFormat("The format indicated '%s' had no available deserialization method. Please check your ``formats`` and ``content_types`` on your Serializer." % format)
+        
+        deserialized = getattr(self, "from_%s" % desired_format)(content)
+        return deserialized
+    
     def to_json(self, data):
         return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True)
     

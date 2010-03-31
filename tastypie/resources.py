@@ -205,24 +205,27 @@ class Resource(object):
         # self.representation.delete()
         # self.representation.update()
         # return HttpAccepted()
-        raise NotImplementedError
+        return HttpNotImplemented()
     
     def put_detail(self, request, obj_id):
         """
         If a new resource is created, return ``HttpCreated`` (201 Created).
         If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
         """
-        # FIXME: Forced for now but needs content-type detection and error-handling.
-        deserialized = self.serializer.from_json(request.raw_post_data)
-        representation = self.representation()
+        deserialized = self.serializer.deserialize(request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        kwargs = {}
+        
+        for key, value in deserialized.items():
+            kwargs[str(key)] = value
+        
+        representation = self.representation(**kwargs)
         
         try:
-            resource = representation.update(pk=obj_id, data_dict=deserialized)
+            representation.update(pk=obj_id)
             return HttpAccepted()
         except:
-            resource = representation.create(data_dict=deserialized)
-            # FIXME: Include charset here.
-            return HttpCreated(location=resource.get_resource_uri())
+            representation.create(pk=obj_id)
+            return HttpCreated(location=representation.get_resource_uri())
     
     def post_list(self, request):
         """
@@ -230,11 +233,15 @@ class Resource(object):
         """
         # TODO: What to do if the resource already exists at that id? Quietly
         #       update or complain loudly?
-        # FIXME: Forced for now but needs content-type detection and error-handling.
-        deserialized = self.serializer.from_json(request.raw_post_data)
-        representation = self.representation()
-        resource = self.representation.create(deserialized)
-        return HttpCreated(location=resource.get_resource_uri())
+        deserialized = self.serializer.deserialize(request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        kwargs = {}
+        
+        for key, value in deserialized.items():
+            kwargs[str(key)] = value
+        
+        representation = self.representation(**kwargs)
+        representation.create()
+        return HttpCreated(location=representation.get_resource_uri())
     
     def post_detail(self, request, obj_id):
         """
@@ -243,7 +250,7 @@ class Resource(object):
         
         If a new resource is created, return ``HttpCreated`` (201 Created).
         """
-        raise NotImplementedError
+        return HttpNotImplemented()
     
     def delete_list(self, request):
         """
@@ -252,6 +259,7 @@ class Resource(object):
         # TODO: What range ought to be deleted? This seems particularly
         #       dangerous.
         representation = self.representation()
+        # FIXME: This is ModelRepresentation specific and needs abstraction.
         representation.queryset.all().delete()
         return HttpAccepted()
     
