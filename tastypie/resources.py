@@ -87,17 +87,15 @@ class Resource(object):
             raise ImproperlyConfigured("No url_prefix provided.")
     
     def wrap_view(self, view):
-        def wrap(view):
-            def wrapper(request, *args, **kwargs):
-                return getattr(self, view)(request, *args, **kwargs)
-            return wrapper
-        return wrap
+        def wrapper(request, *args, **kwargs):
+            return getattr(self, view)(request, *args, **kwargs)
+        return wrapper
     
     @property
     def urls(self):
         urlpatterns = patterns('',
-            url(r'^$', self.wrap_view(self.dispatch_list), name='api_%s_dispatch_list' % self.url_prefix),
-            url(r'^(?P<obj_id>\d+)/$', self.wrap_view(self.dispatch_detail), name='api_%s_dispatch_detail' % self.url_prefix),
+            url(r'^$', self.wrap_view('dispatch_list'), name='api_%s_dispatch_list' % self.url_prefix),
+            url(r'^(?P<obj_id>\d+)/$', self.wrap_view('dispatch_detail'), name='api_%s_dispatch_detail' % self.url_prefix),
         )
         return urlpatterns
     
