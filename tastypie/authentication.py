@@ -8,9 +8,9 @@ class Authentication(object):
     
     By default, this indicates the user is always authenticated.
     """
-    def is_authorized(self, request, **kwargs):
+    def is_authenticated(self, request, **kwargs):
         """
-        Identifies if the user is authorized to continue or not.
+        Identifies if the user is authenticated to continue or not.
         
         Should return either ``True`` if allowed, ``False`` if not or an
         ``HttpResponse`` if you need something custom.
@@ -25,7 +25,7 @@ class BasicAuthentication(Authentication):
     def __init__(self):
         self.backend = ModelBackend()
     
-    def is_authorized(self, request, **kwargs):
+    def is_authenticated(self, request, **kwargs):
         if not request.META.get('HTTP_AUTHORIZATION'):
             return False
         
