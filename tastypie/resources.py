@@ -22,10 +22,11 @@ class Resource(object):
     list_representation = None
     detail_representation = None
     serializer = Serializer()
+    allowed_methods = None
     list_allowed_methods = ['get', 'post', 'put', 'delete']
     detail_allowed_methods = ['get', 'post', 'put', 'delete']
     per_page = 20
-    url_prefix = ''
+    url_prefix = None
     default_format = 'text/html'
     
     def __init__(self, representation=None, list_representation=None,
@@ -80,12 +81,16 @@ class Resource(object):
         
         if self.serializer is None:
             raise ImproperlyConfigured("No serializer provided.")
+        
+        if not self.url_prefix:
+            raise ImproperlyConfigured("No url_prefix provided.")
     
-    def wrap_view(self):
+    def wrap_view(self, view):
         def wrap(view):
             def wrapper(request, *args, **kwargs):
                 return getattr(self, view)(request, *args, **kwargs)
             return wrapper
+        return wrap
     
     @property
     def urls(self):
@@ -101,12 +106,12 @@ class Resource(object):
     def determine_format(self, request):
         # First, check if they forced the format.
         if request.GET.get('format'):
-            if request.GET['format'] in self.serializer.supported_formats:
-                return request.GET.get('format')
+            if request.GET['format'] in self.serializer.formats:
+                return self.serializer.get_mime_for_format(request.GET['format'])
         
         # Try to fallback on the Accepts header.
         if request.META.get('HTTP_ACCEPT'):
-            best_format = mimeparse(self.serializer.supported_formats(), request.META['HTTP_ACCEPT'])
+            best_format = mimeparse.best_match(self.serializer.supported_formats, request.META['HTTP_ACCEPT'])
             
             if best_format:
                 return best_format

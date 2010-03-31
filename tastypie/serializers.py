@@ -38,6 +38,12 @@ class Serializer(object):
             except KeyError:
                 raise ImproperlyConfigured("Content type for specified type '%s' not found. Please provide it at either the class level or via the arguments." % format)
     
+    def get_mime_for_format(self, format):
+        try:
+            return self.content_types[format]
+        except KeyError:
+            return 'text/html'
+    
     def to_json(self, data):
         return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True)
     
