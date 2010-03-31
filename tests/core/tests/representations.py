@@ -262,14 +262,13 @@ class ModelRepresentationTestCase(TestCase):
             content="Testing, 1, 2, 3!",
             is_active=True
         )
-        import pdb; pdb.set_trace()
         note.create()
         self.assertEqual(Note.objects.all().count(), 7)
-        latest = Note.objects.latest('created')
-        self.assertEqual(latest.title, '')
-        self.assertEqual(latest.slug, '')
-        self.assertEqual(latest.content, '')
-        self.assertEqual(latest.is_active, '')
+        latest = Note.objects.get(slug='a-new-post')
+        self.assertEqual(latest.title, u"A new post!")
+        self.assertEqual(latest.slug, u'a-new-post')
+        self.assertEqual(latest.content, u'Testing, 1, 2, 3!')
+        self.assertEqual(latest.is_active, True)
     
     def test_update(self):
         self.assertEqual(Note.objects.all().count(), 6)

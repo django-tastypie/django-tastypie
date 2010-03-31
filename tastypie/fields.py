@@ -83,6 +83,9 @@ class ApiField(object):
     def hydrate(self):
         if self.value is None:
             if self.has_default():
+                if callable(self._default):
+                    return self._default()
+                
                 return self._default
             elif self.null:
                 return None
