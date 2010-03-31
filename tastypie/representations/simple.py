@@ -25,7 +25,15 @@ class DeclarativeMetaclass(type):
                 field.instance_name = field_name
                 attrs['base_fields'][field_name] = field
         
-        return super(DeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
+        new_class = super(DeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
+        
+        new_class._meta = getattr(new_class, 'Meta', None)
+
+        if not new_class._meta:
+            raise ImproperlyConfigured("An inner Meta class is required to configure %s." % repr(new_class))
+
+        return new_class
+
 
 
 class Representation(object):
@@ -37,11 +45,6 @@ class Representation(object):
     __metaclass__ = DeclarativeMetaclass
     
     def __init__(self, *args, **kwargs):
-        self._meta = getattr(self, 'Meta', None)
-        
-        if not self._meta:
-            raise ImproperlyConfigured("An inner Meta class is required to configure %s." % repr(self))
-        
         self.object_class = getattr(self._meta, 'object_class', None)
         self.instance = None
         
@@ -139,3 +142,5 @@ class Representation(object):
         
         return data
     
+    class Meta:
+        pass
