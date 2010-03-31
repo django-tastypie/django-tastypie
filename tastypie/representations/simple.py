@@ -1,3 +1,4 @@
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.copycompat import deepcopy
 from tastypie.fields import ApiField
 
@@ -42,10 +43,6 @@ class Representation(object):
             raise ImproperlyConfigured("An inner Meta class is required to configure %s." % repr(self))
         
         self.object_class = getattr(self._meta, 'object_class', None)
-        
-        if self.object_class is None:
-            raise ImproperlyConfigured("Using the Representation requires providing an object_class in the inner Meta class.")
-        
         self.instance = None
         
         # Use a copy of the field instances, not the ones actually stored on
@@ -58,6 +55,9 @@ class Representation(object):
         for key, value in kwargs.items():
             if key in self.fields:
                 self.fields[key].value = value
+        
+        if self.object_class is None:
+            raise ImproperlyConfigured("Using the Representation requires providing an object_class in the inner Meta class.")
     
     @classmethod
     def get_list(cls, **kwargs):
@@ -115,7 +115,10 @@ class Representation(object):
         
         for field_name, field_object in self.fields.items():
             if field_object.attribute:
-                setattr(self.instance, field_object.attribute, field_object.hydrate())
+                value = field_object.hydrate()
+                
+                if value is not None:
+                    setattr(self.instance, field_object.attribute, value)
         
         for field_name, field_object in self.fields.items():
             method = getattr(self, "hydrate_%s" % field_name, None)

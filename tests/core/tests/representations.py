@@ -1,8 +1,10 @@
 import datetime
+from django.contrib.auth.models import User
 from django.test import TestCase
 from tastypie import fields
 from tastypie.representations.simple import Representation
 from tastypie.representations.models import ModelRepresentation
+from core.models import Note
 
 
 class TestObject(object):
@@ -165,21 +167,126 @@ class RepresentationTestCase(TestCase):
         self.assertRaises(NotImplementedError, basic.delete)
 
 
+class NoteRepresentation(ModelRepresentation):
+    class Meta:
+        queryset = Note.objects.filter(is_active=True)
+
+
+class CustomNoteRepresentation(ModelRepresentation): 
+    author = fields.CharField(attribute='author__username')
+    constant = fields.IntegerField(default=20)
+    
+    class Meta:
+        queryset = Note.objects.all()
+        fields = ['title', 'content', 'created', 'is_active']
+
+
 class ModelRepresentationTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+    
     def test_configuration(self):
-        pass
+        note = NoteRepresentation()
+        # FIXME: Once relations are in, this number ought to go up.
+        self.assertEqual(len(note.fields), 6)
+        self.assertEqual(sorted(note.fields.keys()), ['content', 'created', 'is_active', 'slug', 'title', 'updated'])
+        
+        custom = CustomNoteRepresentation()
+        self.assertEqual(len(custom.fields), 6)
+        self.assertEqual(sorted(custom.fields.keys()), ['author', 'constant', 'content', 'created', 'is_active', 'title'])
     
     def test_get_list(self):
-        pass
+        # FIXME: Ought to be:
+        # notes = NoteRepresentation.get_list()
+        note = NoteRepresentation()
+        notes = note.get_list()
+        self.assertEqual(len(notes), 4)
+        self.assertEqual(notes[0].fields['is_active'].value, True)
+        self.assertEqual(notes[0].fields['title'].value, u'First Post!')
+        self.assertEqual(notes[1].fields['is_active'].value, True)
+        self.assertEqual(notes[1].fields['title'].value, u'Another Post')
+        self.assertEqual(notes[2].fields['is_active'].value, True)
+        self.assertEqual(notes[2].fields['title'].value, u'Recent Volcanic Activity.')
+        self.assertEqual(notes[3].fields['is_active'].value, True)
+        self.assertEqual(notes[3].fields['title'].value, u"Granny's Gone")
+        
+        # FIXME: Ought to be:
+        # customs = CustomNoteRepresentation.get_list()
+        custom = CustomNoteRepresentation()
+        customs = custom.get_list()
+        self.assertEqual(len(customs), 6)
+        self.assertEqual(customs[0].fields['is_active'].value, True)
+        self.assertEqual(customs[0].fields['title'].value, u'First Post!')
+        self.assertEqual(customs[0].fields['author'].value, u'johndoe')
+        self.assertEqual(customs[0].fields['constant'].value, 20)
+        self.assertEqual(customs[1].fields['is_active'].value, True)
+        self.assertEqual(customs[1].fields['title'].value, u'Another Post')
+        self.assertEqual(customs[1].fields['author'].value, u'johndoe')
+        self.assertEqual(customs[1].fields['constant'].value, 20)
+        self.assertEqual(customs[2].fields['is_active'].value, False)
+        self.assertEqual(customs[2].fields['title'].value, u'Hello World!')
+        self.assertEqual(customs[2].fields['author'].value, u'janedoe')
+        self.assertEqual(customs[3].fields['is_active'].value, True)
+        self.assertEqual(customs[3].fields['title'].value, u'Recent Volcanic Activity.')
+        self.assertEqual(customs[3].fields['author'].value, u'janedoe')
+        self.assertEqual(customs[4].fields['is_active'].value, False)
+        self.assertEqual(customs[4].fields['title'].value, u'My favorite new show')
+        self.assertEqual(customs[4].fields['author'].value, u'johndoe')
+        self.assertEqual(customs[5].fields['is_active'].value, True)
+        self.assertEqual(customs[5].fields['title'].value, u"Granny's Gone")
+        self.assertEqual(customs[5].fields['author'].value, u'janedoe')
     
     def test_get(self):
-        pass
+        note = NoteRepresentation()
+        note.get(pk=1)
+        self.assertEqual(note.fields['content'].value, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
+        self.assertEqual(note.fields['created'].value, datetime.datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(note.fields['is_active'].value, True)
+        self.assertEqual(note.fields['slug'].value, u'first-post')
+        self.assertEqual(note.fields['title'].value, u'First Post!')
+        self.assertEqual(note.fields['updated'].value, datetime.datetime(2010, 3, 30, 20, 5))
+        
+        custom = CustomNoteRepresentation()
+        custom.get(pk=1)
+        self.assertEqual(custom.fields['content'].value, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
+        self.assertEqual(custom.fields['created'].value, datetime.datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(custom.fields['is_active'].value, True)
+        self.assertEqual(custom.fields['author'].value, u'johndoe')
+        self.assertEqual(custom.fields['title'].value, u'First Post!')
+        self.assertEqual(custom.fields['constant'].value, 20)
     
     def test_create(self):
-        pass
+        self.assertEqual(Note.objects.all().count(), 6)
+        note = NoteRepresentation(
+            title="A new post!",
+            slug="a-new-post",
+            content="Testing, 1, 2, 3!",
+            is_active=True
+        )
+        import pdb; pdb.set_trace()
+        note.create()
+        self.assertEqual(Note.objects.all().count(), 7)
+        latest = Note.objects.latest('created')
+        self.assertEqual(latest.title, '')
+        self.assertEqual(latest.slug, '')
+        self.assertEqual(latest.content, '')
+        self.assertEqual(latest.is_active, '')
     
     def test_update(self):
-        pass
+        self.assertEqual(Note.objects.all().count(), 6)
+        note = NoteRepresentation()
+        note.get(pk=1)
+        note.fields['title'].value = 'Whee!'
+        note.update(pk=1)
+        self.assertEqual(Note.objects.all().count(), 6)
+        numero_uno = Note.objects.get(pk=1)
+        self.assertEqual(numero_uno.title, u'Whee!')
+        self.assertEqual(numero_uno.slug, u'first-post')
+        self.assertEqual(numero_uno.content, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
+        self.assertEqual(numero_uno.is_active, True)
     
     def test_delete(self):
-        pass
+        self.assertEqual(Note.objects.all().count(), 6)
+        note = NoteRepresentation()
+        note.delete(pk=1)
+        self.assertEqual(Note.objects.all().count(), 5)
+        self.assertRaises(Note.DoesNotExist, Note.objects.get, pk=1)

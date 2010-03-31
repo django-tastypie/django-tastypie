@@ -1,4 +1,5 @@
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
+from django.utils.copycompat import deepcopy
 from tastypie.exceptions import NotFound
 from tastypie.fields import *
 from tastypie.representations.simple import Representation
@@ -41,22 +42,37 @@ class ModelRepresentation(Representation):
                 return User.objects.get_or_create(username=obj.author)
     """
     def __init__(self, *args, **kwargs):
-        super(ModelRepresentation, self).__init__(*args, **kwargs)
+        self._meta = getattr(self, 'Meta', None)
+        
+        if not self._meta:
+            raise ImproperlyConfigured("An inner Meta class is required to configure %s." % repr(self))
         
         # Introspect the model, adding/removing fields as needed.
         # Adds/Excludes should happen only if the fields are not already
         # defined in `self.fields`.
         self.queryset = getattr(self._meta, 'queryset', None)
+        self.instance = None
         
         if self.queryset is None:
             raise ImproperlyConfigured("Using the ModelRepresentation requires providing a model.")
         
         self.object_class = self.queryset.model
+        self.fields = deepcopy(self.base_fields)
         fields = getattr(self._meta, 'fields', [])
         excludes = getattr(self._meta, 'excludes', [])
         
         # Add in the new fields.
         self.fields.update(self.get_fields(fields, excludes))
+        
+        # Now that we have fields, populate fields via kwargs if found.
+        # TODO: Unrecognized fields get silently ignored and throw away.
+        #       Seems like this could go either way on behavior.
+        for key, value in kwargs.items():
+            if key in self.fields:
+                self.fields[key].value = value
+        
+        if self.object_class is None:
+            raise ImproperlyConfigured("Using the Representation requires providing an object_class in the inner Meta class.")
     
     def should_skip_field(self, field):
         """
@@ -78,7 +94,7 @@ class ModelRepresentation(Representation):
         fields = fields or []
         excludes = excludes or []
         
-        for f in self.model._meta.fields:
+        for f in self.object_class._meta.fields:
             # If the field name is already present, skip
             if f.name in self.fields:
                 continue
@@ -96,9 +112,9 @@ class ModelRepresentation(Representation):
             
             api_field_class = api_field_from_django_field(f)
             
-            kwargs.update({
+            kwargs = {
                 'attribute': f.name,
-            })
+            }
             
             if f.null is True:
                 kwargs['null'] = True
@@ -111,13 +127,15 @@ class ModelRepresentation(Representation):
         
         return final_fields
     
-    @classmethod
-    def get_list(cls, **kwargs):
-        model_list = cls.queryset.filter(**kwargs)
+    # FIXME: This ought to be a classmethod, but assigning the queryset to the
+    #        class is problematic given the existing code.
+    # @classmethod
+    def get_list(self, **kwargs):
+        model_list = self.queryset.filter(**kwargs)
         representations = []
         
         for model in model_list:
-            represent = cls()
+            represent = self.__class__()
             represent.full_dehydrate(model)
             representations.append(represent)
         
@@ -132,7 +150,7 @@ class ModelRepresentation(Representation):
         self.full_dehydrate(self.instance)
     
     def create(self):
-        self.instance = self.model()
+        self.instance = self.object_class()
         self.full_hydrate()
         self.instance.save()
     
@@ -145,7 +163,7 @@ class ModelRepresentation(Representation):
         self.full_hydrate()
         self.instance.save()
     
-    def delete(self):
+    def delete(self, **kwargs):
         try:
             self.instance = self.queryset.get(**kwargs)
         except ObjectDoesNotExist:
