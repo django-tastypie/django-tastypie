@@ -131,3 +131,11 @@ class Representation(object):
     def hydrate(self):
         pass
     
+    def to_dict(self):
+        data = {}
+        
+        for field_name, field_object in self.fields.items():
+            data[field_name] = field_object.value
+        
+        return data
+    

@@ -8,3 +8,7 @@ class NotFound(TastyPieError):
 
 class ApiFieldError(TastyPieError):
     pass
+
+
+class UnsupportedFormat(TastyPieError):
+    pass

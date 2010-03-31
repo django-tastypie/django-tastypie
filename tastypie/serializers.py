@@ -2,6 +2,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.serializers import json
 from django.template import loader, Context
 from django.utils import simplejson
+from tastypie.exceptions import UnsupportedFormat
 try:
     import lxml
     from django.core.serializers import xml_serializer
@@ -42,7 +43,22 @@ class Serializer(object):
         try:
             return self.content_types[format]
         except KeyError:
-            return 'text/html'
+            return 'application/json'
+    
+    def serialize(self, representation, format='application/json'):
+        desired_format = None
+        
+        for short_format, long_format in self.content_types.items():
+            if format == long_format:
+                if hasattr(self, "to_%s" % short_format):
+                    desired_format = short_format
+                    break
+        
+        if desired_format is None:
+            raise UnsupportedFormat("The format indicated '%s' had no available serialization method. Please check your ``formats`` and ``content_types`` on your Serializer." % format)
+        
+        serialized = getattr(self, "to_%s" % desired_format)(representation)
+        return serialized
     
     def to_json(self, data):
         return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True)

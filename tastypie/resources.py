@@ -3,6 +3,7 @@ from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import Paginator, InvalidPage
 from django.http import Http404, HttpResponse, HttpResponseRedirect
+from tastypie.exceptions import NotFound
 from tastypie.http import HttpCreated, HttpAccepted, HttpSeeOther, HttpNotModified, HttpConflict, HttpGone, HttpMethodNotAllowed, HttpNotImplemented
 from tastypie.serializers import Serializer
 
@@ -119,7 +120,13 @@ class Resource(object):
         # No valid 'Accept' header/formats. Sane default.
         return self.default_format
     
-    def dispatch_list(self, request, format=None):
+    def build_content_type(self, format, encoding='utf-8'):
+        if 'charset' in format:
+            return format
+        
+        return "%s; charset=%s" % (format, encoding)
+    
+    def dispatch_list(self, request,):
         request_method = request.method.lower()
         
         if not request_method in self.list_allowed_methods:
@@ -138,7 +145,7 @@ class Resource(object):
         
         return response
     
-    def dispatch_detail(self, request, *args):
+    def dispatch_detail(self, request, **kwargs):
         request_method = request.method.lower()
         
         if not request_method in self.detail_allowed_methods:
@@ -150,7 +157,7 @@ class Resource(object):
             return HttpNotImplemented
         
         request = convert_post_to_put(request)
-        response = method(request)
+        response = method(request, **kwargs)
         
         if not isinstance(response, HttpResponse):
             return HttpAccepted()
@@ -161,25 +168,34 @@ class Resource(object):
         """
         Should return a HttpResponse (200 OK).
         """
-        # FIXME: Pagination (likely manually due to individual reps. Generator?)
-        results = (self.representation.read(obj) for obj in self.representation.get_list())[:self.per_page]
+        object_list = {
+            'results': [],
+        }
+        # FIXME: Hack until ``get_list`` becomes a class method again.
+        representation = self.representation()
         
-        serialized, content_type = self.serialize(results)
-        # FIXME: Include charset here.
-        return HttpResponse(content=serialized, content_type=content_type)
+        # FIXME: Need to solve pagination.
+        for result in representation.get_list()[:self.per_page]:
+            object_list['results'].append(result.to_dict())
+        
+        desired_format = self.determine_format(request)
+        serialized = self.serializer.serialize(object_list, format=desired_format)
+        return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
     
     def get_detail(self, request, obj_id):
         """
         Should return a HttpResponse (200 OK).
         """
+        representation = self.representation()
+        
         try:
-            obj = self.representation.get(obj_id)
-        except:
+            representation.get(pk=obj_id)
+        except NotFound:
             return HttpGone()
         
-        serialized, content_type = self.serialize(self.representation.read(obj))
-        # FIXME: Include charset here.
-        return HttpResponse(content=serialized, content_type=content_type)
+        desired_format = self.determine_format(request)
+        serialized = self.serializer.serialize(representation.to_dict(), format=desired_format)
+        return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
     
     def put_list(self, request):
         """
