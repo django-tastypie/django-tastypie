@@ -7,6 +7,7 @@ class NOT_PROVIDED:
     pass
 
 
+DATE_REGEX = re.compile('^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2}).*?$')
 DATETIME_REGEX = re.compile('^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})(T|\s+)(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2}).*?$')
 
 
@@ -140,12 +141,15 @@ class BooleanField(ApiField):
 
 
 class DateField(ApiField):
+    def dehydrate(self, obj):
+        return self.convert(super(DateField, self).dehydrate(obj))
+    
     def convert(self, value):
         if value is None:
             return None
         
         if isinstance(value, basestring):
-            match = DATETIME_REGEX.search(value)
+            match = DATE_REGEX.search(value)
             
             if match:
                 data = match.groupdict()
@@ -157,6 +161,9 @@ class DateField(ApiField):
 
 
 class DateTimeField(ApiField):
+    def dehydrate(self, obj):
+        return self.convert(super(DateTimeField, self).dehydrate(obj))
+    
     def convert(self, value):
         if value is None:
             return None

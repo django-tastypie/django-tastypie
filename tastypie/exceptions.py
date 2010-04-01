@@ -12,3 +12,7 @@ class ApiFieldError(TastyPieError):
 
 class UnsupportedFormat(TastyPieError):
     pass
+
+
+class BlueberryFillingFound(TastyPieError):
+    pass

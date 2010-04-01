@@ -18,3 +18,6 @@ class Note(models.Model):
     def save(self, *args, **kwargs):
         self.updated = datetime.datetime.now()
         return super(Note, self).save(*args, **kwargs)
+    
+    def what_time_is_it(self):
+        return datetime.datetime(2010, 4, 1, 0, 48)
