@@ -7,3 +7,5 @@ INSTALLED_APPS = [
     'tastypie',
     'core',
 ]
+
+ROOT_URLCONF = 'core.tests.api_urls'
