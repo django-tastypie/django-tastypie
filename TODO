@@ -1,6 +1,8 @@
 TODO
 ====
 
+Short Term
+----------
 
 - XML serialization/deserialization is not implemented and needs to be a
   high priority.
@@ -13,7 +15,16 @@ TODO
 - Registry for the full API to make the complete Barkeeper's Friend possible.
 - Authentication
     - ``OauthAuthentication``
-    - ``APIKeyAuthentication``
+- Implement caching.
 - Implement throttling.
-- Implement API keys/tokens.
 - Documentation.
+- Filtering
+- Pagination
+
+Long Term
+---------
+
+- HTML browsing
+- Authentication
+    - ``APIKeyAuthentication``
+- Haystack integration?
