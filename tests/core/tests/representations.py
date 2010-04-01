@@ -25,13 +25,13 @@ class BasicRepresentation(Representation):
         if getattr(obj, 'date_joined', None) is not None:
             return obj.date_joined
         
-        if self.fields['date_joined'].value is not None:
-            return self.fields['date_joined'].value
+        if self.date_joined.value is not None:
+            return self.date_joined.value
         
         return datetime.datetime(2010, 3, 27, 22, 30, 0)
     
     def hydrate_date_joined(self):
-        self.instance.date_joined = self.fields['date_joined'].value
+        self.instance.date_joined = self.date_joined.value
 
 
 class AnotherBasicRepresentation(BasicRepresentation):
@@ -44,22 +44,22 @@ class RepresentationTestCase(TestCase):
         basic = BasicRepresentation()
         self.assertEqual(len(basic.fields), 3)
         self.assert_('name' in basic.fields)
-        self.assertEqual(isinstance(basic.fields['name'], fields.CharField), True)
+        self.assertEqual(isinstance(basic.name, fields.CharField), True)
         self.assert_('view_count' in basic.fields)
-        self.assertEqual(isinstance(basic.fields['view_count'], fields.IntegerField), True)
+        self.assertEqual(isinstance(basic.view_count, fields.IntegerField), True)
         self.assert_('date_joined' in basic.fields)
-        self.assertEqual(isinstance(basic.fields['date_joined'], fields.DateTimeField), True)
+        self.assertEqual(isinstance(basic.date_joined, fields.DateTimeField), True)
         
         another = AnotherBasicRepresentation()
         self.assertEqual(len(another.fields), 4)
         self.assert_('name' in another.fields)
-        self.assertEqual(isinstance(another.fields['name'], fields.CharField), True)
+        self.assertEqual(isinstance(another.name, fields.CharField), True)
         self.assert_('view_count' in another.fields)
-        self.assertEqual(isinstance(another.fields['view_count'], fields.IntegerField), True)
+        self.assertEqual(isinstance(another.view_count, fields.IntegerField), True)
         self.assert_('date_joined' in another.fields)
-        self.assertEqual(isinstance(another.fields['date_joined'], fields.DateField), True)
+        self.assertEqual(isinstance(another.date_joined, fields.DateField), True)
         self.assert_('is_active' in another.fields)
-        self.assertEqual(isinstance(another.fields['is_active'], fields.BooleanField), True)
+        self.assertEqual(isinstance(another.is_active, fields.BooleanField), True)
     
     def test_full_dehydrate(self):
         test_object_1 = TestObject()
@@ -71,15 +71,15 @@ class RepresentationTestCase(TestCase):
         basic = BasicRepresentation()
         
         # Sanity check.
-        self.assertEqual(basic.fields['name'].value, None)
-        self.assertEqual(basic.fields['view_count'].value, None)
-        self.assertEqual(basic.fields['date_joined'].value, None)
+        self.assertEqual(basic.name.value, None)
+        self.assertEqual(basic.view_count.value, None)
+        self.assertEqual(basic.date_joined.value, None)
         
         basic.full_dehydrate(test_object_1)
-        self.assertEqual(basic.fields['name'].value, 'Daniel')
-        self.assertEqual(basic.fields['view_count'].value, 12)
-        self.assertEqual(basic.fields['date_joined'].value.year, 2010)
-        self.assertEqual(basic.fields['date_joined'].value.day, 30)
+        self.assertEqual(basic.name.value, 'Daniel')
+        self.assertEqual(basic.view_count.value, 12)
+        self.assertEqual(basic.date_joined.value.year, 2010)
+        self.assertEqual(basic.date_joined.value.day, 30)
         
         # Now check the fallback behaviors.
         test_object_2 = TestObject()
@@ -87,15 +87,15 @@ class RepresentationTestCase(TestCase):
         basic_2 = BasicRepresentation()
         
         # Sanity check.
-        self.assertEqual(basic_2.fields['name'].value, None)
-        self.assertEqual(basic_2.fields['view_count'].value, None)
-        self.assertEqual(basic_2.fields['date_joined'].value, None)
+        self.assertEqual(basic_2.name.value, None)
+        self.assertEqual(basic_2.view_count.value, None)
+        self.assertEqual(basic_2.date_joined.value, None)
         
         basic_2.full_dehydrate(test_object_2)
-        self.assertEqual(basic_2.fields['name'].value, 'Daniel')
-        self.assertEqual(basic_2.fields['view_count'].value, 0)
-        self.assertEqual(basic_2.fields['date_joined'].value.year, 2010)
-        self.assertEqual(basic_2.fields['date_joined'].value.day, 27)
+        self.assertEqual(basic_2.name.value, 'Daniel')
+        self.assertEqual(basic_2.view_count.value, 0)
+        self.assertEqual(basic_2.date_joined.value.year, 2010)
+        self.assertEqual(basic_2.date_joined.value.day, 27)
         
         test_object_3 = TestObject()
         test_object_3.name = 'Joe'
@@ -105,25 +105,25 @@ class RepresentationTestCase(TestCase):
         another_1 = AnotherBasicRepresentation()
         
         # Sanity check.
-        self.assertEqual(another_1.fields['name'].value, None)
-        self.assertEqual(another_1.fields['view_count'].value, None)
-        self.assertEqual(another_1.fields['date_joined'].value, None)
-        self.assertEqual(another_1.fields['is_active'].value, None)
+        self.assertEqual(another_1.name.value, None)
+        self.assertEqual(another_1.view_count.value, None)
+        self.assertEqual(another_1.date_joined.value, None)
+        self.assertEqual(another_1.is_active.value, None)
         
         another_1.full_dehydrate(test_object_3)
-        self.assertEqual(another_1.fields['name'].value, 'Joe')
-        self.assertEqual(another_1.fields['view_count'].value, 5)
-        self.assertEqual(another_1.fields['date_joined'].value.year, 2010)
-        self.assertEqual(another_1.fields['date_joined'].value.day, 29)
-        self.assertEqual(another_1.fields['is_active'].value, False)
+        self.assertEqual(another_1.name.value, 'Joe')
+        self.assertEqual(another_1.view_count.value, 5)
+        self.assertEqual(another_1.date_joined.value.year, 2010)
+        self.assertEqual(another_1.date_joined.value.day, 29)
+        self.assertEqual(another_1.is_active.value, False)
     
     def test_full_hydrate(self):
         basic = BasicRepresentation()
         
         # Sanity check.
-        self.assertEqual(basic.fields['name'].value, None)
-        self.assertEqual(basic.fields['view_count'].value, None)
-        self.assertEqual(basic.fields['date_joined'].value, None)
+        self.assertEqual(basic.name.value, None)
+        self.assertEqual(basic.view_count.value, None)
+        self.assertEqual(basic.date_joined.value, None)
         
         basic = BasicRepresentation(
             name='Daniel',
@@ -132,17 +132,17 @@ class RepresentationTestCase(TestCase):
         )
         
         # Sanity check.
-        self.assertEqual(basic.fields['name'].value, 'Daniel')
-        self.assertEqual(basic.fields['view_count'].value, 6)
-        self.assertEqual(basic.fields['date_joined'].value, datetime.datetime(2010, 2, 15, 12, 0, 0))
+        self.assertEqual(basic.name.value, 'Daniel')
+        self.assertEqual(basic.view_count.value, 6)
+        self.assertEqual(basic.date_joined.value, datetime.datetime(2010, 2, 15, 12, 0, 0))
         self.assertEqual(basic.instance, None)
         
         # Now load up the data.
         basic.full_hydrate()
         
-        self.assertEqual(basic.fields['name'].value, 'Daniel')
-        self.assertEqual(basic.fields['view_count'].value, 6)
-        self.assertEqual(basic.fields['date_joined'].value, datetime.datetime(2010, 2, 15, 12, 0, 0))
+        self.assertEqual(basic.name.value, 'Daniel')
+        self.assertEqual(basic.view_count.value, 6)
+        self.assertEqual(basic.date_joined.value, datetime.datetime(2010, 2, 15, 12, 0, 0))
         self.assertEqual(basic.instance.name, 'Daniel')
         self.assertEqual(basic.instance.view_count, 6)
         self.assertEqual(basic.instance.date_joined, datetime.datetime(2010, 2, 15, 12, 0, 0))
@@ -200,59 +200,59 @@ class ModelRepresentationTestCase(TestCase):
         note = NoteRepresentation()
         notes = note.get_list()
         self.assertEqual(len(notes), 4)
-        self.assertEqual(notes[0].fields['is_active'].value, True)
-        self.assertEqual(notes[0].fields['title'].value, u'First Post!')
-        self.assertEqual(notes[1].fields['is_active'].value, True)
-        self.assertEqual(notes[1].fields['title'].value, u'Another Post')
-        self.assertEqual(notes[2].fields['is_active'].value, True)
-        self.assertEqual(notes[2].fields['title'].value, u'Recent Volcanic Activity.')
-        self.assertEqual(notes[3].fields['is_active'].value, True)
-        self.assertEqual(notes[3].fields['title'].value, u"Granny's Gone")
+        self.assertEqual(notes[0].is_active.value, True)
+        self.assertEqual(notes[0].title.value, u'First Post!')
+        self.assertEqual(notes[1].is_active.value, True)
+        self.assertEqual(notes[1].title.value, u'Another Post')
+        self.assertEqual(notes[2].is_active.value, True)
+        self.assertEqual(notes[2].title.value, u'Recent Volcanic Activity.')
+        self.assertEqual(notes[3].is_active.value, True)
+        self.assertEqual(notes[3].title.value, u"Granny's Gone")
         
         # FIXME: Ought to be:
         # customs = CustomNoteRepresentation.get_list()
         custom = CustomNoteRepresentation()
         customs = custom.get_list()
         self.assertEqual(len(customs), 6)
-        self.assertEqual(customs[0].fields['is_active'].value, True)
-        self.assertEqual(customs[0].fields['title'].value, u'First Post!')
-        self.assertEqual(customs[0].fields['author'].value, u'johndoe')
-        self.assertEqual(customs[0].fields['constant'].value, 20)
-        self.assertEqual(customs[1].fields['is_active'].value, True)
-        self.assertEqual(customs[1].fields['title'].value, u'Another Post')
-        self.assertEqual(customs[1].fields['author'].value, u'johndoe')
-        self.assertEqual(customs[1].fields['constant'].value, 20)
-        self.assertEqual(customs[2].fields['is_active'].value, False)
-        self.assertEqual(customs[2].fields['title'].value, u'Hello World!')
-        self.assertEqual(customs[2].fields['author'].value, u'janedoe')
-        self.assertEqual(customs[3].fields['is_active'].value, True)
-        self.assertEqual(customs[3].fields['title'].value, u'Recent Volcanic Activity.')
-        self.assertEqual(customs[3].fields['author'].value, u'janedoe')
-        self.assertEqual(customs[4].fields['is_active'].value, False)
-        self.assertEqual(customs[4].fields['title'].value, u'My favorite new show')
-        self.assertEqual(customs[4].fields['author'].value, u'johndoe')
-        self.assertEqual(customs[5].fields['is_active'].value, True)
-        self.assertEqual(customs[5].fields['title'].value, u"Granny's Gone")
-        self.assertEqual(customs[5].fields['author'].value, u'janedoe')
+        self.assertEqual(customs[0].is_active.value, True)
+        self.assertEqual(customs[0].title.value, u'First Post!')
+        self.assertEqual(customs[0].author.value, u'johndoe')
+        self.assertEqual(customs[0].constant.value, 20)
+        self.assertEqual(customs[1].is_active.value, True)
+        self.assertEqual(customs[1].title.value, u'Another Post')
+        self.assertEqual(customs[1].author.value, u'johndoe')
+        self.assertEqual(customs[1].constant.value, 20)
+        self.assertEqual(customs[2].is_active.value, False)
+        self.assertEqual(customs[2].title.value, u'Hello World!')
+        self.assertEqual(customs[2].author.value, u'janedoe')
+        self.assertEqual(customs[3].is_active.value, True)
+        self.assertEqual(customs[3].title.value, u'Recent Volcanic Activity.')
+        self.assertEqual(customs[3].author.value, u'janedoe')
+        self.assertEqual(customs[4].is_active.value, False)
+        self.assertEqual(customs[4].title.value, u'My favorite new show')
+        self.assertEqual(customs[4].author.value, u'johndoe')
+        self.assertEqual(customs[5].is_active.value, True)
+        self.assertEqual(customs[5].title.value, u"Granny's Gone")
+        self.assertEqual(customs[5].author.value, u'janedoe')
     
     def test_get(self):
         note = NoteRepresentation()
         note.get(pk=1)
-        self.assertEqual(note.fields['content'].value, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
-        self.assertEqual(note.fields['created'].value, datetime.datetime(2010, 3, 30, 20, 5))
-        self.assertEqual(note.fields['is_active'].value, True)
-        self.assertEqual(note.fields['slug'].value, u'first-post')
-        self.assertEqual(note.fields['title'].value, u'First Post!')
-        self.assertEqual(note.fields['updated'].value, datetime.datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(note.content.value, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
+        self.assertEqual(note.created.value, datetime.datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(note.is_active.value, True)
+        self.assertEqual(note.slug.value, u'first-post')
+        self.assertEqual(note.title.value, u'First Post!')
+        self.assertEqual(note.updated.value, datetime.datetime(2010, 3, 30, 20, 5))
         
         custom = CustomNoteRepresentation()
         custom.get(pk=1)
-        self.assertEqual(custom.fields['content'].value, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
-        self.assertEqual(custom.fields['created'].value, datetime.datetime(2010, 3, 30, 20, 5))
-        self.assertEqual(custom.fields['is_active'].value, True)
-        self.assertEqual(custom.fields['author'].value, u'johndoe')
-        self.assertEqual(custom.fields['title'].value, u'First Post!')
-        self.assertEqual(custom.fields['constant'].value, 20)
+        self.assertEqual(custom.content.value, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
+        self.assertEqual(custom.created.value, datetime.datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(custom.is_active.value, True)
+        self.assertEqual(custom.author.value, u'johndoe')
+        self.assertEqual(custom.title.value, u'First Post!')
+        self.assertEqual(custom.constant.value, 20)
     
     def test_create(self):
         self.assertEqual(Note.objects.all().count(), 6)
@@ -274,7 +274,7 @@ class ModelRepresentationTestCase(TestCase):
         self.assertEqual(Note.objects.all().count(), 6)
         note = NoteRepresentation()
         note.get(pk=1)
-        note.fields['title'].value = 'Whee!'
+        note.title.value = 'Whee!'
         note.update(pk=1)
         self.assertEqual(Note.objects.all().count(), 6)
         numero_uno = Note.objects.get(pk=1)

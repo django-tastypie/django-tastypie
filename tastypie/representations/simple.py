@@ -26,14 +26,12 @@ class DeclarativeMetaclass(type):
                 attrs['base_fields'][field_name] = field
         
         new_class = super(DeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
-        
         new_class._meta = getattr(new_class, 'Meta', None)
-
+        
         if not new_class._meta:
             raise ImproperlyConfigured("An inner Meta class is required to configure %s." % repr(new_class))
-
+        
         return new_class
-
 
 
 class Representation(object):
@@ -53,14 +51,16 @@ class Representation(object):
         self.fields = deepcopy(self.base_fields)
         
         # Now that we have fields, populate fields via kwargs if found.
-        # TODO: Unrecognized fields get silently ignored and throw away.
-        #       Seems like this could go either way on behavior.
         for key, value in kwargs.items():
             if key in self.fields:
                 self.fields[key].value = value
         
         if self.object_class is None:
             raise ImproperlyConfigured("Using the Representation requires providing an object_class in the inner Meta class.")
+    
+    def __getattr__(self, name):
+        if name in self.fields:
+            return self.fields[name]
     
     @classmethod
     def get_list(cls, **kwargs):
@@ -94,14 +94,14 @@ class Representation(object):
         """
         # Dehydrate each field.
         for field_name, field_object in self.fields.items():
-            self.fields[field_name].value = field_object.dehydrate(obj)
+            field_object.value = field_object.dehydrate(obj)
         
         # Run through optional overrides.
-        for field_name in self.fields:
+        for field_name, field_object in self.fields.items():
             method = getattr(self, "dehydrate_%s" % field_name, None)
             
             if method:
-                self.fields[field_name].value = method(obj)
+                field_object.value = method(obj)
         
         self.dehydrate(obj)
     

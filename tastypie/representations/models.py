@@ -35,11 +35,11 @@ class ModelRepresentation(Representation):
                 queryset = Note
                 fields = ['title', 'author', 'content', 'pub_date']
             
-            def dehydrate_author(self, model):
-                return model.user.username
+            def dehydrate_author(self, obj):
+                return obj.user.username
             
-            def hydrate_author(self, obj):
-                return User.objects.get_or_create(username=obj.author)
+            def hydrate_author(self):
+                self.instance.author = User.objects.get_or_create(username=self.author.value)
     """
     def __init__(self, *args, **kwargs):
         self.queryset = getattr(self._meta, 'queryset', None)
@@ -61,8 +61,6 @@ class ModelRepresentation(Representation):
         self.fields.update(self.get_fields(fields, excludes))
         
         # Now that we have fields, populate fields via kwargs if found.
-        # TODO: Unrecognized fields get silently ignored and throw away.
-        #       Seems like this could go either way on behavior.
         for key, value in kwargs.items():
             if key in self.fields:
                 self.fields[key].value = value
@@ -70,6 +68,8 @@ class ModelRepresentation(Representation):
         if self.object_class is None:
             raise ImproperlyConfigured("Using the Representation requires providing an object_class in the inner Meta class.")
     
+    # FIXME: Once relations are supported, this needs to be modified to allow
+    #        them through.
     def should_skip_field(self, field):
         """
         Given a Django model field, return if it should be included in the
@@ -123,8 +123,6 @@ class ModelRepresentation(Representation):
         
         return final_fields
     
-    # FIXME: This ought to be a classmethod, but assigning the queryset to the
-    #        class is problematic given the existing code.
     @classmethod
     def get_list(cls, **kwargs):
         model_list = cls._meta.queryset.filter(**kwargs)
@@ -170,4 +168,3 @@ class ModelRepresentation(Representation):
             raise NotFound("A model instance matching the provided arguments could not be found.")
         
         self.instance.delete()
-    
