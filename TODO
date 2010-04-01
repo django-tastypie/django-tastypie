@@ -5,17 +5,15 @@ TODO
 - XML serialization/deserialization is not implemented and needs to be a
   high priority.
 - Finish the ``ModelRepresentation`` implementation.
+    - FK/M2M representation fields.
     - ForeignKey/ManyToManyField are do-able, but require either the registry
       pattern or overriding the representation. There should also be a way to
       control "depth" (if sub-representations are allowed to traverse their
       relations).
 - Registry for the full API to make the complete Barkeeper's Friend possible.
-- FK/M2M representation fields.
 - Authentication
-    - Maybe not subclass but provide a delegate?
-    - ``AuthenticatedResource``
-    - ``DjangoAuthResource``
-    - ``OauthResource``
+    - ``OauthAuthentication``
+    - ``APIKeyAuthentication``
 - Implement throttling.
 - Implement API keys/tokens.
 - Documentation.
