@@ -23,6 +23,9 @@ class BasicAuthenticationTestCase(TestCase):
         
         # No HTTP Basic auth details should fail.
         self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+
+        # HttpUnauthorized with auth type and realm
+        self.assertEqual(auth.is_authenticated(request)['WWW-Authenticate'], 'Basic Realm="django-tastypie"')
         
         # Wrong basic auth details.
         request.META['HTTP_AUTHORIZATION'] = 'abcdefg'
