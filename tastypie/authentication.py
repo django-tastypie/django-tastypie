@@ -1,6 +1,5 @@
 import base64
 from django.contrib.auth import authenticate
-from django.contrib.auth.backends import ModelBackend
 from http import HttpUnauthorized
 
 
