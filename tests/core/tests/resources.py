@@ -274,7 +274,7 @@ class BasicAuthResourceTestCase(TestCase):
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('johndoe:pass')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass')
         
         resp = resource.dispatch_list(request)
         self.assertEqual(resp.status_code, 200)
@@ -291,7 +291,7 @@ class BasicAuthResourceTestCase(TestCase):
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('johndoe:pass')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass')
         
         resp = resource.dispatch_list(request)
         self.assertEqual(resp.status_code, 200)
