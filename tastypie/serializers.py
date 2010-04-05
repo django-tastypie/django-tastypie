@@ -46,7 +46,7 @@ class Serializer(object):
         except KeyError:
             return 'application/json'
     
-    def serialize(self, representation, format='application/json', **options):
+    def serialize(self, representation, format='application/json', options={}):
         desired_format = None
         
         for short_format, long_format in self.content_types.items():

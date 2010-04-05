@@ -129,7 +129,13 @@ class Resource(object):
         return self.default_format
 
     def serialize(self, request, data, format):
-        return self.serializer.serialize(data, format)
+        options = {}
+
+        if 'text/javascript' in format:
+            # JSONP, default callback name to "callback"
+            options['callback'] = request.GET.get('callback', 'callback')
+
+        return self.serializer.serialize(data, format, options)
     
     def build_content_type(self, format, encoding='utf-8'):
         if 'charset' in format:
