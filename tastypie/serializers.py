@@ -16,9 +16,10 @@ except ImportError:
 
 
 class Serializer(object):
-    formats = ['json', 'xml', 'yaml', 'html']
+    formats = ['json', 'jsonp', 'xml', 'yaml', 'html']
     content_types = {
         'json': 'application/json',
+        'jsonp': 'text/javascript',
         'xml': 'application/xml',
         'yaml': 'text/yaml',
         'html': 'text/html',
@@ -45,7 +46,7 @@ class Serializer(object):
         except KeyError:
             return 'application/json'
     
-    def serialize(self, representation, format='application/json'):
+    def serialize(self, representation, format='application/json', **options):
         desired_format = None
         
         for short_format, long_format in self.content_types.items():
@@ -57,7 +58,7 @@ class Serializer(object):
         if desired_format is None:
             raise UnsupportedFormat("The format indicated '%s' had no available serialization method. Please check your ``formats`` and ``content_types`` on your Serializer." % format)
         
-        serialized = getattr(self, "to_%s" % desired_format)(representation)
+        serialized = getattr(self, "to_%s" % desired_format)(representation, options)
         return serialized
     
     def deserialize(self, content, format='application/json'):
@@ -75,13 +76,16 @@ class Serializer(object):
         deserialized = getattr(self, "from_%s" % desired_format)(content)
         return deserialized
     
-    def to_json(self, data):
+    def to_json(self, data, options={}):
         return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True)
+
+    def to_jsonp(self, data, options={}):
+        return '%s(%s)' % (options['callback'], self.to_json(data, options))
     
     def from_json(self, content):
         return simplejson.loads(content)
     
-    def to_xml(self, data):
+    def to_xml(self, data, options={}):
         if lxml is None:
             raise ImproperlyConfigured("Usage of the XML aspects requires lxml.")
         
@@ -93,7 +97,7 @@ class Serializer(object):
         
         # FIXME: This is incomplete and will likely be painful.
     
-    def to_yaml(self, data):
+    def to_yaml(self, data, options={}):
         if yaml is None:
             raise ImproperlyConfigured("Usage of the YAML aspects requires yaml.")
         
@@ -105,7 +109,7 @@ class Serializer(object):
         
         return yaml.load(content)
     
-    def to_html(self, data):
+    def to_html(self, data, options={}):
         pass
     
     def from_html(self, content):

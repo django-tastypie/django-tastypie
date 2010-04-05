@@ -113,6 +113,10 @@ class Resource(object):
         if request.GET.get('format'):
             if request.GET['format'] in self.serializer.formats:
                 return self.serializer.get_mime_for_format(request.GET['format'])
+
+        # If callback parameter is present, use JSONP.
+        if request.GET.has_key('callback'):
+            return self.serializer.get_mime_for_format('jsonp')
         
         # Try to fallback on the Accepts header.
         if request.META.get('HTTP_ACCEPT'):
@@ -123,6 +127,9 @@ class Resource(object):
         
         # No valid 'Accept' header/formats. Sane default.
         return self.default_format
+
+    def serialize(self, request, data, format):
+        return self.serializer.serialize(data, format)
     
     def build_content_type(self, format, encoding='utf-8'):
         if 'charset' in format:
@@ -197,7 +204,7 @@ class Resource(object):
             object_list['results'].append(result.to_dict())
         
         desired_format = self.determine_format(request)
-        serialized = self.serializer.serialize(object_list, format=desired_format)
+        serialized = self.serialize(request, object_list, desired_format)
         return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
     
     def get_detail(self, request, obj_id):
@@ -212,7 +219,7 @@ class Resource(object):
             return HttpGone()
         
         desired_format = self.determine_format(request)
-        serialized = self.serializer.serialize(representation.to_dict(), format=desired_format)
+        serialized = self.serialize(request, representation.to_dict(), desired_format)
         return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
     
     def put_list(self, request):

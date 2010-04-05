@@ -108,6 +108,9 @@ class ResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         self.assertEqual(resource.determine_format(request), 'application/json')
         
+        request.GET = {'format': 'jsonp'}
+        self.assertEqual(resource.determine_format(request), 'text/javascript')
+        
         request.GET = {'format': 'xml'}
         self.assertEqual(resource.determine_format(request), 'application/xml')
         
@@ -120,6 +123,9 @@ class ResourceTestCase(TestCase):
         # Test the ``Accept`` header.
         request.META = {'HTTP_ACCEPT': 'application/json'}
         self.assertEqual(resource.determine_format(request), 'application/json')
+        
+        request.META = {'HTTP_ACCEPT': 'text/javascript'}
+        self.assertEqual(resource.determine_format(request), 'text/javascript')
         
         request.META = {'HTTP_ACCEPT': 'application/xml'}
         self.assertEqual(resource.determine_format(request), 'application/xml')
