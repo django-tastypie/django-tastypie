@@ -3,7 +3,7 @@
         "fields": {
             "username": "johndoe",
             "email": "john@doe.com",
-            "password": "abc123"
+            "password": "this_is_not_a_valid_password_string"
         },
         "model": "auth.user",
         "pk": 1
