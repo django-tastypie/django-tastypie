@@ -4,9 +4,10 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import Paginator, InvalidPage
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from tastypie.authentication import Authentication
-from tastypie.exceptions import NotFound
-from tastypie.http import HttpCreated, HttpAccepted, HttpSeeOther, HttpNotModified, HttpConflict, HttpGone, HttpMethodNotAllowed, HttpNotImplemented, HttpUnauthorized
+from tastypie.exceptions import NotFound, BadRequest
+from tastypie.http import HttpCreated, HttpAccepted, HttpSeeOther, HttpNotModified, HttpConflict, HttpGone, HttpMethodNotAllowed, HttpNotImplemented, HttpUnauthorized, HttpBadRequest
 from tastypie.serializers import Serializer
+from tastypie.utils import is_valid_jsonp_callback_value
 
 
 class Resource(object):
@@ -132,8 +133,11 @@ class Resource(object):
         options = {}
 
         if 'text/javascript' in format:
-            # JSONP, default callback name to "callback"
-            options['callback'] = request.GET.get('callback', 'callback')
+            # get JSONP callback name. default to "callback"
+            callback = request.GET.get('callback', 'callback')
+            if not is_valid_jsonp_callback_value(callback):
+                raise BadRequest('JSONP callback name is invalid.')
+            options['callback'] = callback
 
         return self.serializer.serialize(data, format, options)
     
@@ -210,7 +214,10 @@ class Resource(object):
             object_list['results'].append(result.to_dict())
         
         desired_format = self.determine_format(request)
-        serialized = self.serialize(request, object_list, desired_format)
+        try:
+            serialized = self.serialize(request, object_list, desired_format)
+        except BadRequest, e:
+            return HttpBadRequest(e.args[0])
         return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
     
     def get_detail(self, request, obj_id):
@@ -225,7 +232,10 @@ class Resource(object):
             return HttpGone()
         
         desired_format = self.determine_format(request)
-        serialized = self.serialize(request, representation.to_dict(), desired_format)
+        try:
+            serialized = self.serialize(request, representation.to_dict(), desired_format)
+        except BadRequest, e:
+            return HttpBadRequest(e.args[0])
         return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
     
     def put_list(self, request):

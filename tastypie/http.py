@@ -25,6 +25,10 @@ class HttpNotModified(HttpResponse):
     status_code = 304
 
 
+class HttpBadRequest(HttpResponse):
+    status_code = 400
+
+
 class HttpUnauthorized(HttpResponse):
     status_code = 401
 
@@ -43,3 +47,4 @@ class HttpGone(HttpResponse):
 
 class HttpNotImplemented(HttpResponse):
     status_code = 501
+

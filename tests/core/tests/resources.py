@@ -264,6 +264,24 @@ class ResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30 20:05:00", "is_active": true, "slug": "first-post", "title": "First Post!", "updated": "2010-03-30 20:05:00"}')
 
+    def test_jsonp_validation(self):
+        resource = NoteResource()
+
+        # invalid JSONP callback should return Http400
+        request = HttpRequest()
+        request.GET = {'format': 'jsonp', 'callback': '()'}
+        request.method = 'GET'
+        resp = resource.dispatch_detail(request, obj_id=1)
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.content, 'JSONP callback name is invalid.')
+
+        # valid JSONP callback should work
+        request = HttpRequest()
+        request.GET = {'format': 'jsonp', 'callback': 'myCallback'}
+        request.method = 'GET'
+        resp = resource.dispatch_detail(request, obj_id=1)
+        self.assertEqual(resp.status_code, 200)
+
 
 class BasicAuthResourceTestCase(TestCase):
     fixtures = ['note_testdata.json']
