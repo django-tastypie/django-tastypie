@@ -20,6 +20,13 @@ def api_field_from_django_field(f, default=CharField):
         result = FloatField
     elif f.get_internal_type() in ('IntegerField', 'PositiveIntegerField', 'PositiveSmallIntegerField', 'SmallIntegerField'):
         result = IntegerField
+    # TODO: Enable these via introspection. The reason they're not enabled
+    #       by default is the very different ``__init__`` they have over
+    #       the other fields.
+    # elif f.get_internal_type() == 'ForeignKey':
+    #     result = ForeignKey
+    # elif f.get_internal_type() == 'ManyToManyField':
+    #     result = ManyToManyField
     
     return result
 

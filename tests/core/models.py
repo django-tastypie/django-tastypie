@@ -21,3 +21,13 @@ class Note(models.Model):
     
     def what_time_is_it(self):
         return datetime.datetime(2010, 4, 1, 0, 48)
+
+
+class Subject(models.Model):
+    notes = models.ManyToManyField(Note, related_name='subjects')
+    name = models.CharField(max_length=255)
+    url = models.URLField(verify_exists=False)
+    created = models.DateTimeField(default=datetime.datetime.now)
+    
+    def __unicode__(self):
+        return self.name
