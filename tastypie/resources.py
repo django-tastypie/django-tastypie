@@ -140,6 +140,9 @@ class Resource(object):
             options['callback'] = callback
 
         return self.serializer.serialize(data, format, options)
+
+    def deserialize(self, request, data, format='application/json'):
+        return self.serializer.deserialize(request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
     
     def build_content_type(self, format, encoding='utf-8'):
         if 'charset' in format:
@@ -253,7 +256,8 @@ class Resource(object):
         If a new resource is created, return ``HttpCreated`` (201 Created).
         If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
         """
-        deserialized = self.serializer.deserialize(request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+
         kwargs = {}
         
         for key, value in deserialized.items():
@@ -274,7 +278,7 @@ class Resource(object):
         """
         # TODO: What to do if the resource already exists at that id? Quietly
         #       update or complain loudly?
-        deserialized = self.serializer.deserialize(request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         kwargs = {}
         
         for key, value in deserialized.items():
