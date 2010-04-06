@@ -142,7 +142,7 @@ class Resource(object):
         return self.serializer.serialize(data, format, options)
 
     def deserialize(self, request, data, format='application/json'):
-        return self.serializer.deserialize(request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        return self.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', 'application/json'))
     
     def build_content_type(self, format, encoding='utf-8'):
         if 'charset' in format:
