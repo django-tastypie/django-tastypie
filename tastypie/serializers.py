@@ -76,16 +76,19 @@ class Serializer(object):
         deserialized = getattr(self, "from_%s" % desired_format)(content)
         return deserialized
     
-    def to_json(self, data, options={}):
+    def to_json(self, data, options=None):
+        options = options or {}
         return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True)
 
-    def to_jsonp(self, data, options={}):
+    def to_jsonp(self, data, options=None):
+        options = options or {}
         return '%s(%s)' % (options['callback'], self.to_json(data, options))
     
     def from_json(self, content):
         return simplejson.loads(content)
     
-    def to_xml(self, data, options={}):
+    def to_xml(self, data, options=None):
+        options = options or {}
         if lxml is None:
             raise ImproperlyConfigured("Usage of the XML aspects requires lxml.")
         
@@ -97,7 +100,8 @@ class Serializer(object):
         
         # FIXME: This is incomplete and will likely be painful.
     
-    def to_yaml(self, data, options={}):
+    def to_yaml(self, data, options=None):
+        options = options or {}
         if yaml is None:
             raise ImproperlyConfigured("Usage of the YAML aspects requires yaml.")
         
@@ -109,9 +113,9 @@ class Serializer(object):
         
         return yaml.load(content)
     
-    def to_html(self, data, options={}):
+    def to_html(self, data, options=None):
+        options = options or {}
         pass
     
     def from_html(self, content):
         pass
-    

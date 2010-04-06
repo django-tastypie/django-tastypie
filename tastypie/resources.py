@@ -129,8 +129,8 @@ class Resource(object):
         # No valid 'Accept' header/formats. Sane default.
         return self.default_format
 
-    def serialize(self, request, data, format):
-        options = {}
+    def serialize(self, request, data, format, options=None):
+        options = options or {}
 
         if 'text/javascript' in format:
             # get JSONP callback name. default to "callback"
