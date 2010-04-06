@@ -4,9 +4,10 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import Paginator, InvalidPage
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from tastypie.authentication import Authentication
-from tastypie.exceptions import NotFound
-from tastypie.http import HttpCreated, HttpAccepted, HttpSeeOther, HttpNotModified, HttpConflict, HttpGone, HttpMethodNotAllowed, HttpNotImplemented, HttpUnauthorized
+from tastypie.exceptions import NotFound, BadRequest
+from tastypie.http import HttpCreated, HttpAccepted, HttpSeeOther, HttpNotModified, HttpConflict, HttpGone, HttpMethodNotAllowed, HttpNotImplemented, HttpUnauthorized, HttpBadRequest
 from tastypie.serializers import Serializer
+from tastypie.utils import is_valid_jsonp_callback_value
 
 
 class Resource(object):
@@ -113,6 +114,10 @@ class Resource(object):
         if request.GET.get('format'):
             if request.GET['format'] in self.serializer.formats:
                 return self.serializer.get_mime_for_format(request.GET['format'])
+
+        # If callback parameter is present, use JSONP.
+        if request.GET.has_key('callback'):
+            return self.serializer.get_mime_for_format('jsonp')
         
         # Try to fallback on the Accepts header.
         if request.META.get('HTTP_ACCEPT'):
@@ -123,6 +128,21 @@ class Resource(object):
         
         # No valid 'Accept' header/formats. Sane default.
         return self.default_format
+
+    def serialize(self, request, data, format, options=None):
+        options = options or {}
+
+        if 'text/javascript' in format:
+            # get JSONP callback name. default to "callback"
+            callback = request.GET.get('callback', 'callback')
+            if not is_valid_jsonp_callback_value(callback):
+                raise BadRequest('JSONP callback name is invalid.')
+            options['callback'] = callback
+
+        return self.serializer.serialize(data, format, options)
+
+    def deserialize(self, request, data, format='application/json'):
+        return self.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', 'application/json'))
     
     def build_content_type(self, format, encoding='utf-8'):
         if 'charset' in format:
@@ -197,7 +217,10 @@ class Resource(object):
             object_list['results'].append(result.to_dict())
         
         desired_format = self.determine_format(request)
-        serialized = self.serializer.serialize(object_list, format=desired_format)
+        try:
+            serialized = self.serialize(request, object_list, desired_format)
+        except BadRequest, e:
+            return HttpBadRequest(e.args[0])
         return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
     
     def get_detail(self, request, obj_id):
@@ -212,7 +235,10 @@ class Resource(object):
             return HttpGone()
         
         desired_format = self.determine_format(request)
-        serialized = self.serializer.serialize(representation.to_dict(), format=desired_format)
+        try:
+            serialized = self.serialize(request, representation.to_dict(), desired_format)
+        except BadRequest, e:
+            return HttpBadRequest(e.args[0])
         return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
     
     def put_list(self, request):
@@ -230,7 +256,8 @@ class Resource(object):
         If a new resource is created, return ``HttpCreated`` (201 Created).
         If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
         """
-        deserialized = self.serializer.deserialize(request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+
         kwargs = {}
         
         for key, value in deserialized.items():
@@ -251,7 +278,7 @@ class Resource(object):
         """
         # TODO: What to do if the resource already exists at that id? Quietly
         #       update or complain loudly?
-        deserialized = self.serializer.deserialize(request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         kwargs = {}
         
         for key, value in deserialized.items():

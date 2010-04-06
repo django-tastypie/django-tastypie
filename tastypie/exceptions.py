@@ -14,5 +14,9 @@ class UnsupportedFormat(TastyPieError):
     pass
 
 
+class BadRequest(TastyPieError):
+    pass
+
+
 class BlueberryFillingFound(TastyPieError):
     pass

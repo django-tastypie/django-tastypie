@@ -1,0 +1,1 @@
+from tastypie.utils.validate_jsonp import is_valid_jsonp_callback_value

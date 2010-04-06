@@ -7,13 +7,13 @@ from tastypie.serializers import Serializer
 class SerializerTestCase(TestCase):
     def test_init(self):
         serializer_1 = Serializer()
-        self.assertEqual(serializer_1.formats, ['json', 'xml', 'yaml', 'html'])
-        self.assertEqual(serializer_1.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'html': 'text/html'})
-        self.assertEqual(serializer_1.supported_formats, ['application/json', 'application/xml', 'text/yaml', 'text/html'])
+        self.assertEqual(serializer_1.formats, ['json', 'jsonp', 'xml', 'yaml', 'html'])
+        self.assertEqual(serializer_1.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html'})
+        self.assertEqual(serializer_1.supported_formats, ['application/json', 'text/javascript', 'application/xml', 'text/yaml', 'text/html'])
         
         serializer_2 = Serializer(formats=['json', 'xml'])
         self.assertEqual(serializer_2.formats, ['json', 'xml'])
-        self.assertEqual(serializer_2.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'html': 'text/html'})
+        self.assertEqual(serializer_2.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html'})
         self.assertEqual(serializer_2.supported_formats, ['application/json', 'application/xml'])
         
         serializer_3 = Serializer(formats=['json', 'xml'], content_types={'json': 'text/json', 'xml': 'application/xml'})
@@ -42,3 +42,14 @@ class SerializerTestCase(TestCase):
         self.assertEqual(sample_1['age'], 27)
         # FIXME: Not roundtripping appropriately.
         self.assertEqual(sample_1['date_joined'], u'2010-03-27')
+
+    def test_to_jsonp(self):
+        serializer = Serializer()
+
+        sample_1 = {
+            'name': 'Daniel',
+            'age': 27,
+            'date_joined': datetime.date(2010, 3, 27),
+        }
+        options = {'callback': 'myCallback'}
+        self.assertEqual(serializer.to_jsonp(sample_1, options), 'myCallback({"age": 27, "date_joined": "2010-03-27", "name": "Daniel"})')
