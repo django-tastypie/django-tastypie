@@ -1,6 +1,6 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.copycompat import deepcopy
-from tastypie.fields import ApiField
+from tastypie.fields import ApiField, RelatedField
 
 
 class DeclarativeMetaclass(type):
@@ -115,6 +115,11 @@ class Representation(object):
         """
         # Dehydrate each field.
         for field_name, field_object in self.fields.items():
+            # A touch leaky but it makes URI resolution work.
+            if isinstance(field_object, RelatedField):
+                field_object.api_name = self.api_name
+                field_object.resource_name = self.resource_name
+                
             field_object.value = field_object.dehydrate(obj)
         
         # Run through optional overrides.

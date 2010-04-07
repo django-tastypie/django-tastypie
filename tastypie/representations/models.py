@@ -1,7 +1,8 @@
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.core.urlresolvers import reverse, resolve, NoReverseMatch, Resolver404
 from django.utils.copycompat import deepcopy
-from tastypie.exceptions import NotFound
+from tastypie import _get_canonical_resource_name
+from tastypie.exceptions import NotFound, URLReverseError
 from tastypie.fields import *
 from tastypie.representations.simple import Representation
 
@@ -188,6 +189,11 @@ class ModelRepresentation(Representation):
         }
         
         if self.api_name is not None:
+            try:
+                kwargs['resource_name'] =  _get_canonical_resource_name(self.api_name, self)
+            except URLReverseError:
+                pass
+            
             kwargs['api_name'] = self.api_name
         
         return reverse("api_dispatch_detail", kwargs=kwargs)

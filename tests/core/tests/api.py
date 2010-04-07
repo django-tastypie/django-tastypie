@@ -1,8 +1,9 @@
 from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.test import TestCase
+import tastypie
 from tastypie.api import Api
-from tastypie.exceptions import NotRegistered
+from tastypie.exceptions import NotRegistered, URLReverseError
 from tastypie.resources import Resource
 from tastypie.representations.models import ModelRepresentation
 from core.models import Note
@@ -47,40 +48,108 @@ class ApiTestCase(TestCase):
         self.assertEqual(len(api._registry), 2)
         self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
         
-        self.assertEqual(len(api._canonicals), 0)
-        api.register(UserResource(), canonical=True)
+        self.assertEqual(len(api._canonicals), 2)
+        api.register(UserResource(), canonical=False)
         self.assertEqual(len(api._registry), 2)
         self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
-        self.assertEqual(len(api._canonicals), 1)
+        self.assertEqual(len(api._canonicals), 2)
+    
+    def test_global_registry(self):
+        tastypie.available_apis = {}
+        api = Api()
+        self.assertEqual(len(api._registry), 0)
+        self.assertEqual(len(tastypie.available_apis), 0)
+        
+        api.register(NoteResource())
+        self.assertEqual(len(api._registry), 1)
+        self.assertEqual(sorted(api._registry.keys()), ['notes'])
+        self.assertEqual(len(tastypie.available_apis), 1)
+        self.assertEqual(tastypie.available_apis['v1']['class'], api)
+        self.assertEqual(tastypie.available_apis['v1']['resources'], ['notes'])
+        self.assertEqual(tastypie.available_apis['v1']['representations'], {'NoteRepresentation': 'notes'})
+        
+        api.register(UserResource())
+        self.assertEqual(len(api._registry), 2)
+        self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
+        self.assertEqual(len(tastypie.available_apis), 1)
+        self.assertEqual(tastypie.available_apis['v1']['class'], api)
+        self.assertEqual(tastypie.available_apis['v1']['resources'], ['notes', 'users'])
+        self.assertEqual(tastypie.available_apis['v1']['representations'], {'UserRepresentation': 'users', 'NoteRepresentation': 'notes'})
+        
+        api.register(UserResource())
+        self.assertEqual(len(api._registry), 2)
+        self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
+        self.assertEqual(len(tastypie.available_apis), 1)
+        self.assertEqual(tastypie.available_apis['v1']['class'], api)
+        self.assertEqual(tastypie.available_apis['v1']['resources'], ['notes', 'users'])
+        self.assertEqual(tastypie.available_apis['v1']['representations'], {'UserRepresentation': 'users', 'NoteRepresentation': 'notes'})
+        
+        self.assertEqual(len(api._canonicals), 2)
+        api.register(UserResource(), canonical=False)
+        self.assertEqual(len(api._registry), 2)
+        self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
+        self.assertEqual(len(api._canonicals), 2)
+        self.assertEqual(len(tastypie.available_apis), 1)
+        self.assertEqual(tastypie.available_apis['v1']['class'], api)
+        self.assertEqual(tastypie.available_apis['v1']['resources'], ['notes', 'users'])
+        self.assertEqual(tastypie.available_apis['v1']['representations'], {'UserRepresentation': 'users', 'NoteRepresentation': 'notes'})
     
     def test_unregister(self):
+        tastypie.available_apis = {}
         api = Api()
         api.register(NoteResource())
-        api.register(UserResource(), canonical=True)
+        api.register(UserResource(), canonical=False)
         self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
+        self.assertEqual(len(tastypie.available_apis), 1)
+        self.assertEqual(tastypie.available_apis['v1']['class'], api)
+        self.assertEqual(tastypie.available_apis['v1']['resources'], ['notes', 'users'])
+        self.assertEqual(tastypie.available_apis['v1']['representations'], {'NoteRepresentation': 'notes'})
         
         self.assertEqual(len(api._canonicals), 1)
         api.unregister('users')
         self.assertEqual(len(api._registry), 1)
         self.assertEqual(sorted(api._registry.keys()), ['notes'])
-        self.assertEqual(len(api._canonicals), 0)
+        self.assertEqual(len(api._canonicals), 1)
+        self.assertEqual(tastypie.available_apis['v1']['class'], api)
+        self.assertEqual(tastypie.available_apis['v1']['resources'], ['notes'])
+        self.assertEqual(tastypie.available_apis['v1']['representations'], {'NoteRepresentation': 'notes'})
         
         api.unregister('notes')
         self.assertEqual(len(api._registry), 0)
         self.assertEqual(sorted(api._registry.keys()), [])
+        self.assertEqual(tastypie.available_apis['v1']['class'], api)
+        self.assertEqual(tastypie.available_apis['v1']['resources'], [])
+        self.assertEqual(tastypie.available_apis['v1']['representations'], {})
         
         api.unregister('users')
         self.assertEqual(len(api._registry), 0)
         self.assertEqual(sorted(api._registry.keys()), [])
+        self.assertEqual(tastypie.available_apis['v1']['class'], api)
+        self.assertEqual(tastypie.available_apis['v1']['resources'], [])
+        self.assertEqual(tastypie.available_apis['v1']['representations'], {})
     
     def test_canonical_resource_for(self):
+        tastypie.available_apis = {}
         api = Api()
-        api.register(NoteResource())
-        api.register(UserResource(), canonical=True)
-        self.assertEqual(len(api._canonicals), 1)
+        note_resource = NoteResource()
+        user_resource = UserResource()
+        api.register(note_resource)
+        api.register(user_resource)
+        self.assertEqual(len(api._canonicals), 2)
         
-        self.assertRaises(NotRegistered, api.canonical_resource_for, 'notes')
-        self.assertEqual(isinstance(api.canonical_resource_for('users'), UserResource), True)
+        self.assertEqual(isinstance(api.canonical_resource_for('notes'), NoteResource), True)
+        
+        api_2 = Api()
+        self.assertRaises(URLReverseError, tastypie._get_canonical_resource_name, api_2, NoteRepresentation)
+        self.assertEqual(tastypie._get_canonical_resource_name(api.api_name, NoteRepresentation), 'notes')
+        self.assertEqual(tastypie._get_canonical_resource_name(api.api_name, NoteRepresentation()), 'notes')
+        self.assertEqual(tastypie._get_canonical_resource_name(api.api_name, note_resource.detail_representation), 'notes')
+        self.assertEqual(tastypie._get_canonical_resource_name(api.api_name, UserRepresentation), 'users')
+        self.assertEqual(tastypie._get_canonical_resource_name(api.api_name, UserRepresentation()), 'users')
+        self.assertEqual(tastypie._get_canonical_resource_name(api.api_name, user_resource.detail_representation), 'users')
+        
+        api.unregister(user_resource.resource_name)
+        self.assertRaises(NotRegistered, api.canonical_resource_for, 'users')
     
     def test_urls(self):
         api = Api()

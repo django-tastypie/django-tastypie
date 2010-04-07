@@ -2,7 +2,8 @@ from django.conf.urls.defaults import *
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
-from tastypie.exceptions import TastyPieError, NotRegistered
+from tastypie import _add_resource, _remove_resource
+from tastypie.exceptions import NotRegistered
 from tastypie.serializers import Serializer
 
 
@@ -19,7 +20,7 @@ class Api(object):
         self._registry = {}
         self._canonicals = {}
     
-    def register(self, resource, canonical=False):
+    def register(self, resource, canonical=True):
         resource_name = getattr(resource, 'resource_name', None)
         
         if resource_name is None:
@@ -27,11 +28,17 @@ class Api(object):
         
         self._registry[resource_name] = resource
         
+        # TODO: Silent replacement. Not sure if that's good or bad. Seems
+        #       like it should at least emit a warning...
         if canonical is True:
             self._canonicals[resource_name] = resource
+        
+        # Register it globally so we can build URIs.
+        _add_resource(self, resource, canonical)
     
     def unregister(self, resource_name):
         if resource_name in self._registry:
+            _remove_resource(self, self._registry[resource_name])
             del(self._registry[resource_name])
         
         if resource_name in self._canonicals:

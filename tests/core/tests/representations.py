@@ -4,7 +4,7 @@ from django.test import TestCase
 from tastypie import fields
 from tastypie.representations.simple import Representation
 from tastypie.representations.models import ModelRepresentation
-from core.models import Note
+from core.models import Note, Subject
 
 
 class TestObject(object):
@@ -172,7 +172,7 @@ class NoteRepresentation(ModelRepresentation):
         queryset = Note.objects.filter(is_active=True)
 
 
-class CustomNoteRepresentation(ModelRepresentation): 
+class CustomNoteRepresentation(ModelRepresentation):
     author = fields.CharField(attribute='author__username')
     constant = fields.IntegerField(default=20)
     
@@ -181,8 +181,42 @@ class CustomNoteRepresentation(ModelRepresentation):
         fields = ['title', 'content', 'created', 'is_active']
 
 
+class UserRepresentation(ModelRepresentation):
+    class Meta:
+        queryset = User.objects.all()
+
+
+class SubjectRepresentation(ModelRepresentation):
+    class Meta:
+        queryset = Subject.objects.all()
+
+
+class RelatedNoteRepresentation(ModelRepresentation):
+    author = fields.ForeignKey(UserRepresentation, 'author')
+    subjects = fields.ManyToManyField(SubjectRepresentation, 'subjects')
+    
+    class Meta:
+        queryset = Note.objects.all()
+        fields = ['title', 'content', 'created', 'is_active']
+
+
 class ModelRepresentationTestCase(TestCase):
     fixtures = ['note_testdata.json']
+    urls = 'core.tests.field_urls'
+    
+    def setUp(self):
+        super(ModelRepresentationTestCase, self).setUp()
+        self.note_1 = Note.objects.get(pk=1)
+        self.subject_1 = Subject.objects.create(
+            name='News',
+            url='/news/'
+        )
+        self.subject_2 = Subject.objects.create(
+            name='Photos',
+            url='/photos/'
+        )
+        self.note_1.subjects.add(self.subject_1)
+        self.note_1.subjects.add(self.subject_2)
     
     def test_configuration(self):
         note = NoteRepresentation()
@@ -195,10 +229,7 @@ class ModelRepresentationTestCase(TestCase):
         self.assertEqual(sorted(custom.fields.keys()), ['author', 'constant', 'content', 'created', 'is_active', 'title'])
     
     def test_get_list(self):
-        # FIXME: Ought to be:
-        # notes = NoteRepresentation.get_list()
-        note = NoteRepresentation()
-        notes = note.get_list()
+        notes = NoteRepresentation.get_list()
         self.assertEqual(len(notes), 4)
         self.assertEqual(notes[0].is_active.value, True)
         self.assertEqual(notes[0].title.value, u'First Post!')
@@ -209,10 +240,7 @@ class ModelRepresentationTestCase(TestCase):
         self.assertEqual(notes[3].is_active.value, True)
         self.assertEqual(notes[3].title.value, u"Granny's Gone")
         
-        # FIXME: Ought to be:
-        # customs = CustomNoteRepresentation.get_list()
-        custom = CustomNoteRepresentation()
-        customs = custom.get_list()
+        customs = CustomNoteRepresentation.get_list()
         self.assertEqual(len(customs), 6)
         self.assertEqual(customs[0].is_active.value, True)
         self.assertEqual(customs[0].title.value, u'First Post!')
@@ -253,6 +281,15 @@ class ModelRepresentationTestCase(TestCase):
         self.assertEqual(custom.author.value, u'johndoe')
         self.assertEqual(custom.title.value, u'First Post!')
         self.assertEqual(custom.constant.value, 20)
+        
+        related = RelatedNoteRepresentation(api_name='v1', resource_name='notes')
+        related.get(pk=1)
+        self.assertEqual(related.content.value, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
+        self.assertEqual(related.created.value, datetime.datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(related.is_active.value, True)
+        self.assertEqual(related.author.value, '/api/v1/users/1/')
+        self.assertEqual(related.title.value, u'First Post!')
+        self.assertEqual(related.subjects.value, ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
     
     def test_create(self):
         self.assertEqual(Note.objects.all().count(), 6)
@@ -269,6 +306,24 @@ class ModelRepresentationTestCase(TestCase):
         self.assertEqual(latest.slug, u'a-new-post')
         self.assertEqual(latest.content, u'Testing, 1, 2, 3!')
         self.assertEqual(latest.is_active, True)
+        
+        note = RelatedNoteRepresentation(data={
+            'title': "Yet another new post!",
+            'slug': "yet-another-new-post",
+            'content': "WHEEEEEE!",
+            'is_active': True,
+            'author': '/api/v1/users/1/',
+            'subjects': ['/api/v1/subjects/2/'],
+        })
+        note.create()
+        self.assertEqual(Note.objects.all().count(), 8)
+        latest = Note.objects.get(slug='yet-another-new-post')
+        self.assertEqual(latest.title, u"Yet another new post!")
+        self.assertEqual(latest.slug, u'yet-another-new-post')
+        self.assertEqual(latest.content, u'WHEEEEEE!')
+        self.assertEqual(latest.is_active, True)
+        self.assertEqual(latest.author.username, True)
+        self.assertEqual(latest.subjects.all().count(), True)
     
     def test_update(self):
         self.assertEqual(Note.objects.all().count(), 6)

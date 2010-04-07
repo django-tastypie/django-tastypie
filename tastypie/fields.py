@@ -194,6 +194,8 @@ class RelatedField(ApiField):
         self.null = null
         self.full_repr = full_repr
         self.value = None
+        self.api_name = None
+        self.resource_name = None
     
     def has_default(self):
         return False
@@ -204,7 +206,8 @@ class RelatedField(ApiField):
     
     def get_related_representation(self, related_instance):
         # TODO: More leakage.
-        related_repr = self.to()
+        # FIXME: Wrong ``resource_name``. Need to lookup in the ``Api``?
+        related_repr = self.to(api_name=self.api_name, resource_name=self.resource_name)
         # Try to be efficient about DB queries.
         related_repr.instance = related_instance
         return related_repr

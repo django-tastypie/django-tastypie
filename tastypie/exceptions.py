@@ -6,6 +6,10 @@ class NotRegistered(TastyPieError):
     pass
 
 
+class URLReverseError(TastyPieError):
+    pass
+
+
 class NotFound(TastyPieError):
     pass
 
