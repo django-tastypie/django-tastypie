@@ -175,3 +175,11 @@ class ModelRepresentation(Representation):
             raise NotFound("A model instance matching the provided arguments could not be found.")
         
         self.instance.delete()
+    
+    # FIXME: We have a URL routing problem, in both reversing and finding a
+    #        representation based on a URI.
+    #        The fix is passing the api.api_name & resource.resource_name to the
+    #        Representation on initialization. This allows using ``reverse`` to
+    #        build the URI and ``resolve`` to rip it apart.
+    def get_resource_uri(self):
+        pass

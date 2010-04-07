@@ -14,31 +14,26 @@ class Api(object):
     Especially useful for navigation, HATEOAS and for providing multiple
     versions of your API.
     """
-    def __init__(self, api_prefix=None):
-        self.api_prefix = api_prefix
+    def __init__(self, api_name="v1"):
+        self.api_name = api_name
         self._registry = {}
         self._canonicals = {}
     
-    def register(self, resource, url_prefix=None, canonical=False):
-        if url_prefix is None:
-            if not getattr(resource, 'url_prefix', None):
-                raise ImproperlyConfigured("No url_prefix found for %r." % resource)
-            
-            url_prefix = getattr(resource, 'url_prefix', None)
+    def register(self, resource, canonical=False):
+        resource_name = getattr(resource, 'resource_name', None)
         
-        # If it's been custom-specified, let it override.
-        if url_prefix != resource.url_prefix:
-            resource.url_prefix = url_prefix
+        if resource_name is None:
+            raise ImproperlyConfigured("Resource %r must define a 'resource_name'." % resource)
         
-        self._registry[url_prefix] = resource
+        self._registry[resource_name] = resource
         
         # FIXME: Not sure about this yet.
         # if canonical is True:
-        #     self._canonicals[url_prefix] = resource
+        #     self._canonicals[resource_name] = resource
     
-    def unregister(self, url_prefix):
-        if url_prefix in self._registry:
-            del(self._registry[url_prefix])
+    def unregister(self, resource_name):
+        if resource_name in self._registry:
+            del(self._registry[resource_name])
             return True
         
         return False
@@ -50,15 +45,13 @@ class Api(object):
     
     @property
     def urls(self):
-        # FIXME: With multiple instances, you'll get ``name`` collisions.
-        #        Need to propogate the ``api_prefix`` down to the individual
-        #        patterns, which might hurt a bit.
         pattern_list = [
-            url(r'^$', self.wrap_view('top_level'), name='api_top_level'),
+            url(r"^(?P<api_name>%s)/$" % self.api_name, self.wrap_view('top_level'), name="api_%s_top_level" % self.api_name),
         ]
         
-        for prefix in sorted(self._registry.keys()):
-            pattern_list.append(("^%s/" % prefix, include(self._registry[prefix].urls)))
+        for name in sorted(self._registry.keys()):
+            self._registry[name].api_name = self.api_name
+            pattern_list.append((r"^(?P<api_name>%s)/" % self.api_name, include(self._registry[name].urls)))
         
         urlpatterns = patterns('',
             *pattern_list
@@ -71,8 +64,11 @@ class Api(object):
         serializer = Serializer()
         available_resources = {}
         
-        for prefix in sorted(self._registry.keys()):
-            available_resources[prefix] = reverse('api_%s_dispatch_list' % self._registry[prefix].url_prefix)
+        for name in sorted(self._registry.keys()):
+            available_resources[name] = reverse("api_dispatch_list", kwargs={
+                'api_name': self.api_name,
+                'resource_name': name,
+            })
         
         serialized = serializer.to_json(available_resources)
         return HttpResponse(content=serialized, content_type='application/json; charset=utf-8')

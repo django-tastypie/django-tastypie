@@ -25,12 +25,12 @@ class UserRepresentation(ModelRepresentation):
 
 class NoteResource(Resource):
     representation = NoteRepresentation
-    url_prefix = 'notes'
+    resource_name = 'notes'
 
 
 class UserResource(Resource):
     representation = UserRepresentation
-    url_prefix = 'users'
+    resource_name = 'users'
 
 
 class ApiTestCase(TestCase):
@@ -51,10 +51,6 @@ class ApiTestCase(TestCase):
         api.register(UserResource())
         self.assertEqual(len(api._registry), 2)
         self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
-        
-        api.register(UserResource(), url_prefix='alt_users')
-        self.assertEqual(len(api._registry), 3)
-        self.assertEqual(sorted(api._registry.keys()), ['alt_users', 'notes', 'users'])
     
     def test_unregister(self):
         api = Api()
@@ -81,8 +77,17 @@ class ApiTestCase(TestCase):
         
         patterns = api.urls
         self.assertEqual(len(patterns), 3)
-        self.assertEqual(sorted([pattern.name for pattern in patterns if hasattr(pattern, 'name')]), ['api_top_level'])
-        self.assertEqual([[pattern.name for pattern in include.url_patterns if hasattr(pattern, 'name')] for include in patterns if hasattr(include, 'reverse_dict')], [['api_notes_dispatch_list', 'api_notes_dispatch_detail'], ['api_users_dispatch_list', 'api_users_dispatch_detail']])
+        self.assertEqual(sorted([pattern.name for pattern in patterns if hasattr(pattern, 'name')]), ['api_v1_top_level'])
+        self.assertEqual([[pattern.name for pattern in include.url_patterns if hasattr(pattern, 'name')] for include in patterns if hasattr(include, 'reverse_dict')], [['api_dispatch_list', 'api_dispatch_detail'], ['api_dispatch_list', 'api_dispatch_detail']])
+        
+        api = Api(api_name='v2')
+        api.register(NoteResource())
+        api.register(UserResource())
+        
+        patterns = api.urls
+        self.assertEqual(len(patterns), 3)
+        self.assertEqual(sorted([pattern.name for pattern in patterns if hasattr(pattern, 'name')]), ['api_v2_top_level'])
+        self.assertEqual([[pattern.name for pattern in include.url_patterns if hasattr(pattern, 'name')] for include in patterns if hasattr(include, 'reverse_dict')], [['api_dispatch_list', 'api_dispatch_detail'], ['api_dispatch_list', 'api_dispatch_detail']])
     
     def test_top_level(self):
         api = Api()
@@ -92,4 +97,4 @@ class ApiTestCase(TestCase):
         
         resp = api.top_level(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"notes": "/api/notes/", "users": "/api/users/"}')
+        self.assertEqual(resp.content, '{"notes": "/api/v1/notes/", "users": "/api/v1/users/"}')

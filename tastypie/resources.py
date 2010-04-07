@@ -29,15 +29,16 @@ class Resource(object):
     allowed_methods = None
     list_allowed_methods = ['get', 'post', 'put', 'delete']
     detail_allowed_methods = ['get', 'post', 'put', 'delete']
-    per_page = 20
-    url_prefix = None
+    limit = 20
+    api_name = 'nonspecific'
+    resource_name = None
     default_format = 'application/json'
     
     def __init__(self, representation=None, list_representation=None,
                  detail_representation=None, serializer=None,
                  authentication=None, allowed_methods=None,
                  list_allowed_methods=None, detail_allowed_methods=None,
-                 per_page=None, url_prefix=None):
+                 limit=None, resource_name=None, api_name=None):
         # Shortcut to specify both via arguments.
         if representation is not None:
             self.representation = representation
@@ -74,24 +75,27 @@ class Resource(object):
         if detail_allowed_methods is not None:
             self.detail_allowed_methods = detail_allowed_methods
         
-        if per_page is not None:
-            self.per_page = per_page
+        if limit is not None:
+            self.limit = limit
         
-        if url_prefix is not None:
-            self.url_prefix = url_prefix
+        if resource_name is not None:
+            self.resource_name = resource_name
+        
+        if api_name is not None:
+            self.api_name = api_name
         
         # Make sure we're good to go.
         if self.list_representation is None:
-            raise ImproperlyConfigured("No general representation or specific list representation provided.")
+            raise ImproperlyConfigured("No general representation or specific list representation provided for %r." % self)
         
         if self.detail_representation is None:
-            raise ImproperlyConfigured("No general representation or specific detail representation provided.")
+            raise ImproperlyConfigured("No general representation or specific detail representation provided for %r." % self)
         
         if self.serializer is None:
-            raise ImproperlyConfigured("No serializer provided.")
+            raise ImproperlyConfigured("No serializer provided for %r." % self)
         
-        if not self.url_prefix:
-            raise ImproperlyConfigured("No url_prefix provided.")
+        if not self.resource_name:
+            raise ImproperlyConfigured("No resource_name provided for %r." % self)
     
     def wrap_view(self, view):
         def wrapper(request, *args, **kwargs):
@@ -101,8 +105,8 @@ class Resource(object):
     @property
     def urls(self):
         urlpatterns = patterns('',
-            url(r'^$', self.wrap_view('dispatch_list'), name='api_%s_dispatch_list' % self.url_prefix),
-            url(r'^(?P<obj_id>\d+)/$', self.wrap_view('dispatch_detail'), name='api_%s_dispatch_detail' % self.url_prefix),
+            url(r"^(?P<resource_name>%s)/$" % self.resource_name, self.wrap_view('dispatch_list'), name="api_dispatch_list"),
+            url(r"^(?P<resource_name>%s)/(?P<obj_id>\d+)/$" % self.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
         )
         return urlpatterns
     
@@ -213,7 +217,7 @@ class Resource(object):
         }
         
         # FIXME: Need to solve pagination.
-        for result in self.representation.get_list()[:self.per_page]:
+        for result in self.representation.get_list()[:self.limit]:
             object_list['results'].append(result.to_dict())
         
         desired_format = self.determine_format(request)

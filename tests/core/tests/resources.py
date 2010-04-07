@@ -33,7 +33,7 @@ class CustomSerializer(Serializer):
 
 class NoteResource(Resource):
     representation = NoteRepresentation
-    url_prefix = 'notes'
+    resource_name = 'notes'
 
 
 class ResourceTestCase(TestCase):
@@ -46,15 +46,15 @@ class ResourceTestCase(TestCase):
         # No detail representation.
         self.assertRaises(ImproperlyConfigured, Resource, list_representation=NoteResource)
         
-        # No url_prefix.
+        # No resource_name.
         self.assertRaises(ImproperlyConfigured, Resource, representation=NoteResource)
         
         # Very minimal & stock.
         resource_1 = NoteResource()
         self.assertEqual(issubclass(resource_1.list_representation, NoteRepresentation), True)
         self.assertEqual(issubclass(resource_1.detail_representation, NoteRepresentation), True)
-        self.assertEqual(resource_1.url_prefix, 'notes')
-        self.assertEqual(resource_1.per_page, 20)
+        self.assertEqual(resource_1.resource_name, 'notes')
+        self.assertEqual(resource_1.limit, 20)
         self.assertEqual(resource_1.list_allowed_methods, ['get', 'post', 'put', 'delete'])
         self.assertEqual(resource_1.detail_allowed_methods, ['get', 'post', 'put', 'delete'])
         self.assertEqual(isinstance(resource_1.serializer, Serializer), True)
@@ -62,13 +62,13 @@ class ResourceTestCase(TestCase):
         # Lightly custom.
         resource_2 = NoteResource(
             representation=NoteRepresentation,
-            url_prefix='noteish',
+            resource_name='noteish',
             allowed_methods=['get'],
         )
         self.assertEqual(issubclass(resource_2.list_representation, NoteRepresentation), True)
         self.assertEqual(issubclass(resource_2.detail_representation, NoteRepresentation), True)
-        self.assertEqual(resource_2.url_prefix, 'noteish')
-        self.assertEqual(resource_2.per_page, 20)
+        self.assertEqual(resource_2.resource_name, 'noteish')
+        self.assertEqual(resource_2.limit, 20)
         self.assertEqual(resource_2.list_allowed_methods, ['get'])
         self.assertEqual(resource_2.detail_allowed_methods, ['get'])
         self.assertEqual(isinstance(resource_2.serializer, Serializer), True)
@@ -77,25 +77,48 @@ class ResourceTestCase(TestCase):
         resource_3 = NoteResource(
             list_representation=NoteRepresentation,
             detail_representation=DetailedNoteRepresentation,
-            per_page=50,
-            url_prefix='notey',
+            limit=50,
+            resource_name='notey',
             serializer=CustomSerializer(),
             list_allowed_methods=['get'],
             detail_allowed_methods=['get', 'post', 'put']
         )
         self.assertEqual(issubclass(resource_3.list_representation, NoteRepresentation), True)
         self.assertEqual(issubclass(resource_3.detail_representation, DetailedNoteRepresentation), True)
-        self.assertEqual(resource_3.url_prefix, 'notey')
-        self.assertEqual(resource_3.per_page, 50)
+        self.assertEqual(resource_3.resource_name, 'notey')
+        self.assertEqual(resource_3.limit, 50)
         self.assertEqual(resource_3.list_allowed_methods, ['get'])
         self.assertEqual(resource_3.detail_allowed_methods, ['get', 'post', 'put'])
         self.assertEqual(isinstance(resource_3.serializer, CustomSerializer), True)
     
     def test_urls(self):
+        # The common case, where the ``Api`` specifies the name.
+        resource = NoteResource(api_name='v1')
+        patterns = resource.urls
+        self.assertEqual(len(patterns), 2)
+        self.assertEqual([pattern.name for pattern in patterns], ['api_dispatch_list', 'api_dispatch_detail'])
+        self.assertEqual(reverse('api_dispatch_list', kwargs={
+            'api_name': 'v1',
+            'resource_name': 'notes',
+        }), '/api/v1/notes/')
+        self.assertEqual(reverse('api_dispatch_detail', kwargs={
+            'api_name': 'v1',
+            'resource_name': 'notes',
+            'obj_id': 1,
+        }), '/api/v1/notes/1/')
+        
+        # Start over.
         resource = NoteResource()
         patterns = resource.urls
         self.assertEqual(len(patterns), 2)
-        self.assertEqual([pattern.name for pattern in patterns], ['api_notes_dispatch_list', 'api_notes_dispatch_detail'])
+        self.assertEqual([pattern.name for pattern in patterns], ['api_dispatch_list', 'api_dispatch_detail'])
+        self.assertEqual(reverse('api_dispatch_list', urlconf='core.tests.manual_urls', kwargs={
+            'resource_name': 'notes',
+        }), '/notes/')
+        self.assertEqual(reverse('api_dispatch_detail', urlconf='core.tests.manual_urls', kwargs={
+            'resource_name': 'notes',
+            'obj_id': 1,
+        }), '/notes/1/')
     
     def test_determine_format(self):
         resource = NoteResource()
