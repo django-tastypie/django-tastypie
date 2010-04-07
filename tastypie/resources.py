@@ -212,13 +212,30 @@ class Resource(object):
         """
         Should return a HttpResponse (200 OK).
         """
+        try:
+            offset = int(request.GET.get('offset', 0))
+            
+            if offset < 0:
+                return HttpBadRequest("The starting offset must be >= 0.")
+        except ValueError:
+            return HttpBadRequest("The starting offset must be an integer.")
+        
+        try:
+            limit = int(request.GET.get('limit', self.limit))
+            
+            if limit < 0:
+                return HttpBadRequest("The limit must be >= 0.")
+        except ValueError:
+            return HttpBadRequest("The limit must be an integer.")
+        
         object_list = {
             'results': [],
+            'offset': offset,
+            'limit': limit,
         }
         
-        # FIXME: Need to solve pagination.
         # FIXME: Need to pass api_name & resource_name on to the instances.
-        for result in self.representation.get_list()[:self.limit]:
+        for result in self.representation.get_list()[offset:offset + limit]:
             object_list['results'].append(result.to_dict())
         
         desired_format = self.determine_format(request)
