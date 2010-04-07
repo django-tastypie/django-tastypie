@@ -1,5 +1,6 @@
 import re
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.urlresolvers import reverse, resolve
 from django.utils import datetime_safe
 from tastypie.exceptions import ApiFieldError
 
@@ -220,24 +221,18 @@ class RelatedField(ApiField):
     def build_related_representation(self, value):
         if isinstance(value, basestring):
             # We got a URI. Load the object and assign it.
-            # FIXME: This is a hack as it assume PK in the URI. Need to sort
-            #        out something better than this.
-            bits = value.split('/')[1:-1]
             self.fk_repr = self.to()
             
-            if not bits[-1]:
-                raise ApiFieldError("Could not find the provided object via resource URI '%s'." % value)
-            
             try:
-                self.fk_repr.get(pk=int(bits[-1]))
+                self.fk_repr.get_via_uri(value)
                 return self.fk_repr
-            except (ValueError, ObjectDoesNotExist):
+            except ObjectDoesNotExist:
                 raise ApiFieldError("Could not find the provided object via resource URI '%s'." % value)
         elif hasattr(value, 'items'):
             # Try to hydrate the data provided.
             # TODO: This assumes a dictionary-like structure. I think that's
             #       fine but we may wish to re-evaluate that.
-            self.fk_repr = self.to(**value)
+            self.fk_repr = self.to(data=value)
             return self.fk_repr
         else:
             raise ApiFieldError("The '%s' field has was given data that was not a URI and not a dictionary-alike: %s." % (self.instance_name, value))

@@ -10,17 +10,11 @@ from core.models import Note
 class NoteRepresentation(ModelRepresentation):
     class Meta:
         queryset = Note.objects.filter(is_active=True)
-    
-    def get_resource_uri(self):
-        return '/api/v1/notes/%s/' % self.instance.id
 
 
 class UserRepresentation(ModelRepresentation):
     class Meta:
         queryset = User.objects.all()
-    
-    def get_resource_uri(self):
-        return '/api/v1/users/%s/' % self.instance.id
 
 
 class NoteResource(Resource):

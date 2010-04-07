@@ -125,11 +125,11 @@ class RepresentationTestCase(TestCase):
         self.assertEqual(basic.view_count.value, None)
         self.assertEqual(basic.date_joined.value, None)
         
-        basic = BasicRepresentation(
-            name='Daniel',
-            view_count=6,
-            date_joined=datetime.datetime(2010, 2, 15, 12, 0, 0)
-        )
+        basic = BasicRepresentation(data={
+            'name': 'Daniel',
+            'view_count': 6,
+            'date_joined': datetime.datetime(2010, 2, 15, 12, 0, 0)
+        })
         
         # Sanity check.
         self.assertEqual(basic.name.value, 'Daniel')
@@ -256,12 +256,12 @@ class ModelRepresentationTestCase(TestCase):
     
     def test_create(self):
         self.assertEqual(Note.objects.all().count(), 6)
-        note = NoteRepresentation(
-            title="A new post!",
-            slug="a-new-post",
-            content="Testing, 1, 2, 3!",
-            is_active=True
-        )
+        note = NoteRepresentation(data={
+            'title': "A new post!",
+            'slug': "a-new-post",
+            'content': "Testing, 1, 2, 3!",
+            'is_active': True
+        })
         note.create()
         self.assertEqual(Note.objects.all().count(), 7)
         latest = Note.objects.get(slug='a-new-post')

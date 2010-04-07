@@ -42,16 +42,18 @@ class Representation(object):
     """
     __metaclass__ = DeclarativeMetaclass
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self, api_name=None, resource_name=None, data={}):
         self.object_class = getattr(self._meta, 'object_class', None)
         self.instance = None
+        self.api_name = api_name or ''
+        self.resource_name = resource_name or ''
         
         # Use a copy of the field instances, not the ones actually stored on
         # the class.
         self.fields = deepcopy(self.base_fields)
         
         # Now that we have fields, populate fields via kwargs if found.
-        for key, value in kwargs.items():
+        for key, value in data.items():
             if key in self.fields:
                 self.fields[key].value = value
         
@@ -64,28 +66,47 @@ class Representation(object):
     
     @classmethod
     def get_list(cls, **kwargs):
-        raise NotImplementedError
+        raise NotImplementedError()
     
     def get(self, **kwargs):
-        raise NotImplementedError
+        raise NotImplementedError()
     
     def create(self):
-        raise NotImplementedError
+        raise NotImplementedError()
     
     def update(self, **kwargs):
-        raise NotImplementedError
+        raise NotImplementedError()
     
     def delete(self):
-        raise NotImplementedError
+        raise NotImplementedError()
     
     def get_resource_uri(self):
         """
         This needs to be implemented at the user level.
         
-        A ``return reverse("api_%s_detail" % object_name, kwargs={'obj_id': object.id})``
-        should be all that would be needed.
+        A ``return reverse("api_dispatch_detail", kwargs={'resource_name':
+        self.resource_name, 'obj_id': object.id})`` should be all that would
+        be needed.
         """
-        raise NotImplementedError
+        raise NotImplementedError()
+    
+    def get_via_uri(self, uri):
+        """
+        This needs to be implemented at the user level.
+        
+        This pulls apart the salient bits of the URI and populates the
+        representation via a ``get`` with the ``obj_id``.
+        
+        Example::
+        
+            def get_via_uri(self, uri):
+                view, args, kwargs = resolve(uri)
+                return self.get(obj_id=kwargs['obj_id'])
+        
+        If you need custom behavior based on other portions of the URI,
+        simply override this method.
+        """
+        
     
     def full_dehydrate(self, obj):
         """

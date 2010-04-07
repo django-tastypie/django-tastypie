@@ -154,7 +154,7 @@ class Resource(object):
         
         return "%s; charset=%s" % (format, encoding)
     
-    def dispatch_list(self, request,):
+    def dispatch_list(self, request, **kwargs):
         request_method = request.method.lower()
         
         if not request_method in self.list_allowed_methods:
@@ -217,6 +217,7 @@ class Resource(object):
         }
         
         # FIXME: Need to solve pagination.
+        # FIXME: Need to pass api_name & resource_name on to the instances.
         for result in self.representation.get_list()[:self.limit]:
             object_list['results'].append(result.to_dict())
         
@@ -231,7 +232,7 @@ class Resource(object):
         """
         Should return a HttpResponse (200 OK).
         """
-        representation = self.representation()
+        representation = self.representation(api_name=self.api_name, resource_name=self.resource_name)
         
         try:
             representation.get(pk=obj_id)
@@ -261,13 +262,12 @@ class Resource(object):
         If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
         """
         deserialized = self.deserialize(request, request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
-
-        kwargs = {}
+        data = {}
         
         for key, value in deserialized.items():
-            kwargs[str(key)] = value
+            data[str(key)] = value
         
-        representation = self.representation(**kwargs)
+        representation = self.representation(api_name=self.api_name, resource_name=self.resource_name, data=data)
         
         try:
             representation.update(pk=obj_id)
@@ -283,12 +283,12 @@ class Resource(object):
         # TODO: What to do if the resource already exists at that id? Quietly
         #       update or complain loudly?
         deserialized = self.deserialize(request, request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
-        kwargs = {}
+        data = {}
         
         for key, value in deserialized.items():
-            kwargs[str(key)] = value
+            data[str(key)] = value
         
-        representation = self.representation(**kwargs)
+        representation = self.representation(api_name=self.api_name, resource_name=self.resource_name, data=data)
         representation.create()
         return HttpCreated(location=representation.get_resource_uri())
     
@@ -307,7 +307,7 @@ class Resource(object):
         """
         # TODO: What range ought to be deleted? This seems particularly
         #       dangerous.
-        representation = self.representation()
+        representation = self.representation(api_name=self.api_name, resource_name=self.resource_name)
         # FIXME: This is ModelRepresentation specific and needs abstraction.
         representation.queryset.all().delete()
         return HttpAccepted()
@@ -316,7 +316,7 @@ class Resource(object):
         """
         If the resource is deleted, return ``HttpAccepted`` (204 No Content).
         """
-        representation = self.representation()
+        representation = self.representation(api_name=self.api_name, resource_name=self.resource_name)
         
         try:
             representation.delete(pk=obj_id)

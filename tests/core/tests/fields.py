@@ -1,7 +1,7 @@
 import datetime
 from django.contrib.auth.models import User
 from django.test import TestCase
-from tastypie.exceptions import ApiFieldError
+from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.fields import *
 from tastypie.representations.models import ModelRepresentation
 from core.models import Note, Subject
@@ -270,7 +270,7 @@ class ForeignKeyTestCase(TestCase):
         # Wrong resource URI.
         field_3 = ForeignKey(UserRepresentation, 'author')
         field_3.value = '/api/v1/users/abc/'
-        self.assertRaises(ApiFieldError, field_3.hydrate)
+        self.assertRaises(NotFound, field_3.hydrate)
         
         # A real, live attribute!
         field_4 = ForeignKey(UserRepresentation, 'author')
@@ -300,6 +300,7 @@ class SubjectRepresentation(ModelRepresentation):
 
 class ManyToManyFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
+    urls = 'core.tests.field_urls'
     
     def setUp(self):
         self.note_1 = Note.objects.get(pk=1)
@@ -409,7 +410,7 @@ class ManyToManyFieldTestCase(TestCase):
         # Wrong resource URI.
         field_4 = ManyToManyField(SubjectRepresentation, 'subjects')
         field_4.value = ['/api/v1/subjects/abc/']
-        self.assertRaises(ApiFieldError, field_4.hydrate)
+        self.assertRaises(NotFound, field_4.hydrate)
         
         # A real, live attribute!
         field_5 = ManyToManyField(SubjectRepresentation, 'subjects')

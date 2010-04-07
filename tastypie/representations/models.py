@@ -1,4 +1,5 @@
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
+from django.core.urlresolvers import reverse, resolve, NoReverseMatch, Resolver404
 from django.utils.copycompat import deepcopy
 from tastypie.exceptions import NotFound
 from tastypie.fields import *
@@ -48,8 +49,10 @@ class ModelRepresentation(Representation):
             def hydrate_author(self):
                 self.instance.author = User.objects.get_or_create(username=self.author.value)
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, api_name=None, resource_name=None, data={}):
         self.queryset = getattr(self._meta, 'queryset', None)
+        self.api_name = api_name or ''
+        self.resource_name = resource_name or ''
         
         # Introspect the model, adding/removing fields as needed.
         # Adds/Excludes should happen only if the fields are not already
@@ -68,7 +71,7 @@ class ModelRepresentation(Representation):
         self.fields.update(self.get_fields(fields, excludes))
         
         # Now that we have fields, populate fields via kwargs if found.
-        for key, value in kwargs.items():
+        for key, value in data.items():
             if key in self.fields:
                 self.fields[key].value = value
         
@@ -176,10 +179,21 @@ class ModelRepresentation(Representation):
         
         self.instance.delete()
     
-    # FIXME: We have a URL routing problem, in both reversing and finding a
-    #        representation based on a URI.
-    #        The fix is passing the api.api_name & resource.resource_name to the
-    #        Representation on initialization. This allows using ``reverse`` to
-    #        build the URI and ``resolve`` to rip it apart.
     def get_resource_uri(self):
-        pass
+        kwargs = {
+            'resource_name': self.resource_name,
+            'obj_id': self.instance.id
+        }
+        
+        if self.api_name is not None:
+            kwargs['api_name'] = self.api_name
+        
+        return reverse("api_dispatch_detail", kwargs=kwargs)
+    
+    def get_via_uri(self, uri):
+        try:
+            view, args, kwargs = resolve(uri)
+        except Resolver404:
+            raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
+        
+        return self.get(id=kwargs['obj_id'])
