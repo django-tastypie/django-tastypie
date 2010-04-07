@@ -106,7 +106,7 @@ class Representation(object):
         If you need custom behavior based on other portions of the URI,
         simply override this method.
         """
-        
+        raise NotImplementedError()
     
     def full_dehydrate(self, obj):
         """
