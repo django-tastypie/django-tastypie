@@ -38,7 +38,7 @@ class SerializerTestCase(TestCase):
     def test_to_xml(self):
         serializer = Serializer()
         sample_1 = self.get_sample1()
-        self.assertEqual(serializer.to_xml(sample_1), '<response><age>27</age><name>Daniel</name><date_joined>2010-03-27</date_joined></response>')
+        self.assertEqual(serializer.to_xml(sample_1), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><age>27</age><name>Daniel</name><date_joined>2010-03-27</date_joined></response>')
 
     def test_from_xml(self):
         #TODO: write/test xml deserialization
@@ -73,12 +73,12 @@ class RepresentationSerializationTestCase(TestCase):
     def test_to_xml_multirepr(self):
         serializer = Serializer()
         representations = NoteRepresentation.get_list()
-        self.assertEqual(serializer.to_xml(representations), "<objects><object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><created>Tue, 30 Mar 2010 20:05:00 -0500</created><title>First Post!</title><is_active>True</is_active><slug>first-post</slug></object><object><content>The dog ate my cat today. He looks seriously uncomfortable.</content><updated>Wed, 31 Mar 2010 20:05:00 -0500</updated><created>Wed, 31 Mar 2010 20:05:00 -0500</created><title>Another Post</title><is_active>True</is_active><slug>another-post</slug></object><object><content>My neighborhood's been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.</content><updated>Thu, 1 Apr 2010 20:05:00 -0500</updated><created>Thu, 1 Apr 2010 20:05:00 -0500</created><title>Recent Volcanic Activity.</title><is_active>True</is_active><slug>recent-volcanic-activity</slug></object><object><content>Man, the second eruption came on fast. Granny didn't have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!</content><updated>Fri, 2 Apr 2010 10:05:00 -0500</updated><created>Fri, 2 Apr 2010 10:05:00 -0500</created><title>Granny's Gone</title><is_active>True</is_active><slug>grannys-gone</slug></object></objects>")
+        self.assertEqual(serializer.to_xml(representations), "<?xml version='1.0' encoding='utf-8'?>\n<objects><object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><created>Tue, 30 Mar 2010 20:05:00 -0500</created><title>First Post!</title><is_active>True</is_active><slug>first-post</slug></object><object><content>The dog ate my cat today. He looks seriously uncomfortable.</content><updated>Wed, 31 Mar 2010 20:05:00 -0500</updated><created>Wed, 31 Mar 2010 20:05:00 -0500</created><title>Another Post</title><is_active>True</is_active><slug>another-post</slug></object><object><content>My neighborhood's been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.</content><updated>Thu, 1 Apr 2010 20:05:00 -0500</updated><created>Thu, 1 Apr 2010 20:05:00 -0500</created><title>Recent Volcanic Activity.</title><is_active>True</is_active><slug>recent-volcanic-activity</slug></object><object><content>Man, the second eruption came on fast. Granny didn't have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!</content><updated>Fri, 2 Apr 2010 10:05:00 -0500</updated><created>Fri, 2 Apr 2010 10:05:00 -0500</created><title>Granny's Gone</title><is_active>True</is_active><slug>grannys-gone</slug></object></objects>")
 
     def test_to_xml_single(self):
         serializer = Serializer()
         representation = NoteRepresentation.get_list()[0]
-        self.assertEqual(serializer.to_xml(representation), '<object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><created>Tue, 30 Mar 2010 20:05:00 -0500</created><title>First Post!</title><is_active>True</is_active><slug>first-post</slug></object>')
+        self.assertEqual(serializer.to_xml(representation), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><created>Tue, 30 Mar 2010 20:05:00 -0500</created><title>First Post!</title><is_active>True</is_active><slug>first-post</slug></object>')
 
     def test_to_xml_nested(self):
         serializer = Serializer()
@@ -89,7 +89,7 @@ class RepresentationSerializationTestCase(TestCase):
                 'object': representation,
             }
         }
-        self.assertEqual(serializer.to_xml(data), '<response><stuff><foo>bar</foo><object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><created>Tue, 30 Mar 2010 20:05:00 -0500</created><title>First Post!</title><is_active>True</is_active><slug>first-post</slug></object></stuff></response>')
+        self.assertEqual(serializer.to_xml(data), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><stuff><foo>bar</foo><object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><created>Tue, 30 Mar 2010 20:05:00 -0500</created><title>First Post!</title><is_active>True</is_active><slug>first-post</slug></object></stuff></response>')
 
     def test_to_json_multirepr(self):
         serializer = Serializer()
