@@ -7,10 +7,14 @@ from tastypie.exceptions import UnsupportedFormat
 from tastypie.representations.simple import Representation
 from tastypie.utils import format_datetime
 from tastypie.fields import ApiField
+from StringIO import StringIO
 import datetime
 try:
     import lxml
+    from lxml.etree import parse as parse_xml
+    from lxml.etree import Element
     from django.core.serializers import xml_serializer
+    from xml.etree.ElementTree import tostring
 except ImportError:
     lxml = None
 try:
@@ -104,6 +108,34 @@ class Serializer(object):
         else:
             return force_unicode(data)
     
+    def to_etree(self, data, options=None, name=None, depth=0):
+        if type(data) in (list, tuple):
+            element = Element(name or 'objects')
+            for item in data:
+                element.append(self.to_etree(item, options, name='object', depth=depth+1))
+        elif isinstance(data, dict):
+            if depth == 0:
+                element = Element(name or 'response')
+            else:
+                element = Element(name or 'object')
+            for (key, value) in data.iteritems():
+                element.append(self.to_etree(value, options, name=key, depth=depth+1))
+        elif isinstance(data, Representation):
+            element = Element('object')
+            for field_name, field_object in data.fields.items():
+                element.append(self.to_etree(field_object, options, name=field_name, depth=depth+1))
+        elif isinstance(data, ApiField):
+            element = Element(name)
+            element.text = force_unicode(self.to_simple(data, options))
+        else:
+            element = Element(name or 'value')
+            element.text = force_unicode(data)
+        return element
+
+    def from_etree(self, data):
+        # TODO: write XML etree deserialization
+        pass
+    
     def to_json(self, data, options=None):
         options = options or {}
         data = self.to_simple(data, options)
@@ -120,14 +152,12 @@ class Serializer(object):
         options = options or {}
         if lxml is None:
             raise ImproperlyConfigured("Usage of the XML aspects requires lxml.")
-        
-        # FIXME: This is incomplete and will likely be painful.
+        return tostring(self.to_etree(data, options))
     
     def from_xml(self, content):
         if lxml is None:
             raise ImproperlyConfigured("Usage of the XML aspects requires lxml.")
-        
-        # FIXME: This is incomplete and will likely be painful.
+        return self.from_etree(parse_xml(StringIO(content)).get_root())
     
     def to_yaml(self, data, options=None):
         options = options or {}
