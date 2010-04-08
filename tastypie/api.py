@@ -2,7 +2,7 @@ from django.conf.urls.defaults import *
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
-from tastypie.exceptions import TastyPieError
+from tastypie.exceptions import TastyPieError, NotRegistered
 from tastypie.serializers import Serializer
 
 
@@ -27,16 +27,21 @@ class Api(object):
         
         self._registry[resource_name] = resource
         
-        # FIXME: Not sure about this yet.
-        # if canonical is True:
-        #     self._canonicals[resource_name] = resource
+        if canonical is True:
+            self._canonicals[resource_name] = resource
     
     def unregister(self, resource_name):
         if resource_name in self._registry:
             del(self._registry[resource_name])
-            return True
         
-        return False
+        if resource_name in self._canonicals:
+            del(self._canonicals[resource_name])
+    
+    def canonical_resource_for(self, resource_name):
+        if resource_name in self._canonicals:
+            return self._canonicals[resource_name]
+        
+        raise NotRegistered("No resource was registered as canonical for '%s'." % resource_name)
     
     def wrap_view(self, view):
         def wrapper(request, *args, **kwargs):

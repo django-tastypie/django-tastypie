@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.test import TestCase
 from tastypie.api import Api
+from tastypie.exceptions import NotRegistered
 from tastypie.resources import Resource
 from tastypie.representations.models import ModelRepresentation
 from core.models import Note
@@ -45,16 +46,24 @@ class ApiTestCase(TestCase):
         api.register(UserResource())
         self.assertEqual(len(api._registry), 2)
         self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
+        
+        self.assertEqual(len(api._canonicals), 0)
+        api.register(UserResource(), canonical=True)
+        self.assertEqual(len(api._registry), 2)
+        self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
+        self.assertEqual(len(api._canonicals), 1)
     
     def test_unregister(self):
         api = Api()
         api.register(NoteResource())
-        api.register(UserResource())
+        api.register(UserResource(), canonical=True)
         self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
         
+        self.assertEqual(len(api._canonicals), 1)
         api.unregister('users')
         self.assertEqual(len(api._registry), 1)
         self.assertEqual(sorted(api._registry.keys()), ['notes'])
+        self.assertEqual(len(api._canonicals), 0)
         
         api.unregister('notes')
         self.assertEqual(len(api._registry), 0)
@@ -63,6 +72,15 @@ class ApiTestCase(TestCase):
         api.unregister('users')
         self.assertEqual(len(api._registry), 0)
         self.assertEqual(sorted(api._registry.keys()), [])
+    
+    def test_canonical_resource_for(self):
+        api = Api()
+        api.register(NoteResource())
+        api.register(UserResource(), canonical=True)
+        self.assertEqual(len(api._canonicals), 1)
+        
+        self.assertRaises(NotRegistered, api.canonical_resource_for, 'notes')
+        self.assertEqual(isinstance(api.canonical_resource_for('users'), UserResource), True)
     
     def test_urls(self):
         api = Api()

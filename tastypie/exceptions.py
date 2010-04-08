@@ -2,6 +2,10 @@ class TastyPieError(Exception):
     pass
 
 
+class NotRegistered(TastyPieError):
+    pass
+
+
 class NotFound(TastyPieError):
     pass
 

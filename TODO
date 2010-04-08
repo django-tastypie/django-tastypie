@@ -12,7 +12,9 @@ Short Term
 - Implement throttling.
 - Documentation.
 - Filtering
-- Pagination
+- A ``ResourceURI`` field.
+- A ``readonly`` attribute on fields.
+
 
 Long Term
 ---------
