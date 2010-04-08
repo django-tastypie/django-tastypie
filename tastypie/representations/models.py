@@ -134,12 +134,14 @@ class ModelRepresentation(Representation):
         return final_fields
     
     @classmethod
-    def get_list(cls, **kwargs):
+    def get_list(cls, options=None, **kwargs):
+        options = options or {}
         model_list = cls._meta.queryset.filter(**kwargs)
         representations = []
         
         for model in model_list:
-            represent = cls()
+            represent = cls(**options)
+            represent.instance = model
             represent.full_dehydrate(model)
             representations.append(represent)
         
