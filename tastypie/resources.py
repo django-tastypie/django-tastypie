@@ -227,16 +227,17 @@ class Resource(object):
                 return HttpBadRequest("The limit must be >= 0.")
         except ValueError:
             return HttpBadRequest("The limit must be an integer.")
-        
+
+        objects = self.representation.get_list(options={
+            'api_name': self.api_name,
+            'resource_name': self.resource_name,
+        })[offset:offset + limit]
+
         object_list = {
-            'results': [],
+            'objects': objects,
             'offset': offset,
             'limit': limit,
         }
-        
-        # FIXME: Need to pass api_name & resource_name on to the instances.
-        for result in self.representation.get_list()[offset:offset + limit]:
-            object_list['results'].append(result.to_dict())
         
         desired_format = self.determine_format(request)
         try:

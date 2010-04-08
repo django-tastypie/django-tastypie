@@ -2,7 +2,12 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.serializers import json
 from django.template import loader, Context
 from django.utils import simplejson
+from django.utils.encoding import force_unicode
 from tastypie.exceptions import UnsupportedFormat
+from tastypie.representations.simple import Representation
+from tastypie.utils import format_datetime
+from tastypie.fields import ApiField
+import datetime
 try:
     import lxml
     from django.core.serializers import xml_serializer
@@ -75,18 +80,42 @@ class Serializer(object):
         
         deserialized = getattr(self, "from_%s" % desired_format)(content)
         return deserialized
+
+    def to_simple(self, data, options):
+        if type(data) in (list, tuple):
+            return [self.to_simple(item, options) for item in data]
+        elif isinstance(data, dict):
+            return dict((key, self.to_simple(val, options)) for (key, val) in data.iteritems())
+        elif isinstance(data, Representation):
+            object = {}
+            for field_name, field_object in data.fields.items():
+                object[field_name] = self.to_simple(field_object, options)
+            return object
+        elif isinstance(data, ApiField):
+            return self.to_simple(data.value, options)
+        elif isinstance(data, datetime.datetime):
+            return format_datetime(data)
+        elif isinstance(data, bool):
+            return data
+        elif type(data) in (long, int):
+            return data
+        elif data is None:
+            return None
+        else:
+            return force_unicode(data)
     
     def to_json(self, data, options=None):
         options = options or {}
+        data = self.to_simple(data, options)
         return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True)
+
+    def from_json(self, content):
+        return simplejson.loads(content)
 
     def to_jsonp(self, data, options=None):
         options = options or {}
         return '%s(%s)' % (options['callback'], self.to_json(data, options))
-    
-    def from_json(self, content):
-        return simplejson.loads(content)
-    
+
     def to_xml(self, data, options=None):
         options = options or {}
         if lxml is None:
