@@ -4,15 +4,14 @@ TODO
 Short Term
 ----------
 
-- XML serialization/deserialization is not implemented and needs to be a
-  high priority.
+- XML deserialization.
 - Authentication
     - ``OauthAuthentication``
 - Implement caching.
 - Implement throttling.
 - Documentation.
-- Filtering
-- Pagination
+- Filtering.
+- Pagination needs enhancement.
 
 Long Term
 ---------
