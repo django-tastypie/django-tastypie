@@ -12,9 +12,7 @@ import datetime
 try:
     import lxml
     from lxml.etree import parse as parse_xml
-    from lxml.etree import Element
-    from django.core.serializers import xml_serializer
-    from xml.etree.ElementTree import tostring
+    from lxml.etree import Element, tostring
 except ImportError:
     lxml = None
 try:
@@ -152,7 +150,7 @@ class Serializer(object):
         options = options or {}
         if lxml is None:
             raise ImproperlyConfigured("Usage of the XML aspects requires lxml.")
-        return tostring(self.to_etree(data, options))
+        return tostring(self.to_etree(data, options), xml_declaration=True, encoding='utf-8')
     
     def from_xml(self, content):
         if lxml is None:
