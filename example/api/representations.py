@@ -1,3 +1,4 @@
+from tastypie.fields import CharField
 from tastypie.representations.models import ModelRepresentation
 from notes.models import Note
  
