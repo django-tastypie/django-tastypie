@@ -63,7 +63,8 @@ class Api(object):
         )
         return urlpatterns
     
-    def top_level(self, request):
+    def top_level(self, request, api_name=None):
+        # FIXME: api_name is never handled here but is captured in the urlpattern above.
         # FIXME: Hard-coding this sucks but there's logic in ``Resource`` that
         #        covers this behavior. Abstraction is needed.
         serializer = Serializer()
