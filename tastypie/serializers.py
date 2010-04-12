@@ -109,6 +109,30 @@ class Serializer(object):
     def to_etree(self, data, options=None, name=None, depth=0):
         if type(data) in (list, tuple):
             element = Element(name or 'objects')
+            for item in data:
+                element.append(self.to_etree(item, options, name='object', depth=depth+1))
+        elif isinstance(data, dict):
+            if depth == 0:
+                element = Element(name or 'response')
+            else:
+                element = Element(name or 'object')
+            for (key, value) in data.iteritems():
+                element.append(self.to_etree(value, options, name=key, depth=depth+1))
+        elif isinstance(data, Representation):
+            element = Element('object')
+            for field_name, field_object in data.fields.items():
+                element.append(self.to_etree(field_object, options, name=field_name, depth=depth+1))
+        elif isinstance(data, ApiField):
+            element = Element(name)
+            element.text = force_unicode(self.to_simple(data, options))
+        else:
+            element = Element(name or 'value')
+            element.text = force_unicode(data)
+        return element
+
+    def to_etree(self, data, options=None, name=None, depth=0):
+        if type(data) in (list, tuple):
+            element = Element(name or 'objects')
             if name:
                 element = Element(name)
                 element.set('type', 'list')

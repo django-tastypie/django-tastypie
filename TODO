@@ -10,7 +10,7 @@ Short Term
 - Implement caching.
 - Implement throttling.
 - Documentation.
-- Filtering
+- Filtering.
 - Pagination needs enhancement.
 - A ``ResourceURI`` field.
 - A ``readonly`` attribute on fields.
