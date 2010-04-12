@@ -122,12 +122,13 @@ class Serializer(object):
             element = Element('object')
             for field_name, field_object in data.fields.items():
                 element.append(self.to_etree(field_object, options, name=field_name, depth=depth+1))
-        elif isinstance(data, ApiField):
-            element = Element(name)
-            element.text = force_unicode(self.to_simple(data, options))
         else:
             element = Element(name or 'value')
-            element.text = force_unicode(data)
+            simple_data = self.to_simple(data, options)
+            element.text = force_unicode(simple_data)
+            data_type = get_type_string(simple_data)
+            if data_type != 'string':
+                element.set('type', get_type_string(simple_data))
         return element
 
     def from_etree(self, data):
@@ -176,3 +177,20 @@ class Serializer(object):
     
     def from_html(self, content):
         pass
+
+def get_type_string(data):
+    data_type = type(data)
+    if data_type in (int, long):
+        return 'integer'
+    elif data_type == float:
+        return 'float'
+    elif data_type == bool:
+        return 'boolean'
+    elif data_type in (list, tuple):
+        return 'list'
+    elif data_type == dict:
+        return 'hash'
+    elif data is None:
+        return 'null'
+    elif isinstance(data, basestring):
+        return 'string'
