@@ -11,4 +11,4 @@ class NoteRepresentation(ModelRepresentation):
     
     # FIXME: This should probably get significantly more automated.
     def dehydrate_resource_uri(self, obj):
-        return self.get_resource_uri(obj)
+        return self.get_resource_uri()
