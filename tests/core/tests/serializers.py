@@ -35,14 +35,34 @@ class SerializerTestCase(TestCase):
             'date_joined': datetime.date(2010, 3, 27),
         }
 
+    def get_sample2(self):
+        return {
+            'somelist': ['hello', 1, None],
+            'somehash': {'pi': 3.14, 'foo': 'bar'},
+            'somestring': 'hello',
+            'true': True,
+            'false': False,
+        }
+
     def test_to_xml(self):
         serializer = Serializer()
         sample_1 = self.get_sample1()
         self.assertEqual(serializer.to_xml(sample_1), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><age type="integer">27</age><name>Daniel</name><date_joined>2010-03-27</date_joined></response>')
 
+    def test_to_xml2(self):
+        serializer = Serializer()
+        sample_2 = self.get_sample2()
+        self.assertEqual(serializer.to_xml(sample_2), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><somelist type="list"><value>hello</value><value type="integer">1</value><value type="null"/></somelist><somehash type="hash"><pi type="float">3.14</pi><foo>bar</foo></somehash><false type="boolean">False</false><true type="boolean">True</true><somestring>hello</somestring></response>')
+
     def test_from_xml(self):
-        #TODO: write/test xml deserialization
-        pass
+        serializer = Serializer()
+        data = '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><age type="integer">27</age><name>Daniel</name><date_joined>2010-03-27</date_joined><rocksdahouse type="boolean">True</rocksdahouse></request>'
+        self.assertEqual(serializer.from_xml(data), {'rocksdahouse': True, 'age': 27, 'name': 'Daniel', 'date_joined': '2010-03-27'})
+
+    def test_from_xml2(self):
+        serializer = Serializer()
+        data = '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><somelist type="list"><value>hello</value><value type="integer">1</value><value type="null"/></somelist><somehash type="hash"><pi type="float">3.14</pi><foo>bar</foo></somehash><false type="boolean">False</false><true type="boolean">True</true><somestring>hello</somestring></request>'
+        self.assertEqual(serializer.from_xml(data), self.get_sample2())
     
     def test_to_json(self):
         serializer = Serializer()
@@ -89,7 +109,7 @@ class RepresentationSerializationTestCase(TestCase):
                 'object': representation,
             }
         }
-        self.assertEqual(serializer.to_xml(data), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><stuff><foo>bar</foo><object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><created>Tue, 30 Mar 2010 20:05:00 -0500</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug></object></stuff></response>')
+        self.assertEqual(serializer.to_xml(data), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><stuff type="hash"><foo>bar</foo><object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><created>Tue, 30 Mar 2010 20:05:00 -0500</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug></object></stuff></response>')
 
     def test_to_json_multirepr(self):
         serializer = Serializer()

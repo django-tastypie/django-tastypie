@@ -99,7 +99,7 @@ class Serializer(object):
             return format_datetime(data)
         elif isinstance(data, bool):
             return data
-        elif type(data) in (long, int):
+        elif type(data) in (long, int, float):
             return data
         elif data is None:
             return None
@@ -109,13 +109,19 @@ class Serializer(object):
     def to_etree(self, data, options=None, name=None, depth=0):
         if type(data) in (list, tuple):
             element = Element(name or 'objects')
+            if name:
+                element = Element(name)
+                element.set('type', 'list')
+            else:
+                element = Element('objects')
             for item in data:
-                element.append(self.to_etree(item, options, name='object', depth=depth+1))
+                element.append(self.to_etree(item, options, depth=depth+1))
         elif isinstance(data, dict):
             if depth == 0:
                 element = Element(name or 'response')
             else:
                 element = Element(name or 'object')
+                element.set('type', 'hash')
             for (key, value) in data.iteritems():
                 element.append(self.to_etree(value, options, name=key, depth=depth+1))
         elif isinstance(data, Representation):
@@ -125,16 +131,48 @@ class Serializer(object):
         else:
             element = Element(name or 'value')
             simple_data = self.to_simple(data, options)
-            element.text = force_unicode(simple_data)
             data_type = get_type_string(simple_data)
             if data_type != 'string':
                 element.set('type', get_type_string(simple_data))
+            if data_type != 'null':
+                element.text = force_unicode(simple_data)
         return element
 
     def from_etree(self, data):
-        # TODO: write XML etree deserialization
-        pass
-    
+        """
+        Not the smartest deserializer on the planet. At the request level,
+        it first tries to output the deserialized subelement called "object"
+        or "objects" and falls back to deserializing based on hinted types in
+        the XML element attribute "type".
+        """
+        if data.tag == 'request':
+            # if "object" or "objects" exists, return deserialized forms.
+            elements = data.getchildren()
+            element_names = [e.tag for e in elements]
+            for element in elements:
+                if element.tag in ('object', 'objects'):
+                    return self.from_etree(element)
+            return dict((element.tag, self.from_etree(element)) for element in elements)
+        elif data.tag == 'object' or data.get('type') == 'hash':
+            return dict((element.tag, self.from_etree(element)) for element in data.getchildren())
+        elif data.tag == 'objects' or data.get('type') == 'list':
+            return [self.from_etree(element) for element in data.getchildren()]
+        else:
+            type_string = data.get('type')
+            if type_string in ('string', None):
+                return data.text
+            elif type_string == 'integer':
+                return int(data.text)
+            elif type_string == 'float':
+                return float(data.text)
+            elif type_string == 'boolean':
+                if data.text == 'True':
+                    return True
+                else:
+                    return False
+            else:
+                return None
+            
     def to_json(self, data, options=None):
         options = options or {}
         data = self.to_simple(data, options)
@@ -156,7 +194,7 @@ class Serializer(object):
     def from_xml(self, content):
         if lxml is None:
             raise ImproperlyConfigured("Usage of the XML aspects requires lxml.")
-        return self.from_etree(parse_xml(StringIO(content)).get_root())
+        return self.from_etree(parse_xml(StringIO(content)).getroot())
     
     def to_yaml(self, data, options=None):
         options = options or {}
