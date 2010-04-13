@@ -164,23 +164,50 @@ class ModelRepresentation(Representation):
         
         self.full_hydrate()
         self.instance.save()
+        
+        # Now pick up the M2M bits.
+        self.hydrate_m2m()
+        self.save_m2m()
     
     def update(self, **kwargs):
-        try:
-            self.instance = self.queryset.get(**kwargs)
-        except ObjectDoesNotExist:
-            raise NotFound("A model instance matching the provided arguments could not be found.")
+        if self.instance is None:
+            try:
+                self.instance = self.queryset.get(**kwargs)
+            except ObjectDoesNotExist:
+                raise NotFound("A model instance matching the provided arguments could not be found.")
         
         self.full_hydrate()
         self.instance.save()
+        
+        # Now pick up the M2M bits.
+        self.hydrate_m2m()
+        self.save_m2m()
     
     def delete(self, **kwargs):
-        try:
-            self.instance = self.queryset.get(**kwargs)
-        except ObjectDoesNotExist:
-            raise NotFound("A model instance matching the provided arguments could not be found.")
+        if self.instance is None:
+            try:
+                self.instance = self.queryset.get(**kwargs)
+            except ObjectDoesNotExist:
+                raise NotFound("A model instance matching the provided arguments could not be found.")
         
         self.instance.delete()
+    
+    def save_m2m(self):
+        for field_name, field_object in self.fields.items():
+            if not getattr(field_object, 'is_m2m', False):
+                continue
+            
+            if not field_object.attribute:
+                continue
+            
+            # Get the manager.
+            related_mngr = getattr(self.instance, field_object.attribute)
+            
+            if hasattr(related_mngr, 'clear'):
+                # Clear it out, just to be safe.
+                related_mngr.clear()
+            
+            related_mngr.add(*[related_repr.instance for related_repr in field_object.value])
     
     def get_resource_uri(self):
         kwargs = {

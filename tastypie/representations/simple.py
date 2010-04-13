@@ -1,5 +1,6 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.copycompat import deepcopy
+from tastypie.exceptions import HydrationError
 from tastypie.fields import ApiField, RelatedField
 
 
@@ -147,7 +148,12 @@ class Representation(object):
                 value = field_object.hydrate()
                 
                 if value is not None:
-                    setattr(self.instance, field_object.attribute, value)
+                    # We need to avoid populating M2M data here as that will
+                    # cause things to blow up.
+                    if not getattr(field_object, 'is_related', False):
+                        setattr(self.instance, field_object.attribute, value)
+                    elif not getattr(field_object, 'is_m2m', False):
+                        setattr(self.instance, field_object.attribute, value.instance)
         
         for field_name, field_object in self.fields.items():
             method = getattr(self, "hydrate_%s" % field_name, None)
@@ -159,6 +165,33 @@ class Representation(object):
     
     def hydrate(self):
         pass
+    
+    def hydrate_m2m(self):
+        """
+        Populate the ManyToMany data on the instance.
+        """
+        if self.instance is None:
+            raise HydrationError("You must call 'full_hydrate' before attempting to run 'hydrate_m2m' on %r." % self)
+        
+        for field_name, field_object in self.fields.items():
+            if not getattr(field_object, 'is_m2m', False):
+                continue
+            
+            if field_object.attribute:
+                # Note that we only hydrate the data, leaving the instance
+                # unmodified. It's up to the user's code to handle this.
+                # The ``ModelRepresentation`` provides a working baseline
+                # in this regard.
+                field_object.value = field_object.hydrate_m2m()
+        
+        for field_name, field_object in self.fields.items():
+            if not getattr(field_object, 'is_m2m', False):
+                continue
+            
+            method = getattr(self, "hydrate_%s" % field_name, None)
+            
+            if method:
+                method()
     
     def to_dict(self):
         data = {}

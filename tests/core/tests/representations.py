@@ -197,7 +197,7 @@ class RelatedNoteRepresentation(ModelRepresentation):
     
     class Meta:
         queryset = Note.objects.all()
-        fields = ['title', 'content', 'created', 'is_active']
+        fields = ['title', 'slug', 'content', 'created', 'is_active']
 
 
 class ModelRepresentationTestCase(TestCase):
@@ -307,6 +307,7 @@ class ModelRepresentationTestCase(TestCase):
         self.assertEqual(latest.content, u'Testing, 1, 2, 3!')
         self.assertEqual(latest.is_active, True)
         
+        self.assertEqual(Note.objects.all().count(), 7)
         note = RelatedNoteRepresentation(data={
             'title': "Yet another new post!",
             'slug': "yet-another-new-post",
@@ -322,8 +323,9 @@ class ModelRepresentationTestCase(TestCase):
         self.assertEqual(latest.slug, u'yet-another-new-post')
         self.assertEqual(latest.content, u'WHEEEEEE!')
         self.assertEqual(latest.is_active, True)
-        self.assertEqual(latest.author.username, True)
-        self.assertEqual(latest.subjects.all().count(), True)
+        self.assertEqual(latest.author.username, u'johndoe')
+        self.assertEqual(latest.subjects.all().count(), 1)
+        self.assertEqual([sub.id for sub in latest.subjects.all()], [2])
     
     def test_update(self):
         self.assertEqual(Note.objects.all().count(), 6)
@@ -337,6 +339,26 @@ class ModelRepresentationTestCase(TestCase):
         self.assertEqual(numero_uno.slug, u'first-post')
         self.assertEqual(numero_uno.content, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
         self.assertEqual(numero_uno.is_active, True)
+        
+        self.assertEqual(Note.objects.all().count(), 6)
+        note = RelatedNoteRepresentation(api_name='v1', resource_name='notes')
+        note.get(pk=1)
+        note.title.value = "Yet another new post!"
+        note.slug.value = "yet-another-new-post"
+        note.content.value = "WHEEEEEE!"
+        note.is_active.value = True
+        note.author.value = '/api/v1/users/2/'
+        note.subjects.value = ['/api/v1/subjects/2/', '/api/v1/subjects/1/']
+        note.update(pk=1)
+        self.assertEqual(Note.objects.all().count(), 6)
+        latest = Note.objects.get(slug='yet-another-new-post')
+        self.assertEqual(latest.title, u"Yet another new post!")
+        self.assertEqual(latest.slug, u'yet-another-new-post')
+        self.assertEqual(latest.content, u'WHEEEEEE!')
+        self.assertEqual(latest.is_active, True)
+        self.assertEqual(latest.author.username, u'janedoe')
+        self.assertEqual(latest.subjects.all().count(), 2)
+        self.assertEqual([sub.id for sub in latest.subjects.all()], [1, 2])
     
     def test_delete(self):
         self.assertEqual(Note.objects.all().count(), 6)

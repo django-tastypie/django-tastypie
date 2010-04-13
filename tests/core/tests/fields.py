@@ -396,26 +396,26 @@ class ManyToManyFieldTestCase(TestCase):
         
         # With no value or nullable, we should get an ``ApiFieldError``.
         field_1 = ManyToManyField(SubjectRepresentation, 'subjects')
-        self.assertRaises(ApiFieldError, field_1.hydrate)
+        self.assertRaises(ApiFieldError, field_1.hydrate_m2m)
         
         # The nullable case.
         field_2 = ManyToManyField(SubjectRepresentation, 'subjects', null=True)
         field_2.value = None
-        self.assertEqual(field_2.hydrate(), None)
+        self.assertEqual(field_2.hydrate_m2m(), None)
         
         field_3 = ManyToManyField(SubjectRepresentation, 'subjects', null=True)
         field_3.value = []
-        self.assertEqual(field_3.hydrate(), [])
+        self.assertEqual(field_3.hydrate_m2m(), [])
         
         # Wrong resource URI.
         field_4 = ManyToManyField(SubjectRepresentation, 'subjects')
         field_4.value = ['/api/v1/subjects/abc/']
-        self.assertRaises(NotFound, field_4.hydrate)
+        self.assertRaises(NotFound, field_4.hydrate_m2m)
         
         # A real, live attribute!
         field_5 = ManyToManyField(SubjectRepresentation, 'subjects')
         field_5.value = ['/api/v1/subjects/1/']
-        subject_repr_list = field_5.hydrate()
+        subject_repr_list = field_5.hydrate_m2m()
         self.assertEqual(len(subject_repr_list), 1)
         self.assertEqual(subject_repr_list[0].name.value, u'News')
         self.assertEqual(subject_repr_list[0].url.value, u'/news/')
@@ -431,7 +431,7 @@ class ManyToManyFieldTestCase(TestCase):
                 'url': u'/bar/',
             },
         ]
-        subject_repr_list = field_6.hydrate()
+        subject_repr_list = field_6.hydrate_m2m()
         self.assertEqual(len(subject_repr_list), 2)
         self.assertEqual(subject_repr_list[0].name.value, u'Foo')
         self.assertEqual(subject_repr_list[0].url.value, u'/foo/')

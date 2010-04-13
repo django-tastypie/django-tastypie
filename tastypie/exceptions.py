@@ -2,6 +2,10 @@ class TastyPieError(Exception):
     pass
 
 
+class HydrationError(TastyPieError):
+    pass
+
+
 class NotRegistered(TastyPieError):
     pass
 

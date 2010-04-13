@@ -183,6 +183,8 @@ class DateTimeField(ApiField):
 
 
 class RelatedField(ApiField):
+    is_related = True
+    
     # TODO: This is leaky when dealing with non-model representations.
     #       Without a good use case, there's not a good way to solve this
     #       for now.
@@ -206,7 +208,6 @@ class RelatedField(ApiField):
     
     def get_related_representation(self, related_instance):
         # TODO: More leakage.
-        # FIXME: Wrong ``resource_name``. Need to lookup in the ``Api``?
         related_repr = self.to(api_name=self.api_name, resource_name=self.resource_name)
         # Try to be efficient about DB queries.
         related_repr.instance = related_instance
@@ -267,6 +268,8 @@ class ForeignKey(RelatedField):
 
 
 class ManyToManyField(RelatedField):
+    is_m2m = True
+    
     def __init__(self, to, attribute, related_name=None, null=False, full_repr=False):
         super(ManyToManyField, self).__init__(to, attribute, related_name, null=null, full_repr=full_repr)
         self.m2m_reprs = []
@@ -297,6 +300,9 @@ class ManyToManyField(RelatedField):
         return m2m_dehydrated
     
     def hydrate(self):
+        pass
+    
+    def hydrate_m2m(self):
         if self.value is None:
             if self.null:
                 return None
