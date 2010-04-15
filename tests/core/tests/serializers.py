@@ -77,8 +77,31 @@ class SerializerTestCase(TestCase):
         self.assertEqual(len(sample_1), 3)
         self.assertEqual(sample_1['name'], 'Daniel')
         self.assertEqual(sample_1['age'], 27)
-        # FIXME: Not roundtripping appropriately.
         self.assertEqual(sample_1['date_joined'], u'2010-03-27')
+
+    def test_round_trip_xml(self):
+        serializer = Serializer()
+        sample_data = self.get_sample2()
+        serialized = serializer.to_xml(sample_data)
+        # "response" tags need to be changed to "request" to deserialize properly.
+        # A string substitution works here.
+        serialized = serialized.replace('response', 'request')
+        unserialized = serializer.from_xml(serialized)
+        self.assertEqual(sample_data, unserialized)
+
+    def test_round_trip_json(self):
+        serializer = Serializer()
+        sample_data = self.get_sample2()
+        serialized = serializer.to_json(sample_data)
+        unserialized = serializer.from_json(serialized)
+        self.assertEqual(sample_data, unserialized)
+
+    def test_round_trip_yaml(self):
+        serializer = Serializer()
+        sample_data = self.get_sample2()
+        serialized = serializer.to_yaml(sample_data)
+        unserialized = serializer.from_yaml(serialized)
+        self.assertEqual(sample_data, unserialized)
 
     def test_to_jsonp(self):
         serializer = Serializer()
