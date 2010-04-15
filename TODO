@@ -4,7 +4,6 @@ TODO
 Short Term
 ----------
 
-- XML deserialization.
 - Authentication
     - ``OauthAuthentication``
 - Implement caching.
@@ -13,7 +12,8 @@ Short Term
 - Filtering.
 - Pagination needs enhancement.
 - A ``ResourceURI`` field.
-- A ``readonly`` attribute on fields.
+- Schema views.
+- Bulk fetch via a list of URIs.
 
 Long Term
 ---------

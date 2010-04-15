@@ -18,12 +18,13 @@ class ApiFieldTestCase(TestCase):
         self.assertEqual(field_1.null, False)
         self.assertEqual(field_1.value, None)
         
-        field_2 = ApiField(attribute='foo', default=True, null=True)
+        field_2 = ApiField(attribute='foo', default=True, null=True, readonly=True)
         self.assertEqual(field_2.instance_name, None)
         self.assertEqual(field_2.attribute, 'foo')
         self.assertEqual(field_2._default, True)
         self.assertEqual(field_2.null, True)
         self.assertEqual(field_2.value, None)
+        self.assertEqual(field_2.readonly, True)
     
     def test_has_default(self):
         field_1 = ApiField()
@@ -97,10 +98,15 @@ class ApiFieldTestCase(TestCase):
         field_4.value = None
         self.assertEqual(field_4.hydrate(), None)
         
+        # The readonly case.
+        field_5 = ApiField(readonly=True)
+        field_5.value = 'abcdef'
+        self.assertEqual(field_5.hydrate(), None)
+        
         # A real, live attribute!
-        field_5 = ApiField(attribute='title')
-        field_5.value = note.title
-        self.assertEqual(field_5.hydrate(), u'First Post!')
+        field_6 = ApiField(attribute='title')
+        field_6.value = note.title
+        self.assertEqual(field_6.hydrate(), u'First Post!')
 
 
 class CharFieldTestCase(TestCase):

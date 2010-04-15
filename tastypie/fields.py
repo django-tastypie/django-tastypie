@@ -17,12 +17,13 @@ DATETIME_REGEX = re.compile('^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})(T|
 
 class ApiField(object):
     """The base implementation of a field used by the representations."""
-    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False):
+    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, readonly=False):
         # Track what the index thinks this field is called.
         self.instance_name = None
         self.attribute = attribute
         self._default = default
         self.null = null
+        self.readonly = readonly
         self.value = None
     
     def has_default(self):
@@ -84,6 +85,9 @@ class ApiField(object):
         return value
     
     def hydrate(self):
+        if self.readonly:
+            return None
+        
         if self.value is None:
             if self.has_default():
                 if callable(self._default):
