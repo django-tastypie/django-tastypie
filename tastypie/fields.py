@@ -16,6 +16,8 @@ DATETIME_REGEX = re.compile('^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})(T|
 # All the ApiField variants.
 
 class ApiField(object):
+    dehydrated_type = 'string'
+    
     """The base implementation of a field used by the representations."""
     def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, readonly=False):
         # Track what the index thinks this field is called.
@@ -103,6 +105,8 @@ class ApiField(object):
 
 
 class CharField(ApiField):
+    dehydrated_type = 'string'
+    
     def dehydrate(self, obj):
         return self.convert(super(CharField, self).dehydrate(obj))
     
@@ -114,6 +118,8 @@ class CharField(ApiField):
 
 
 class IntegerField(ApiField):
+    dehydrated_type = 'integer'
+    
     def dehydrate(self, obj):
         return self.convert(super(IntegerField, self).dehydrate(obj))
     
@@ -125,6 +131,8 @@ class IntegerField(ApiField):
 
 
 class FloatField(ApiField):
+    dehydrated_type = 'float'
+    
     def dehydrate(self, obj):
         return self.convert(super(FloatField, self).dehydrate(obj))
     
@@ -136,6 +144,8 @@ class FloatField(ApiField):
 
 
 class BooleanField(ApiField):
+    dehydrated_type = 'boolean'
+    
     def dehydrate(self, obj):
         return self.convert(super(BooleanField, self).dehydrate(obj))
     
@@ -147,6 +157,8 @@ class BooleanField(ApiField):
 
 
 class DateField(ApiField):
+    dehydrated_type = 'date'
+    
     def dehydrate(self, obj):
         return self.convert(super(DateField, self).dehydrate(obj))
     
@@ -167,6 +179,8 @@ class DateField(ApiField):
 
 
 class DateTimeField(ApiField):
+    dehydrated_type = 'datetime'
+    
     def dehydrate(self, obj):
         return self.convert(super(DateTimeField, self).dehydrate(obj))
     
@@ -187,6 +201,7 @@ class DateTimeField(ApiField):
 
 
 class RelatedField(ApiField):
+    dehydrated_type = 'related'
     is_related = True
     
     # TODO: This is leaky when dealing with non-model representations.

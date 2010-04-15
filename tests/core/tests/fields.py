@@ -26,6 +26,10 @@ class ApiFieldTestCase(TestCase):
         self.assertEqual(field_2.value, None)
         self.assertEqual(field_2.readonly, True)
     
+    def test_dehydrated_type(self):
+        field_1 = ApiField()
+        self.assertEqual(field_1.dehydrated_type, 'string')
+    
     def test_has_default(self):
         field_1 = ApiField()
         self.assertEqual(field_1.has_default(), False)
@@ -112,6 +116,10 @@ class ApiFieldTestCase(TestCase):
 class CharFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
     
+    def test_dehydrated_type(self):
+        field_1 = CharField()
+        self.assertEqual(field_1.dehydrated_type, 'string')
+    
     def test_dehydrate(self):
         note = Note.objects.get(pk=1)
         
@@ -124,6 +132,10 @@ class CharFieldTestCase(TestCase):
 
 class IntegerFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
+    
+    def test_dehydrated_type(self):
+        field_1 = IntegerField()
+        self.assertEqual(field_1.dehydrated_type, 'integer')
     
     def test_dehydrate(self):
         note = Note.objects.get(pk=1)
@@ -141,6 +153,10 @@ class IntegerFieldTestCase(TestCase):
 class FloatFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
     
+    def test_dehydrated_type(self):
+        field_1 = FloatField()
+        self.assertEqual(field_1.dehydrated_type, 'float')
+    
     def test_dehydrate(self):
         note = Note.objects.get(pk=1)
         
@@ -154,6 +170,10 @@ class FloatFieldTestCase(TestCase):
 class BooleanFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
     
+    def test_dehydrated_type(self):
+        field_1 = BooleanField()
+        self.assertEqual(field_1.dehydrated_type, 'boolean')
+    
     def test_dehydrate(self):
         note = Note.objects.get(pk=1)
         
@@ -166,6 +186,10 @@ class BooleanFieldTestCase(TestCase):
 
 class DateFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
+    
+    def test_dehydrated_type(self):
+        field_1 = DateField()
+        self.assertEqual(field_1.dehydrated_type, 'date')
     
     def test_dehydrate(self):
         note = Note.objects.get(pk=1)
@@ -184,17 +208,21 @@ class DateFieldTestCase(TestCase):
 class DateTimeFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
     
+    def test_dehydrated_type(self):
+        field_1 = DateTimeField()
+        self.assertEqual(field_1.dehydrated_type, 'datetime')
+    
     def test_dehydrate(self):
         note = Note.objects.get(pk=1)
         
-        field_1 = DateField(attribute='created')
+        field_1 = DateTimeField(attribute='created')
         self.assertEqual(field_1.dehydrate(note), datetime.datetime(2010, 3, 30, 20, 5))
         
-        field_2 = DateField(default=datetime.datetime(2010, 4, 1, 1, 7))
+        field_2 = DateTimeField(default=datetime.datetime(2010, 4, 1, 1, 7))
         self.assertEqual(field_2.dehydrate(note), datetime.datetime(2010, 4, 1, 1, 7))
         
         note.created_string = '2010-04-02 01:11:00'
-        field_3 = DateField(attribute='created_string')
+        field_3 = DateTimeField(attribute='created_string')
         self.assertEqual(field_3.dehydrate(note), datetime.datetime(2010, 4, 2, 1, 11))
 
 
@@ -227,6 +255,10 @@ class ForeignKeyTestCase(TestCase):
         self.assertEqual(field_2.null, True)
         self.assertEqual(field_2.full_repr, False)
         self.assertEqual(field_2.value, None)
+    
+    def test_dehydrated_type(self):
+        field_1 = ForeignKey(UserRepresentation, 'author')
+        self.assertEqual(field_1.dehydrated_type, 'related')
     
     def test_has_default(self):
         field_1 = ForeignKey(UserRepresentation, 'author')
@@ -349,6 +381,10 @@ class ManyToManyFieldTestCase(TestCase):
         self.assertEqual(field_2.null, True)
         self.assertEqual(field_2.full_repr, False)
         self.assertEqual(field_2.value, None)
+    
+    def test_dehydrated_type(self):
+        field_1 = ManyToManyField(SubjectRepresentation, 'subjects')
+        self.assertEqual(field_1.dehydrated_type, 'related')
     
     def test_has_default(self):
         field_1 = ManyToManyField(SubjectRepresentation, 'subjects')
