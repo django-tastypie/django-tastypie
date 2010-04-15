@@ -343,7 +343,7 @@ class Resource(object):
         except:
             return HttpGone()
     
-    def get_schema(self, request, resource_name=None):
+    def get_schema(self, request, api_name=None, resource_name=None):
         representation = self.representation(api_name=self.api_name, resource_name=self.resource_name)
         desired_format = self.determine_format(request)
         
