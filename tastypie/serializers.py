@@ -148,7 +148,6 @@ class Serializer(object):
         if data.tag == 'request':
             # if "object" or "objects" exists, return deserialized forms.
             elements = data.getchildren()
-            element_names = [e.tag for e in elements]
             for element in elements:
                 if element.tag in ('object', 'objects'):
                     return self.from_etree(element)
