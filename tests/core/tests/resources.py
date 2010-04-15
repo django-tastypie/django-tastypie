@@ -352,7 +352,7 @@ class ResourceTestCase(TestCase):
         
         resp = resource.get_schema(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"content": "string", "created": "datetime", "is_active": "boolean", "slug": "string", "title": "string", "updated": "datetime"}')
+        self.assertEqual(resp.content, '{"content": {"nullable": false, "readonly": false, "type": "string"}, "created": {"nullable": false, "readonly": false, "type": "datetime"}, "is_active": {"nullable": false, "readonly": false, "type": "boolean"}, "slug": {"nullable": false, "readonly": false, "type": "string"}, "title": {"nullable": false, "readonly": false, "type": "string"}, "updated": {"nullable": false, "readonly": false, "type": "datetime"}}')
 
 
 class BasicAuthResourceTestCase(TestCase):

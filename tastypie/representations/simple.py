@@ -205,7 +205,11 @@ class Representation(object):
         data = {}
         
         for field_name, field_object in self.fields.items():
-            data[field_name] = field_object.dehydrated_type
+            data[field_name] = {
+                'type': field_object.dehydrated_type,
+                'nullable': field_object.null,
+                'readonly': field_object.readonly,
+            }
         
         return data
     

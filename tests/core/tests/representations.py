@@ -168,7 +168,7 @@ class RepresentationTestCase(TestCase):
     
     def test_build_schema(self):
         basic = BasicRepresentation()
-        self.assertEqual(basic.build_schema(), {'view_count': 'integer', 'name': 'string', 'date_joined': 'datetime'})
+        self.assertEqual(basic.build_schema(), {'view_count': {'readonly': False, 'type': 'integer', 'nullable': False}, 'name': {'readonly': False, 'type': 'string', 'nullable': False}, 'date_joined': {'readonly': False, 'type': 'datetime', 'nullable': True}})
 
 
 class NoteRepresentation(ModelRepresentation):
