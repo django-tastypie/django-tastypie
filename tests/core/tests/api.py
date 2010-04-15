@@ -159,7 +159,7 @@ class ApiTestCase(TestCase):
         patterns = api.urls
         self.assertEqual(len(patterns), 3)
         self.assertEqual(sorted([pattern.name for pattern in patterns if hasattr(pattern, 'name')]), ['api_v1_top_level'])
-        self.assertEqual([[pattern.name for pattern in include.url_patterns if hasattr(pattern, 'name')] for include in patterns if hasattr(include, 'reverse_dict')], [['api_dispatch_list', 'api_dispatch_detail'], ['api_dispatch_list', 'api_dispatch_detail']])
+        self.assertEqual([[pattern.name for pattern in include.url_patterns if hasattr(pattern, 'name')] for include in patterns if hasattr(include, 'reverse_dict')], [['api_dispatch_list', 'api_get_schema', 'api_dispatch_detail'], ['api_dispatch_list', 'api_get_schema', 'api_dispatch_detail']])
         
         api = Api(api_name='v2')
         api.register(NoteResource())
@@ -168,7 +168,7 @@ class ApiTestCase(TestCase):
         patterns = api.urls
         self.assertEqual(len(patterns), 3)
         self.assertEqual(sorted([pattern.name for pattern in patterns if hasattr(pattern, 'name')]), ['api_v2_top_level'])
-        self.assertEqual([[pattern.name for pattern in include.url_patterns if hasattr(pattern, 'name')] for include in patterns if hasattr(include, 'reverse_dict')], [['api_dispatch_list', 'api_dispatch_detail'], ['api_dispatch_list', 'api_dispatch_detail']])
+        self.assertEqual([[pattern.name for pattern in include.url_patterns if hasattr(pattern, 'name')] for include in patterns if hasattr(include, 'reverse_dict')], [['api_dispatch_list', 'api_get_schema', 'api_dispatch_detail'], ['api_dispatch_list', 'api_get_schema', 'api_dispatch_detail']])
     
     def test_top_level(self):
         api = Api()

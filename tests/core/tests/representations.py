@@ -165,6 +165,10 @@ class RepresentationTestCase(TestCase):
     def test_delete(self):
         basic = BasicRepresentation()
         self.assertRaises(NotImplementedError, basic.delete)
+    
+    def test_build_schema(self):
+        basic = BasicRepresentation()
+        self.assertEqual(basic.build_schema(), {'view_count': 'integer', 'name': 'string', 'date_joined': 'datetime'})
 
 
 class NoteRepresentation(ModelRepresentation):

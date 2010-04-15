@@ -201,5 +201,13 @@ class Representation(object):
         
         return data
     
+    def build_schema(self):
+        data = {}
+        
+        for field_name, field_object in self.fields.items():
+            data[field_name] = field_object.dehydrated_type
+        
+        return data
+    
     class Meta:
         pass

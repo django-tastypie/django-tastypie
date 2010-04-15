@@ -95,8 +95,8 @@ class ResourceTestCase(TestCase):
         # The common case, where the ``Api`` specifies the name.
         resource = NoteResource(api_name='v1')
         patterns = resource.urls
-        self.assertEqual(len(patterns), 2)
-        self.assertEqual([pattern.name for pattern in patterns], ['api_dispatch_list', 'api_dispatch_detail'])
+        self.assertEqual(len(patterns), 3)
+        self.assertEqual([pattern.name for pattern in patterns], ['api_dispatch_list', 'api_get_schema', 'api_dispatch_detail'])
         self.assertEqual(reverse('api_dispatch_list', kwargs={
             'api_name': 'v1',
             'resource_name': 'notes',
@@ -110,8 +110,8 @@ class ResourceTestCase(TestCase):
         # Start over.
         resource = NoteResource()
         patterns = resource.urls
-        self.assertEqual(len(patterns), 2)
-        self.assertEqual([pattern.name for pattern in patterns], ['api_dispatch_list', 'api_dispatch_detail'])
+        self.assertEqual(len(patterns), 3)
+        self.assertEqual([pattern.name for pattern in patterns], ['api_dispatch_list', 'api_get_schema', 'api_dispatch_detail'])
         self.assertEqual(reverse('api_dispatch_list', urlconf='core.tests.manual_urls', kwargs={
             'resource_name': 'notes',
         }), '/notes/')
@@ -344,6 +344,15 @@ class ResourceTestCase(TestCase):
         request.method = 'GET'
         resp = resource.dispatch_detail(request, obj_id=1)
         self.assertEqual(resp.status_code, 200)
+    
+    def test_get_schema(self):
+        resource = NoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        
+        resp = resource.get_schema(request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"content": "string", "created": "datetime", "is_active": "boolean", "slug": "string", "title": "string", "updated": "datetime"}')
 
 
 class BasicAuthResourceTestCase(TestCase):

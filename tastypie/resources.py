@@ -106,6 +106,7 @@ class Resource(object):
     def urls(self):
         urlpatterns = patterns('',
             url(r"^(?P<resource_name>%s)/$" % self.resource_name, self.wrap_view('dispatch_list'), name="api_dispatch_list"),
+            url(r"^(?P<resource_name>%s)/schema/$" % self.resource_name, self.wrap_view('get_schema'), name="api_get_schema"),
             url(r"^(?P<resource_name>%s)/(?P<obj_id>\d+)/$" % self.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
         )
         return urlpatterns
@@ -341,6 +342,17 @@ class Resource(object):
             return HttpAccepted()
         except:
             return HttpGone()
+    
+    def get_schema(self, request, resource_name=None):
+        representation = self.representation(api_name=self.api_name, resource_name=self.resource_name)
+        desired_format = self.determine_format(request)
+        
+        try:
+            serialized = self.serialize(request, representation.build_schema(), desired_format)
+        except BadRequest, e:
+            return HttpBadRequest(e.args[0])
+        
+        return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
 
 
 # Based off of ``piston.utils.coerce_put_post``. Similarly BSD-licensed.

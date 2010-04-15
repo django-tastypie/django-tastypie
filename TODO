@@ -12,7 +12,6 @@ Short Term
 - Filtering.
 - Pagination needs enhancement.
 - A ``ResourceURI`` field.
-- Schema views.
 - Bulk fetch via a list of URIs.
 
 Long Term
