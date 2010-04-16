@@ -1,5 +1,5 @@
 from tastypie.resources import Resource
-from api.representations import NoteRepresentation
+from basic.api.representations import NoteRepresentation
  
  
 class NoteResource(Resource):

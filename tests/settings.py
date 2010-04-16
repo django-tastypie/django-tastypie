@@ -5,7 +5,7 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'tastypie',
-    'core',
 ]
 
-ROOT_URLCONF = 'core.tests.api_urls'
+DEBUG = True
+TEMPLATE_DEBUG = DEBUG
