@@ -4,15 +4,23 @@ TODO
 Short Term
 ----------
 
-- Authentication
-    - ``OauthAuthentication``
+Cody:
+- Pagination
+- Test support for serialization/deserialization.
+
+Daniel:
+- Bulk fetch via a list of URIs.
+- A ``ResourceURI`` field.
 - Implement caching.
 - Implement throttling.
+
+Matt:
+- Authentication
+    - ``OauthAuthentication``
+
+- More integration tests (intermediate, advanced, composite, non-model)
 - Documentation.
 - Filtering.
-- Pagination needs enhancement.
-- A ``ResourceURI`` field.
-- Bulk fetch via a list of URIs.
 
 Long Term
 ---------
