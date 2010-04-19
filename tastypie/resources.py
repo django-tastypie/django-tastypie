@@ -107,12 +107,10 @@ class Resource(object):
         urlpatterns = patterns('',
             url(r"^(?P<resource_name>%s)/$" % self.resource_name, self.wrap_view('dispatch_list'), name="api_dispatch_list"),
             url(r"^(?P<resource_name>%s)/schema/$" % self.resource_name, self.wrap_view('get_schema'), name="api_get_schema"),
+            url(r"^(?P<resource_name>%s)/set/(?P<id_list>[\d;]+)/$" % self.resource_name, self.wrap_view('get_multiple'), name="api_get_multiple"),
             url(r"^(?P<resource_name>%s)/(?P<obj_id>\d+)/$" % self.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
         )
         return urlpatterns
-    
-    # FIXME:
-    #   - Barkeeper's Friend links?
     
     def determine_format(self, request):
         # First, check if they forced the format.
@@ -352,6 +350,38 @@ class Resource(object):
         except BadRequest, e:
             return HttpBadRequest(e.args[0])
         
+        return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
+    
+    def get_multiple(self, request, api_name=None, resource_name=None, id_list=''):
+        """
+        Should return a HttpResponse (200 OK).
+        """
+        # Rip apart the list then iterate.
+        repr_ids = id_list.split(';')
+        objects = []
+        not_found = []
+        
+        for obj_id in repr_ids:
+            representation = self.representation(api_name=self.api_name, resource_name=self.resource_name)
+            
+            try:
+                representation.get(pk=obj_id)
+                objects.append(representation)
+            except NotFound:
+                not_found.append(obj_id)
+
+        object_list = {
+            'objects': objects,
+        }
+        
+        if len(not_found):
+            object_list['not_found'] = not_found
+        
+        desired_format = self.determine_format(request)
+        try:
+            serialized = self.serialize(request, object_list, desired_format)
+        except BadRequest, e:
+            return HttpBadRequest(e.args[0])
         return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
 
 

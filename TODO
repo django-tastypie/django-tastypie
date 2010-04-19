@@ -9,7 +9,6 @@ Cody:
 - Test support for serialization/deserialization.
 
 Daniel:
-- Bulk fetch via a list of URIs.
 - A ``ResourceURI`` field.
 - Implement caching.
 - Implement throttling.

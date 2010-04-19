@@ -95,8 +95,8 @@ class ResourceTestCase(TestCase):
         # The common case, where the ``Api`` specifies the name.
         resource = NoteResource(api_name='v1')
         patterns = resource.urls
-        self.assertEqual(len(patterns), 3)
-        self.assertEqual([pattern.name for pattern in patterns], ['api_dispatch_list', 'api_get_schema', 'api_dispatch_detail'])
+        self.assertEqual(len(patterns), 4)
+        self.assertEqual([pattern.name for pattern in patterns], ['api_dispatch_list', 'api_get_schema', 'api_get_multiple', 'api_dispatch_detail'])
         self.assertEqual(reverse('api_dispatch_list', kwargs={
             'api_name': 'v1',
             'resource_name': 'notes',
@@ -110,8 +110,8 @@ class ResourceTestCase(TestCase):
         # Start over.
         resource = NoteResource()
         patterns = resource.urls
-        self.assertEqual(len(patterns), 3)
-        self.assertEqual([pattern.name for pattern in patterns], ['api_dispatch_list', 'api_get_schema', 'api_dispatch_detail'])
+        self.assertEqual(len(patterns), 4)
+        self.assertEqual([pattern.name for pattern in patterns], ['api_dispatch_list', 'api_get_schema', 'api_get_multiple', 'api_dispatch_detail'])
         self.assertEqual(reverse('api_dispatch_list', urlconf='core.tests.manual_urls', kwargs={
             'resource_name': 'notes',
         }), '/notes/')
@@ -353,6 +353,27 @@ class ResourceTestCase(TestCase):
         resp = resource.get_schema(request)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"content": {"nullable": false, "readonly": false, "type": "string"}, "created": {"nullable": false, "readonly": false, "type": "datetime"}, "is_active": {"nullable": false, "readonly": false, "type": "boolean"}, "slug": {"nullable": false, "readonly": false, "type": "string"}, "title": {"nullable": false, "readonly": false, "type": "string"}, "updated": {"nullable": false, "readonly": false, "type": "datetime"}}')
+    
+    def test_get_multiple(self):
+        resource = NoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        
+        resp = resource.get_multiple(request, id_list='1')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}]}')
+        
+        resp = resource.get_multiple(request, id_list='1;2')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "is_active": true, "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}]}')
+        
+        resp = resource.get_multiple(request, id_list='2;3')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"not_found": ["3"], "objects": [{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "is_active": true, "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}]}')
+        
+        resp = resource.get_multiple(request, id_list='1;2;4;6')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "is_active": true, "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "Thu, 1 Apr 2010 20:05:00 -0500", "is_active": true, "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "Thu, 1 Apr 2010 20:05:00 -0500"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "Fri, 2 Apr 2010 10:05:00 -0500", "is_active": true, "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "Fri, 2 Apr 2010 10:05:00 -0500"}]}')
 
 
 class BasicAuthResourceTestCase(TestCase):
