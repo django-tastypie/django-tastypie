@@ -349,6 +349,7 @@ class ResourceTestCase(TestCase):
         resource = NoteResource()
         request = HttpRequest()
         request.GET = {'format': 'json'}
+        request.method = 'GET'
         
         resp = resource.get_schema(request)
         self.assertEqual(resp.status_code, 200)
@@ -358,6 +359,7 @@ class ResourceTestCase(TestCase):
         resource = NoteResource()
         request = HttpRequest()
         request.GET = {'format': 'json'}
+        request.method = 'GET'
         
         resp = resource.get_multiple(request, id_list='1')
         self.assertEqual(resp.status_code, 200)

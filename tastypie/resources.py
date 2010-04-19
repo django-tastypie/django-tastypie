@@ -342,6 +342,19 @@ class Resource(object):
             return HttpGone()
     
     def get_schema(self, request, api_name=None, resource_name=None):
+        request_method = request.method.lower()
+        
+        if request_method != 'get':
+            return HttpMethodNotAllowed()
+        
+        auth_result = self.authentication.is_authenticated(request)
+        
+        if isinstance(auth_result, HttpResponse):
+            return auth_result
+        
+        if not auth_result is True:
+            return HttpUnauthorized()
+        
         representation = self.representation(api_name=self.api_name, resource_name=self.resource_name)
         desired_format = self.determine_format(request)
         
@@ -356,6 +369,19 @@ class Resource(object):
         """
         Should return a HttpResponse (200 OK).
         """
+        request_method = request.method.lower()
+        
+        if request_method != 'get':
+            return HttpMethodNotAllowed()
+        
+        auth_result = self.authentication.is_authenticated(request)
+        
+        if isinstance(auth_result, HttpResponse):
+            return auth_result
+        
+        if not auth_result is True:
+            return HttpUnauthorized()
+        
         # Rip apart the list then iterate.
         repr_ids = id_list.split(';')
         objects = []
