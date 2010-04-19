@@ -199,8 +199,16 @@ class Resource(object):
         if not auth_result is True:
             return HttpUnauthorized()
         
+        kwargs_subset = kwargs.copy()
+        
+        for key in ['api_name', 'resource_name']:
+            try:
+                del(kwargs_subset[key])
+            except KeyError:
+                pass
+        
         request = convert_post_to_put(request)
-        response = method(request, **kwargs)
+        response = method(request, **kwargs_subset)
         
         if not isinstance(response, HttpResponse):
             return HttpAccepted()
