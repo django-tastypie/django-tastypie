@@ -30,7 +30,7 @@ class DeclarativeMetaclass(type):
         new_class._meta = getattr(new_class, 'Meta', None)
         
         if not new_class._meta:
-            raise ImproperlyConfigured("An inner Meta class is required to configure %s." % repr(new_class))
+            raise ImproperlyConfigured("An inner Meta class is required to configure '%r'." % new_class)
         
         return new_class
 

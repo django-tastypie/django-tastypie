@@ -65,7 +65,7 @@ class ApiField(object):
                         # accesses will fail misreably.
                         break
                     else:
-                        raise ApiFieldError("The model '%s' has an empty attribute '%s' and doesn't allow a default or null value." % (repr(current_object), attr))
+                        raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a default or null value." % (current_object, attr))
             
             if callable(current_object):
                 return current_object()
@@ -223,7 +223,7 @@ class RelatedField(ApiField):
     
     @property
     def default(self):
-        raise ApiFieldError("%r fields do not have default data." % repr(self))
+        raise ApiFieldError("%r fields do not have default data." % self)
     
     def get_related_representation(self, related_instance):
         # TODO: More leakage.
@@ -269,7 +269,7 @@ class ForeignKey(RelatedField):
     def dehydrate(self, obj):
         if not getattr(obj, self.attribute):
             if not self.null:
-                raise ApiFieldError("The model '%s' has an empty attribute '%s' and doesn't allow a null value." % (repr(obj), self.attribute))
+                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (obj, self.attribute))
             
             return None
         
@@ -296,13 +296,13 @@ class ManyToManyField(RelatedField):
     def dehydrate(self, obj):
         if not obj.pk:
             if not self.null:
-                raise ApiFieldError("The model '%s' does not have a primary key and can not be used in a ManyToMany context." % repr(obj))
+                raise ApiFieldError("The model '%r' does not have a primary key and can not be used in a ManyToMany context." % obj)
             
             return []
         
         if not getattr(obj, self.attribute):
             if not self.null:
-                raise ApiFieldError("The model '%s' has an empty attribute '%s' and doesn't allow a null value." % (repr(obj), self.attribute))
+                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (obj, self.attribute))
             
             return []
         

@@ -24,6 +24,7 @@ Matt:
 Long Term
 ---------
 
+- ImageField (with full URLs)
 - HTML browsing
 - Authentication
     - ``APIKeyAuthentication``
