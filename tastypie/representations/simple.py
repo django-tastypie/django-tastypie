@@ -1,7 +1,8 @@
 from django.core.exceptions import ImproperlyConfigured
+from django.core.urlresolvers import NoReverseMatch
 from django.utils.copycompat import deepcopy
 from tastypie.exceptions import HydrationError
-from tastypie.fields import ApiField, RelatedField
+from tastypie.fields import ApiField, CharField, RelatedField
 
 
 class DeclarativeMetaclass(type):
@@ -52,6 +53,9 @@ class Representation(object):
         # Use a copy of the field instances, not the ones actually stored on
         # the class.
         self.fields = deepcopy(self.base_fields)
+        
+        if getattr(self._meta, 'include_resource_uri', True) and not 'resource_uri' in self.fields:
+            self.fields['resource_uri'] = CharField(readonly=True)
         
         # Now that we have fields, populate fields via kwargs if found.
         for key, value in data.items():
@@ -212,6 +216,14 @@ class Representation(object):
             }
         
         return data
+    
+    def dehydrate_resource_uri(self, obj):
+        try:
+            return self.get_resource_uri()
+        except NotImplementedError:
+            return ''
+        except NoReverseMatch:
+            return ''
     
     class Meta:
         pass

@@ -10,7 +10,6 @@ Cody:
 - Add fixture for complex tests (must cover posts, profiles, comments, users, and groups)
 
 Daniel:
-- A ``ResourceURI`` field.
 - Implement caching.
 - Implement throttling.
 
