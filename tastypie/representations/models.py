@@ -65,6 +65,10 @@ class ModelRepresentation(Representation):
         
         self.object_class = self.queryset.model
         self.fields = deepcopy(self.base_fields)
+        
+        if getattr(self._meta, 'include_resource_uri', True) and not 'resource_uri' in self.fields:
+            self.fields['resource_uri'] = CharField(readonly=True)
+        
         fields = getattr(self._meta, 'fields', [])
         excludes = getattr(self._meta, 'excludes', [])
         
@@ -125,6 +129,10 @@ class ModelRepresentation(Representation):
             
             if f.null is True:
                 kwargs['null'] = True
+            
+            # FIXME: There's a potential edge-case here dealing with ``blank-True``.
+            # if f.blank is True:
+            #     kwargs['default'] = ''
             
             if f.has_default():
                 kwargs['default'] = f.default

@@ -9,7 +9,6 @@ Cody:
 - Test support for serialization/deserialization.
 
 Daniel:
-- A ``ResourceURI`` field.
 - Implement caching.
 - Implement throttling.
 

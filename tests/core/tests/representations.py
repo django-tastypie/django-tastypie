@@ -39,19 +39,27 @@ class AnotherBasicRepresentation(BasicRepresentation):
     is_active = fields.BooleanField(attribute='is_active', default=True)
 
 
+class NoUriBasicRepresentation(BasicRepresentation):
+    class Meta:
+        object_class = TestObject
+        include_resource_uri = False
+
+
 class RepresentationTestCase(TestCase):
     def test_fields(self):
         basic = BasicRepresentation()
-        self.assertEqual(len(basic.fields), 3)
+        self.assertEqual(len(basic.fields), 4)
         self.assert_('name' in basic.fields)
         self.assertEqual(isinstance(basic.name, fields.CharField), True)
         self.assert_('view_count' in basic.fields)
         self.assertEqual(isinstance(basic.view_count, fields.IntegerField), True)
         self.assert_('date_joined' in basic.fields)
         self.assertEqual(isinstance(basic.date_joined, fields.DateTimeField), True)
+        self.assert_('resource_uri' in basic.fields)
+        self.assertEqual(isinstance(basic.resource_uri, fields.CharField), True)
         
         another = AnotherBasicRepresentation()
-        self.assertEqual(len(another.fields), 4)
+        self.assertEqual(len(another.fields), 5)
         self.assert_('name' in another.fields)
         self.assertEqual(isinstance(another.name, fields.CharField), True)
         self.assert_('view_count' in another.fields)
@@ -60,6 +68,17 @@ class RepresentationTestCase(TestCase):
         self.assertEqual(isinstance(another.date_joined, fields.DateField), True)
         self.assert_('is_active' in another.fields)
         self.assertEqual(isinstance(another.is_active, fields.BooleanField), True)
+        self.assert_('resource_uri' in basic.fields)
+        self.assertEqual(isinstance(basic.resource_uri, fields.CharField), True)
+        
+        basic = NoUriBasicRepresentation()
+        self.assertEqual(len(basic.fields), 3)
+        self.assert_('name' in basic.fields)
+        self.assertEqual(isinstance(basic.name, fields.CharField), True)
+        self.assert_('view_count' in basic.fields)
+        self.assertEqual(isinstance(basic.view_count, fields.IntegerField), True)
+        self.assert_('date_joined' in basic.fields)
+        self.assertEqual(isinstance(basic.date_joined, fields.DateTimeField), True)
     
     def test_full_dehydrate(self):
         test_object_1 = TestObject()
@@ -168,7 +187,28 @@ class RepresentationTestCase(TestCase):
     
     def test_build_schema(self):
         basic = BasicRepresentation()
-        self.assertEqual(basic.build_schema(), {'view_count': {'readonly': False, 'type': 'integer', 'nullable': False}, 'name': {'readonly': False, 'type': 'string', 'nullable': False}, 'date_joined': {'readonly': False, 'type': 'datetime', 'nullable': True}})
+        self.assertEqual(basic.build_schema(), {
+            'view_count': {
+                'readonly': False,
+                'type': 'integer',
+                'nullable': False
+            },
+            'date_joined': {
+                'readonly': False,
+                'type': 'datetime',
+                'nullable': True
+            },
+            'name': {
+                'readonly': False,
+                'type': 'string',
+                'nullable': False
+            },
+            'resource_uri': {
+                'readonly': True,
+                'type': 'string',
+                'nullable': False
+            }
+        })
 
 
 class NoteRepresentation(ModelRepresentation):
@@ -183,6 +223,12 @@ class CustomNoteRepresentation(ModelRepresentation):
     class Meta:
         queryset = Note.objects.all()
         fields = ['title', 'content', 'created', 'is_active']
+
+
+class NoUriNoteRepresentation(ModelRepresentation):
+    class Meta:
+        queryset = Note.objects.filter(is_active=True)
+        include_resource_uri = False
 
 
 class UserRepresentation(ModelRepresentation):
@@ -225,12 +271,16 @@ class ModelRepresentationTestCase(TestCase):
     def test_configuration(self):
         note = NoteRepresentation()
         # FIXME: Once relations are in, this number ought to go up.
-        self.assertEqual(len(note.fields), 6)
-        self.assertEqual(sorted(note.fields.keys()), ['content', 'created', 'is_active', 'slug', 'title', 'updated'])
+        self.assertEqual(len(note.fields), 7)
+        self.assertEqual(sorted(note.fields.keys()), ['content', 'created', 'is_active', 'resource_uri', 'slug', 'title', 'updated'])
         
         custom = CustomNoteRepresentation()
-        self.assertEqual(len(custom.fields), 6)
-        self.assertEqual(sorted(custom.fields.keys()), ['author', 'constant', 'content', 'created', 'is_active', 'title'])
+        self.assertEqual(len(custom.fields), 7)
+        self.assertEqual(sorted(custom.fields.keys()), ['author', 'constant', 'content', 'created', 'is_active', 'resource_uri', 'title'])
+        
+        no_uri = NoUriNoteRepresentation()
+        self.assertEqual(len(no_uri.fields), 6)
+        self.assertEqual(sorted(no_uri.fields.keys()), ['content', 'created', 'is_active', 'slug', 'title', 'updated'])
     
     def test_get_list(self):
         notes = NoteRepresentation.get_list()
