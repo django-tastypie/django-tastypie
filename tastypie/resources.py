@@ -155,42 +155,22 @@ class Resource(object):
         return "%s; charset=%s" % (format, encoding)
     
     def dispatch_list(self, request, **kwargs):
+        return self.dispatch('list', request, **kwargs)
+    
+    def dispatch_detail(self, request, **kwargs):
+        return self.dispatch('detail', request, **kwargs)
+    
+    def dispatch(self, request_type, request, **kwargs):
         request_method = request.method.lower()
+        allowed_methods = getattr(self, "%s_allowed_methods" % request_type)
         
-        if not request_method in self.list_allowed_methods:
+        if not request_method in allowed_methods:
             return HttpMethodNotAllowed()
         
-        method = getattr(self, "%s_list" % request_method, None)
+        method = getattr(self, "%s_%s" % (request_method, request_type), None)
         
         if method is None:
             return HttpNotImplemented()
-        
-        auth_result = self.authentication.is_authenticated(request)
-        
-        if isinstance(auth_result, HttpResponse):
-            return auth_result
-        
-        if not auth_result is True:
-            return HttpUnauthorized()
-        
-        request = convert_post_to_put(request)
-        response = method(request)
-        
-        if not isinstance(response, HttpResponse):
-            return HttpAccepted()
-        
-        return response
-    
-    def dispatch_detail(self, request, **kwargs):
-        request_method = request.method.lower()
-        
-        if not request_method in self.detail_allowed_methods:
-            return HttpMethodNotAllowed
-        
-        method = getattr(self, "%s_detail" % request_method, None)
-        
-        if method is None:
-            return HttpNotImplemented
         
         auth_result = self.authentication.is_authenticated(request)
         
@@ -216,14 +196,32 @@ class Resource(object):
         
         return response
     
-    def get_list(self, request):
-        """
-        Should return a HttpResponse (200 OK).
-        """
-        objects = self.representation.get_list(options={
+    def build_representation(self, data=None):
+        if data is None:
+            return self.representation(api_name=self.api_name, resource_name=self.resource_name)
+        else:
+            return self.representation(api_name=self.api_name, resource_name=self.resource_name, data=data)
+    
+    def fetch_list(self, **kwargs):
+        return self.representation.get_list(options={
             'api_name': self.api_name,
             'resource_name': self.resource_name,
         })
+    
+    def fetch_detail(self, **kwargs):
+        """
+        
+        If not found, should raise a ``NotFound`` exception.
+        """
+        representation = self.build_representation()
+        representation.get(pk=kwargs.get('obj_id'))
+        return representation
+    
+    def get_list(self, request, **kwargs):
+        """
+        Should return a HttpResponse (200 OK).
+        """
+        objects = self.fetch_list(**kwargs)
         paginator = Paginator(request.GET, objects)
         
         try:
@@ -235,25 +233,25 @@ class Resource(object):
         
         return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
     
-    def get_detail(self, request, obj_id):
+    def get_detail(self, request, **kwargs):
         """
         Should return a HttpResponse (200 OK).
         """
-        representation = self.representation(api_name=self.api_name, resource_name=self.resource_name)
-        
         try:
-            representation.get(pk=obj_id)
+            representation = self.fetch_detail(**kwargs)
         except NotFound:
             return HttpGone()
         
         desired_format = self.determine_format(request)
+        
         try:
             serialized = self.serialize(request, representation.to_dict(), desired_format)
         except BadRequest, e:
             return HttpBadRequest(e.args[0])
+        
         return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
     
-    def put_list(self, request):
+    def put_list(self, request, **kwargs):
         """
         Replaces a collection of resources with another collection.
         Return ``HttpAccepted`` (204 No Content).
@@ -263,7 +261,7 @@ class Resource(object):
         # return HttpAccepted()
         return HttpNotImplemented()
     
-    def put_detail(self, request, obj_id):
+    def put_detail(self, request, **kwargs):
         """
         If a new resource is created, return ``HttpCreated`` (201 Created).
         If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
@@ -274,13 +272,13 @@ class Resource(object):
         for key, value in deserialized.items():
             data[str(key)] = value
         
-        representation = self.representation(api_name=self.api_name, resource_name=self.resource_name, data=data)
+        representation = self.build_representation(data=data)
         
         try:
-            representation.update(pk=obj_id)
+            representation.update(pk=kwargs.get('obj_id'))
             return HttpAccepted()
         except:
-            representation.create(pk=obj_id)
+            representation.create(pk=kwargs.get('obj_id'))
             return HttpCreated(location=representation.get_resource_uri())
     
     def post_list(self, request):
@@ -293,7 +291,7 @@ class Resource(object):
         for key, value in deserialized.items():
             data[str(key)] = value
         
-        representation = self.representation(api_name=self.api_name, resource_name=self.resource_name, data=data)
+        representation = self.build_representation(data=data)
         representation.create()
         return HttpCreated(location=representation.get_resource_uri())
     
@@ -312,24 +310,27 @@ class Resource(object):
         """
         # TODO: What range ought to be deleted? This seems particularly
         #       dangerous.
-        representation = self.representation(api_name=self.api_name, resource_name=self.resource_name)
+        representation = self.build_representation()
         # FIXME: This is ModelRepresentation specific and needs abstraction.
         representation.queryset.all().delete()
         return HttpAccepted()
     
-    def delete_detail(self, request, obj_id):
+    def delete_detail(self, request, **kwargs):
         """
         If the resource is deleted, return ``HttpAccepted`` (204 No Content).
         """
-        representation = self.representation(api_name=self.api_name, resource_name=self.resource_name)
+        representation = self.fetch_detail(**kwargs)
         
         try:
-            representation.delete(pk=obj_id)
+            representation.delete()
             return HttpAccepted()
         except:
             return HttpGone()
     
-    def get_schema(self, request, api_name=None, resource_name=None):
+    def get_schema(self, request, **kwargs):
+        """
+        Should return a HttpResponse (200 OK).
+        """
         request_method = request.method.lower()
         
         if request_method != 'get':
@@ -343,7 +344,7 @@ class Resource(object):
         if not auth_result is True:
             return HttpUnauthorized()
         
-        representation = self.representation(api_name=self.api_name, resource_name=self.resource_name)
+        representation = self.build_representation()
         desired_format = self.determine_format(request)
         
         try:
@@ -353,7 +354,7 @@ class Resource(object):
         
         return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
     
-    def get_multiple(self, request, api_name=None, resource_name=None, id_list=''):
+    def get_multiple(self, request, **kwargs):
         """
         Should return a HttpResponse (200 OK).
         """
@@ -371,15 +372,13 @@ class Resource(object):
             return HttpUnauthorized()
         
         # Rip apart the list then iterate.
-        repr_ids = id_list.split(';')
+        repr_ids = kwargs.get('id_list', '').split(';')
         objects = []
         not_found = []
         
         for obj_id in repr_ids:
-            representation = self.representation(api_name=self.api_name, resource_name=self.resource_name)
-            
             try:
-                representation.get(pk=obj_id)
+                representation = self.fetch_detail(obj_id=obj_id)
                 objects.append(representation)
             except NotFound:
                 not_found.append(obj_id)
@@ -392,10 +391,12 @@ class Resource(object):
             object_list['not_found'] = not_found
         
         desired_format = self.determine_format(request)
+        
         try:
             serialized = self.serialize(request, object_list, desired_format)
         except BadRequest, e:
             return HttpBadRequest(e.args[0])
+        
         return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
 
 

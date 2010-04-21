@@ -28,4 +28,5 @@ Long Term
 - HTML browsing
 - Authentication
     - ``APIKeyAuthentication``
+- Thread safety
 - Haystack integration?

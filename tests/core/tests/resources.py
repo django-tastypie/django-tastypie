@@ -219,15 +219,15 @@ class ResourceTestCase(TestCase):
         request = HttpRequest()
         request.GET = {'format': 'json'}
         
-        resp = resource.get_detail(request, 1)
+        resp = resource.get_detail(request, obj_id=1)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}')
         
-        resp = resource.get_detail(request, 2)
+        resp = resource.get_detail(request, obj_id=2)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}')
         
-        resp = resource.get_detail(request, 300)
+        resp = resource.get_detail(request, obj_id=300)
         self.assertEqual(resp.status_code, 410)
     
     def test_put_list(self):
@@ -303,7 +303,7 @@ class ResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'DELETE'
         
-        resp = resource.delete_detail(request, 2)
+        resp = resource.delete_detail(request, obj_id=2)
         self.assertEqual(resp.status_code, 204)
         self.assertEqual(Note.objects.count(), 5)
     
