@@ -326,6 +326,45 @@ class ResourceTestCase(TestCase):
         resp = resource.dispatch_detail(request, obj_id=1)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}')
+    
+    def test_dispatch(self):
+        resource = NoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+        
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"limit": 20, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "Thu, 1 Apr 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "Thu, 1 Apr 2010 20:05:00 -0500"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "Fri, 2 Apr 2010 10:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "Fri, 2 Apr 2010 10:05:00 -0500"}], "offset": 0}')
+        
+        resp = resource.dispatch('detail', request, obj_id=1)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}')
+    
+    def test_build_representation(self):
+        resource = NoteResource()
+        
+        unpopulated_repr = resource.build_representation()
+        self.assertTrue(isinstance(unpopulated_repr, NoteRepresentation))
+        self.assertEqual(unpopulated_repr.title.value, None)
+        
+        populated_repr = resource.build_representation(data={'title': 'Foo'})
+        self.assertTrue(isinstance(populated_repr, NoteRepresentation))
+        self.assertEqual(populated_repr.title.value, 'Foo')
+    
+    def test_fetch_list(self):
+        resource = NoteResource()
+        
+        object_list = resource.fetch_list()
+        self.assertEqual(len(object_list), 4)
+        self.assertEqual(object_list[0].title.value, u'First Post!')
+    
+    def test_fetch_detail(self):
+        resource = NoteResource()
+        
+        representation = resource.fetch_detail(obj_id=1)
+        self.assertTrue(isinstance(representation, NoteRepresentation))
+        self.assertEqual(representation.title.value, u'First Post!')
 
     def test_jsonp_validation(self):
         resource = NoteResource()
