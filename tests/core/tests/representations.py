@@ -169,6 +169,9 @@ class RepresentationTestCase(TestCase):
     def test_get_list(self):
         self.assertRaises(NotImplementedError, BasicRepresentation.get_list)
     
+    def test_delete_list(self):
+        self.assertRaises(NotImplementedError, BasicRepresentation.delete_list)
+    
     def test_get(self):
         basic = BasicRepresentation()
         self.assertRaises(NotImplementedError, basic.get, obj_id=1)
@@ -316,6 +319,16 @@ class ModelRepresentationTestCase(TestCase):
         self.assertEqual(customs[5].is_active.value, True)
         self.assertEqual(customs[5].title.value, u"Granny's Gone")
         self.assertEqual(customs[5].author.value, u'janedoe')
+    
+    def test_delete_list_custom_qs(self):
+        self.assertEqual(len(Note.objects.all()), 6)
+        notes = NoteRepresentation.delete_list()
+        self.assertEqual(len(Note.objects.all()), 2)
+        
+    def test_delete_list_basic_qs(self):
+        self.assertEqual(len(Note.objects.all()), 6)
+        customs = CustomNoteRepresentation.delete_list()
+        self.assertEqual(len(Note.objects.all()), 0)
     
     def test_get(self):
         note = NoteRepresentation()

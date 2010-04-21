@@ -236,7 +236,7 @@ class ResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'POST'
         
-        resp = resource.post_detail(request, 2)
+        resp = resource.post_detail(request, obj_id=2)
         self.assertEqual(resp.status_code, 501)
     
     def test_put_detail(self):
@@ -281,7 +281,7 @@ class ResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'POST'
         
-        resp = resource.post_detail(request, 2)
+        resp = resource.post_detail(request, obj_id=2)
         self.assertEqual(resp.status_code, 501)
     
     def test_delete_list(self):

@@ -156,6 +156,10 @@ class ModelRepresentation(Representation):
         
         return representations
     
+    @classmethod
+    def delete_list(cls, **kwargs):
+        cls._meta.queryset.filter(**kwargs).delete()
+    
     def get(self, **kwargs):
         try:
             self.instance = self.queryset.get(**kwargs)

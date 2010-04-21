@@ -73,6 +73,10 @@ class Representation(object):
     def get_list(cls, **kwargs):
         raise NotImplementedError()
     
+    @classmethod
+    def delete_list(cls, **kwargs):
+        raise NotImplementedError()
+    
     def get(self, **kwargs):
         raise NotImplementedError()
     

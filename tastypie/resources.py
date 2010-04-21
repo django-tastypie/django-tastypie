@@ -281,7 +281,7 @@ class Resource(object):
             representation.create(pk=kwargs.get('obj_id'))
             return HttpCreated(location=representation.get_resource_uri())
     
-    def post_list(self, request):
+    def post_list(self, request, **kwargs):
         """
         If a new resource is created, return ``HttpCreated`` (201 Created).
         """
@@ -295,7 +295,7 @@ class Resource(object):
         representation.create()
         return HttpCreated(location=representation.get_resource_uri())
     
-    def post_detail(self, request, obj_id):
+    def post_detail(self, request, **kwargs):
         """
         This is not implemented by default because most people's data models
         aren't self-referential.
@@ -304,15 +304,11 @@ class Resource(object):
         """
         return HttpNotImplemented()
     
-    def delete_list(self, request):
+    def delete_list(self, request, **kwargs):
         """
         If the resources are deleted, return ``HttpAccepted`` (204 No Content).
         """
-        # TODO: What range ought to be deleted? This seems particularly
-        #       dangerous.
-        representation = self.build_representation()
-        # FIXME: This is ModelRepresentation specific and needs abstraction.
-        representation.queryset.all().delete()
+        self.representation.delete_list(**kwargs)
         return HttpAccepted()
     
     def delete_detail(self, request, **kwargs):
