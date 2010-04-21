@@ -256,10 +256,23 @@ class Resource(object):
         Replaces a collection of resources with another collection.
         Return ``HttpAccepted`` (204 No Content).
         """
-        # self.representation.delete()
-        # self.representation.update()
-        # return HttpAccepted()
-        return HttpNotImplemented()
+        deserialized = self.deserialize(request, request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        
+        if not 'objects' in deserialized:
+            return HttpBadRequest("Invalid data sent.")
+        
+        self.representation.delete_list(**kwargs)
+        
+        for object_data in deserialized['objects']:
+            data = {}
+            
+            for key, value in object_data.items():
+                data[str(key)] = value
+            
+            representation = self.build_representation(data=data)
+            self.representation.create()
+        
+        return HttpAccepted()
     
     def put_detail(self, request, **kwargs):
         """
