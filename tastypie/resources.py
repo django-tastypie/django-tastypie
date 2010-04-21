@@ -6,6 +6,7 @@ from django.http import Http404, HttpResponse, HttpResponseRedirect
 from tastypie.authentication import Authentication
 from tastypie.exceptions import NotFound, BadRequest
 from tastypie.http import HttpCreated, HttpAccepted, HttpSeeOther, HttpNotModified, HttpConflict, HttpGone, HttpMethodNotAllowed, HttpNotImplemented, HttpUnauthorized, HttpBadRequest
+from tastypie.paginator import Paginator
 from tastypie.serializers import Serializer
 from tastypie.utils import is_valid_jsonp_callback_value
 
@@ -219,38 +220,19 @@ class Resource(object):
         """
         Should return a HttpResponse (200 OK).
         """
-        try:
-            offset = int(request.GET.get('offset', 0))
-            
-            if offset < 0:
-                return HttpBadRequest("The starting offset must be >= 0.")
-        except ValueError:
-            return HttpBadRequest("The starting offset must be an integer.")
-        
-        try:
-            limit = int(request.GET.get('limit', self.limit))
-            
-            if limit < 0:
-                return HttpBadRequest("The limit must be >= 0.")
-        except ValueError:
-            return HttpBadRequest("The limit must be an integer.")
-
         objects = self.representation.get_list(options={
             'api_name': self.api_name,
             'resource_name': self.resource_name,
-        })[offset:offset + limit]
-
-        object_list = {
-            'objects': objects,
-            'offset': offset,
-            'limit': limit,
-        }
+        })
+        paginator = Paginator(request.GET, objects)
         
-        desired_format = self.determine_format(request)
         try:
+            object_list = paginator.page()
+            desired_format = self.determine_format(request)
             serialized = self.serialize(request, object_list, desired_format)
         except BadRequest, e:
             return HttpBadRequest(e.args[0])
+        
         return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
     
     def get_detail(self, request, obj_id):
@@ -305,8 +287,6 @@ class Resource(object):
         """
         If a new resource is created, return ``HttpCreated`` (201 Created).
         """
-        # TODO: What to do if the resource already exists at that id? Quietly
-        #       update or complain loudly?
         deserialized = self.deserialize(request, request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         data = {}
         
