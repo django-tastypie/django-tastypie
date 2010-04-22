@@ -449,6 +449,27 @@ class ResourceTestCase(TestCase):
         resp = resource.dispatch('list', request)
         self.assertEqual(resp.status_code, 403)
         self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+    
+    def test_generate_cache_key(self):
+        resource = NoteResource()
+        self.assertEqual(resource.generate_cache_key(), 'nonspecific:notes::')
+        self.assertEqual(resource.generate_cache_key('abc', '123'), 'nonspecific:notes:abc:123:')
+        self.assertEqual(resource.generate_cache_key(foo='bar', moof='baz'), 'nonspecific:notes::foo=bar:moof=baz')
+        self.assertEqual(resource.generate_cache_key('abc', '123', foo='bar', moof='baz'), 'nonspecific:notes:abc:123:foo=bar:moof=baz')
+    
+    def test_cached_fetch_list(self):
+        resource = NoteResource()
+        
+        object_list = resource.cached_fetch_list()
+        self.assertEqual(len(object_list), 4)
+        self.assertEqual(object_list[0].title.value, u'First Post!')
+    
+    def test_cached_fetch_detail(self):
+        resource = NoteResource()
+        
+        representation = resource.cached_fetch_detail(obj_id=1)
+        self.assertTrue(isinstance(representation, NoteRepresentation))
+        self.assertEqual(representation.title.value, u'First Post!')
 
 
 class BasicAuthResourceTestCase(TestCase):

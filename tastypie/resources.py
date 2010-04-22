@@ -228,6 +228,16 @@ class Resource(object):
             'resource_name': self.resource_name,
         })
     
+    def cached_fetch_list(self, **kwargs):
+        cache_key = self.generate_cache_key('list', **kwargs)
+        representation_list = self.cache.get(cache_key)
+        
+        if representation_list is None:
+            representation_list = self.fetch_list(**kwargs)
+            self.cache.set(cache_key, representation_list)
+        
+        return representation_list
+    
     def fetch_detail(self, **kwargs):
         """
         
@@ -237,10 +247,31 @@ class Resource(object):
         representation.get(pk=kwargs.get('obj_id'))
         return representation
     
+    def cached_fetch_detail(self, **kwargs):
+        cache_key = self.generate_cache_key('detail', **kwargs)
+        representation = self.cache.get(cache_key)
+        
+        if representation is None:
+            representation = self.fetch_detail(**kwargs)
+            self.cache.set(cache_key, representation)
+        
+        return representation
+    
+    def generate_cache_key(self, *args, **kwargs):
+        smooshed = []
+        
+        for key, value in kwargs.items():
+            smooshed.append("%s=%s" % (key, value))
+        
+        # Use a list plus a ``.join()`` because it's faster than concatenation.
+        return "%s:%s:%s:%s" % (self.api_name, self.resource_name, ':'.join(args), ':'.join(smooshed))
+    
     def get_list(self, request, **kwargs):
         """
         Should return a HttpResponse (200 OK).
         """
+        # TODO: Uncached for now. Invalidation that works for everyone may be
+        #       impossible.
         objects = self.fetch_list(**kwargs)
         paginator = Paginator(request.GET, objects)
         
@@ -258,7 +289,7 @@ class Resource(object):
         Should return a HttpResponse (200 OK).
         """
         try:
-            representation = self.fetch_detail(**kwargs)
+            representation = self.cached_fetch_detail(**kwargs)
         except NotFound:
             return HttpGone()
         
