@@ -1,13 +1,14 @@
 import mimeparse
 from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ImproperlyConfigured
-from django.core.paginator import Paginator, InvalidPage
-from django.http import Http404, HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
 from tastypie.authentication import Authentication
+from tastypie.cache import NoCache
 from tastypie.exceptions import NotFound, BadRequest
-from tastypie.http import HttpCreated, HttpAccepted, HttpSeeOther, HttpNotModified, HttpConflict, HttpGone, HttpMethodNotAllowed, HttpNotImplemented, HttpUnauthorized, HttpBadRequest
+from tastypie.http import *
 from tastypie.paginator import Paginator
 from tastypie.serializers import Serializer
+from tastypie.throttle import BaseThrottle
 from tastypie.utils import is_valid_jsonp_callback_value
 
 
@@ -27,6 +28,8 @@ class Resource(object):
     detail_representation = None
     serializer = Serializer()
     authentication = Authentication()
+    cache = NoCache()
+    throttle = BaseThrottle()
     allowed_methods = None
     list_allowed_methods = ['get', 'post', 'put', 'delete']
     detail_allowed_methods = ['get', 'post', 'put', 'delete']
@@ -172,6 +175,7 @@ class Resource(object):
         if method is None:
             return HttpNotImplemented()
         
+        # Authenticate the request as needed.
         auth_result = self.authentication.is_authenticated(request)
         
         if isinstance(auth_result, HttpResponse):
@@ -180,6 +184,12 @@ class Resource(object):
         if not auth_result is True:
             return HttpUnauthorized()
         
+        # Check to see if they should be throttled.
+        if self.throttle_check(request):
+            # Throttle limit exceeded.
+            return HttpBadRequest()
+        
+        # All clear. Process the request.
         kwargs_subset = kwargs.copy()
         
         for key in ['api_name', 'resource_name']:
@@ -191,10 +201,20 @@ class Resource(object):
         request = convert_post_to_put(request)
         response = method(request, **kwargs_subset)
         
+        # Add the throttled request.
+        self.throttle.accessed(self.authentication.get_identifier(request), url=request.get_full_path(), request_method=request_method)
+        
+        # If what comes back isn't a ``HttpResponse``, assume that the
+        # request was accepted and that some action occurred. This also
+        # prevents Django from freaking out.
         if not isinstance(response, HttpResponse):
             return HttpAccepted()
         
         return response
+    
+    def throttle_check(self, request):
+        identifier = self.authentication.get_identifier(request)
+        return self.throttle.should_be_throttled(identifier)
     
     def build_representation(self, data=None):
         if data is None:
@@ -270,7 +290,7 @@ class Resource(object):
                 data[str(key)] = value
             
             representation = self.build_representation(data=data)
-            self.representation.create()
+            representation.create()
         
         return HttpAccepted()
     
@@ -353,8 +373,16 @@ class Resource(object):
         if not auth_result is True:
             return HttpUnauthorized()
         
+        # Check to see if they should be throttled.
+        if self.throttle_check(request):
+            # Throttle limit exceeded.
+            return HttpBadRequest()
+        
         representation = self.build_representation()
         desired_format = self.determine_format(request)
+        
+        # Add the throttled request.
+        self.throttle.accessed(self.authentication.get_identifier(request), url=request.get_full_path(), request_method=request_method)
         
         try:
             serialized = self.serialize(request, representation.build_schema(), desired_format)
@@ -380,6 +408,11 @@ class Resource(object):
         if not auth_result is True:
             return HttpUnauthorized()
         
+        # Check to see if they should be throttled.
+        if self.throttle_check(request):
+            # Throttle limit exceeded.
+            return HttpBadRequest()
+        
         # Rip apart the list then iterate.
         repr_ids = kwargs.get('id_list', '').split(';')
         objects = []
@@ -391,7 +424,7 @@ class Resource(object):
                 objects.append(representation)
             except NotFound:
                 not_found.append(obj_id)
-
+        
         object_list = {
             'objects': objects,
         }
@@ -399,6 +432,8 @@ class Resource(object):
         if len(not_found):
             object_list['not_found'] = not_found
         
+        # Add the throttled request.
+        self.throttle.accessed(self.authentication.get_identifier(request), url=request.get_full_path(), request_method=request_method)
         desired_format = self.determine_format(request)
         
         try:
