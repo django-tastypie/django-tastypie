@@ -12,6 +12,7 @@ Cody:
 Daniel:
 - Implement caching.
 - Implement throttling.
+- Tests for ``Resource.put_list``
 
 Matt:
 - Authentication

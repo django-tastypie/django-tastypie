@@ -17,6 +17,9 @@ class Authentication(object):
         ``HttpResponse`` if you need something custom.
         """
         return True
+    
+    def get_identifier(self, request):
+        return "%s_%s" % (request.META.get('REMOTE_ADDR', 'noaddr'), request.META.get('REMOTE_HOST', 'nohost'))
 
 
 class BasicAuthentication(Authentication):
@@ -73,3 +76,6 @@ class BasicAuthentication(Authentication):
             return self._unauthorized()
         
         return True
+    
+    def get_identifier(self, request):
+        return request.META.get('REMOTE_USER', 'nouser')

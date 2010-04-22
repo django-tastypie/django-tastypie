@@ -12,6 +12,16 @@ class AuthenticationTestCase(TestCase):
         # Doesn't matter. Always true.
         self.assertTrue(auth.is_authenticated(None))
         self.assertTrue(auth.is_authenticated(request))
+    
+    def test_get_identifier(self):
+        auth = Authentication()
+        request = HttpRequest()
+        self.assertEqual(auth.get_identifier(request), 'noaddr_nohost')
+        
+        request = HttpRequest()
+        request.META['REMOTE_ADDR'] = '127.0.0.1'
+        request.META['REMOTE_HOST'] = 'nebula.local'
+        self.assertEqual(auth.get_identifier(request), '127.0.0.1_nebula.local')
 
 
 class BasicAuthenticationTestCase(TestCase):
