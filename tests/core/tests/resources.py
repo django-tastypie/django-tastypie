@@ -1,5 +1,6 @@
 import base64
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import reverse
 from django.http import HttpRequest, QueryDict
@@ -8,6 +9,7 @@ from tastypie.authentication import BasicAuthentication
 from tastypie.representations.models import ModelRepresentation
 from tastypie.resources import Resource
 from tastypie.serializers import Serializer
+from tastypie.throttle import CacheThrottle
 from core.models import Note
 
 
@@ -34,6 +36,12 @@ class CustomSerializer(Serializer):
 class NoteResource(Resource):
     representation = NoteRepresentation
     resource_name = 'notes'
+
+
+class ThrottledNoteResource(Resource):
+    representation = NoteRepresentation
+    resource_name = 'notes'
+    throttle = CacheThrottle(throttle_at=2, timeframe=5, expiration=5)
 
 
 class ResourceTestCase(TestCase):
@@ -415,6 +423,32 @@ class ResourceTestCase(TestCase):
         resp = resource.get_multiple(request, id_list='1;2;4;6')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "Thu, 1 Apr 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "Thu, 1 Apr 2010 20:05:00 -0500"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "Fri, 2 Apr 2010 10:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "Fri, 2 Apr 2010 10:05:00 -0500"}]}')
+    
+    def test_check_throttling(self):
+        resource = ThrottledNoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+        
+        # Not throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 1)
+        
+        # Not throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+        
+        # Throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+        
+        # Throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
 
 class BasicAuthResourceTestCase(TestCase):

@@ -44,29 +44,30 @@ class CacheThrottleTestCase(TestCase):
         
         self.assertEqual(throttle_1.should_be_throttled('daniel'), False)
         self.assertEqual(len(cache.get('daniel_accesses')), 0)
-        
         self.assertEqual(throttle_1.accessed('daniel'), None)
+        
         self.assertEqual(throttle_1.should_be_throttled('daniel'), False)
         self.assertEqual(len(cache.get('daniel_accesses')), 1)
         self.assertEqual(cache.get('cody_accesses'), None)
+        self.assertEqual(throttle_1.accessed('daniel'), None)
         
         self.assertEqual(throttle_1.accessed('cody'), None)
         self.assertEqual(throttle_1.should_be_throttled('cody'), False)
-        self.assertEqual(len(cache.get('daniel_accesses')), 1)
+        self.assertEqual(len(cache.get('daniel_accesses')), 2)
         self.assertEqual(len(cache.get('cody_accesses')), 1)
         
-        self.assertEqual(throttle_1.accessed('daniel'), None)
-        self.assertEqual(throttle_1.should_be_throttled('daniel'), False)
-        self.assertEqual(len(cache.get('daniel_accesses')), 2)
-        
         # THROTTLE'D!
+        self.assertEqual(throttle_1.should_be_throttled('daniel'), True)
+        self.assertEqual(len(cache.get('daniel_accesses')), 2)
         self.assertEqual(throttle_1.accessed('daniel'), None)
+        
         self.assertEqual(throttle_1.should_be_throttled('daniel'), True)
         self.assertEqual(len(cache.get('daniel_accesses')), 3)
+        self.assertEqual(throttle_1.accessed('daniel'), None)
         
         # Should be no interplay.
-        self.assertEqual(throttle_1.accessed('cody'), None)
         self.assertEqual(throttle_1.should_be_throttled('cody'), False)
+        self.assertEqual(throttle_1.accessed('cody'), None)
         
         # Test the timeframe.
         time.sleep(3)
@@ -86,43 +87,45 @@ class CacheDBThrottleTestCase(TestCase):
         self.assertEqual(len(cache.get('daniel_accesses')), 0)
         self.assertEqual(ApiAccess.objects.count(), 0)
         self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 0)
-        
         self.assertEqual(throttle_1.accessed('daniel'), None)
+        
         self.assertEqual(throttle_1.should_be_throttled('daniel'), False)
         self.assertEqual(len(cache.get('daniel_accesses')), 1)
         self.assertEqual(cache.get('cody_accesses'), None)
         self.assertEqual(ApiAccess.objects.count(), 1)
         self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 1)
+        self.assertEqual(throttle_1.accessed('daniel'), None)
         
         self.assertEqual(throttle_1.accessed('cody'), None)
         self.assertEqual(throttle_1.should_be_throttled('cody'), False)
-        self.assertEqual(len(cache.get('daniel_accesses')), 1)
-        self.assertEqual(len(cache.get('cody_accesses')), 1)
-        self.assertEqual(ApiAccess.objects.count(), 2)
-        self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 1)
-        
-        self.assertEqual(throttle_1.accessed('daniel'), None)
-        self.assertEqual(throttle_1.should_be_throttled('daniel'), False)
         self.assertEqual(len(cache.get('daniel_accesses')), 2)
+        self.assertEqual(len(cache.get('cody_accesses')), 1)
         self.assertEqual(ApiAccess.objects.count(), 3)
         self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 2)
+        self.assertEqual(throttle_1.accessed('cody'), None)
         
         # THROTTLE'D!
         self.assertEqual(throttle_1.accessed('daniel'), None)
         self.assertEqual(throttle_1.should_be_throttled('daniel'), True)
         self.assertEqual(len(cache.get('daniel_accesses')), 3)
-        self.assertEqual(ApiAccess.objects.count(), 4)
-        self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 3)
-        
-        # Should be no interplay.
-        self.assertEqual(throttle_1.accessed('cody'), None)
-        self.assertEqual(throttle_1.should_be_throttled('cody'), False)
         self.assertEqual(ApiAccess.objects.count(), 5)
         self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 3)
+        
+        self.assertEqual(throttle_1.accessed('daniel'), None)
+        self.assertEqual(throttle_1.should_be_throttled('daniel'), True)
+        self.assertEqual(len(cache.get('daniel_accesses')), 4)
+        self.assertEqual(ApiAccess.objects.count(), 6)
+        self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 4)
+        
+        # Should be no interplay.
+        self.assertEqual(throttle_1.should_be_throttled('cody'), True)
+        self.assertEqual(throttle_1.accessed('cody'), None)
+        self.assertEqual(ApiAccess.objects.count(), 7)
+        self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 4)
         
         # Test the timeframe.
         time.sleep(3)
         self.assertEqual(throttle_1.should_be_throttled('daniel'), False)
         self.assertEqual(len(cache.get('daniel_accesses')), 0)
-        self.assertEqual(ApiAccess.objects.count(), 5)
-        self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 3)
+        self.assertEqual(ApiAccess.objects.count(), 7)
+        self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 4)

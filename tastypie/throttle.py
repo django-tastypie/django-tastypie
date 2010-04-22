@@ -43,7 +43,7 @@ class CacheThrottle(BaseThrottle):
         times_accessed = [access for access in cache.get(key) if access >= minimum_time]
         cache.set(key, times_accessed, self.expiration)
         
-        if len(times_accessed) > int(self.throttle_at):
+        if len(times_accessed) >= int(self.throttle_at):
             # Throttle them.
             return True
         
