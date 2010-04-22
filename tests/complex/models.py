@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.comments.models import Comment
 from django.contrib.contenttypes import generic
 from django.db import models
+from django.conf import settings
 
 
 class Post(models.Model):
@@ -20,7 +21,7 @@ class Post(models.Model):
 
     def save(self, *args, **kwargs):
         self.updated = datetime.datetime.now()
-        return super(Note, self).save(*args, **kwargs)
+        return super(Post, self).save(*args, **kwargs)
 
 
 class Profile(models.Model):
@@ -39,7 +40,7 @@ class Profile(models.Model):
     time_joined = models.TimeField()
     datetime_joined = models.DateTimeField()
     document = models.FileField(upload_to='documents')
-    file_path = models.FilePathField()
+    file_path = models.FilePathField(path=settings.MEDIA_ROOT)
     avatar = models.ImageField(upload_to='avatars')
     ip = models.IPAddressField()
     rocks_da_house = models.NullBooleanField()
