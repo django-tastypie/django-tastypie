@@ -33,6 +33,10 @@ class HttpUnauthorized(HttpResponse):
     status_code = 401
 
 
+class HttpForbidden(HttpResponse):
+    status_code = 403
+
+
 class HttpMethodNotAllowed(HttpResponse):
     status_code = 405
 

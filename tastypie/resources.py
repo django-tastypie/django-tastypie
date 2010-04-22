@@ -187,7 +187,7 @@ class Resource(object):
         # Check to see if they should be throttled.
         if self.throttle_check(request):
             # Throttle limit exceeded.
-            return HttpBadRequest()
+            return HttpForbidden()
         
         # All clear. Process the request.
         kwargs_subset = kwargs.copy()
@@ -376,7 +376,7 @@ class Resource(object):
         # Check to see if they should be throttled.
         if self.throttle_check(request):
             # Throttle limit exceeded.
-            return HttpBadRequest()
+            return HttpForbidden()
         
         representation = self.build_representation()
         desired_format = self.determine_format(request)
@@ -406,7 +406,7 @@ class Resource(object):
             return auth_result
         
         if not auth_result is True:
-            return HttpUnauthorized()
+            return HttpForbidden()
         
         # Check to see if they should be throttled.
         if self.throttle_check(request):
