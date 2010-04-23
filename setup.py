@@ -12,6 +12,7 @@ setup(
     packages=[
         'tastypie',
         'tastypie.representations',
+        'tastypie.utils',
     ],
     package_data={
         'tastypie': ['templates/tastypie/*'],
