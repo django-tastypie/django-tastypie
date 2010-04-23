@@ -7,7 +7,7 @@ class Note(models.Model):
     author = models.ForeignKey(User, related_name='notes', blank=True, null=True)
     title = models.CharField(max_length=100)
     slug = models.SlugField()
-    content = models.TextField()
+    content = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     created = models.DateTimeField(default=datetime.datetime.now)
     updated = models.DateTimeField(default=datetime.datetime.now)

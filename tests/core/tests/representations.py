@@ -273,9 +273,9 @@ class ModelRepresentationTestCase(TestCase):
     
     def test_configuration(self):
         note = NoteRepresentation()
-        # FIXME: Once relations are in, this number ought to go up.
         self.assertEqual(len(note.fields), 7)
         self.assertEqual(sorted(note.fields.keys()), ['content', 'created', 'is_active', 'resource_uri', 'slug', 'title', 'updated'])
+        self.assertEqual(note.fields['content'].default, '')
         
         custom = CustomNoteRepresentation()
         self.assertEqual(len(custom.fields), 7)

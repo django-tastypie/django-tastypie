@@ -130,9 +130,8 @@ class ModelRepresentation(Representation):
             if f.null is True:
                 kwargs['null'] = True
             
-            # FIXME: There's a potential edge-case here dealing with ``blank-True``.
-            # if f.blank is True:
-            #     kwargs['default'] = ''
+            if not f.null and f.blank is True:
+                kwargs['default'] = ''
             
             if f.has_default():
                 kwargs['default'] = f.default
