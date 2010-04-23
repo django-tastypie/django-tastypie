@@ -10,15 +10,13 @@ Cody:
 - Add fixture for complex tests (must cover posts, profiles, comments, users, and groups)
 
 Daniel:
-- Implement caching.
-- Tests for ``Resource.put_list``
+- More integration tests (intermediate, advanced, composite, non-model)
+- Documentation.
 
 Matt:
 - Authentication
     - ``OauthAuthentication``
 
-- More integration tests (intermediate, advanced, composite, non-model)
-- Documentation.
 - Filtering.
 
 Long Term

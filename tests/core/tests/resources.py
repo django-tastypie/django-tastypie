@@ -242,10 +242,17 @@ class ResourceTestCase(TestCase):
         resource = NoteResource()
         request = HttpRequest()
         request.GET = {'format': 'json'}
-        request.method = 'POST'
+        request.method = 'PUT'
         
-        resp = resource.post_detail(request, obj_id=2)
-        self.assertEqual(resp.status_code, 501)
+        self.assertEqual(Note.objects.count(), 6)
+        request._raw_post_data = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}'
+        
+        resp = resource.put_list(request)
+        self.assertEqual(resp.status_code, 204)
+        self.assertEqual(Note.objects.count(), 3)
+        self.assertEqual(Note.objects.filter(is_active=True).count(), 1)
+        new_note = Note.objects.get(slug='cat-is-back-again')
+        self.assertEqual(new_note.content, "The cat is back. The dog coughed him up out back.")
     
     def test_put_detail(self):
         self.assertEqual(Note.objects.count(), 6)
