@@ -4,7 +4,7 @@ from django.utils.copycompat import deepcopy
 from tastypie import _get_canonical_resource_name
 from tastypie.exceptions import NotFound, URLReverseError
 from tastypie.fields import *
-from tastypie.representations.simple import Representation
+from tastypie.representations.simple import Representation, RepresentationSet
 
 
 def api_field_from_django_field(f, default=CharField):
@@ -142,16 +142,8 @@ class ModelRepresentation(Representation):
     @classmethod
     def get_list(cls, options=None, **kwargs):
         options = options or {}
-        model_list = cls._meta.queryset.filter(**kwargs)
-        representations = []
-        
-        for model in model_list:
-            represent = cls(**options)
-            represent.instance = model
-            represent.full_dehydrate(model)
-            representations.append(represent)
-        
-        return representations
+        queryset = cls._meta.queryset.filter(**kwargs)
+        return RepresentationSet(cls, queryset, options)
     
     @classmethod
     def delete_list(cls, **kwargs):

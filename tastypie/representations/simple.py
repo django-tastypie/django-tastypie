@@ -3,6 +3,7 @@ from django.core.urlresolvers import NoReverseMatch
 from django.utils.copycompat import deepcopy
 from tastypie.exceptions import HydrationError
 from tastypie.fields import ApiField, CharField, RelatedField
+from copy import deepcopy
 
 
 class DeclarativeMetaclass(type):
@@ -231,3 +232,35 @@ class Representation(object):
     
     class Meta:
         pass
+
+class RepresentationSet(object):
+    """
+    Lazy representation iterable, used for operating on representations using slices.
+    """
+    def __init__(self, representation_class, data, options):
+        self.representation_class = representation_class
+        self.data = data
+        self.options = options
+        self.slice = slice(None)
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            new_set = deepcopy(self)
+            new_set.slice = key
+            return new_set
+        else:
+            return self.build_representation(self.data[key])
+
+    def __iter__(self):
+        for instance in self.data[self.slice]:
+            representation = self.build_representation(instance)
+            yield representation
+
+    def __len__(self):
+        return len(self.data)
+
+    def build_representation(self, instance):
+        representation = self.representation_class(**self.options)
+        representation.instance = instance
+        representation.full_dehydrate(instance)
+        return representation

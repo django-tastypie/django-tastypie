@@ -4,7 +4,7 @@ from django.template import loader, Context
 from django.utils import simplejson
 from django.utils.encoding import force_unicode
 from tastypie.exceptions import UnsupportedFormat
-from tastypie.representations.simple import Representation
+from tastypie.representations.simple import Representation, RepresentationSet
 from tastypie.utils import format_datetime
 from tastypie.fields import ApiField
 from StringIO import StringIO
@@ -84,7 +84,7 @@ class Serializer(object):
         return deserialized
 
     def to_simple(self, data, options):
-        if type(data) in (list, tuple):
+        if type(data) in (list, tuple) or isinstance(data, RepresentationSet):
             return [self.to_simple(item, options) for item in data]
         elif isinstance(data, dict):
             return dict((key, self.to_simple(val, options)) for (key, val) in data.iteritems())
@@ -107,7 +107,7 @@ class Serializer(object):
             return force_unicode(data)
 
     def to_etree(self, data, options=None, name=None, depth=0):
-        if type(data) in (list, tuple):
+        if type(data) in (list, tuple) or isinstance(data, RepresentationSet):
             element = Element(name or 'objects')
             if name:
                 element = Element(name)
@@ -223,7 +223,7 @@ def get_type_string(data):
         return 'float'
     elif data_type == bool:
         return 'boolean'
-    elif data_type in (list, tuple):
+    elif data_type in (list, tuple) or isinstance(data, RepresentationSet):
         return 'list'
     elif data_type == dict:
         return 'hash'
