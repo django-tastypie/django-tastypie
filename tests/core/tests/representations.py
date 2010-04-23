@@ -447,7 +447,7 @@ class RepresentationSetTestCase(TestCase):
         self.assertEqual(len(list(self.repr_set[:3])), 3)
         self.assertEqual(len(list(self.repr_set[3:])), 3)
         self.assertEqual(len(list(self.repr_set[1:4])), 3)
-        # unsliced set should remain the same (deepcopied)
+        # unsliced set should remain the same (copied)
         self.assertEqual(len(list(self.repr_set)), 6)
 
     def test_slicing_len(self):
@@ -455,7 +455,7 @@ class RepresentationSetTestCase(TestCase):
         self.assertEqual(len(self.repr_set[:3]), 3)
         self.assertEqual(len(self.repr_set[3:]), 3)
         self.assertEqual(len(self.repr_set[1:4]), 3)
-        # unsliced set should remain the same (deepcopied)
+        # unsliced set should remain the same (copied)
         self.assertEqual(len(self.repr_set), 6)
 
     def test_iter(self):

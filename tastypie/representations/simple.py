@@ -1,9 +1,8 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import NoReverseMatch
-from django.utils.copycompat import deepcopy
+from django.utils.copycompat import deepcopy, copy
 from tastypie.exceptions import HydrationError
 from tastypie.fields import ApiField, CharField, RelatedField
-from copy import deepcopy
 
 
 class DeclarativeMetaclass(type):
@@ -245,7 +244,7 @@ class RepresentationSet(object):
 
     def __getitem__(self, key):
         if isinstance(key, slice):
-            new_set = deepcopy(self)
+            new_set = copy(self)
             new_set.slice = key
             return new_set
         else:
