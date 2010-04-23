@@ -1,3 +1,4 @@
+import warnings
 from django.conf.urls.defaults import *
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import reverse
@@ -5,6 +6,7 @@ from django.http import HttpResponse
 from tastypie import _add_resource, _remove_resource
 from tastypie.exceptions import NotRegistered
 from tastypie.serializers import Serializer
+from tastypie.utils.mime import determine_format, build_content_type
 
 
 class Api(object):
@@ -28,9 +30,10 @@ class Api(object):
         
         self._registry[resource_name] = resource
         
-        # TODO: Silent replacement. Not sure if that's good or bad. Seems
-        #       like it should at least emit a warning...
         if canonical is True:
+            if resource_name in self._canonicals:
+                warnings.warn("A new resource '%r' is replacing the existing canonical URL for '%s'." % (resource, resource_name), Warning, stacklevel=2)
+            
             self._canonicals[resource_name] = resource
         
         # Register it globally so we can build URIs.
@@ -71,17 +74,18 @@ class Api(object):
         return urlpatterns
     
     def top_level(self, request, api_name=None):
-        # FIXME: api_name is never handled here but is captured in the urlpattern above.
-        # FIXME: Hard-coding this sucks but there's logic in ``Resource`` that
-        #        covers this behavior. Abstraction is needed.
         serializer = Serializer()
         available_resources = {}
         
+        if api_name is None:
+            api_name = self.api_name
+        
         for name in sorted(self._registry.keys()):
             available_resources[name] = reverse("api_dispatch_list", kwargs={
-                'api_name': self.api_name,
+                'api_name': api_name,
                 'resource_name': name,
             })
         
-        serialized = serializer.to_json(available_resources)
-        return HttpResponse(content=serialized, content_type='application/json; charset=utf-8')
+        desired_format = determine_format(request, serializer)
+        serialized = serializer.serialize(available_resources, desired_format)
+        return HttpResponse(content=serialized, content_type=build_content_type(desired_format))

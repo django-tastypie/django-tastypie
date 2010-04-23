@@ -1,3 +1,6 @@
+import warnings
+warnings.simplefilter('ignore', Warning)
+
 from core.tests.api import *
 from core.tests.authentication import *
 from core.tests.cache import *
@@ -7,3 +10,4 @@ from core.tests.representations import *
 from core.tests.resources import *
 from core.tests.serializers import *
 from core.tests.throttle import *
+from core.tests.utils import *

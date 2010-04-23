@@ -22,7 +22,7 @@ def api_field_from_django_field(f, default=CharField):
         result = FloatField
     elif f.get_internal_type() in ('IntegerField', 'PositiveIntegerField', 'PositiveSmallIntegerField', 'SmallIntegerField'):
         result = IntegerField
-    # TODO: Enable these via introspection. The reason they're not enabled
+    # TODO: Perhaps enable these via introspection. The reason they're not enabled
     #       by default is the very different ``__init__`` they have over
     #       the other fields.
     # elif f.get_internal_type() == 'ForeignKey':
@@ -83,8 +83,6 @@ class ModelRepresentation(Representation):
         if self.object_class is None:
             raise ImproperlyConfigured("Using the Representation requires providing an object_class in the inner Meta class.")
     
-    # FIXME: Once relations are supported, this needs to be modified to allow
-    #        them through.
     def should_skip_field(self, field):
         """
         Given a Django model field, return if it should be included in the

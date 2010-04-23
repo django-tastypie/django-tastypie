@@ -70,8 +70,6 @@ class BasicAuthentication(Authentication):
         else:
             user = authenticate(username=bits[0], password=bits[1])
 
-        # FIXME: log in and check for request.user on future requests?
-
         if user is None:
             return self._unauthorized()
         

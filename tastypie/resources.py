@@ -1,4 +1,3 @@
-import mimeparse
 from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse
@@ -10,6 +9,7 @@ from tastypie.paginator import Paginator
 from tastypie.serializers import Serializer
 from tastypie.throttle import BaseThrottle
 from tastypie.utils import is_valid_jsonp_callback_value
+from tastypie.utils.mime import determine_format, build_content_type
 
 
 class Resource(object):
@@ -117,24 +117,7 @@ class Resource(object):
         return urlpatterns
     
     def determine_format(self, request):
-        # First, check if they forced the format.
-        if request.GET.get('format'):
-            if request.GET['format'] in self.serializer.formats:
-                return self.serializer.get_mime_for_format(request.GET['format'])
-
-        # If callback parameter is present, use JSONP.
-        if request.GET.has_key('callback'):
-            return self.serializer.get_mime_for_format('jsonp')
-        
-        # Try to fallback on the Accepts header.
-        if request.META.get('HTTP_ACCEPT'):
-            best_format = mimeparse.best_match(self.serializer.supported_formats, request.META['HTTP_ACCEPT'])
-            
-            if best_format:
-                return best_format
-        
-        # No valid 'Accept' header/formats. Sane default.
-        return self.default_format
+        return determine_format(request, self.serializer, default_format=self.default_format)
 
     def serialize(self, request, data, format, options=None):
         options = options or {}
@@ -150,12 +133,6 @@ class Resource(object):
 
     def deserialize(self, request, data, format='application/json'):
         return self.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', 'application/json'))
-    
-    def build_content_type(self, format, encoding='utf-8'):
-        if 'charset' in format:
-            return format
-        
-        return "%s; charset=%s" % (format, encoding)
     
     def dispatch_list(self, request, **kwargs):
         return self.dispatch('list', request, **kwargs)
@@ -282,7 +259,7 @@ class Resource(object):
         except BadRequest, e:
             return HttpBadRequest(e.args[0])
         
-        return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
+        return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
     
     def get_detail(self, request, **kwargs):
         """
@@ -300,7 +277,7 @@ class Resource(object):
         except BadRequest, e:
             return HttpBadRequest(e.args[0])
         
-        return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
+        return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
     
     def put_list(self, request, **kwargs):
         """
@@ -420,7 +397,7 @@ class Resource(object):
         except BadRequest, e:
             return HttpBadRequest(e.args[0])
         
-        return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
+        return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
     
     def get_multiple(self, request, **kwargs):
         """
@@ -472,7 +449,7 @@ class Resource(object):
         except BadRequest, e:
             return HttpBadRequest(e.args[0])
         
-        return HttpResponse(content=serialized, content_type=self.build_content_type(desired_format))
+        return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
 
 
 # Based off of ``piston.utils.coerce_put_post``. Similarly BSD-licensed.

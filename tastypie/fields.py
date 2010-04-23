@@ -253,8 +253,6 @@ class RelatedField(ApiField):
                 raise ApiFieldError("Could not find the provided object via resource URI '%s'." % value)
         elif hasattr(value, 'items'):
             # Try to hydrate the data provided.
-            # TODO: This assumes a dictionary-like structure. I think that's
-            #       fine but we may wish to re-evaluate that.
             self.fk_repr = self.to(data=value)
             return self.fk_repr
         else:
