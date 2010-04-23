@@ -2,7 +2,7 @@ import datetime
 from django.contrib.auth.models import User
 from django.test import TestCase
 from tastypie import fields
-from tastypie.representations.simple import Representation
+from tastypie.representations.simple import Representation, RepresentationSet
 from tastypie.representations.models import ModelRepresentation
 from core.models import Note, Subject
 
@@ -433,3 +433,47 @@ class ModelRepresentationTestCase(TestCase):
         note.delete(pk=1)
         self.assertEqual(Note.objects.all().count(), 5)
         self.assertRaises(Note.DoesNotExist, Note.objects.get, pk=1)
+
+
+class RepresentationSetTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+
+    def setUp(self):
+        data = Note.objects.all()
+        self.repr_set = RepresentationSet(NoteRepresentation, data, {})
+
+    def test_slicing(self):
+        self.assertEqual(len(list(self.repr_set)), 6)
+        self.assertEqual(len(list(self.repr_set[:3])), 3)
+        self.assertEqual(len(list(self.repr_set[3:])), 3)
+        self.assertEqual(len(list(self.repr_set[1:4])), 3)
+        # unsliced set should remain the same (deepcopied)
+        self.assertEqual(len(list(self.repr_set)), 6)
+
+    def test_slicing_len(self):
+        self.assertEqual(len(self.repr_set), 6)
+        self.assertEqual(len(self.repr_set[:3]), 3)
+        self.assertEqual(len(self.repr_set[3:]), 3)
+        self.assertEqual(len(self.repr_set[1:4]), 3)
+        # unsliced set should remain the same (deepcopied)
+        self.assertEqual(len(self.repr_set), 6)
+
+    def test_iter(self):
+        seen = 0
+        for repr in self.repr_set:
+            seen += 1
+        self.assertEqual(seen, 6)
+
+        seen = 0
+        for repr in self.repr_set[3:]:
+            seen += 1
+        self.assertEqual(seen, 3)
+
+    def test_getitem(self):
+        item0 = self.repr_set[0]
+        self.assert_(isinstance(item0, NoteRepresentation))
+
+        item1 = self.repr_set[1]
+        self.assert_(isinstance(item1, NoteRepresentation))
+
+        self.assertNotEqual(item0.instance.pk, item1.instance.pk)

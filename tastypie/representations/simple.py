@@ -257,7 +257,7 @@ class RepresentationSet(object):
             yield representation
 
     def __len__(self):
-        return len(self.data)
+        return len(self.data[self.slice])
 
     def build_representation(self, instance):
         representation = self.representation_class(**self.options)
