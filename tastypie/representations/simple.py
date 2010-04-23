@@ -1,5 +1,5 @@
 from django.core.exceptions import ImproperlyConfigured
-from django.core.urlresolvers import NoReverseMatch
+from django.core.urlresolvers import NoReverseMatch, reverse
 from django.utils.copycompat import deepcopy, copy
 from tastypie.exceptions import HydrationError
 from tastypie.fields import ApiField, CharField, RelatedField
@@ -240,6 +240,8 @@ class RepresentationSet(object):
         self.representation_class = representation_class
         self.data = data
         self.options = options
+        self.api_name = options.get('api_name')
+        self.resource_name = options.get('resource_name')
         self.slice = slice(None)
 
     def __getitem__(self, key):
@@ -263,3 +265,9 @@ class RepresentationSet(object):
         representation.instance = instance
         representation.full_dehydrate(instance)
         return representation
+
+    def get_resource_uri(self):
+        return reverse('api_dispatch_list', kwargs={
+            'api_name': self.api_name,
+            'resource_name': self.resource_name,
+        })

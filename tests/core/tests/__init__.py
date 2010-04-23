@@ -6,6 +6,7 @@ from core.tests.authentication import *
 from core.tests.cache import *
 from core.tests.fields import *
 from core.tests.http import *
+from core.tests.paginator import *
 from core.tests.representations import *
 from core.tests.resources import *
 from core.tests.serializers import *

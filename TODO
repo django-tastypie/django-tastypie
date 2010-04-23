@@ -5,9 +5,7 @@ Short Term
 ----------
 
 Cody:
-- Pagination
 - Test support for serialization/deserialization.
-- Add fixture for complex tests (must cover posts, profiles, comments, users, and groups)
 
 Daniel:
 - More integration tests (intermediate, advanced, composite, non-model)

@@ -1,6 +1,7 @@
 import datetime
 from django.contrib.auth.models import User
 from django.test import TestCase
+from django.core.urlresolvers import NoReverseMatch
 from tastypie import fields
 from tastypie.representations.simple import Representation, RepresentationSet
 from tastypie.representations.models import ModelRepresentation
@@ -440,7 +441,7 @@ class RepresentationSetTestCase(TestCase):
 
     def setUp(self):
         data = Note.objects.all()
-        self.repr_set = RepresentationSet(NoteRepresentation, data, {})
+        self.repr_set = RepresentationSet(NoteRepresentation, data, {'api_name': 'v1', 'resource_name': 'notes'})
 
     def test_slicing(self):
         self.assertEqual(len(list(self.repr_set)), 6)
@@ -477,3 +478,10 @@ class RepresentationSetTestCase(TestCase):
         self.assert_(isinstance(item1, NoteRepresentation))
 
         self.assertNotEqual(item0.instance.pk, item1.instance.pk)
+
+    def test_resource_uri(self):
+        self.assertEqual(self.repr_set.get_resource_uri(), '/api/v1/notes/')
+
+        self.repr_set.api_name = None
+        self.repr_set.resource_name = None
+        self.assertRaises(NoReverseMatch, self.repr_set.get_resource_uri)
