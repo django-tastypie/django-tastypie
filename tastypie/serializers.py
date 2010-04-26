@@ -5,7 +5,7 @@ from django.utils import simplejson
 from django.utils.encoding import force_unicode
 from tastypie.exceptions import UnsupportedFormat
 from tastypie.representations.simple import Representation, RepresentationSet
-from tastypie.utils import format_datetime
+from tastypie.utils import format_datetime, format_date, format_time
 from tastypie.fields import ApiField
 from StringIO import StringIO
 import datetime
@@ -97,6 +97,10 @@ class Serializer(object):
             return self.to_simple(data.value, options)
         elif isinstance(data, datetime.datetime):
             return format_datetime(data)
+        elif isinstance(data, datetime.date):
+            return format_date(data)
+        elif isinstance(data, datetime.time):
+            return format_time(data)
         elif isinstance(data, bool):
             return data
         elif type(data) in (long, int, float):

@@ -47,7 +47,7 @@ class SerializerTestCase(TestCase):
     def test_to_xml(self):
         serializer = Serializer()
         sample_1 = self.get_sample1()
-        self.assertEqual(serializer.to_xml(sample_1), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><age type="integer">27</age><name>Daniel</name><date_joined>2010-03-27</date_joined></response>')
+        self.assertEqual(serializer.to_xml(sample_1), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><age type="integer">27</age><name>Daniel</name><date_joined>27 Mar 2010</date_joined></response>')
 
     def test_to_xml2(self):
         serializer = Serializer()
@@ -68,7 +68,7 @@ class SerializerTestCase(TestCase):
         serializer = Serializer()
         
         sample_1 = self.get_sample1()
-        self.assertEqual(serializer.to_json(sample_1), '{"age": 27, "date_joined": "2010-03-27", "name": "Daniel"}')
+        self.assertEqual(serializer.to_json(sample_1), '{"age": 27, "date_joined": "27 Mar 2010", "name": "Daniel"}')
     
     def test_from_json(self):
         serializer = Serializer()
@@ -108,7 +108,7 @@ class SerializerTestCase(TestCase):
 
         sample_1 = self.get_sample1()
         options = {'callback': 'myCallback'}
-        self.assertEqual(serializer.to_jsonp(sample_1, options), 'myCallback({"age": 27, "date_joined": "2010-03-27", "name": "Daniel"})')
+        self.assertEqual(serializer.to_jsonp(sample_1, options), 'myCallback({"age": 27, "date_joined": "27 Mar 2010", "name": "Daniel"})')
 
 class RepresentationSerializationTestCase(TestCase):
     fixtures = ['note_testdata.json']
