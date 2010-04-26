@@ -16,6 +16,10 @@ class Api(object):
     
     Especially useful for navigation, HATEOAS and for providing multiple
     versions of your API.
+    
+    Optionally supplying ``api_name`` allows you to name the API. Generally,
+    this is done with version numbers (i.e. ``v1``, ``v2``, etc.) but can
+    be named any string.
     """
     def __init__(self, api_name="v1"):
         self.api_name = api_name
@@ -23,6 +27,13 @@ class Api(object):
         self._canonicals = {}
     
     def register(self, resource, canonical=True):
+        """
+        Registers a ``Resource`` subclass with the API.
+        
+        Optionally accept a ``canonical`` argument, which indicates that the
+        resource being registered is the canonical variant. Defaults to
+        ``True``.
+        """
         resource_name = getattr(resource, 'resource_name', None)
         
         if resource_name is None:
@@ -40,6 +51,9 @@ class Api(object):
         _add_resource(self, resource, canonical)
     
     def unregister(self, resource_name):
+        """
+        If present, unregisters a resource from the API.
+        """
         if resource_name in self._registry:
             _remove_resource(self, self._registry[resource_name])
             del(self._registry[resource_name])
@@ -48,6 +62,9 @@ class Api(object):
             del(self._canonicals[resource_name])
     
     def canonical_resource_for(self, resource_name):
+        """
+        Returns the canonical resource for a given ``resource_name``.
+        """
         if resource_name in self._canonicals:
             return self._canonicals[resource_name]
         
@@ -60,6 +77,10 @@ class Api(object):
     
     @property
     def urls(self):
+        """
+        Provides URLconf details for the ``Api`` and all registered
+        ``Resources`` beneath it.
+        """
         pattern_list = [
             url(r"^(?P<api_name>%s)/$" % self.api_name, self.wrap_view('top_level'), name="api_%s_top_level" % self.api_name),
         ]
@@ -74,6 +95,10 @@ class Api(object):
         return urlpatterns
     
     def top_level(self, request, api_name=None):
+        """
+        A view that returns a serialized list of all resources registers
+        to the ``Api``. Useful for discovery.
+        """
         serializer = Serializer()
         available_resources = {}
         

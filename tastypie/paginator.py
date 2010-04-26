@@ -5,7 +5,35 @@ from urllib import urlencode
 
 
 class Paginator(object):
+    """
+    Limits result sets down to sane amounts for passing to the client.
+    
+    This is used in place of Django's ``Paginator`` due to the way pagination
+    works. ``limit`` & ``offset`` (tastypie) are used in place of ``page``
+    (Django) so none of the page-related calculations are necessary.
+    
+    This implementation also provides additional details like the
+    ``total_count`` of representations seen and convenience links to the
+    ``previous``/``next`` pages of data as available.
+    """
     def __init__(self, request_data, objects, limit=None, offset=0):
+        """
+        Instantiates the ``Paginator`` and allows for some configuration.
+        
+        The ``request_data`` argument ought to be a dictionary-like object.
+        May provide ``limit`` and/or ``offset`` to override the defaults.
+        Commonly provided ``request.GET``. Required.
+        
+        The ``objects`` should be a list-like object of ``Representations``.
+        This is typically a ``RepresentationSet`` but can be anything that
+        implements slicing. Required.
+        
+        Optionally accepts a ``limit`` argument, which specifies how many
+        items to show at a time. Defaults to ``None``, which is no limit.
+        
+        Optionally accepts an ``offset`` argument, which specifies where in
+        the ``objects`` to start displaying results from. Defaults to 0.
+        """
         self.request_data = request_data
         self.objects = objects
         self.limit = limit

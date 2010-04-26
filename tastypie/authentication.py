@@ -19,6 +19,11 @@ class Authentication(object):
         return True
     
     def get_identifier(self, request):
+        """
+        Provides a unique string identifier for the requestor.
+        
+        This implementation returns a combination of IP address and hostname.
+        """
         return "%s_%s" % (request.META.get('REMOTE_ADDR', 'noaddr'), request.META.get('REMOTE_HOST', 'nohost'))
 
 
@@ -49,6 +54,13 @@ class BasicAuthentication(Authentication):
         return response
 
     def is_authenticated(self, request, **kwargs):
+        """
+        Checks a user's basic auth credentials against the current
+        Django auth backend.
+        
+        Should return either ``True`` if allowed, ``False`` if not or an
+        ``HttpResponse`` if you need something custom.
+        """
         if not request.META.get('HTTP_AUTHORIZATION'):
             return self._unauthorized()
         
@@ -76,4 +88,9 @@ class BasicAuthentication(Authentication):
         return True
     
     def get_identifier(self, request):
+        """
+        Provides a unique string identifier for the requestor.
+        
+        This implementation returns the user's basic auth username.
+        """
         return request.META.get('REMOTE_USER', 'nouser')

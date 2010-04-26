@@ -16,10 +16,29 @@ DATETIME_REGEX = re.compile('^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})(T|
 # All the ApiField variants.
 
 class ApiField(object):
+    """The base implementation of a field used by the representations."""
     dehydrated_type = 'string'
     
-    """The base implementation of a field used by the representations."""
     def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, readonly=False):
+        """
+        Sets up the field. This is generally called when the containing
+        ``Representation`` is initialized.
+        
+        Optionally accepts an ``attribute``, which should be a string of
+        either an instance attribute or callable off the object during the
+        ``dehydrate`` or push data onto an object during the ``hydrate``.
+        Defaults to ``None``, meaning data will be manually accessed.
+        
+        Optionally accepts a ``default``, which provides default data when the
+        object being ``dehydrated``/``hydrated`` has no data on the field.
+        Defaults to ``NOT_PROVIDED``.
+        
+        Optionally accepts a ``null``, which indicated whether or not a
+        ``None`` is allowable data on the field. Defaults to ``False``.
+        
+        Optionally accepts a ``readonly``, which indicates whether the field
+        is used during the ``hydrate`` or not. Defaults to ``False``.
+        """
         # Track what the index thinks this field is called.
         self.instance_name = None
         self.attribute = attribute
@@ -87,6 +106,10 @@ class ApiField(object):
         return value
     
     def hydrate(self):
+        """
+        Takes data stored on the field and returns it. Used for taking simple
+        data and building a instance object.
+        """
         if self.readonly:
             return None
         
@@ -105,6 +128,11 @@ class ApiField(object):
 
 
 class CharField(ApiField):
+    """
+    A text field of arbitrary length.
+    
+    Covers both ``models.CharField`` and ``models.TextField``.
+    """
     dehydrated_type = 'string'
     
     def dehydrate(self, obj):
@@ -118,6 +146,12 @@ class CharField(ApiField):
 
 
 class IntegerField(ApiField):
+    """
+    An integer field.
+    
+    Covers ``models.IntegerField``, ``models.PositiveIntegerField``,
+    ``models.PositiveSmallIntegerField`` and ``models.SmallIntegerField``.
+    """
     dehydrated_type = 'integer'
     
     def dehydrate(self, obj):
@@ -131,6 +165,9 @@ class IntegerField(ApiField):
 
 
 class FloatField(ApiField):
+    """
+    A floating point field.
+    """
     dehydrated_type = 'float'
     
     def dehydrate(self, obj):
@@ -144,6 +181,11 @@ class FloatField(ApiField):
 
 
 class BooleanField(ApiField):
+    """
+    A boolean field.
+    
+    Covers both ``models.BooleanField`` and ``models.NullBooleanField``.
+    """
     dehydrated_type = 'boolean'
     
     def dehydrate(self, obj):
@@ -157,6 +199,9 @@ class BooleanField(ApiField):
 
 
 class DateField(ApiField):
+    """
+    A date field.
+    """
     dehydrated_type = 'date'
     
     def dehydrate(self, obj):
@@ -179,6 +224,9 @@ class DateField(ApiField):
 
 
 class DateTimeField(ApiField):
+    """
+    A datetime field.
+    """
     dehydrated_type = 'datetime'
     
     def dehydrate(self, obj):
@@ -201,13 +249,47 @@ class DateTimeField(ApiField):
 
 
 class RelatedField(ApiField):
+    """
+    Provides access to data that is related within the database.
+    
+    A base class not intended for direct use but provides functionality that
+    ``ForeignKey`` and ``ManyToManyField`` build upon.
+    
+    The contents of this field actually point to another ``Representation``,
+    rather than the related object. This allows the field to represent its data
+    in different ways.
+    
+    The abstractions based around this are "leaky" in that, unlike the other
+    fields provided by ``tastypie``, these fields don't handle arbitrary objects
+    very well. The subclasses use Django's ORM layer to make things go, though
+    there is no ORM-specific code at this level.
+    """
     dehydrated_type = 'related'
     is_related = True
     
-    # TODO: This is leaky when dealing with non-model representations.
-    #       Without a good use case, there's not a good way to solve this
-    #       for now.
     def __init__(self, to, attribute, related_name=None, null=False, full_repr=False):
+        """
+        Builds the field and prepares it to access to related data.
+        
+        The ``to`` argument should point to a ``Representation`` class, NOT
+        to a ``Model``. Required.
+        
+        The ``attribute`` argument should specify what field/callable points to
+        the related data on the instance object. Required.
+        
+        Optionally accepts a ``related_name`` argument. Currently unused, as
+        unlike Django's ORM layer, reverse relations between ``Representation``
+        classes are not automatically created. Defaults to ``None``.
+        
+        Optionally accepts a ``null``, which indicated whether or not a
+        ``None`` is allowable data on the field. Defaults to ``False``.
+        
+        Optionally accepts a ``full_repr``, which indicates how the related
+        ``Representation`` will appear post-``dehydrate``. If ``False``, the
+        related ``Representation`` will appear as a URL to the endpoint of that
+        resource. If ``True``, the result of the sub-representation's
+        ``dehydrate`` will be included in full.
+        """
         self.instance_name = None
         self.to = to
         self.attribute = attribute
@@ -219,20 +301,33 @@ class RelatedField(ApiField):
         self.resource_name = None
     
     def has_default(self):
+        """
+        Always returns ``False``, as there is no ``default`` available on
+        related fields.
+        """
         return False
     
     @property
     def default(self):
+        """
+        Raises an exception because related fields do not have a ``default``.
+        """
         raise ApiFieldError("%r fields do not have default data." % self)
     
     def get_related_representation(self, related_instance):
-        # TODO: More leakage.
+        """
+        Instaniates the related representation.
+        """
         related_repr = self.to(api_name=self.api_name, resource_name=self.resource_name)
         # Try to be efficient about DB queries.
         related_repr.instance = related_instance
         return related_repr
     
     def dehydrate_related(self, related_repr):
+        """
+        Based on the ``full_repr``, returns either the endpoint or the data
+        from ``full_dehydrate`` for the related representation.
+        """
         if not self.full_repr:
             # Be a good netizen.
             return related_repr.get_resource_uri()
@@ -242,6 +337,12 @@ class RelatedField(ApiField):
             return related_repr
     
     def build_related_representation(self, value):
+        """
+        Used to ``hydrate`` the data provided. If just a URL is provided,
+        the related representation is attempted to be loaded. If a
+        dictionary-like structure is provided, a fresh representation is
+        created.
+        """
         if isinstance(value, basestring):
             # We got a URI. Load the object and assign it.
             self.fk_repr = self.to()
@@ -260,6 +361,11 @@ class RelatedField(ApiField):
 
 
 class ForeignKey(RelatedField):
+    """
+    Provides access to related data via foreign key.
+    
+    This subclass requires Django's ORM layer to work properly.
+    """
     def __init__(self, to, attribute, related_name=None, null=False, full_repr=False):
         super(ForeignKey, self).__init__(to, attribute, related_name, null=null, full_repr=full_repr)
         self.fk_repr = None
@@ -285,6 +391,15 @@ class ForeignKey(RelatedField):
 
 
 class ManyToManyField(RelatedField):
+    """
+    Provides access to related data via a join table.
+    
+    This subclass requires Django's ORM layer to work properly.
+    
+    Note that the ``hydrate`` portions of this field are quite different than
+    any other field. ``hydrate_m2m`` actually handles the data and relations.
+    This is due to the way Django implements M2M relationships.
+    """
     is_m2m = True
     
     def __init__(self, to, attribute, related_name=None, null=False, full_repr=False):
