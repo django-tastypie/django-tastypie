@@ -245,7 +245,7 @@ class ResourceTestCase(TestCase):
         request.method = 'PUT'
         
         self.assertEqual(Note.objects.count(), 6)
-        request._raw_post_data = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}'
+        request.raw_post_data = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}'
         
         resp = resource.put_list(request)
         self.assertEqual(resp.status_code, 204)
@@ -260,7 +260,7 @@ class ResourceTestCase(TestCase):
         request = HttpRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request._raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
+        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
         
         resp = resource.put_detail(request, obj_id=10)
         self.assertEqual(resp.status_code, 201)
@@ -268,7 +268,7 @@ class ResourceTestCase(TestCase):
         new_note = Note.objects.get(slug='cat-is-back')
         self.assertEqual(new_note.content, "The cat is back. The dog coughed him up out back.")
         
-        request._raw_post_data = '{"content": "The cat is gone again. I think it was the rabbits that ate him this time.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Gone", "updated": "2010-04-03 20:05:00"}'
+        request.raw_post_data = '{"content": "The cat is gone again. I think it was the rabbits that ate him this time.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Gone", "updated": "2010-04-03 20:05:00"}'
         
         resp = resource.put_detail(request, obj_id=10)
         self.assertEqual(resp.status_code, 204)
@@ -282,7 +282,7 @@ class ResourceTestCase(TestCase):
         request = HttpRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        request._raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
+        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
         
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)

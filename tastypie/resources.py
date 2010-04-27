@@ -284,7 +284,7 @@ class Resource(object):
         Replaces a collection of resources with another collection.
         Return ``HttpAccepted`` (204 No Content).
         """
-        deserialized = self.deserialize(request, request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         
         if not 'objects' in deserialized:
             return HttpBadRequest("Invalid data sent.")
@@ -307,7 +307,7 @@ class Resource(object):
         If a new resource is created, return ``HttpCreated`` (201 Created).
         If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
         """
-        deserialized = self.deserialize(request, request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         data = {}
         
         for key, value in deserialized.items():
@@ -326,7 +326,7 @@ class Resource(object):
         """
         If a new resource is created, return ``HttpCreated`` (201 Created).
         """
-        deserialized = self.deserialize(request, request._raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         data = {}
         
         for key, value in deserialized.items():
