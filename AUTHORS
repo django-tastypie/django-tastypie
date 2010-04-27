@@ -10,3 +10,6 @@ Contributors:
 * None so far
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
+
+Thanks to various contributors of the Django test server patch, borrowed from
+http://code.djangoproject.com/ticket/2879 and placed in tests/testcases.py.
