@@ -3,7 +3,7 @@ import threading
 
 from django.core.handlers.wsgi import WSGIHandler
 from django.core.servers import basehttp
-from django.test.testcases import TestCase
+from django.test.testcases import TransactionTestCase
 from django.core.management import call_command
 
 class StoppableWSGIServer(basehttp.WSGIServer):
@@ -67,7 +67,7 @@ class TestServerThread(threading.Thread):
         threading.Thread.join(self, timeout)
 
 
-class TestServerTestCase(TestCase):
+class TestServerTestCase(TransactionTestCase):
     def start_test_server(self, address='localhost', port=8000):
         """Creates a live test server object (instance of WSGIServer)."""
         self.server_thread = TestServerThread(address, port)
