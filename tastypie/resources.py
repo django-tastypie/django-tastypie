@@ -3,7 +3,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse
 from tastypie.authentication import Authentication
 from tastypie.cache import NoCache
-from tastypie.exceptions import NotFound, BadRequest
+from tastypie.exceptions import NotFound, BadRequest, MultipleRepresentationsFound
 from tastypie.http import *
 from tastypie.paginator import Paginator
 from tastypie.serializers import Serializer
@@ -269,6 +269,8 @@ class Resource(object):
             representation = self.cached_fetch_detail(**kwargs)
         except NotFound:
             return HttpGone()
+        except MultipleRepresentationsFound:
+            return HttpResponse("More than one resource is found at this URI.")
         
         desired_format = self.determine_format(request)
         

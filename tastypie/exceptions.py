@@ -18,6 +18,10 @@ class NotFound(TastyPieError):
     pass
 
 
+class MultipleRepresentationsFound(TastyPieError):
+    pass
+
+
 class ApiFieldError(TastyPieError):
     pass
 
