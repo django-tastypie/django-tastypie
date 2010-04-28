@@ -360,14 +360,14 @@ class RelatedField(ApiField):
             raise ApiFieldError("The '%s' field has was given data that was not a URI and not a dictionary-alike: %s." % (self.instance_name, value))
 
 
-class ForeignKey(RelatedField):
+class ToOneField(RelatedField):
     """
     Provides access to related data via foreign key.
     
     This subclass requires Django's ORM layer to work properly.
     """
     def __init__(self, to, attribute, related_name=None, null=False, full_repr=False):
-        super(ForeignKey, self).__init__(to, attribute, related_name, null=null, full_repr=full_repr)
+        super(ToOneField, self).__init__(to, attribute, related_name, null=null, full_repr=full_repr)
         self.fk_repr = None
     
     def dehydrate(self, obj):
@@ -390,7 +390,15 @@ class ForeignKey(RelatedField):
         return self.build_related_representation(self.value)
 
 
-class ManyToManyField(RelatedField):
+class ForeignKey(ToOneField):
+    pass
+
+
+class OneToOneField(ToOneField):
+    pass
+
+
+class ToManyField(RelatedField):
     """
     Provides access to related data via a join table.
     
@@ -403,13 +411,13 @@ class ManyToManyField(RelatedField):
     is_m2m = True
     
     def __init__(self, to, attribute, related_name=None, null=False, full_repr=False):
-        super(ManyToManyField, self).__init__(to, attribute, related_name, null=null, full_repr=full_repr)
+        super(ToManyField, self).__init__(to, attribute, related_name, null=null, full_repr=full_repr)
         self.m2m_reprs = []
     
     def dehydrate(self, obj):
         if not obj.pk:
             if not self.null:
-                raise ApiFieldError("The model '%r' does not have a primary key and can not be used in a ManyToMany context." % obj)
+                raise ApiFieldError("The model '%r' does not have a primary key and can not be used in a ToMany context." % obj)
             
             return []
         
@@ -447,6 +455,14 @@ class ManyToManyField(RelatedField):
             m2m_hydrated.append(self.build_related_representation(value))
         
         return m2m_hydrated
+
+
+class ManyToManyField(ToManyField):
+    pass
+
+
+class OneToManyField(ToManyField):
+    pass
 
 
 # DRL_FIXME: Need more types?
