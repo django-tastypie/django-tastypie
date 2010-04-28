@@ -1,8 +1,12 @@
 import datetime
+import os
 from django.contrib.auth.models import User
 from django.contrib.comments.models import Comment
 from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.models import ContentType
+from django.core.management import call_command
 from django.db import models
+from django.db.models import signals, get_models
 from django.conf import settings
 
 
@@ -50,3 +54,24 @@ class Profile(models.Model):
 
     def __unicode__(self):
         return "%s's profile" % self.user
+
+
+def setup_test_data(app, created_models, verbosity, interactive, **kwargs):
+    """
+    This signal does two things:
+        - Look in apps's fixtures directory for a test_data.json and load it
+        - Set the correct content type for comments (only posts)
+
+    This will go away when we drop support for Django < 1.2, as natural keys
+    will solve this problem better.
+    """
+    dirname = os.path.dirname(app.__file__)
+    fixture = os.path.join(dirname, 'fixtures', 'test_data.json')
+    call_command('loaddata', fixture, verbosity=1)
+
+    content_type = ContentType.objects.get_for_model(Post)
+    for comment in Comment.objects.all():
+        comment.content_type = content_type
+        comment.save()
+
+signals.post_syncdb.connect(setup_test_data)
