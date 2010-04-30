@@ -6,7 +6,7 @@ from django.utils.encoding import force_unicode
 from tastypie.exceptions import UnsupportedFormat
 from tastypie.representations.simple import Representation, RepresentationSet
 from tastypie.utils import format_datetime, format_date, format_time
-from tastypie.fields import ApiField
+from tastypie.fields import ApiField, ToOneField, ToManyField
 from StringIO import StringIO
 import datetime
 try:
@@ -94,7 +94,18 @@ class Serializer(object):
                 object[field_name] = self.to_simple(field_object, options)
             return object
         elif isinstance(data, ApiField):
-            return self.to_simple(data.value, options)
+            if isinstance(data, ToOneField):
+                if data.full_repr:
+                    return self.to_simple(data.fk_repr, options)
+                else:
+                    return self.to_simple(data.value, options)
+            elif isinstance(data, ToManyField):
+                if data.full_repr:
+                    return [self.to_simple(repr, options) for repr in data.m2m_reprs]
+                else:
+                    return [self.to_simple(val, options) for val in data.value]
+            else:
+                return self.to_simple(data.value, options)
         elif isinstance(data, datetime.datetime):
             return format_datetime(data)
         elif isinstance(data, datetime.date):
@@ -129,9 +140,26 @@ class Serializer(object):
             for (key, value) in data.iteritems():
                 element.append(self.to_etree(value, options, name=key, depth=depth+1))
         elif isinstance(data, Representation):
-            element = Element('object')
+            element = Element(name or 'object')
             for field_name, field_object in data.fields.items():
                 element.append(self.to_etree(field_object, options, name=field_name, depth=depth+1))
+        elif isinstance(data, ApiField):
+            if isinstance(data, ToOneField):
+                if data.full_repr:
+                    return self.to_etree(data.fk_repr, options, name, depth+1)
+                else:
+                    return self.to_etree(data.value, options, name, depth+1)
+            elif isinstance(data, ToManyField):
+                if data.full_repr:
+                    element = Element(name or 'objects')
+                    for repr in data.m2m_reprs:
+                        element.append(self.to_etree(repr, options, repr.resource_name, depth+1))
+                else:
+                    element = Element(name or 'objects')
+                    for value in data.value:
+                        element.append(self.to_etree(value, options, name, depth=depth+1))
+            else:
+                return self.to_etree(data.value, options, name)
         else:
             element = Element(name or 'value')
             simple_data = self.to_simple(data, options)
