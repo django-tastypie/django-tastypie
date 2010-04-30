@@ -204,7 +204,7 @@ class Serializer(object):
         if yaml is None:
             raise ImproperlyConfigured("Usage of the YAML aspects requires yaml.")
         
-        return yaml.dump(data, Dumper=pyyaml.DjangoSafeDumper)
+        return yaml.dump(self.to_simple(data, options))
     
     def from_yaml(self, content):
         if yaml is None:
