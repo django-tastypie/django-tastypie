@@ -1,8 +1,8 @@
-from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist, MultipleObjectsReturned
 from django.core.urlresolvers import reverse, resolve, NoReverseMatch, Resolver404
 from django.utils.copycompat import deepcopy
 from tastypie import _get_canonical_resource_name
-from tastypie.exceptions import NotFound, URLReverseError
+from tastypie.exceptions import NotFound, URLReverseError, MultipleRepresentationsFound
 from tastypie.fields import *
 from tastypie.representations.simple import Representation, RepresentationSet
 
@@ -154,6 +154,8 @@ class ModelRepresentation(Representation):
             self.instance = self.queryset.get(**kwargs)
         except ObjectDoesNotExist:
             raise NotFound("A model instance matching the provided arguments could not be found.")
+        except MultipleObjectsReturned:
+            raise MultipleRepresentationsFound("More than one model instance matched the provided arguments.")
         
         self.full_dehydrate(self.instance)
     

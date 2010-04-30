@@ -1,6 +1,10 @@
 from tests.testcases import TestServerTestCase
 import httplib
-import simplejson
+try:
+    import json
+except ImportError:
+    import simplejson as json
+
 
 class HTTPTestCase(TestServerTestCase):
     def setUp(self):
