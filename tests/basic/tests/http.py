@@ -58,7 +58,7 @@ class HTTPTestCase(TestServerTestCase):
         self.assertEqual(response.status, 200)
 
         data = response.read()
-        obj = simplejson.loads(data)
+        obj = json.loads(data)
 
         self.assertEqual(obj['content'], 'A new post.')
         self.assertEqual(obj['is_active'], True)
