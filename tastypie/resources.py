@@ -1,15 +1,20 @@
 from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ImproperlyConfigured
+from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
 from django.http import HttpResponse
 from tastypie.authentication import Authentication
 from tastypie.cache import NoCache
-from tastypie.exceptions import NotFound, BadRequest, MultipleRepresentationsFound
+from tastypie.exceptions import NotFound, BadRequest, MultipleRepresentationsFound, InvalidFilterError
 from tastypie.http import *
 from tastypie.paginator import Paginator
 from tastypie.serializers import Serializer
 from tastypie.throttle import BaseThrottle
 from tastypie.utils import is_valid_jsonp_callback_value
 from tastypie.utils.mime import determine_format, build_content_type
+try:
+    set
+except NameError:
+    from sets import Set as set
 
 
 class Resource(object):
@@ -37,6 +42,7 @@ class Resource(object):
     api_name = 'nonspecific'
     resource_name = None
     default_format = 'application/json'
+    filtering = {}
     
     def __init__(self, representation=None, list_representation=None,
                  detail_representation=None, serializer=None,
@@ -100,6 +106,8 @@ class Resource(object):
         
         if not self.resource_name:
             raise ImproperlyConfigured("No resource_name provided for %r." % self)
+        
+        self.available_filters = self._get_available_filters(self.filtering)
     
     def wrap_view(self, view):
         def wrapper(request, *args, **kwargs):
@@ -199,11 +207,87 @@ class Resource(object):
         else:
             return self.representation(api_name=self.api_name, resource_name=self.resource_name, data=data)
     
-    def fetch_list(self, **kwargs):
+    def _get_available_filters(self, filtering):
+        # At the declarative level:
+        #     filtering = {
+        #         'repr_field_name': ['exact', 'startswith', 'endswith', 'contains'],
+        #         'repr_field_name_2': ['exact', 'gt', 'gte', 'lt', 'lte', 'range'],
+        #         'repr_field_name_3': 'all',
+        #         ...
+        #     }
+        filters = set()
+        repr_instance = self.representation(api_name=self.api_name, resource_name=self.resource_name)
+        
+        for field_name, allowed_types in filtering.items():
+            if not field_name in repr_instance.fields:
+                raise InvalidFilterError("The '%s' is not a valid fieldname in the registered Representation." % field_name)
+            
+            if allowed_types == 'all':
+                for filter_type in QUERY_TERMS.keys():
+                    filters.add("%s%s%s" % (field_name, LOOKUP_SEP, filter_type))
+                
+                # For the "anonymous" ``__exact`` lookup...
+                filters.add(field_name)
+            elif not isinstance(allowed_types, basestring) and hasattr(allowed_types, '__iter__'):
+                # For the "anonymous" ``__exact`` lookup...
+                if 'exact' in allowed_types:
+                    filters.add(field_name)
+                
+                for allowed_type in allowed_types:
+                    if not allowed_type in QUERY_TERMS:
+                        raise InvalidFilterError("The '%s' is not a supported filter type." % allowed_type)
+                    
+                    filters.add("%s%s%s" % (field_name, LOOKUP_SEP, allowed_type))
+            else:
+                raise InvalidFilterError("The allowed filters provided for '%s' need to be either 'all' or a list of allowed filter types." % field_name)
+        
+        return filters
+    
+    def build_filters(self, filters=None):
+        # Accepts the filters as a dict. None by default, meaning no filters.
+        if filters is None:
+            filters = {}
+        
+        qs_filters = {}
+        repr_instance = self.representation(api_name=self.api_name, resource_name=self.resource_name)
+        
+        for filter_expr, value in filters.items():
+            if not filter_expr in self.available_filters:
+                # We don't recognize it. Skip it.
+                continue
+            
+            filter_bits = filter_expr.split(LOOKUP_SEP)
+            
+            if filter_bits[-1] in QUERY_TERMS.keys():
+                filter_type = filter_bits.pop()
+            else:
+                filter_type = 'exact'
+            
+            if len(filter_bits) > 1:
+                raise InvalidFilterError("Lookups are not allowed more than one level deep on '%s'." % filter_expr)
+            
+            if not repr_instance.fields[filter_bits[0]].attribute:
+                raise InvalidFilterError("The '%s' field has no 'attribute' for searching the database." % filter_bits[0])
+            
+            if value == 'true':
+                value = True
+            elif value == 'false':
+                value = False
+            elif value in ('nil', 'none', 'None'):
+                value = None
+            
+            qs_filter = "%s%s%s" % (repr_instance.fields[filter_bits[0]].attribute, LOOKUP_SEP, filter_type)
+            qs_filters[qs_filter] = value
+        
+        return qs_filters
+    
+    def fetch_list(self, filters=None, **kwargs):
+        applicable_filters = self.build_filters(filters)
+        applicable_filters.update(kwargs)
         return self.representation.get_list(options={
             'api_name': self.api_name,
             'resource_name': self.resource_name,
-        })
+        }, **applicable_filters)
     
     def cached_fetch_list(self, **kwargs):
         cache_key = self.generate_cache_key('list', **kwargs)
@@ -249,7 +333,7 @@ class Resource(object):
         """
         # TODO: Uncached for now. Invalidation that works for everyone may be
         #       impossible.
-        objects = self.fetch_list(**kwargs)
+        objects = self.fetch_list(filters=request.GET, **kwargs)
         paginator = Paginator(request.GET, objects)
         
         try:
