@@ -221,9 +221,9 @@ class Resource(object):
     def _get_available_filters(self, filtering):
         # At the declarative level:
         #     filtering = {
-        #         'repr_field_name': ['exact', 'startswith', 'endswith', 'contains'],
-        #         'repr_field_name_2': ['exact', 'gt', 'gte', 'lt', 'lte', 'range'],
-        #         'repr_field_name_3': 'all',
+        #         'resource_field_name': ['exact', 'startswith', 'endswith', 'contains'],
+        #         'resource_field_name_2': ['exact', 'gt', 'gte', 'lt', 'lte', 'range'],
+        #         'resource_field_name_3': 'all',
         #         ...
         #     }
         filters = set()
@@ -675,11 +675,11 @@ class Resource(object):
             return HttpBadRequest()
         
         # Rip apart the list then iterate.
-        repr_ids = kwargs.get('id_list', '').split(';')
+        obj_ids = kwargs.get('id_list', '').split(';')
         objects = []
         not_found = []
         
-        for obj_id in repr_ids:
+        for obj_id in obj_ids:
             try:
                 obj = self.obj_get(obj_id=obj_id)
                 bundle = self.full_dehydrate(obj)

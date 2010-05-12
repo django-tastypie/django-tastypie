@@ -92,13 +92,13 @@ class Serializer(object):
             return dict((key, self.to_simple(val, options)) for (key, val) in data.data.iteritems())
         elif isinstance(data, ApiField):
             if isinstance(data, ToOneField):
-                if data.full_repr:
-                    return self.to_simple(data.fk_repr, options)
+                if data.full:
+                    return self.to_simple(data.fk_resource, options)
                 else:
                     return self.to_simple(data.value, options)
             elif isinstance(data, ToManyField):
-                if data.full_repr:
-                    return [self.to_simple(repr, options) for repr in data.m2m_reprs]
+                if data.full:
+                    return [self.to_simple(bundle, options) for bundle in data.m2m_bundles]
                 else:
                     return [self.to_simple(val, options) for val in data.value]
             else:
@@ -142,15 +142,15 @@ class Serializer(object):
                 element.append(self.to_etree(field_object, options, name=field_name, depth=depth+1))
         elif isinstance(data, ApiField):
             if isinstance(data, ToOneField):
-                if data.full_repr:
-                    return self.to_etree(data.fk_repr, options, name, depth+1)
+                if data.full:
+                    return self.to_etree(data.fk_resource, options, name, depth+1)
                 else:
                     return self.to_etree(data.value, options, name, depth+1)
             elif isinstance(data, ToManyField):
-                if data.full_repr:
+                if data.full:
                     element = Element(name or 'objects')
-                    for repr in data.m2m_reprs:
-                        element.append(self.to_etree(repr, options, repr.resource_name, depth+1))
+                    for bundle in data.m2m_bundles:
+                        element.append(self.to_etree(bundle, options, bundle.resource_name, depth+1))
                 else:
                     element = Element(name or 'objects')
                     for value in data.value:
