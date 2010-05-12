@@ -113,6 +113,10 @@ class Resource(object):
         
         self._meta.available_filters = self._get_available_filters(self._meta.filtering)
     
+    def __getattr__(self, name):
+        if name in self.fields:
+            return self.fields[name]
+    
     def wrap_view(self, view):
         def wrapper(request, *args, **kwargs):
             return getattr(self, view)(request, *args, **kwargs)
@@ -826,7 +830,7 @@ class ModelResource(Resource):
         return bundle
     
     def obj_update(self, bundle, **kwargs):
-        if not bundle.obj.pk:
+        if not bundle.obj or not bundle.obj.pk:
             try:
                 bundle.obj = self._meta.queryset.get(**kwargs)
             except ObjectDoesNotExist:
@@ -866,7 +870,7 @@ class ModelResource(Resource):
                 # Clear it out, just to be safe.
                 related_mngr.clear()
             
-            related_mngr.add(*[related_repr.instance for related_repr in bundle.data[field_name]])
+            related_mngr.add(*[related_bundle.obj for related_bundle in bundle.data[field_name]])
     
     def get_resource_uri(self, bundle_or_obj):
         kwargs = {

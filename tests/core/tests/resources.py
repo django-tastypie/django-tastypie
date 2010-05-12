@@ -1,8 +1,9 @@
 import base64
+import datetime
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse, NoReverseMatch
 from django.http import HttpRequest, QueryDict
 from django.test import TestCase
 from tastypie.authentication import BasicAuthentication
@@ -12,7 +13,7 @@ from tastypie import fields
 from tastypie.resources import Resource, ModelResource
 from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
-from core.models import Note
+from core.models import Note, Subject
 try:
     set
 except NameError:
@@ -21,6 +22,211 @@ except NameError:
 
 class CustomSerializer(Serializer):
     pass
+
+
+class TestObject(object):
+    name = None
+    view_count = None
+    date_joined = None
+
+
+class BasicResource(Resource):
+    name = fields.CharField(attribute='name')
+    view_count = fields.IntegerField(attribute='view_count', default=0)
+    date_joined = fields.DateTimeField(null=True)
+    
+    class Meta:
+        object_class = TestObject
+        resource_name = 'basic'
+    
+    def dehydrate_date_joined(self, bundle):
+        if getattr(bundle.obj, 'date_joined', None) is not None:
+            return bundle.obj.date_joined
+        
+        if bundle.data.get('date_joined') is not None:
+            return bundle.data.get('date_joined')
+        
+        return datetime.datetime(2010, 3, 27, 22, 30, 0)
+    
+    def hydrate_date_joined(self, bundle):
+        bundle.obj.date_joined = bundle.data['date_joined']
+        return bundle
+
+
+class AnotherBasicResource(BasicResource):
+    name = fields.CharField(attribute='name')
+    view_count = fields.IntegerField(attribute='view_count', default=0)
+    date_joined = fields.DateField(attribute='created')
+    is_active = fields.BooleanField(attribute='is_active', default=True)
+    
+    class Meta:
+        resource_name = 'anotherbasic'
+
+
+class NoUriBasicResource(BasicResource):
+    name = fields.CharField(attribute='name')
+    view_count = fields.IntegerField(attribute='view_count', default=0)
+    date_joined = fields.DateTimeField(null=True)
+    
+    class Meta:
+        object_class = TestObject
+        include_resource_uri = False
+        resource_name = 'nouribasic'
+
+
+class ResourceTestCase(TestCase):
+    def test_fields(self):
+        basic = BasicResource()
+        self.assertEqual(len(basic.fields), 4)
+        self.assert_('name' in basic.fields)
+        self.assertEqual(isinstance(basic.fields['name'], fields.CharField), True)
+        self.assert_('view_count' in basic.fields)
+        self.assertEqual(isinstance(basic.fields['view_count'], fields.IntegerField), True)
+        self.assert_('date_joined' in basic.fields)
+        self.assertEqual(isinstance(basic.fields['date_joined'], fields.DateTimeField), True)
+        self.assert_('resource_uri' in basic.fields)
+        self.assertEqual(isinstance(basic.fields['resource_uri'], fields.CharField), True)
+        
+        another = AnotherBasicResource()
+        self.assertEqual(len(another.fields), 5)
+        self.assert_('name' in another.fields)
+        self.assertEqual(isinstance(another.name, fields.CharField), True)
+        self.assert_('view_count' in another.fields)
+        self.assertEqual(isinstance(another.view_count, fields.IntegerField), True)
+        self.assert_('date_joined' in another.fields)
+        self.assertEqual(isinstance(another.date_joined, fields.DateField), True)
+        self.assert_('is_active' in another.fields)
+        self.assertEqual(isinstance(another.is_active, fields.BooleanField), True)
+        self.assert_('resource_uri' in basic.fields)
+        self.assertEqual(isinstance(basic.resource_uri, fields.CharField), True)
+        
+        basic = NoUriBasicResource()
+        self.assertEqual(len(basic.fields), 3)
+        self.assert_('name' in basic.fields)
+        self.assertEqual(isinstance(basic.name, fields.CharField), True)
+        self.assert_('view_count' in basic.fields)
+        self.assertEqual(isinstance(basic.view_count, fields.IntegerField), True)
+        self.assert_('date_joined' in basic.fields)
+        self.assertEqual(isinstance(basic.date_joined, fields.DateTimeField), True)
+    
+    def test_full_dehydrate(self):
+        test_object_1 = TestObject()
+        test_object_1.name = 'Daniel'
+        test_object_1.view_count = 12
+        test_object_1.date_joined = datetime.datetime(2010, 3, 30, 9, 0, 0)
+        test_object_1.foo = "Hi, I'm ignored."
+        
+        basic = BasicResource()
+        
+        # Sanity check.
+        self.assertEqual(basic.name.value, None)
+        self.assertEqual(basic.view_count.value, None)
+        self.assertEqual(basic.date_joined.value, None)
+        
+        bundle_1 = basic.full_dehydrate(test_object_1)
+        self.assertEqual(bundle_1.data['name'], 'Daniel')
+        self.assertEqual(bundle_1.data['view_count'], 12)
+        self.assertEqual(bundle_1.data['date_joined'].year, 2010)
+        self.assertEqual(bundle_1.data['date_joined'].day, 30)
+        
+        # Now check the fallback behaviors.
+        test_object_2 = TestObject()
+        test_object_2.name = 'Daniel'
+        basic_2 = BasicResource()
+        
+        bundle_2 = basic_2.full_dehydrate(test_object_2)
+        self.assertEqual(bundle_2.data['name'], 'Daniel')
+        self.assertEqual(bundle_2.data['view_count'], 0)
+        self.assertEqual(bundle_2.data['date_joined'].year, 2010)
+        self.assertEqual(bundle_2.data['date_joined'].day, 27)
+        
+        test_object_3 = TestObject()
+        test_object_3.name = 'Joe'
+        test_object_3.view_count = 5
+        test_object_3.created = datetime.datetime(2010, 3, 29, 11, 0, 0)
+        test_object_3.is_active = False
+        another_1 = AnotherBasicResource()
+        
+        another_bundle_1 = another_1.full_dehydrate(test_object_3)
+        self.assertEqual(another_bundle_1.data['name'], 'Joe')
+        self.assertEqual(another_bundle_1.data['view_count'], 5)
+        self.assertEqual(another_bundle_1.data['date_joined'].year, 2010)
+        self.assertEqual(another_bundle_1.data['date_joined'].day, 29)
+        self.assertEqual(another_bundle_1.data['is_active'], False)
+    
+    def test_full_hydrate(self):
+        basic = BasicResource()
+        basic_bundle_1 = Bundle(data={
+            'name': 'Daniel',
+            'view_count': 6,
+            'date_joined': datetime.datetime(2010, 2, 15, 12, 0, 0)
+        })
+        
+        # Now load up the data.
+        hydrated = basic.full_hydrate(basic_bundle_1)
+        
+        self.assertEqual(hydrated.data['name'], 'Daniel')
+        self.assertEqual(hydrated.data['view_count'], 6)
+        self.assertEqual(hydrated.data['date_joined'], datetime.datetime(2010, 2, 15, 12, 0, 0))
+        self.assertEqual(hydrated.obj.name, 'Daniel')
+        self.assertEqual(hydrated.obj.view_count, 6)
+        self.assertEqual(hydrated.obj.date_joined, datetime.datetime(2010, 2, 15, 12, 0, 0))
+    
+    def test_obj_get_list(self):
+        basic = BasicResource()
+        self.assertRaises(NotImplementedError, basic.obj_get_list)
+    
+    def test_obj_delete_list(self):
+        basic = BasicResource()
+        self.assertRaises(NotImplementedError, basic.obj_delete_list)
+    
+    def test_obj_get(self):
+        basic = BasicResource()
+        self.assertRaises(NotImplementedError, basic.obj_get, obj_id=1)
+    
+    def test_obj_create(self):
+        basic = BasicResource()
+        bundle = Bundle()
+        self.assertRaises(NotImplementedError, basic.obj_create, bundle)
+    
+    def test_obj_update(self):
+        basic = BasicResource()
+        bundle = Bundle()
+        self.assertRaises(NotImplementedError, basic.obj_update, bundle)
+    
+    def test_obj_delete(self):
+        basic = BasicResource()
+        self.assertRaises(NotImplementedError, basic.obj_delete)
+    
+    def test_build_schema(self):
+        basic = BasicResource()
+        self.assertEqual(basic.build_schema(), {
+            'view_count': {
+                'readonly': False,
+                'type': 'integer',
+                'nullable': False
+            },
+            'date_joined': {
+                'readonly': False,
+                'type': 'datetime',
+                'nullable': True
+            },
+            'name': {
+                'readonly': False,
+                'type': 'string',
+                'nullable': False
+            },
+            'resource_uri': {
+                'readonly': True,
+                'type': 'string',
+                'nullable': False
+            }
+        })
+
+
+# ====================
+# Model-based tests...
+# ====================
 
 
 class NoteResource(ModelResource):
@@ -46,13 +252,17 @@ class LightlyCustomNoteResource(NoteResource):
 
 
 class VeryCustomNoteResource(NoteResource):
+    author = fields.CharField(attribute='author__username')
+    constant = fields.IntegerField(default=20)
+    
     class Meta:
         limit = 50
         resource_name = 'notey'
         serializer = CustomSerializer()
         list_allowed_methods = ['get']
         detail_allowed_methods = ['get', 'post', 'put']
-        queryset = Note.objects.filter(is_active=True)
+        queryset = Note.objects.all()
+        fields = ['title', 'content', 'created', 'is_active']
 
 
 class UserResource(ModelResource):
@@ -96,8 +306,52 @@ class BasicAuthNoteResource(NoteResource):
         authentication = BasicAuthentication()
 
 
-class ResourceTestCase(TestCase):
+class NoUriNoteResource(ModelResource):
+    class Meta:
+        queryset = Note.objects.filter(is_active=True)
+        include_resource_uri = False
+        resource_name = 'nourinote'
+
+
+class UserResource(ModelResource):
+    class Meta:
+        queryset = User.objects.all()
+        resource_name = 'users'
+
+
+class SubjectResource(ModelResource):
+    class Meta:
+        queryset = Subject.objects.all()
+        resource_name = 'subjects'
+
+
+class RelatedNoteResource(ModelResource):
+    author = fields.ForeignKey(UserResource, 'author')
+    subjects = fields.ManyToManyField(SubjectResource, 'subjects')
+    
+    class Meta:
+        queryset = Note.objects.all()
+        resource_name = 'relatednotes'
+        fields = ['title', 'slug', 'content', 'created', 'is_active']
+
+
+class ModelResourceTestCase(TestCase):
     fixtures = ['note_testdata.json']
+    urls = 'core.tests.field_urls'
+    
+    def setUp(self):
+        super(ModelResourceTestCase, self).setUp()
+        self.note_1 = Note.objects.get(pk=1)
+        self.subject_1 = Subject.objects.create(
+            name='News',
+            url='/news/'
+        )
+        self.subject_2 = Subject.objects.create(
+            name='Photos',
+            url='/photos/'
+        )
+        self.note_1.subjects.add(self.subject_1)
+        self.note_1.subjects.add(self.subject_2)
     
     def test_init(self):
         # Very minimal & stock.
@@ -508,6 +762,38 @@ class ResourceTestCase(TestCase):
         object_list = resource.obj_get_list()
         self.assertEqual(len(object_list), 4)
         self.assertEqual(object_list[0].title, u'First Post!')
+        
+        notes = NoteResource().obj_get_list()
+        self.assertEqual(len(notes), 4)
+        self.assertEqual(notes[0].is_active, True)
+        self.assertEqual(notes[0].title, u'First Post!')
+        self.assertEqual(notes[1].is_active, True)
+        self.assertEqual(notes[1].title, u'Another Post')
+        self.assertEqual(notes[2].is_active, True)
+        self.assertEqual(notes[2].title, u'Recent Volcanic Activity.')
+        self.assertEqual(notes[3].is_active, True)
+        self.assertEqual(notes[3].title, u"Granny's Gone")
+        
+        customs = VeryCustomNoteResource().obj_get_list()
+        self.assertEqual(len(customs), 6)
+        self.assertEqual(customs[0].is_active, True)
+        self.assertEqual(customs[0].title, u'First Post!')
+        self.assertEqual(customs[0].author.username, u'johndoe')
+        self.assertEqual(customs[1].is_active, True)
+        self.assertEqual(customs[1].title, u'Another Post')
+        self.assertEqual(customs[1].author.username, u'johndoe')
+        self.assertEqual(customs[2].is_active, False)
+        self.assertEqual(customs[2].title, u'Hello World!')
+        self.assertEqual(customs[2].author.username, u'janedoe')
+        self.assertEqual(customs[3].is_active, True)
+        self.assertEqual(customs[3].title, u'Recent Volcanic Activity.')
+        self.assertEqual(customs[3].author.username, u'janedoe')
+        self.assertEqual(customs[4].is_active, False)
+        self.assertEqual(customs[4].title, u'My favorite new show')
+        self.assertEqual(customs[4].author.username, u'johndoe')
+        self.assertEqual(customs[5].is_active, True)
+        self.assertEqual(customs[5].title, u"Granny's Gone")
+        self.assertEqual(customs[5].author.username, u'janedoe')
     
     def test_obj_get(self):
         resource = NoteResource()
@@ -515,6 +801,32 @@ class ResourceTestCase(TestCase):
         obj = resource.obj_get(obj_id=1)
         self.assertTrue(isinstance(obj, Note))
         self.assertEqual(obj.title, u'First Post!')
+        
+        note = NoteResource()
+        note_obj = note.obj_get(obj_id=1)
+        self.assertEqual(note_obj.content, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
+        self.assertEqual(note_obj.created, datetime.datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(note_obj.is_active, True)
+        self.assertEqual(note_obj.slug, u'first-post')
+        self.assertEqual(note_obj.title, u'First Post!')
+        self.assertEqual(note_obj.updated, datetime.datetime(2010, 3, 30, 20, 5))
+        
+        custom = VeryCustomNoteResource()
+        custom_obj = custom.obj_get(obj_id=1)
+        self.assertEqual(custom_obj.content, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
+        self.assertEqual(custom_obj.created, datetime.datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(custom_obj.is_active, True)
+        self.assertEqual(custom_obj.author.username, u'johndoe')
+        self.assertEqual(custom_obj.title, u'First Post!')
+        
+        related = RelatedNoteResource()
+        related_obj = related.obj_get(obj_id=1)
+        self.assertEqual(related_obj.content, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
+        self.assertEqual(related_obj.created, datetime.datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(related_obj.is_active, True)
+        self.assertEqual(related_obj.author.username, u'johndoe')
+        self.assertEqual(related_obj.title, u'First Post!')
+        self.assertEqual(list(related_obj.subjects.values_list('id', flat=True)), [1, 2])
 
     def test_jsonp_validation(self):
         resource = NoteResource()
@@ -612,6 +924,113 @@ class ResourceTestCase(TestCase):
         obj = resource.cached_obj_get(obj_id=1)
         self.assertTrue(isinstance(obj, Note))
         self.assertEqual(obj.title, u'First Post!')
+    
+    def test_configuration(self):
+        note = NoteResource()
+        self.assertEqual(len(note.fields), 7)
+        self.assertEqual(sorted(note.fields.keys()), ['content', 'created', 'is_active', 'resource_uri', 'slug', 'title', 'updated'])
+        self.assertEqual(note.fields['content'].default, '')
+        
+        custom = VeryCustomNoteResource()
+        self.assertEqual(len(custom.fields), 7)
+        self.assertEqual(sorted(custom.fields.keys()), ['author', 'constant', 'content', 'created', 'is_active', 'resource_uri', 'title'])
+        
+        no_uri = NoUriNoteResource()
+        self.assertEqual(len(no_uri.fields), 6)
+        self.assertEqual(sorted(no_uri.fields.keys()), ['content', 'created', 'is_active', 'slug', 'title', 'updated'])
+    
+    def test_obj_delete_list_custom_qs(self):
+        self.assertEqual(len(Note.objects.all()), 6)
+        notes = NoteResource().obj_delete_list()
+        self.assertEqual(len(Note.objects.all()), 2)
+        
+    def test_obj_delete_list_basic_qs(self):
+        self.assertEqual(len(Note.objects.all()), 6)
+        customs = VeryCustomNoteResource().obj_delete_list()
+        self.assertEqual(len(Note.objects.all()), 0)
+    
+    def test_obj_create(self):
+        self.assertEqual(Note.objects.all().count(), 6)
+        note = NoteResource()
+        bundle = Bundle(data={
+            'title': "A new post!",
+            'slug': "a-new-post",
+            'content': "Testing, 1, 2, 3!",
+            'is_active': True
+        })
+        note.obj_create(bundle)
+        self.assertEqual(Note.objects.all().count(), 7)
+        latest = Note.objects.get(slug='a-new-post')
+        self.assertEqual(latest.title, u"A new post!")
+        self.assertEqual(latest.slug, u'a-new-post')
+        self.assertEqual(latest.content, u'Testing, 1, 2, 3!')
+        self.assertEqual(latest.is_active, True)
+        
+        self.assertEqual(Note.objects.all().count(), 7)
+        note = RelatedNoteResource()
+        related_bundle = Bundle(data={
+            'title': "Yet another new post!",
+            'slug': "yet-another-new-post",
+            'content': "WHEEEEEE!",
+            'is_active': True,
+            'author': '/api/v1/users/1/',
+            'subjects': ['/api/v1/subjects/2/'],
+        })
+        note.obj_create(related_bundle)
+        self.assertEqual(Note.objects.all().count(), 8)
+        latest = Note.objects.get(slug='yet-another-new-post')
+        self.assertEqual(latest.title, u"Yet another new post!")
+        self.assertEqual(latest.slug, u'yet-another-new-post')
+        self.assertEqual(latest.content, u'WHEEEEEE!')
+        self.assertEqual(latest.is_active, True)
+        self.assertEqual(latest.author.username, u'johndoe')
+        self.assertEqual(latest.subjects.all().count(), 1)
+        self.assertEqual([sub.id for sub in latest.subjects.all()], [2])
+    
+    def test_obj_update(self):
+        self.assertEqual(Note.objects.all().count(), 6)
+        note = NoteResource()
+        note_obj = note.obj_get(obj_id=1)
+        note_bundle = note.full_dehydrate(note_obj)
+        note_bundle.data['title'] = 'Whee!'
+        # FIXME: Inconsistent API. ``obj_id`` in some places, ``id`` in others.
+        note.obj_update(note_bundle, id=1)
+        self.assertEqual(Note.objects.all().count(), 6)
+        numero_uno = Note.objects.get(pk=1)
+        self.assertEqual(numero_uno.title, u'Whee!')
+        self.assertEqual(numero_uno.slug, u'first-post')
+        self.assertEqual(numero_uno.content, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
+        self.assertEqual(numero_uno.is_active, True)
+        
+        self.assertEqual(Note.objects.all().count(), 6)
+        note = RelatedNoteResource()
+        related_obj = note.obj_get(obj_id=1)
+        related_bundle = Bundle(obj=related_obj, data={
+            'title': "Yet another new post!",
+            'slug': "yet-another-new-post",
+            'content': "WHEEEEEE!",
+            'is_active': True,
+            'author': '/api/v1/users/2/',
+            'subjects': ['/api/v1/subjects/2/', '/api/v1/subjects/1/'],
+        })
+        # FIXME: Inconsistent API. ``obj_id`` in some places, ``id`` in others.
+        note.obj_update(related_bundle, id=1)
+        self.assertEqual(Note.objects.all().count(), 6)
+        latest = Note.objects.get(slug='yet-another-new-post')
+        self.assertEqual(latest.title, u"Yet another new post!")
+        self.assertEqual(latest.slug, u'yet-another-new-post')
+        self.assertEqual(latest.content, u'WHEEEEEE!')
+        self.assertEqual(latest.is_active, True)
+        self.assertEqual(latest.author.username, u'janedoe')
+        self.assertEqual(latest.subjects.all().count(), 2)
+        self.assertEqual([sub.id for sub in latest.subjects.all()], [1, 2])
+    
+    def test_obj_delete(self):
+        self.assertEqual(Note.objects.all().count(), 6)
+        note = NoteResource()
+        note.obj_delete(obj_id=1)
+        self.assertEqual(Note.objects.all().count(), 5)
+        self.assertRaises(Note.DoesNotExist, Note.objects.get, pk=1)
 
 
 class BasicAuthResourceTestCase(TestCase):
