@@ -993,8 +993,7 @@ class ModelResourceTestCase(TestCase):
         note_obj = note.obj_get(pk=1)
         note_bundle = note.full_dehydrate(note_obj)
         note_bundle.data['title'] = 'Whee!'
-        # FIXME: Inconsistent API. ``pk`` in some places, ``id`` in others.
-        note.obj_update(note_bundle, id=1)
+        note.obj_update(note_bundle, pk=1)
         self.assertEqual(Note.objects.all().count(), 6)
         numero_uno = Note.objects.get(pk=1)
         self.assertEqual(numero_uno.title, u'Whee!')
@@ -1013,8 +1012,7 @@ class ModelResourceTestCase(TestCase):
             'author': '/api/v1/users/2/',
             'subjects': ['/api/v1/subjects/2/', '/api/v1/subjects/1/'],
         })
-        # FIXME: Inconsistent API. ``pk`` in some places, ``id`` in others.
-        note.obj_update(related_bundle, id=1)
+        note.obj_update(related_bundle, pk=1)
         self.assertEqual(Note.objects.all().count(), 6)
         latest = Note.objects.get(slug='yet-another-new-post')
         self.assertEqual(latest.title, u"Yet another new post!")
