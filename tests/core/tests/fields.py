@@ -257,7 +257,7 @@ class ForeignKeyTestCase(TestCase):
         self.assertEqual(field_1.related_name, None)
         self.assertEqual(field_1.null, False)
         self.assertEqual(field_1.full, False)
-        self.assertEqual(field_1.value, None)
+        self.assertEqual(field_1.readonly, False)
         
         field_2 = ForeignKey(UserResource, 'author', null=True)
         self.assertEqual(field_2.instance_name, None)
@@ -266,7 +266,7 @@ class ForeignKeyTestCase(TestCase):
         self.assertEqual(field_2.related_name, None)
         self.assertEqual(field_2.null, True)
         self.assertEqual(field_2.full, False)
-        self.assertEqual(field_2.value, None)
+        self.assertEqual(field_2.readonly, False)
     
     def test_dehydrated_type(self):
         field_1 = ForeignKey(UserResource, 'author')
@@ -396,7 +396,7 @@ class ManyToManyFieldTestCase(TestCase):
         self.assertEqual(field_1.related_name, None)
         self.assertEqual(field_1.null, False)
         self.assertEqual(field_1.full, False)
-        self.assertEqual(field_1.value, None)
+        self.assertEqual(field_1.readonly, False)
         
         field_2 = ManyToManyField(SubjectResource, 'subjects', null=True)
         self.assertEqual(field_2.instance_name, None)
@@ -405,7 +405,7 @@ class ManyToManyFieldTestCase(TestCase):
         self.assertEqual(field_2.related_name, None)
         self.assertEqual(field_2.null, True)
         self.assertEqual(field_2.full, False)
-        self.assertEqual(field_2.value, None)
+        self.assertEqual(field_2.readonly, False)
     
     def test_dehydrated_type(self):
         field_1 = ManyToManyField(SubjectResource, 'subjects')

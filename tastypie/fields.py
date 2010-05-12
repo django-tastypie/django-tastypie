@@ -297,7 +297,7 @@ class RelatedField(ApiField):
         self.related_name = related_name
         self.null = null
         self.full = full
-        self.value = None
+        self.readonly = False
         self.api_name = None
         self.resource_name = None
     
