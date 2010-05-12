@@ -11,6 +11,7 @@ Requirements
 * Python 2.4+
 * Django 1.0+
 * mimeparse (http://code.google.com/p/mimeparse/)
+* dateutil (http://labix.org/python-dateutil)
 * lxml (http://codespeak.net/lxml/) if using the XML serializer
 * pyyaml (http://pyyaml.org/) if using the YAML serializer
 

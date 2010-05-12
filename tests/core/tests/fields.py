@@ -1,4 +1,5 @@
 import datetime
+from dateutil.tz import *
 from django.contrib.auth.models import User
 from django.test import TestCase
 from tastypie.bundle import Bundle
@@ -232,6 +233,28 @@ class DateFieldTestCase(TestCase):
         note.created_string = '2010-04-02'
         field_3 = DateField(attribute='created_string')
         self.assertEqual(field_3.dehydrate(bundle), datetime.date(2010, 4, 2))
+    
+    def test_hydrate(self):
+        note = Note.objects.get(pk=1)
+        
+        bundle_1 = Bundle(data={
+            'date': '2010-05-12',
+        })
+        field_1 = DateField(attribute='created')
+        field_1.instance_name = 'date'
+        self.assertEqual(field_1.hydrate(bundle_1), datetime.date(2010, 5, 12))
+        
+        bundle_2 = Bundle()
+        field_2 = DateField(default=datetime.date(2010, 4, 1))
+        field_2.instance_name = 'date'
+        self.assertEqual(field_2.hydrate(bundle_2), datetime.date(2010, 4, 1))
+        
+        bundle_3 = Bundle(data={
+            'date': 'Wednesday, May 12, 2010',
+        })
+        field_3 = DateField(attribute='created_string')
+        field_3.instance_name = 'date'
+        self.assertEqual(field_3.hydrate(bundle_3), datetime.date(2010, 5, 12))
 
 
 class DateTimeFieldTestCase(TestCase):
@@ -254,6 +277,28 @@ class DateTimeFieldTestCase(TestCase):
         note.created_string = '2010-04-02 01:11:00'
         field_3 = DateTimeField(attribute='created_string')
         self.assertEqual(field_3.dehydrate(bundle), datetime.datetime(2010, 4, 2, 1, 11))
+    
+    def test_hydrate(self):
+        note = Note.objects.get(pk=1)
+        
+        bundle_1 = Bundle(data={
+            'datetime': '2010-05-12 10:36:28',
+        })
+        field_1 = DateTimeField(attribute='created')
+        field_1.instance_name = 'datetime'
+        self.assertEqual(field_1.hydrate(bundle_1), datetime.datetime(2010, 5, 12, 10, 36, 28))
+        
+        bundle_2 = Bundle()
+        field_2 = DateTimeField(default=datetime.datetime(2010, 4, 1, 2, 0))
+        field_2.instance_name = 'datetime'
+        self.assertEqual(field_2.hydrate(bundle_2), datetime.datetime(2010, 4, 1, 2, 0))
+        
+        bundle_3 = Bundle(data={
+            'datetime': 'Tue, 30 Mar 2010 20:05:00 -0500',
+        })
+        field_3 = DateTimeField(attribute='created_string')
+        field_3.instance_name = 'datetime'
+        self.assertEqual(field_3.hydrate(bundle_3), datetime.datetime(2010, 3, 30, 20, 5, tzinfo=tzoffset(None, -18000)))
 
 
 class UserResource(ModelResource):

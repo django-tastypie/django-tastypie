@@ -1,3 +1,5 @@
+import datetime
+from StringIO import StringIO
 from django.core.exceptions import ImproperlyConfigured
 from django.core.serializers import json
 from django.template import loader, Context
@@ -7,8 +9,6 @@ from tastypie.bundle import Bundle
 from tastypie.exceptions import UnsupportedFormat
 from tastypie.utils import format_datetime, format_date, format_time
 from tastypie.fields import ApiField, ToOneField, ToManyField
-from StringIO import StringIO
-import datetime
 try:
     import lxml
     from lxml.etree import parse as parse_xml

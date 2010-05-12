@@ -1,3 +1,4 @@
+from dateutil.parser import parse
 import re
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -245,6 +246,21 @@ class DateField(ApiField):
                 raise ApiFieldError("Date provided to '%s' field doesn't appear to be a valid date string: '%s'" % (self.instance_name, value))
         
         return value
+    
+    def hydrate(self, bundle):
+        value = super(DateField, self).hydrate(bundle)
+        
+        if not hasattr(value, 'year'):
+            try:
+                # Try to rip a date/datetime out of it.
+                value = parse(value)
+                
+                if hasattr(value, 'hour'):
+                    value = value.date()
+            except ValueError:
+                pass
+        
+        return value
 
 
 class DateTimeField(ApiField):
@@ -268,6 +284,18 @@ class DateTimeField(ApiField):
                 return datetime_safe.datetime(int(data['year']), int(data['month']), int(data['day']), int(data['hour']), int(data['minute']), int(data['second']))
             else:
                 raise ApiFieldError("Datetime provided to '%s' field doesn't appear to be a valid datetime string: '%s'" % (self.instance_name, value))
+        
+        return value
+    
+    def hydrate(self, bundle):
+        value = super(DateTimeField, self).hydrate(bundle)
+        
+        if not hasattr(value, 'year'):
+            try:
+                # Try to rip a date/datetime out of it.
+                value = parse(value)
+            except ValueError:
+                pass
         
         return value
 
