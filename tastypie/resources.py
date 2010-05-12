@@ -884,7 +884,7 @@ class ModelResource(Resource):
         }
         
         if isinstance(bundle_or_obj, Bundle):
-            kwargs['obj_id'] = bundle_or_obj.obj.id
+            kwargs['obj_id'] = bundle_or_obj.obj.pk
         else:
             kwargs['obj_id'] = bundle_or_obj.id
         
