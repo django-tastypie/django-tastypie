@@ -7,7 +7,7 @@ from django.utils.copycompat import deepcopy
 from tastypie.authentication import Authentication
 from tastypie.bundle import Bundle
 from tastypie.cache import NoCache
-from tastypie.exceptions import NotFound, BadRequest, MultipleRepresentationsFound, InvalidFilterError, HydrationError
+from tastypie.exceptions import NotFound, BadRequest, InvalidFilterError, HydrationError
 from tastypie.fields import *
 from tastypie.http import *
 from tastypie.paginator import Paginator
@@ -314,7 +314,7 @@ class Resource(object):
         This needs to be implemented at the user level.
         
         This pulls apart the salient bits of the URI and populates the
-        representation via a ``get`` with the ``obj_id``.
+        resource via a ``get`` with the ``obj_id``.
         
         Example::
         
@@ -330,7 +330,7 @@ class Resource(object):
     def full_dehydrate(self, obj):
         """
         Given an object instance, extract the information from it to populate
-        the representation.
+        the resource.
         """
         bundle = Bundle(obj=obj)
         
@@ -402,7 +402,7 @@ class Resource(object):
             if field_object.attribute:
                 # Note that we only hydrate the data, leaving the instance
                 # unmodified. It's up to the user's code to handle this.
-                # The ``ModelRepresentation`` provides a working baseline
+                # The ``ModelResource`` provides a working baseline
                 # in this regard.
                 bundle.data[field_name] = field_object.hydrate_m2m(bundle)
         

@@ -11,7 +11,6 @@ setup(
     url='http://github.com/toastdriven/django-tastypie/',
     packages=[
         'tastypie',
-        'tastypie.representations',
         'tastypie.utils',
     ],
     package_data={

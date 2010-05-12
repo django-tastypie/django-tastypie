@@ -13,7 +13,7 @@ class Paginator(object):
     (Django) so none of the page-related calculations are necessary.
     
     This implementation also provides additional details like the
-    ``total_count`` of representations seen and convenience links to the
+    ``total_count`` of resources seen and convenience links to the
     ``previous``/``next`` pages of data as available.
     """
     def __init__(self, request_data, objects, resource_uri=None, limit=None, offset=0):
@@ -24,8 +24,8 @@ class Paginator(object):
         May provide ``limit`` and/or ``offset`` to override the defaults.
         Commonly provided ``request.GET``. Required.
         
-        The ``objects`` should be a list-like object of ``Representations``.
-        This is typically a ``RepresentationSet`` but can be anything that
+        The ``objects`` should be a list-like object of ``Resources``.
+        This is typically a ``QuerySet`` but can be anything that
         implements slicing. Required.
         
         Optionally accepts a ``limit`` argument, which specifies how many

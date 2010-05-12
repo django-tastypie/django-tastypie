@@ -18,7 +18,7 @@ DATETIME_REGEX = re.compile('^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})(T|
 # All the ApiField variants.
 
 class ApiField(object):
-    """The base implementation of a field used by the representations."""
+    """The base implementation of a field used by the resources."""
     dehydrated_type = 'string'
     
     def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, readonly=False):
@@ -64,7 +64,7 @@ class ApiField(object):
     def dehydrate(self, bundle):
         """
         Takes data from the provided object and prepares it for the
-        representation.
+        resource.
         """
         if self.attribute is not None:
             # Check for `__` in the field for looking through the relation.
@@ -350,14 +350,13 @@ class RelatedField(ApiField):
     def dehydrate_related(self, bundle, related_resource):
         """
         Based on the ``full_resource``, returns either the endpoint or the data
-        from ``full_dehydrate`` for the related representation.
+        from ``full_dehydrate`` for the related resource.
         """
         if not self.full:
             # Be a good netizen.
             return related_resource.get_resource_uri(bundle)
         else:
             # ZOMG extra data and big payloads.
-            # FIXME: What to do here, since state is no longer maintained?
             return related_resource.full_dehydrate(related_resource.instance)
     
     def build_related_resource(self, value):

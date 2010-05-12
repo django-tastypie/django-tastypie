@@ -208,7 +208,7 @@ class ResourceTestCase(TestCase):
     def test__get_available_filters(self):
         resource = NoteResource()
         
-        # Field not in the representation.
+        # Field not in the resource.
         borked_filters_1 = {
             'foobar': 'all',
         }
