@@ -49,6 +49,9 @@ class MimeTestCase(TestCase):
         request.META = {'HTTP_ACCEPT': 'text/html'}
         self.assertEqual(determine_format(request, serializer), 'text/html')
         
+        request.META = {'HTTP_ACCEPT': '*/*'}
+        self.assertEqual(determine_format(request, serializer), 'application/json')
+        
         request.META = {'HTTP_ACCEPT': 'application/json,application/xml;q=0.9,*/*;q=0.8'}
         self.assertEqual(determine_format(request, serializer), 'application/json')
         

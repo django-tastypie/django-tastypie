@@ -12,7 +12,7 @@ def determine_format(request, serializer, default_format='application/json'):
         return serializer.get_mime_for_format('jsonp')
     
     # Try to fallback on the Accepts header.
-    if request.META.get('HTTP_ACCEPT'):
+    if request.META.get('HTTP_ACCEPT', '*/*') != '*/*':
         best_format = mimeparse.best_match(serializer.supported_formats, request.META['HTTP_ACCEPT'])
         
         if best_format:
