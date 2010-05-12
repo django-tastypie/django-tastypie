@@ -10,8 +10,8 @@ Requirements
 
 * Python 2.4+
 * Django 1.0+
-* lxml (http://codespeak.net/lxml/) if using the XML serializer
 * mimeparse (http://code.google.com/p/mimeparse/)
+* lxml (http://codespeak.net/lxml/) if using the XML serializer
 * pyyaml (http://pyyaml.org/) if using the YAML serializer
 
 
@@ -31,6 +31,8 @@ about trying to help out friends/coworkers.
 Reference Material
 ==================
 
+* http://github.com/toastdriven/django-tastypie/tree/master/tests/basic shows
+  basic usage of tastypie
 * http://en.wikipedia.org/wiki/REST
 * http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
 * http://www.ietf.org/rfc/rfc2616.txt

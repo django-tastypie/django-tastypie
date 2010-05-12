@@ -19,6 +19,12 @@ try:
     set
 except NameError:
     from sets import Set as set
+# The ``copy`` module was added in Python 2.5 and ``copycompat`` was added in
+# post 1.1.1 Django (r11901)
+try:
+    from django.utils.copycompat import deepcopy
+except ImportError:
+    from copy import deepcopy
 
 
 class ResourceOptions(object):
