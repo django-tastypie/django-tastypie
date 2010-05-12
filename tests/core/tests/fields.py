@@ -136,6 +136,25 @@ class CharFieldTestCase(TestCase):
         self.assertEqual(field_2.dehydrate(bundle), u'20')
 
 
+class FileFieldTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+    
+    def test_dehydrated_type(self):
+        field_1 = FileField()
+        self.assertEqual(field_1.dehydrated_type, 'string')
+    
+    def test_dehydrate(self):
+        note = Note.objects.get(pk=1)
+        note.image = '/images/foo/bar/clarus.gif'
+        bundle = Bundle(obj=note)
+        
+        field_1 = FileField(attribute='image', default=True)
+        self.assertEqual(field_1.dehydrate(bundle), u'http://localhost:8080/media/images/foo/bar/clarus.gif')
+        
+        field_2 = FileField(default='img/default_avatar.jpg')
+        self.assertEqual(field_2.dehydrate(bundle), u'http://localhost:8080/media/img/default_avatar.jpg')
+
+
 class IntegerFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
     

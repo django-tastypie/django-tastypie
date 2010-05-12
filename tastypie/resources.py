@@ -747,6 +747,8 @@ class ModelResource(Resource):
             result = FloatField
         elif f.get_internal_type() in ('IntegerField', 'PositiveIntegerField', 'PositiveSmallIntegerField', 'SmallIntegerField'):
             result = IntegerField
+        elif f.get_internal_type() in ('FileField', 'ImageField'):
+            result = FileField
         # TODO: Perhaps enable these via introspection. The reason they're not enabled
         #       by default is the very different ``__init__`` they have over
         #       the other fields.

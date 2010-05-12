@@ -1,4 +1,5 @@
 import re
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse, resolve
 from django.utils import datetime_safe
@@ -138,6 +139,28 @@ class CharField(ApiField):
     
     def dehydrate(self, obj):
         return self.convert(super(CharField, self).dehydrate(obj))
+    
+    def convert(self, value):
+        if value is None:
+            return None
+        
+        return unicode(value)
+
+
+class FileField(ApiField):
+    """
+    A file-related field.
+    
+    Covers both ``models.FileField`` and ``models.ImageField``.
+    """
+    dehydrated_type = 'string'
+    
+    def dehydrate(self, obj):
+        media_url = settings.MEDIA_URL
+        path = self.convert(super(FileField, self).dehydrate(obj))
+        media_url = media_url.rstrip('/')
+        path = path.lstrip('/')
+        return u"%s/%s" % (media_url, path)
     
     def convert(self, value):
         if value is None:
