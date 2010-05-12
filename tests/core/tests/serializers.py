@@ -2,12 +2,15 @@ import datetime
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
 from tastypie.serializers import Serializer
-from tastypie.representations.models import ModelRepresentation
+from tastypie.resources import ModelResource
 from core.models import Note
 
-class NoteRepresentation(ModelRepresentation):
+
+class NoteResource(ModelResource):
     class Meta:
+        resource_name = 'notes'
         queryset = Note.objects.filter(is_active=True)
+
 
 class SerializerTestCase(TestCase):
     def test_init(self):
@@ -110,47 +113,50 @@ class SerializerTestCase(TestCase):
         options = {'callback': 'myCallback'}
         self.assertEqual(serializer.to_jsonp(sample_1, options), 'myCallback({"age": 27, "date_joined": "27 Mar 2010", "name": "Daniel"})')
 
-class RepresentationSerializationTestCase(TestCase):
+class ResourceSerializationTestCase(TestCase):
     fixtures = ['note_testdata.json']
+
+    def setUp(self):
+        super(ResourceSerializationTestCase, self).setUp()
+        self.resource = NoteResource()
+        self.obj_list = [self.resource.full_dehydrate(obj=obj) for obj in self.resource.obj_get_list()]
 
     def test_to_xml_multirepr(self):
         serializer = Serializer()
-        representations = NoteRepresentation.get_list()
-        self.assertEqual(serializer.to_xml(representations), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<objects><object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><created>Tue, 30 Mar 2010 20:05:00 -0500</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><resource_uri></resource_uri></object><object><content>The dog ate my cat today. He looks seriously uncomfortable.</content><updated>Wed, 31 Mar 2010 20:05:00 -0500</updated><created>Wed, 31 Mar 2010 20:05:00 -0500</created><title>Another Post</title><is_active type="boolean">True</is_active><slug>another-post</slug><resource_uri></resource_uri></object><object><content>My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.</content><updated>Thu, 1 Apr 2010 20:05:00 -0500</updated><created>Thu, 1 Apr 2010 20:05:00 -0500</created><title>Recent Volcanic Activity.</title><is_active type="boolean">True</is_active><slug>recent-volcanic-activity</slug><resource_uri></resource_uri></object><object><content>Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!</content><updated>Fri, 2 Apr 2010 10:05:00 -0500</updated><created>Fri, 2 Apr 2010 10:05:00 -0500</created><title>Granny\'s Gone</title><is_active type="boolean">True</is_active><slug>grannys-gone</slug><resource_uri></resource_uri></object></objects>')
+        self.assertEqual(serializer.to_xml(self.obj_list), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<objects><object><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><title>First Post!</title><created>Tue, 30 Mar 2010 20:05:00 -0500</created><is_active type="boolean">True</is_active><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><slug>first-post</slug><resource_uri></resource_uri></object><object><updated>Wed, 31 Mar 2010 20:05:00 -0500</updated><title>Another Post</title><created>Wed, 31 Mar 2010 20:05:00 -0500</created><is_active type="boolean">True</is_active><content>The dog ate my cat today. He looks seriously uncomfortable.</content><slug>another-post</slug><resource_uri></resource_uri></object><object><updated>Thu, 1 Apr 2010 20:05:00 -0500</updated><title>Recent Volcanic Activity.</title><created>Thu, 1 Apr 2010 20:05:00 -0500</created><is_active type="boolean">True</is_active><content>My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.</content><slug>recent-volcanic-activity</slug><resource_uri></resource_uri></object><object><updated>Fri, 2 Apr 2010 10:05:00 -0500</updated><title>Granny\'s Gone</title><created>Fri, 2 Apr 2010 10:05:00 -0500</created><is_active type="boolean">True</is_active><content>Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!</content><slug>grannys-gone</slug><resource_uri></resource_uri></object></objects>')
 
     def test_to_xml_single(self):
         serializer = Serializer()
-        representation = NoteRepresentation.get_list()[0]
-        self.assertEqual(serializer.to_xml(representation), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><created>Tue, 30 Mar 2010 20:05:00 -0500</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><resource_uri></resource_uri></object>')
+        resource = self.obj_list[0]
+        self.assertEqual(serializer.to_xml(resource), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<object><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><title>First Post!</title><created>Tue, 30 Mar 2010 20:05:00 -0500</created><is_active type="boolean">True</is_active><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><slug>first-post</slug><resource_uri></resource_uri></object>')
 
     def test_to_xml_nested(self):
         serializer = Serializer()
-        representation = NoteRepresentation.get_list()[0]
+        resource = self.obj_list[0]
         data = {
             'stuff': {
                 'foo': 'bar',
-                'object': representation,
+                'object': resource,
             }
         }
-        self.assertEqual(serializer.to_xml(data), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><stuff type="hash"><foo>bar</foo><object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><created>Tue, 30 Mar 2010 20:05:00 -0500</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><resource_uri></resource_uri></object></stuff></response>')
+        self.assertEqual(serializer.to_xml(data), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><stuff type="hash"><foo>bar</foo><object><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><title>First Post!</title><created>Tue, 30 Mar 2010 20:05:00 -0500</created><is_active type="boolean">True</is_active><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><slug>first-post</slug><resource_uri></resource_uri></object></stuff></response>')
 
     def test_to_json_multirepr(self):
         serializer = Serializer()
-        representations = NoteRepresentation.get_list()
-        self.assertEqual(serializer.to_json(representations), '[{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "", "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "Thu, 1 Apr 2010 20:05:00 -0500", "is_active": true, "resource_uri": "", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "Thu, 1 Apr 2010 20:05:00 -0500"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "Fri, 2 Apr 2010 10:05:00 -0500", "is_active": true, "resource_uri": "", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "Fri, 2 Apr 2010 10:05:00 -0500"}]')
+        self.assertEqual(serializer.to_json(self.obj_list), '[{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "", "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "Thu, 1 Apr 2010 20:05:00 -0500", "is_active": true, "resource_uri": "", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "Thu, 1 Apr 2010 20:05:00 -0500"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "Fri, 2 Apr 2010 10:05:00 -0500", "is_active": true, "resource_uri": "", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "Fri, 2 Apr 2010 10:05:00 -0500"}]')
 
     def test_to_json_single(self):
         serializer = Serializer()
-        representation = NoteRepresentation.get_list()[0]
-        self.assertEqual(serializer.to_json(representation), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}')
+        resource = self.obj_list[0]
+        self.assertEqual(serializer.to_json(resource), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}')
 
     def test_to_json_nested(self):
         serializer = Serializer()
-        representation = NoteRepresentation.get_list()[0]
+        resource = self.obj_list[0]
         data = {
             'stuff': {
                 'foo': 'bar',
-                'object': representation,
+                'object': resource,
             }
         }
         self.assertEqual(serializer.to_json(data), '{"stuff": {"foo": "bar", "object": {"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}}}')

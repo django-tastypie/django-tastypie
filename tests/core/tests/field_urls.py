@@ -1,22 +1,27 @@
 from django.conf.urls.defaults import *
 from tastypie import fields
-from tastypie.resources import Resource
-from core.tests.api import Api, NoteResource, UserResource, NoteRepresentation
-from core.tests.fields import UserRepresentation, SubjectRepresentation
+from tastypie.resources import ModelResource
+from core.models import Note, Subject
+from core.tests.api import Api, UserResource
 
 
-class SubjectResource(Resource):
-    representation = SubjectRepresentation
-    resource_name = 'subjects'
+class SubjectResource(ModelResource):
+    class Meta:
+        resource_name = 'subjects'
+        queryset = Subject.objects.all()
 
 
-class CustomNoteRepresentation(NoteRepresentation):
-    author = fields.ForeignKey(UserRepresentation, 'author')
-    subjects = fields.ManyToManyField(SubjectRepresentation, 'subjects')
+class CustomNoteResource(ModelResource):
+    author = fields.ForeignKey(UserResource, 'author')
+    subjects = fields.ManyToManyField(SubjectResource, 'subjects')
+    
+    class Meta:
+        resource_name = 'notes'
+        queryset = Note.objects.all()
 
 
 api = Api(api_name='v1')
-api.register(NoteResource(representation=CustomNoteRepresentation))
+api.register(CustomNoteResource())
 api.register(UserResource())
 api.register(SubjectResource())
 

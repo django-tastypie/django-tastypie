@@ -15,7 +15,6 @@ Matt:
 - Authentication
     - ``OauthAuthentication``
 
-- Filtering.
 
 Long Term
 ---------

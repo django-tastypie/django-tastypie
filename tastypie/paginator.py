@@ -16,7 +16,7 @@ class Paginator(object):
     ``total_count`` of representations seen and convenience links to the
     ``previous``/``next`` pages of data as available.
     """
-    def __init__(self, request_data, objects, limit=None, offset=0):
+    def __init__(self, request_data, objects, resource_uri=None, limit=None, offset=0):
         """
         Instantiates the ``Paginator`` and allows for some configuration.
         
@@ -38,11 +38,7 @@ class Paginator(object):
         self.objects = objects
         self.limit = limit
         self.offset = offset
-
-        try:
-            self.resource_uri = objects.get_resource_uri()
-        except NoReverseMatch:
-            self.resource_uri = None
+        self.resource_uri = resource_uri
     
     def get_limit(self):
         limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)

@@ -1,3 +1,4 @@
+from django.http import HttpRequest
 from django.test import TestCase
 try:
     import json
@@ -33,3 +34,20 @@ class ViewsTestCase(TestCase):
         self.assertEqual(len(deserialized), 1)
         self.assertEqual(len(deserialized['objects']), 2)
         self.assertEqual([obj['title'] for obj in deserialized['objects']], [u'Another Post', u'First Post!'])
+    
+    def test_posts(self):
+        request = HttpRequest()
+        post_data = '{"content": "A new post.", "is_active": true, "title": "New Title", "slug": "new-title", "user": "/api/v1/users/1/"}'
+        request._raw_post_data = post_data
+        
+        resp = self.client.post('/api/v1/notes/', data=post_data, content_type='application/json')
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp['location'], 'http://testserver/api/v1/notes/3/')
+
+        # make sure posted object exists
+        resp = self.client.get('/api/v1/notes/3/', data={'format': 'json'})
+        self.assertEqual(resp.status_code, 200)
+        obj = json.loads(resp.content)
+        self.assertEqual(obj['content'], 'A new post.')
+        self.assertEqual(obj['is_active'], True)
+        self.assertEqual(obj['user'], '/api/v1/users/1/')

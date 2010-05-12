@@ -3,7 +3,6 @@ from django.conf.urls.defaults import *
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
-from tastypie import _add_resource, _remove_resource
 from tastypie.exceptions import NotRegistered
 from tastypie.serializers import Serializer
 from tastypie.utils.mime import determine_format, build_content_type
@@ -34,7 +33,7 @@ class Api(object):
         resource being registered is the canonical variant. Defaults to
         ``True``.
         """
-        resource_name = getattr(resource, 'resource_name', None)
+        resource_name = getattr(resource._meta, 'resource_name', None)
         
         if resource_name is None:
             raise ImproperlyConfigured("Resource %r must define a 'resource_name'." % resource)
@@ -46,16 +45,16 @@ class Api(object):
                 warnings.warn("A new resource '%r' is replacing the existing canonical URL for '%s'." % (resource, resource_name), Warning, stacklevel=2)
             
             self._canonicals[resource_name] = resource
-        
-        # Register it globally so we can build URIs.
-        _add_resource(self, resource, canonical)
+            # TODO: This is messy, but makes URI resolution on FK/M2M fields
+            #       work consistently.
+            resource._meta.api_name = self.api_name
+            resource.__class__.Meta.api_name = self.api_name
     
     def unregister(self, resource_name):
         """
         If present, unregisters a resource from the API.
         """
         if resource_name in self._registry:
-            _remove_resource(self, self._registry[resource_name])
             del(self._registry[resource_name])
         
         if resource_name in self._canonicals:

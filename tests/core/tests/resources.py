@@ -6,10 +6,10 @@ from django.core.urlresolvers import reverse
 from django.http import HttpRequest, QueryDict
 from django.test import TestCase
 from tastypie.authentication import BasicAuthentication
+from tastypie.bundle import Bundle
 from tastypie.exceptions import InvalidFilterError
 from tastypie import fields
-from tastypie.representations.models import ModelRepresentation
-from tastypie.resources import Resource
+from tastypie.resources import Resource, ModelResource
 from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
 from core.models import Note
@@ -19,120 +19,117 @@ except NameError:
     from sets import Set as set
 
 
-class NoteRepresentation(ModelRepresentation):
-    class Meta:
-        queryset = Note.objects.filter(is_active=True)
-    
-    def get_resource_uri(self):
-        return '/api/v1/notes/%s/' % self.instance.id
-
-
-class UserRepresentation(ModelRepresentation):
-    class Meta:
-        queryset = User.objects.all()
-    
-    def get_resource_uri(self):
-        return '/api/v1/users/%s/' % self.instance.id
-
-
-class DetailedNoteRepresentation(ModelRepresentation):
-    user = fields.ForeignKey(UserRepresentation, 'author')
-    hello_world = fields.CharField(default='world')
-    
-    class Meta:
-        queryset = Note.objects.filter(is_active=True)
-    
-    def get_resource_uri(self):
-        return '/api/v1/notes/%s/' % self.instance.id
-
-
 class CustomSerializer(Serializer):
     pass
 
 
-class NoteResource(Resource):
-    representation = NoteRepresentation
-    resource_name = 'notes'
-    filtering = {
-        'content': ['startswith', 'exact'],
-        'title': 'all',
-        'slug': ['exact'],
-    }
+class NoteResource(ModelResource):
+    class Meta:
+        resource_name = 'notes'
+        filtering = {
+            'content': ['startswith', 'exact'],
+            'title': 'all',
+            'slug': ['exact'],
+        }
+        queryset = Note.objects.filter(is_active=True)
+    
+    def get_resource_uri(self, bundle_or_obj):
+        return '/api/v1/notes/%s/' % bundle_or_obj.obj.id
 
 
-class DetailedNoteResource(Resource):
-    representation = DetailedNoteRepresentation
-    resource_name = 'detailednotes'
-    filtering = {
-        'content': ['startswith', 'exact'],
-        'title': 'all',
-        'slug': ['exact'],
-        'user': ['gt', 'gte', 'lt', 'lte', 'exact'],
-        'hello_world': ['exact'], # Note this is invalid for filtering.
-    }
+# FIXME: Note that subclassing is currently broken.
+class LightlyCustomNoteResource(NoteResource):
+    class Meta:
+        resource_name = 'noteish'
+        allowed_methods = ['get']
+        queryset = Note.objects.filter(is_active=True)
 
 
-class ThrottledNoteResource(Resource):
-    representation = NoteRepresentation
-    resource_name = 'notes'
-    throttle = CacheThrottle(throttle_at=2, timeframe=5, expiration=5)
+class VeryCustomNoteResource(NoteResource):
+    class Meta:
+        limit = 50
+        resource_name = 'notey'
+        serializer = CustomSerializer()
+        list_allowed_methods = ['get']
+        detail_allowed_methods = ['get', 'post', 'put']
+        queryset = Note.objects.filter(is_active=True)
+
+
+class UserResource(ModelResource):
+    class Meta:
+        queryset = User.objects.all()
+    
+    def get_resource_uri(self, bundle_or_obj):
+        return '/api/v1/users/%s/' % bundle_or_obj.obj.id
+
+
+class DetailedNoteResource(ModelResource):
+    user = fields.ForeignKey(UserResource, 'author')
+    hello_world = fields.CharField(default='world')
+    
+    class Meta:
+        resource_name = 'detailednotes'
+        filtering = {
+            'content': ['startswith', 'exact'],
+            'title': 'all',
+            'slug': ['exact'],
+            'user': ['gt', 'gte', 'lt', 'lte', 'exact'],
+            'hello_world': ['exact'], # Note this is invalid for filtering.
+        }
+        queryset = Note.objects.filter(is_active=True)
+    
+    def get_resource_uri(self, bundle_or_obj):
+        return '/api/v1/notes/%s/' % bundle_or_obj.obj.id
+
+
+class ThrottledNoteResource(NoteResource):
+    class Meta:
+        resource_name = 'throttlednotes'
+        queryset = Note.objects.filter(is_active=True)
+        throttle = CacheThrottle(throttle_at=2, timeframe=5, expiration=5)
+
+
+class BasicAuthNoteResource(NoteResource):
+    class Meta:
+        resource_name = 'notes'
+        queryset = Note.objects.filter(is_active=True)
+        authentication = BasicAuthentication()
 
 
 class ResourceTestCase(TestCase):
     fixtures = ['note_testdata.json']
     
     def test_init(self):
-        # No representations.
-        self.assertRaises(ImproperlyConfigured, Resource)
-        
-        # No detail representation.
-        self.assertRaises(ImproperlyConfigured, Resource, list_representation=NoteResource)
-        
-        # No resource_name.
-        self.assertRaises(ImproperlyConfigured, Resource, representation=NoteResource)
-        
         # Very minimal & stock.
         resource_1 = NoteResource()
-        self.assertEqual(issubclass(resource_1.list_representation, NoteRepresentation), True)
-        self.assertEqual(issubclass(resource_1.detail_representation, NoteRepresentation), True)
-        self.assertEqual(resource_1.resource_name, 'notes')
-        self.assertEqual(resource_1.limit, 20)
-        self.assertEqual(resource_1.list_allowed_methods, ['get', 'post', 'put', 'delete'])
-        self.assertEqual(resource_1.detail_allowed_methods, ['get', 'post', 'put', 'delete'])
-        self.assertEqual(isinstance(resource_1.serializer, Serializer), True)
-        self.assertEqual(resource_1.available_filters, set(['title__lte', 'title__isnull', 'slug__exact', 'title__istartswith', 'title__icontains', 'content__startswith', 'title__range', 'title__endswith', 'title__iexact', 'title__day', 'title__lt', 'content', 'title__contains', 'title__year', 'title__iregex', 'title', 'title__month', 'title__gt', 'title__week_day', 'slug', 'title__gte', 'title__regex', 'title__iendswith', 'content__exact', 'title__in', 'title__exact', 'title__search', 'title__startswith']))
+        self.assertEqual(len(resource_1.fields), 7)
+        self.assertNotEqual(resource_1._meta.queryset, None)
+        self.assertEqual(resource_1._meta.resource_name, 'notes')
+        self.assertEqual(resource_1._meta.limit, 20)
+        self.assertEqual(resource_1._meta.list_allowed_methods, ['get', 'post', 'put', 'delete'])
+        self.assertEqual(resource_1._meta.detail_allowed_methods, ['get', 'post', 'put', 'delete'])
+        self.assertEqual(isinstance(resource_1._meta.serializer, Serializer), True)
+        self.assertEqual(resource_1._meta.available_filters, set(['title__lte', 'title__isnull', 'slug__exact', 'title__istartswith', 'title__icontains', 'content__startswith', 'title__range', 'title__endswith', 'title__iexact', 'title__day', 'title__lt', 'content', 'title__contains', 'title__year', 'title__iregex', 'title', 'title__month', 'title__gt', 'title__week_day', 'slug', 'title__gte', 'title__regex', 'title__iendswith', 'content__exact', 'title__in', 'title__exact', 'title__search', 'title__startswith']))
         
         # Lightly custom.
-        resource_2 = NoteResource(
-            representation=NoteRepresentation,
-            resource_name='noteish',
-            allowed_methods=['get'],
-        )
-        self.assertEqual(issubclass(resource_2.list_representation, NoteRepresentation), True)
-        self.assertEqual(issubclass(resource_2.detail_representation, NoteRepresentation), True)
-        self.assertEqual(resource_2.resource_name, 'noteish')
-        self.assertEqual(resource_2.limit, 20)
-        self.assertEqual(resource_2.list_allowed_methods, ['get'])
-        self.assertEqual(resource_2.detail_allowed_methods, ['get'])
-        self.assertEqual(isinstance(resource_2.serializer, Serializer), True)
+        resource_2 = LightlyCustomNoteResource()
+        self.assertEqual(len(resource_2.fields), 7)
+        self.assertNotEqual(resource_2._meta.queryset, None)
+        self.assertEqual(resource_2._meta.resource_name, 'noteish')
+        self.assertEqual(resource_2._meta.limit, 20)
+        self.assertEqual(resource_2._meta.list_allowed_methods, ['get'])
+        self.assertEqual(resource_2._meta.detail_allowed_methods, ['get'])
+        self.assertEqual(isinstance(resource_2._meta.serializer, Serializer), True)
         
         # Highly custom.
-        resource_3 = NoteResource(
-            list_representation=NoteRepresentation,
-            detail_representation=DetailedNoteRepresentation,
-            limit=50,
-            resource_name='notey',
-            serializer=CustomSerializer(),
-            list_allowed_methods=['get'],
-            detail_allowed_methods=['get', 'post', 'put']
-        )
-        self.assertEqual(issubclass(resource_3.list_representation, NoteRepresentation), True)
-        self.assertEqual(issubclass(resource_3.detail_representation, DetailedNoteRepresentation), True)
-        self.assertEqual(resource_3.resource_name, 'notey')
-        self.assertEqual(resource_3.limit, 50)
-        self.assertEqual(resource_3.list_allowed_methods, ['get'])
-        self.assertEqual(resource_3.detail_allowed_methods, ['get', 'post', 'put'])
-        self.assertEqual(isinstance(resource_3.serializer, CustomSerializer), True)
+        resource_3 = VeryCustomNoteResource()
+        self.assertEqual(len(resource_3.fields), 7)
+        self.assertNotEqual(resource_3._meta.queryset, None)
+        self.assertEqual(resource_3._meta.resource_name, 'notey')
+        self.assertEqual(resource_3._meta.limit, 50)
+        self.assertEqual(resource_3._meta.list_allowed_methods, ['get'])
+        self.assertEqual(resource_3._meta.detail_allowed_methods, ['get', 'post', 'put'])
+        self.assertEqual(isinstance(resource_3._meta.serializer, CustomSerializer), True)
     
     def test_urls(self):
         # The common case, where the ``Api`` specifies the name.
@@ -494,30 +491,30 @@ class ResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}')
     
-    def test_build_representation(self):
+    def test_build_bundle(self):
         resource = NoteResource()
         
-        unpopulated_repr = resource.build_representation()
-        self.assertTrue(isinstance(unpopulated_repr, NoteRepresentation))
-        self.assertEqual(unpopulated_repr.title.value, None)
+        unpopulated_bundle = resource.build_bundle()
+        self.assertTrue(isinstance(unpopulated_bundle, Bundle))
+        self.assertEqual(unpopulated_bundle.data, {})
         
-        populated_repr = resource.build_representation(data={'title': 'Foo'})
-        self.assertTrue(isinstance(populated_repr, NoteRepresentation))
-        self.assertEqual(populated_repr.title.value, 'Foo')
+        populated_bundle = resource.build_bundle(data={'title': 'Foo'})
+        self.assertTrue(isinstance(populated_bundle, Bundle))
+        self.assertEqual(populated_bundle.data, {'title': 'Foo'})
     
-    def test_fetch_list(self):
+    def test_obj_get_list(self):
         resource = NoteResource()
         
-        object_list = resource.fetch_list()
+        object_list = resource.obj_get_list()
         self.assertEqual(len(object_list), 4)
-        self.assertEqual(object_list[0].title.value, u'First Post!')
+        self.assertEqual(object_list[0].title, u'First Post!')
     
-    def test_fetch_detail(self):
+    def test_obj_get(self):
         resource = NoteResource()
         
-        representation = resource.fetch_detail(obj_id=1)
-        self.assertTrue(isinstance(representation, NoteRepresentation))
-        self.assertEqual(representation.title.value, u'First Post!')
+        obj = resource.obj_get(obj_id=1)
+        self.assertTrue(isinstance(obj, Note))
+        self.assertEqual(obj.title, u'First Post!')
 
     def test_jsonp_validation(self):
         resource = NoteResource()
@@ -597,31 +594,31 @@ class ResourceTestCase(TestCase):
     
     def test_generate_cache_key(self):
         resource = NoteResource()
-        self.assertEqual(resource.generate_cache_key(), 'nonspecific:notes::')
-        self.assertEqual(resource.generate_cache_key('abc', '123'), 'nonspecific:notes:abc:123:')
-        self.assertEqual(resource.generate_cache_key(foo='bar', moof='baz'), 'nonspecific:notes::foo=bar:moof=baz')
-        self.assertEqual(resource.generate_cache_key('abc', '123', foo='bar', moof='baz'), 'nonspecific:notes:abc:123:foo=bar:moof=baz')
+        self.assertEqual(resource.generate_cache_key(), 'None:notes::')
+        self.assertEqual(resource.generate_cache_key('abc', '123'), 'None:notes:abc:123:')
+        self.assertEqual(resource.generate_cache_key(foo='bar', moof='baz'), 'None:notes::foo=bar:moof=baz')
+        self.assertEqual(resource.generate_cache_key('abc', '123', foo='bar', moof='baz'), 'None:notes:abc:123:foo=bar:moof=baz')
     
     def test_cached_fetch_list(self):
         resource = NoteResource()
         
-        object_list = resource.cached_fetch_list()
+        object_list = resource.cached_obj_get_list()
         self.assertEqual(len(object_list), 4)
-        self.assertEqual(object_list[0].title.value, u'First Post!')
+        self.assertEqual(object_list[0].title, u'First Post!')
     
     def test_cached_fetch_detail(self):
         resource = NoteResource()
         
-        representation = resource.cached_fetch_detail(obj_id=1)
-        self.assertTrue(isinstance(representation, NoteRepresentation))
-        self.assertEqual(representation.title.value, u'First Post!')
+        obj = resource.cached_obj_get(obj_id=1)
+        self.assertTrue(isinstance(obj, Note))
+        self.assertEqual(obj.title, u'First Post!')
 
 
 class BasicAuthResourceTestCase(TestCase):
     fixtures = ['note_testdata.json']
     
     def test_dispatch_list(self):
-        resource = NoteResource(authentication=BasicAuthentication())
+        resource = BasicAuthNoteResource()
         request = HttpRequest()
         request.GET = {'format': 'json'}
         request.method = 'GET'
@@ -638,7 +635,7 @@ class BasicAuthResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
     
     def test_dispatch_detail(self):
-        resource = NoteResource(authentication=BasicAuthentication())
+        resource = BasicAuthNoteResource()
         request = HttpRequest()
         request.GET = {'format': 'json'}
         request.method = 'GET'

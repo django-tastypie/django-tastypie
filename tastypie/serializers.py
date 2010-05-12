@@ -3,8 +3,8 @@ from django.core.serializers import json
 from django.template import loader, Context
 from django.utils import simplejson
 from django.utils.encoding import force_unicode
+from tastypie.bundle import Bundle
 from tastypie.exceptions import UnsupportedFormat
-from tastypie.representations.simple import Representation, RepresentationSet
 from tastypie.utils import format_datetime, format_date, format_time
 from tastypie.fields import ApiField, ToOneField, ToManyField
 from StringIO import StringIO
@@ -53,7 +53,7 @@ class Serializer(object):
         except KeyError:
             return 'application/json'
     
-    def serialize(self, representation, format='application/json', options={}):
+    def serialize(self, bundle, format='application/json', options={}):
         desired_format = None
         
         for short_format, long_format in self.content_types.items():
@@ -65,7 +65,7 @@ class Serializer(object):
         if desired_format is None:
             raise UnsupportedFormat("The format indicated '%s' had no available serialization method. Please check your ``formats`` and ``content_types`` on your Serializer." % format)
         
-        serialized = getattr(self, "to_%s" % desired_format)(representation, options)
+        serialized = getattr(self, "to_%s" % desired_format)(bundle, options)
         return serialized
     
     def deserialize(self, content, format='application/json'):
@@ -84,15 +84,12 @@ class Serializer(object):
         return deserialized
 
     def to_simple(self, data, options):
-        if type(data) in (list, tuple) or isinstance(data, RepresentationSet):
+        if isinstance(data, (list, tuple)):
             return [self.to_simple(item, options) for item in data]
-        elif isinstance(data, dict):
+        if isinstance(data, dict):
             return dict((key, self.to_simple(val, options)) for (key, val) in data.iteritems())
-        elif isinstance(data, Representation):
-            object = {}
-            for field_name, field_object in data.fields.items():
-                object[field_name] = self.to_simple(field_object, options)
-            return object
+        elif isinstance(data, Bundle):
+            return dict((key, self.to_simple(val, options)) for (key, val) in data.data.iteritems())
         elif isinstance(data, ApiField):
             if isinstance(data, ToOneField):
                 if data.full_repr:
@@ -122,7 +119,7 @@ class Serializer(object):
             return force_unicode(data)
 
     def to_etree(self, data, options=None, name=None, depth=0):
-        if type(data) in (list, tuple) or isinstance(data, RepresentationSet):
+        if isinstance(data, (list, tuple)):
             element = Element(name or 'objects')
             if name:
                 element = Element(name)
@@ -139,9 +136,9 @@ class Serializer(object):
                 element.set('type', 'hash')
             for (key, value) in data.iteritems():
                 element.append(self.to_etree(value, options, name=key, depth=depth+1))
-        elif isinstance(data, Representation):
+        elif isinstance(data, Bundle):
             element = Element(name or 'object')
-            for field_name, field_object in data.fields.items():
+            for field_name, field_object in data.data.items():
                 element.append(self.to_etree(field_object, options, name=field_name, depth=depth+1))
         elif isinstance(data, ApiField):
             if isinstance(data, ToOneField):
@@ -249,13 +246,14 @@ class Serializer(object):
 
 def get_type_string(data):
     data_type = type(data)
+    
     if data_type in (int, long):
         return 'integer'
     elif data_type == float:
         return 'float'
     elif data_type == bool:
         return 'boolean'
-    elif data_type in (list, tuple) or isinstance(data, RepresentationSet):
+    elif data_type in (list, tuple):
         return 'list'
     elif data_type == dict:
         return 'hash'

@@ -2,6 +2,7 @@ import re
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse, resolve
 from django.utils import datetime_safe
+from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError
 
 
@@ -22,7 +23,7 @@ class ApiField(object):
     def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, readonly=False):
         """
         Sets up the field. This is generally called when the containing
-        ``Representation`` is initialized.
+        ``Resource`` is initialized.
         
         Optionally accepts an ``attribute``, which should be a string of
         either an instance attribute or callable off the object during the
@@ -59,7 +60,7 @@ class ApiField(object):
         
         return self._default
     
-    def dehydrate(self, obj):
+    def dehydrate(self, bundle):
         """
         Takes data from the provided object and prepares it for the
         representation.
@@ -67,7 +68,7 @@ class ApiField(object):
         if self.attribute is not None:
             # Check for `__` in the field for looking through the relation.
             attrs = self.attribute.split('__')
-            current_object = obj
+            current_object = bundle.obj
             
             for attr in attrs:
                 current_object = getattr(current_object, attr, None)
@@ -105,15 +106,15 @@ class ApiField(object):
         """
         return value
     
-    def hydrate(self):
+    def hydrate(self, bundle):
         """
-        Takes data stored on the field and returns it. Used for taking simple
-        data and building a instance object.
+        Takes data stored in the bundle for the field and returns it. Used for
+        taking simple data and building a instance object.
         """
         if self.readonly:
             return None
         
-        if self.value is None:
+        if bundle.data.get(self.instance_name) is None:
             if self.has_default():
                 if callable(self._default):
                     return self._default()
@@ -124,7 +125,7 @@ class ApiField(object):
             else:
                 raise ApiFieldError("The '%s' field has no data and doesn't allow a default or null value." % self.instance_name)
         
-        return self.value
+        return bundle.data[self.instance_name]
 
 
 class CharField(ApiField):
@@ -255,7 +256,7 @@ class RelatedField(ApiField):
     A base class not intended for direct use but provides functionality that
     ``ForeignKey`` and ``ManyToManyField`` build upon.
     
-    The contents of this field actually point to another ``Representation``,
+    The contents of this field actually point to another ``Resource``,
     rather than the related object. This allows the field to represent its data
     in different ways.
     
@@ -267,27 +268,27 @@ class RelatedField(ApiField):
     dehydrated_type = 'related'
     is_related = True
     
-    def __init__(self, to, attribute, related_name=None, null=False, full_repr=False):
+    def __init__(self, to, attribute, related_name=None, null=False, full=False):
         """
         Builds the field and prepares it to access to related data.
         
-        The ``to`` argument should point to a ``Representation`` class, NOT
+        The ``to`` argument should point to a ``Resource`` class, NOT
         to a ``Model``. Required.
         
         The ``attribute`` argument should specify what field/callable points to
         the related data on the instance object. Required.
         
         Optionally accepts a ``related_name`` argument. Currently unused, as
-        unlike Django's ORM layer, reverse relations between ``Representation``
+        unlike Django's ORM layer, reverse relations between ``Resource``
         classes are not automatically created. Defaults to ``None``.
         
         Optionally accepts a ``null``, which indicated whether or not a
         ``None`` is allowable data on the field. Defaults to ``False``.
         
-        Optionally accepts a ``full_repr``, which indicates how the related
-        ``Representation`` will appear post-``dehydrate``. If ``False``, the
-        related ``Representation`` will appear as a URL to the endpoint of that
-        resource. If ``True``, the result of the sub-representation's
+        Optionally accepts a ``full``, which indicates how the related
+        ``Resource`` will appear post-``dehydrate``. If ``False``, the
+        related ``Resource`` will appear as a URL to the endpoint of that
+        resource. If ``True``, the result of the sub-resource's
         ``dehydrate`` will be included in full.
         """
         self.instance_name = None
@@ -295,7 +296,7 @@ class RelatedField(ApiField):
         self.attribute = attribute
         self.related_name = related_name
         self.null = null
-        self.full_repr = full_repr
+        self.full = full
         self.value = None
         self.api_name = None
         self.resource_name = None
@@ -314,48 +315,48 @@ class RelatedField(ApiField):
         """
         raise ApiFieldError("%r fields do not have default data." % self)
     
-    def get_related_representation(self, related_instance):
+    def get_related_resource(self, related_instance):
         """
-        Instaniates the related representation.
+        Instaniates the related resource.
         """
-        related_repr = self.to(api_name=self.api_name, resource_name=self.resource_name)
+        related_resource = self.to()
         # Try to be efficient about DB queries.
-        related_repr.instance = related_instance
-        return related_repr
+        related_resource.instance = related_instance
+        return related_resource
     
-    def dehydrate_related(self, related_repr):
+    def dehydrate_related(self, bundle, related_resource):
         """
-        Based on the ``full_repr``, returns either the endpoint or the data
+        Based on the ``full_resource``, returns either the endpoint or the data
         from ``full_dehydrate`` for the related representation.
         """
-        if not self.full_repr:
+        if not self.full:
             # Be a good netizen.
-            return related_repr.get_resource_uri()
+            return related_resource.get_resource_uri(bundle)
         else:
             # ZOMG extra data and big payloads.
-            related_repr.full_dehydrate(related_repr.instance)
-            return related_repr
+            # FIXME: What to do here, since state is no longer maintained?
+            return related_resource.full_dehydrate(related_resource.instance)
     
-    def build_related_representation(self, value):
+    def build_related_resource(self, value):
         """
         Used to ``hydrate`` the data provided. If just a URL is provided,
-        the related representation is attempted to be loaded. If a
-        dictionary-like structure is provided, a fresh representation is
+        the related resource is attempted to be loaded. If a
+        dictionary-like structure is provided, a fresh resource is
         created.
         """
+        self.fk_resource = self.to()
+        
         if isinstance(value, basestring):
             # We got a URI. Load the object and assign it.
-            self.fk_repr = self.to()
-            
             try:
-                self.fk_repr.get_via_uri(value)
-                return self.fk_repr
+                obj = self.fk_resource.get_via_uri(value)
+                return self.fk_resource.full_dehydrate(obj)
             except ObjectDoesNotExist:
                 raise ApiFieldError("Could not find the provided object via resource URI '%s'." % value)
         elif hasattr(value, 'items'):
             # Try to hydrate the data provided.
-            self.fk_repr = self.to(data=value)
-            return self.fk_repr
+            self.fk_bundle = Bundle(data=value)
+            return self.fk_resource.full_hydrate(self.fk_bundle)
         else:
             raise ApiFieldError("The '%s' field has was given data that was not a URI and not a dictionary-alike: %s." % (self.instance_name, value))
 
@@ -366,28 +367,30 @@ class ToOneField(RelatedField):
     
     This subclass requires Django's ORM layer to work properly.
     """
-    def __init__(self, to, attribute, related_name=None, null=False, full_repr=False):
-        super(ToOneField, self).__init__(to, attribute, related_name, null=null, full_repr=full_repr)
-        self.fk_repr = None
+    def __init__(self, to, attribute, related_name=None, null=False, full=False):
+        super(ToOneField, self).__init__(to, attribute, related_name, null=null, full=full)
+        self.fk_resource = None
     
-    def dehydrate(self, obj):
-        if not getattr(obj, self.attribute):
+    def dehydrate(self, bundle):
+        if not getattr(bundle.obj, self.attribute):
             if not self.null:
-                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (obj, self.attribute))
+                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (bundle.obj, self.attribute))
             
             return None
         
-        self.fk_repr = self.get_related_representation(getattr(obj, self.attribute))
-        return self.dehydrate_related(self.fk_repr)
+        fk = getattr(bundle.obj, self.attribute)
+        self.fk_resource = self.get_related_resource(getattr(bundle.obj, self.attribute))
+        fk_bundle = Bundle(obj=fk)
+        return self.dehydrate_related(fk_bundle, self.fk_resource)
     
-    def hydrate(self):
-        if self.value is None:
+    def hydrate(self, bundle):
+        if bundle.data.get(self.instance_name) is None:
             if self.null:
                 return None
             else:
                 raise ApiFieldError("The '%s' field has no data and doesn't allow a null value." % self.instance_name)
         
-        return self.build_related_representation(self.value)
+        return self.build_related_resource(bundle.data.get(self.instance_name))
 
 
 class ForeignKey(ToOneField):
@@ -410,40 +413,41 @@ class ToManyField(RelatedField):
     """
     is_m2m = True
     
-    def __init__(self, to, attribute, related_name=None, null=False, full_repr=False):
-        super(ToManyField, self).__init__(to, attribute, related_name, null=null, full_repr=full_repr)
-        self.m2m_reprs = []
+    def __init__(self, to, attribute, related_name=None, null=False, full=False):
+        super(ToManyField, self).__init__(to, attribute, related_name, null=null, full=full)
+        self.m2m_bundles = []
     
-    def dehydrate(self, obj):
-        if not obj.pk:
+    def dehydrate(self, bundle):
+        if not bundle.obj or not bundle.obj.pk:
             if not self.null:
-                raise ApiFieldError("The model '%r' does not have a primary key and can not be used in a ToMany context." % obj)
+                raise ApiFieldError("The model '%r' does not have a primary key and can not be used in a ToMany context." % bundle.obj)
             
             return []
         
-        if not getattr(obj, self.attribute):
+        if not getattr(bundle.obj, self.attribute):
             if not self.null:
-                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (obj, self.attribute))
+                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (bundle.obj, self.attribute))
             
             return []
         
-        self.m2m_reprs = []
+        self.m2m_resources = []
         m2m_dehydrated = []
         
         # TODO: Also model-specific and leaky. Relies on there being a
         #       ``Manager`` there.
-        for m2m in getattr(obj, self.attribute).all():
-            m2m_repr = self.get_related_representation(m2m)
-            self.m2m_reprs.append(m2m_repr)
-            m2m_dehydrated.append(self.dehydrate_related(m2m_repr))
+        for m2m in getattr(bundle.obj, self.attribute).all():
+            m2m_resource = self.get_related_resource(m2m)
+            m2m_bundle = Bundle(obj=m2m)
+            self.m2m_resources.append(m2m_resource)
+            m2m_dehydrated.append(self.dehydrate_related(m2m_bundle, m2m_resource))
         
         return m2m_dehydrated
     
-    def hydrate(self):
+    def hydrate(self, bundle):
         pass
     
-    def hydrate_m2m(self):
-        if self.value is None:
+    def hydrate_m2m(self, bundle):
+        if bundle.data.get(self.instance_name) is None:
             if self.null:
                 return None
             else:
@@ -451,8 +455,8 @@ class ToManyField(RelatedField):
         
         m2m_hydrated = []
         
-        for value in self.value:
-            m2m_hydrated.append(self.build_related_representation(value))
+        for value in bundle.data.get(self.instance_name):
+            m2m_hydrated.append(self.build_related_resource(value))
         
         return m2m_hydrated
 
