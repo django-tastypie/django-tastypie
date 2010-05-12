@@ -133,8 +133,8 @@ class Resource(object):
         urlpatterns = patterns('',
             url(r"^(?P<resource_name>%s)/$" % self._meta.resource_name, self.wrap_view('dispatch_list'), name="api_dispatch_list"),
             url(r"^(?P<resource_name>%s)/schema/$" % self._meta.resource_name, self.wrap_view('get_schema'), name="api_get_schema"),
-            url(r"^(?P<resource_name>%s)/set/(?P<id_list>[\d;]+)/$" % self._meta.resource_name, self.wrap_view('get_multiple'), name="api_get_multiple"),
-            url(r"^(?P<resource_name>%s)/(?P<obj_id>\d+)/$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
+            url(r"^(?P<resource_name>%s)/set/(?P<pk_list>[\d;]+)/$" % self._meta.resource_name, self.wrap_view('get_multiple'), name="api_get_multiple"),
+            url(r"^(?P<resource_name>%s)/(?P<pk>\d+)/$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
         )
         return urlpatterns
     
@@ -301,7 +301,7 @@ class Resource(object):
         This needs to be implemented at the user level.
         
         A ``return reverse("api_dispatch_detail", kwargs={'resource_name':
-        self.resource_name, 'obj_id': object.id})`` should be all that would
+        self.resource_name, 'pk': object.id})`` should be all that would
         be needed.
         """
         raise NotImplementedError()
@@ -324,13 +324,13 @@ class Resource(object):
         This needs to be implemented at the user level.
         
         This pulls apart the salient bits of the URI and populates the
-        resource via a ``get`` with the ``obj_id``.
+        resource via a ``get`` with the ``pk``.
         
         Example::
         
             def get_via_uri(self, uri):
                 view, args, kwargs = resolve(uri)
-                return self.get(obj_id=kwargs['obj_id'])
+                return self.get(pk=kwargs['pk'])
         
         If you need custom behavior based on other portions of the URI,
         simply override this method.
@@ -578,10 +578,10 @@ class Resource(object):
         bundle = self.build_bundle(data=data)
         
         try:
-            updated_bundle = self.obj_update(bundle, pk=kwargs.get('obj_id'))
+            updated_bundle = self.obj_update(bundle, pk=kwargs.get('pk'))
             return HttpAccepted()
         except:
-            updated_bundle = self.obj_create(bundle, pk=kwargs.get('obj_id'))
+            updated_bundle = self.obj_create(bundle, pk=kwargs.get('pk'))
             return HttpCreated(location=self.get_resource_uri(updated_bundle))
     
     def post_list(self, request, **kwargs):
@@ -681,17 +681,17 @@ class Resource(object):
             return HttpBadRequest()
         
         # Rip apart the list then iterate.
-        obj_ids = kwargs.get('id_list', '').split(';')
+        obj_pks = kwargs.get('pk_list', '').split(';')
         objects = []
         not_found = []
         
-        for obj_id in obj_ids:
+        for pk in obj_pks:
             try:
-                obj = self.obj_get(obj_id=obj_id)
+                obj = self.obj_get(pk=pk)
                 bundle = self.full_dehydrate(obj)
                 objects.append(bundle)
             except ObjectDoesNotExist:
-                not_found.append(obj_id)
+                not_found.append(pk)
         
         object_list = {
             'objects': objects,
@@ -819,7 +819,7 @@ class ModelResource(Resource):
         return self._meta.queryset.filter(**applicable_filters)
     
     def obj_get(self, **kwargs):
-        return self._meta.queryset.get(pk=kwargs.get('obj_id'))
+        return self._meta.queryset.get(pk=kwargs.get('pk'))
     
     def obj_create(self, bundle, **kwargs):
         bundle.obj = self._meta.object_class()
@@ -855,7 +855,7 @@ class ModelResource(Resource):
     
     def obj_delete(self, **kwargs):
         try:
-            obj = self._meta.queryset.get(pk=kwargs.get('obj_id'))
+            obj = self._meta.queryset.get(pk=kwargs.get('pk'))
         except ObjectDoesNotExist:
             raise NotFound("A model instance matching the provided arguments could not be found.")
         
@@ -884,9 +884,9 @@ class ModelResource(Resource):
         }
         
         if isinstance(bundle_or_obj, Bundle):
-            kwargs['obj_id'] = bundle_or_obj.obj.pk
+            kwargs['pk'] = bundle_or_obj.obj.pk
         else:
-            kwargs['obj_id'] = bundle_or_obj.id
+            kwargs['pk'] = bundle_or_obj.id
         
         if self._meta.api_name is not None:
             kwargs['api_name'] = self._meta.api_name

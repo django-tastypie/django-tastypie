@@ -182,7 +182,7 @@ class ResourceTestCase(TestCase):
     
     def test_obj_get(self):
         basic = BasicResource()
-        self.assertRaises(NotImplementedError, basic.obj_get, obj_id=1)
+        self.assertRaises(NotImplementedError, basic.obj_get, pk=1)
     
     def test_obj_create(self):
         basic = BasicResource()
@@ -398,7 +398,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(reverse('api_dispatch_detail', kwargs={
             'api_name': 'v1',
             'resource_name': 'notes',
-            'obj_id': 1,
+            'pk': 1,
         }), '/api/v1/notes/1/')
         
         # Start over.
@@ -411,7 +411,7 @@ class ModelResourceTestCase(TestCase):
         }), '/notes/')
         self.assertEqual(reverse('api_dispatch_detail', urlconf='core.tests.manual_urls', kwargs={
             'resource_name': 'notes',
-            'obj_id': 1,
+            'pk': 1,
         }), '/notes/1/')
     
     def test_determine_format(self):
@@ -616,15 +616,15 @@ class ModelResourceTestCase(TestCase):
         request = HttpRequest()
         request.GET = {'format': 'json'}
         
-        resp = resource.get_detail(request, obj_id=1)
+        resp = resource.get_detail(request, pk=1)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}')
         
-        resp = resource.get_detail(request, obj_id=2)
+        resp = resource.get_detail(request, pk=2)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}')
         
-        resp = resource.get_detail(request, obj_id=300)
+        resp = resource.get_detail(request, pk=300)
         self.assertEqual(resp.status_code, 410)
     
     def test_put_list(self):
@@ -651,7 +651,7 @@ class ModelResourceTestCase(TestCase):
         request.method = 'PUT'
         request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
         
-        resp = resource.put_detail(request, obj_id=10)
+        resp = resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(Note.objects.count(), 7)
         new_note = Note.objects.get(slug='cat-is-back')
@@ -659,7 +659,7 @@ class ModelResourceTestCase(TestCase):
         
         request.raw_post_data = '{"content": "The cat is gone again. I think it was the rabbits that ate him this time.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Gone", "updated": "2010-04-03 20:05:00"}'
         
-        resp = resource.put_detail(request, obj_id=10)
+        resp = resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 204)
         self.assertEqual(Note.objects.count(), 7)
         new_note = Note.objects.get(slug='cat-is-back')
@@ -685,7 +685,7 @@ class ModelResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'POST'
         
-        resp = resource.post_detail(request, obj_id=2)
+        resp = resource.post_detail(request, pk=2)
         self.assertEqual(resp.status_code, 501)
     
     def test_delete_list(self):
@@ -707,7 +707,7 @@ class ModelResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'DELETE'
         
-        resp = resource.delete_detail(request, obj_id=2)
+        resp = resource.delete_detail(request, pk=2)
         self.assertEqual(resp.status_code, 204)
         self.assertEqual(Note.objects.count(), 5)
     
@@ -727,7 +727,7 @@ class ModelResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'GET'
         
-        resp = resource.dispatch_detail(request, obj_id=1)
+        resp = resource.dispatch_detail(request, pk=1)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}')
     
@@ -741,7 +741,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "Thu, 1 Apr 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "Thu, 1 Apr 2010 20:05:00 -0500"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "Fri, 2 Apr 2010 10:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "Fri, 2 Apr 2010 10:05:00 -0500"}]}')
         
-        resp = resource.dispatch('detail', request, obj_id=1)
+        resp = resource.dispatch('detail', request, pk=1)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}')
     
@@ -798,12 +798,12 @@ class ModelResourceTestCase(TestCase):
     def test_obj_get(self):
         resource = NoteResource()
         
-        obj = resource.obj_get(obj_id=1)
+        obj = resource.obj_get(pk=1)
         self.assertTrue(isinstance(obj, Note))
         self.assertEqual(obj.title, u'First Post!')
         
         note = NoteResource()
-        note_obj = note.obj_get(obj_id=1)
+        note_obj = note.obj_get(pk=1)
         self.assertEqual(note_obj.content, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
         self.assertEqual(note_obj.created, datetime.datetime(2010, 3, 30, 20, 5))
         self.assertEqual(note_obj.is_active, True)
@@ -812,7 +812,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(note_obj.updated, datetime.datetime(2010, 3, 30, 20, 5))
         
         custom = VeryCustomNoteResource()
-        custom_obj = custom.obj_get(obj_id=1)
+        custom_obj = custom.obj_get(pk=1)
         self.assertEqual(custom_obj.content, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
         self.assertEqual(custom_obj.created, datetime.datetime(2010, 3, 30, 20, 5))
         self.assertEqual(custom_obj.is_active, True)
@@ -820,7 +820,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(custom_obj.title, u'First Post!')
         
         related = RelatedNoteResource()
-        related_obj = related.obj_get(obj_id=1)
+        related_obj = related.obj_get(pk=1)
         self.assertEqual(related_obj.content, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
         self.assertEqual(related_obj.created, datetime.datetime(2010, 3, 30, 20, 5))
         self.assertEqual(related_obj.is_active, True)
@@ -835,7 +835,7 @@ class ModelResourceTestCase(TestCase):
         request = HttpRequest()
         request.GET = {'format': 'jsonp', 'callback': '()'}
         request.method = 'GET'
-        resp = resource.dispatch_detail(request, obj_id=1)
+        resp = resource.dispatch_detail(request, pk=1)
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(resp.content, 'JSONP callback name is invalid.')
 
@@ -843,7 +843,7 @@ class ModelResourceTestCase(TestCase):
         request = HttpRequest()
         request.GET = {'format': 'jsonp', 'callback': 'myCallback'}
         request.method = 'GET'
-        resp = resource.dispatch_detail(request, obj_id=1)
+        resp = resource.dispatch_detail(request, pk=1)
         self.assertEqual(resp.status_code, 200)
     
     def test_get_schema(self):
@@ -862,19 +862,19 @@ class ModelResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'GET'
         
-        resp = resource.get_multiple(request, id_list='1')
+        resp = resource.get_multiple(request, pk_list='1')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}]}')
         
-        resp = resource.get_multiple(request, id_list='1;2')
+        resp = resource.get_multiple(request, pk_list='1;2')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}]}')
         
-        resp = resource.get_multiple(request, id_list='2;3')
+        resp = resource.get_multiple(request, pk_list='2;3')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"not_found": ["3"], "objects": [{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}]}')
         
-        resp = resource.get_multiple(request, id_list='1;2;4;6')
+        resp = resource.get_multiple(request, pk_list='1;2;4;6')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "Thu, 1 Apr 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "Thu, 1 Apr 2010 20:05:00 -0500"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "Fri, 2 Apr 2010 10:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "Fri, 2 Apr 2010 10:05:00 -0500"}]}')
     
@@ -921,7 +921,7 @@ class ModelResourceTestCase(TestCase):
     def test_cached_fetch_detail(self):
         resource = NoteResource()
         
-        obj = resource.cached_obj_get(obj_id=1)
+        obj = resource.cached_obj_get(pk=1)
         self.assertTrue(isinstance(obj, Note))
         self.assertEqual(obj.title, u'First Post!')
     
@@ -990,10 +990,10 @@ class ModelResourceTestCase(TestCase):
     def test_obj_update(self):
         self.assertEqual(Note.objects.all().count(), 6)
         note = NoteResource()
-        note_obj = note.obj_get(obj_id=1)
+        note_obj = note.obj_get(pk=1)
         note_bundle = note.full_dehydrate(note_obj)
         note_bundle.data['title'] = 'Whee!'
-        # FIXME: Inconsistent API. ``obj_id`` in some places, ``id`` in others.
+        # FIXME: Inconsistent API. ``pk`` in some places, ``id`` in others.
         note.obj_update(note_bundle, id=1)
         self.assertEqual(Note.objects.all().count(), 6)
         numero_uno = Note.objects.get(pk=1)
@@ -1004,7 +1004,7 @@ class ModelResourceTestCase(TestCase):
         
         self.assertEqual(Note.objects.all().count(), 6)
         note = RelatedNoteResource()
-        related_obj = note.obj_get(obj_id=1)
+        related_obj = note.obj_get(pk=1)
         related_bundle = Bundle(obj=related_obj, data={
             'title': "Yet another new post!",
             'slug': "yet-another-new-post",
@@ -1013,7 +1013,7 @@ class ModelResourceTestCase(TestCase):
             'author': '/api/v1/users/2/',
             'subjects': ['/api/v1/subjects/2/', '/api/v1/subjects/1/'],
         })
-        # FIXME: Inconsistent API. ``obj_id`` in some places, ``id`` in others.
+        # FIXME: Inconsistent API. ``pk`` in some places, ``id`` in others.
         note.obj_update(related_bundle, id=1)
         self.assertEqual(Note.objects.all().count(), 6)
         latest = Note.objects.get(slug='yet-another-new-post')
@@ -1028,7 +1028,7 @@ class ModelResourceTestCase(TestCase):
     def test_obj_delete(self):
         self.assertEqual(Note.objects.all().count(), 6)
         note = NoteResource()
-        note.obj_delete(obj_id=1)
+        note.obj_delete(pk=1)
         self.assertEqual(Note.objects.all().count(), 5)
         self.assertRaises(Note.DoesNotExist, Note.objects.get, pk=1)
 
@@ -1059,7 +1059,7 @@ class BasicAuthResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'GET'
         
-        resp = resource.dispatch_detail(request, obj_id=1)
+        resp = resource.dispatch_detail(request, pk=1)
         self.assertEqual(resp.status_code, 401)
         
         john_doe = User.objects.get(username='johndoe')
