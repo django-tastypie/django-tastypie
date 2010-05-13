@@ -93,6 +93,14 @@ class DeclarativeMetaclass(type):
                 attrs['base_fields'][field_name] = field
         
         new_class = super(DeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
+        
+        for field_name, field_object in new_class.base_fields.items():
+            # Cover self-referential Resources.
+            # We can't do this quite like Django because there's no ``AppCache``
+            # here (which I think we should avoid as long as possible).
+            if isinstance(field_object, RelatedField) and field_object.to == 'self':
+                field_object.to = new_class
+        
         return new_class
 
 

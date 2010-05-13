@@ -222,6 +222,26 @@ class ResourceTestCase(TestCase):
                 'nullable': False
             }
         })
+    
+    def test_subclassing(self):
+        class MiniResource(Resource):
+            abcd = fields.CharField(default='abcd')
+            efgh = fields.IntegerField(default=1234)
+            
+            class Meta:
+                resource_name = 'mini'
+        
+        mini = MiniResource()
+        self.assertEqual(len(mini.fields), 3)
+        
+        class AnotherMiniResource(MiniResource):
+            ijkl = fields.BooleanField(default=True)
+            
+            class Meta:
+                resource_name = 'anothermini'
+        
+        another = AnotherMiniResource()
+        self.assertEqual(len(another.fields), 4)
 
 
 # ====================
@@ -1029,6 +1049,44 @@ class ModelResourceTestCase(TestCase):
         note.obj_delete(pk=1)
         self.assertEqual(Note.objects.all().count(), 5)
         self.assertRaises(Note.DoesNotExist, Note.objects.get, pk=1)
+    
+    def test_sself_referential(self):
+        class SelfResource(ModelResource):
+            me_baby_me = fields.ToOneField('self', 'parent', null=True)
+            
+            class Meta:
+                queryset = Note.objects.all()
+                resource_name = 'me_baby_me'
+        
+        me_baby_me = SelfResource()
+        self.assertEqual(len(me_baby_me.fields), 8)
+        self.assertEqual(me_baby_me._meta.resource_name, 'me_baby_me')
+        self.assertEqual(me_baby_me.fields['me_baby_me'].to, SelfResource)
+    
+    def test_subclassing(self):
+        class MiniResource(ModelResource):
+            abcd = fields.CharField(default='abcd')
+            efgh = fields.IntegerField(default=1234)
+            
+            class Meta:
+                queryset = Note.objects.all()
+                resource_name = 'mini'
+        
+        mini = MiniResource()
+        self.assertEqual(len(mini.fields), 9)
+        self.assertEqual(len(mini._meta.queryset.all()), 6)
+        self.assertEqual(mini._meta.resource_name, 'mini')
+        
+        class AnotherMiniResource(MiniResource):
+            ijkl = fields.BooleanField(default=True)
+            
+            class Meta:
+                resource_name = 'anothermini'
+        
+        another = AnotherMiniResource()
+        self.assertEqual(len(another.fields), 4)
+        self.assertEqual(len(another._meta.queryset.all()), 0)
+        self.assertEqual(another._meta.resource_name, 0)
 
 
 class BasicAuthResourceTestCase(TestCase):
