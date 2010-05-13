@@ -333,6 +333,16 @@ class NoUriNoteResource(ModelResource):
         resource_name = 'nourinote'
 
 
+class WithAbsoluteURLNoteResource(ModelResource):
+    class Meta:
+        queryset = Note.objects.filter(is_active=True)
+        include_absolute_url = True
+        resource_name = 'withabsoluteurlnote'
+    
+    def get_resource_uri(self, bundle_or_obj):
+        return '/api/v1/withabsoluteurlnote/%s/' % bundle_or_obj.obj.id
+
+
 class UserResource(ModelResource):
     class Meta:
         queryset = User.objects.all()
@@ -847,6 +857,13 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(related_obj.author.username, u'johndoe')
         self.assertEqual(related_obj.title, u'First Post!')
         self.assertEqual(list(related_obj.subjects.values_list('id', flat=True)), [1, 2])
+    
+    def test_uri_fields(self):
+        with_abs_url = WithAbsoluteURLNoteResource()
+        with_abs_url_obj = with_abs_url.obj_get(pk=1)
+        abs_bundle = with_abs_url.full_dehydrate(with_abs_url_obj)
+        self.assertEqual(abs_bundle.data['resource_uri'], '/api/v1/withabsoluteurlnote/1/')
+        self.assertEqual(abs_bundle.data['absolute_url'], u'/some/fake/path/1/')
 
     def test_jsonp_validation(self):
         resource = NoteResource()
@@ -958,6 +975,10 @@ class ModelResourceTestCase(TestCase):
         no_uri = NoUriNoteResource()
         self.assertEqual(len(no_uri.fields), 6)
         self.assertEqual(sorted(no_uri.fields.keys()), ['content', 'created', 'is_active', 'slug', 'title', 'updated'])
+        
+        with_abs_url = WithAbsoluteURLNoteResource()
+        self.assertEqual(len(with_abs_url.fields), 8)
+        self.assertEqual(sorted(with_abs_url.fields.keys()), ['absolute_url', 'content', 'created', 'is_active', 'resource_uri', 'slug', 'title', 'updated'])
     
     def test_obj_delete_list_custom_qs(self):
         self.assertEqual(len(Note.objects.all()), 6)

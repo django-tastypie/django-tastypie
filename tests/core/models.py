@@ -21,6 +21,9 @@ class Note(models.Model):
     
     def what_time_is_it(self):
         return datetime.datetime(2010, 4, 1, 0, 48)
+    
+    def get_absolute_url(self):
+        return '/some/fake/path/%s/' % self.pk
 
 
 class Subject(models.Model):

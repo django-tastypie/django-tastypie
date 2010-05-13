@@ -45,6 +45,7 @@ class ResourceOptions(object):
     fields = []
     excludes = []
     include_resource_uri = True
+    include_absolute_url = False
     
     def __init__(self, meta=None):
         # Handle overrides.
@@ -736,6 +737,9 @@ class ModelResource(Resource):
         
         if getattr(self._meta, 'include_resource_uri', True) and not 'resource_uri' in self.fields:
             self.fields['resource_uri'] = CharField(readonly=True)
+        
+        if getattr(self._meta, 'include_absolute_url', True) and not 'absolute_url' in self.fields:
+            self.fields['absolute_url'] = CharField(attribute='get_absolute_url', readonly=True)
         
         self._meta.available_filters = self._get_available_filters(self._meta.filtering)
     
