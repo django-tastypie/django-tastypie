@@ -393,7 +393,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resource_1._meta.list_allowed_methods, ['get', 'post', 'put', 'delete'])
         self.assertEqual(resource_1._meta.detail_allowed_methods, ['get', 'post', 'put', 'delete'])
         self.assertEqual(isinstance(resource_1._meta.serializer, Serializer), True)
-        self.assertEqual(resource_1._meta.available_filters, set(['title__lte', 'title__isnull', 'slug__exact', 'title__istartswith', 'title__icontains', 'content__startswith', 'title__range', 'title__endswith', 'title__iexact', 'title__day', 'title__lt', 'content', 'title__contains', 'title__year', 'title__iregex', 'title', 'title__month', 'title__gt', 'title__week_day', 'slug', 'title__gte', 'title__regex', 'title__iendswith', 'content__exact', 'title__in', 'title__exact', 'title__search', 'title__startswith']))
+        self.assertEqual(resource_1._meta.available_filters, set(['title__lte', 'title__isnull', 'slug__exact', 'title__istartswith', 'title__icontains', 'content__startswith', 'title__range', 'title__endswith', 'title__iexact', 'title__day', 'title__lt', 'title__contains', 'title__year', 'title__iregex', 'title__month', 'title__gt', 'title__week_day', 'title__gte', 'title__regex', 'title__iendswith', 'content__exact', 'title__in', 'title__exact', 'title__search', 'title__startswith']))
         
         # Lightly custom.
         resource_2 = LightlyCustomNoteResource()
@@ -530,14 +530,14 @@ class ModelResourceTestCase(TestCase):
         filters_4 = {
             'title': 'all',
         }
-        self.assertEqual(resource._get_available_filters(filters_4), set(set(['title__lte', 'title__isnull', 'title__week_day', 'title__icontains', 'title__range', 'title__endswith', 'title__iexact', 'title__day', 'title__lt', 'title__contains', 'title__year', 'title__iregex', 'title', 'title__month', 'title__gt', 'title__istartswith', 'title__gte', 'title__regex', 'title__iendswith', 'title__in', 'title__exact', 'title__search', 'title__startswith'])))
+        self.assertEqual(resource._get_available_filters(filters_4), set(set(['title__lte', 'title__isnull', 'title__week_day', 'title__icontains', 'title__range', 'title__endswith', 'title__iexact', 'title__day', 'title__lt', 'title__contains', 'title__year', 'title__iregex', 'title__month', 'title__gt', 'title__istartswith', 'title__gte', 'title__regex', 'title__iendswith', 'title__in', 'title__exact', 'title__search', 'title__startswith'])))
         
         # Valid variety.
         filters_5 = {
             'title': 'all',
             'content': ['endswith'],
         }
-        self.assertEqual(resource._get_available_filters(filters_5), set(['title__lte', 'title__isnull', 'title__week_day', 'title__icontains', 'title__range', 'title__endswith', 'title__iexact', 'title__day', 'title__lt', 'title__contains', 'title__year', 'title__iregex', 'title', 'title__month', 'title__gt', 'title__istartswith', 'title__gte', 'title__regex', 'title__iendswith', 'content__endswith', 'title__in', 'title__exact', 'title__search', 'title__startswith']))
+        self.assertEqual(resource._get_available_filters(filters_5), set(['title__lte', 'title__isnull', 'title__week_day', 'title__icontains', 'title__range', 'title__endswith', 'title__iexact', 'title__day', 'title__lt', 'title__contains', 'title__year', 'title__iregex', 'title__month', 'title__gt', 'title__istartswith', 'title__gte', 'title__regex', 'title__iendswith', 'content__endswith', 'title__in', 'title__exact', 'title__search', 'title__startswith']))
         
         # Valid relation.
         resource_2 = DetailedNoteResource()
@@ -545,7 +545,7 @@ class ModelResourceTestCase(TestCase):
             'content': ['endswith'],
             'user': ['gt', 'gte', 'exact'],
         }
-        self.assertEqual(resource_2._get_available_filters(filters_6), set(['user__gt', 'user__exact', 'user', 'content__endswith', 'user__gte']))
+        self.assertEqual(resource_2._get_available_filters(filters_6), set(['user__gt', 'user__exact', 'content__endswith', 'user__gte']))
     
     def test_build_filters(self):
         resource = NoteResource()
@@ -555,16 +555,16 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resource.build_filters(filters=None), {})
         
         # No available attribute.
-        self.assertEqual(resource.build_filters(filters={'resource_url__exact': '/foo/bar/'}), {})
+        self.assertRaises(InvalidFilterError, resource.build_filters, filters={'resource_url__exact': '/foo/bar/'})
         
         # Filter valid but disallowed.
-        self.assertEqual(resource.build_filters(filters={'slug__startswith': 'whee'}), {})
+        self.assertRaises(InvalidFilterError, resource.build_filters, filters={'slug__startswith': 'whee'})
         
         # Skipped due to not being recognized.
-        self.assertEqual(resource.build_filters(filters={'moof__exact': 'baz'}), {})
+        self.assertRaises(InvalidFilterError, resource.build_filters, filters={'moof__exact': 'baz'})
         
-        # Valid simple (implicit ``__exact``).
-        self.assertEqual(resource.build_filters(filters={'title': 'Hello world.'}), {'title__exact': 'Hello world.'})
+        # Invalid simple (implicit ``__exact``).
+        self.assertEqual(resource.build_filters(filters={'title': 'Hello world.'}), {})
         
         # Valid simple (explicit ``__exact``).
         self.assertEqual(resource.build_filters(filters={'title__exact': 'Hello world.'}), {'title__exact': 'Hello world.'})
@@ -575,7 +575,7 @@ class ModelResourceTestCase(TestCase):
         # Valid multiple.
         self.assertEqual(resource.build_filters(filters={
             'slug__exact': 'Hello',
-            'title': 'RAGE',
+            'title__exact': 'RAGE',
             'content__startswith': 'A thing here.'
         }), {'slug__exact': 'Hello', 'content__startswith': 'A thing here.', 'title__exact': 'RAGE'})
         
@@ -583,14 +583,14 @@ class ModelResourceTestCase(TestCase):
         resource_2 = DetailedNoteResource()
         filters_1 = {
             'slug__exact': 'Hello',
-            'title': 'RAGE',
+            'title__exact': 'RAGE',
             'content__startswith': 'A thing here.',
             'user__gt': 2,
         }
         self.assertEqual(resource_2.build_filters(filters=filters_1), {'title__exact': 'RAGE', 'slug__exact': 'Hello', 'author__gt': 2, 'content__startswith': 'A thing here.'})
         
         # No relationship traversal to the filter, please.
-        self.assertEqual(resource_2.build_filters(filters={'hello_world__foo__exact': 'baz'}), {})
+        self.assertRaises(InvalidFilterError, resource.build_filters, filters={'hello_world__foo__exact': 'baz'})
     
     def test_get_list(self):
         resource = NoteResource()

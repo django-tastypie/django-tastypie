@@ -13,7 +13,7 @@ from tastypie.http import *
 from tastypie.paginator import Paginator
 from tastypie.serializers import Serializer
 from tastypie.throttle import BaseThrottle
-from tastypie.utils import is_valid_jsonp_callback_value
+from tastypie.utils import is_valid_jsonp_callback_value, dict_strip_unicode_keys
 from tastypie.utils.mime import determine_format, build_content_type
 try:
     set
@@ -250,14 +250,7 @@ class Resource(object):
             if allowed_types == 'all':
                 for filter_type in QUERY_TERMS.keys():
                     filters.add("%s%s%s" % (field_name, LOOKUP_SEP, filter_type))
-                
-                # For the "anonymous" ``__exact`` lookup...
-                filters.add(field_name)
             elif not isinstance(allowed_types, basestring) and hasattr(allowed_types, '__iter__'):
-                # For the "anonymous" ``__exact`` lookup...
-                if 'exact' in allowed_types:
-                    filters.add(field_name)
-                
                 for allowed_type in allowed_types:
                     if not allowed_type in QUERY_TERMS:
                         raise InvalidFilterError("The '%s' is not a supported filter type." % allowed_type)
@@ -276,9 +269,13 @@ class Resource(object):
         qs_filters = {}
         
         for filter_expr, value in filters.items():
-            if not filter_expr in self._meta.available_filters:
-                # We don't recognize it. Skip it.
+            if not '__' in filter_expr:
+                # Skip things that don't look like filters.
                 continue
+            
+            if not filter_expr in self._meta.available_filters:
+                # Not a whitelisted filter. Bomb out.
+                raise InvalidFilterError("'%s' is not an allowed filter." % filter_expr)
             
             filter_bits = filter_expr.split(LOOKUP_SEP)
             
@@ -290,8 +287,11 @@ class Resource(object):
             if len(filter_bits) > 1:
                 raise InvalidFilterError("Lookups are not allowed more than one level deep on '%s'." % filter_expr)
             
+            if not filter_bits[0] in self.fields:
+                raise InvalidFilterError("The '%s' field could not be found." % filter_bits[0])
+            
             if not self.fields[filter_bits[0]].attribute:
-                raise InvalidFilterError("The '%s' field has no 'attribute' for searching the database." % filter_bits[0])
+                raise InvalidFilterError("The '%s' field has no 'attribute' for searching the database." % resource_field_name)
             
             if value == 'true':
                 value = True
@@ -303,7 +303,7 @@ class Resource(object):
             qs_filter = "%s%s%s" % (self.fields[filter_bits[0]].attribute, LOOKUP_SEP, filter_type)
             qs_filters[qs_filter] = value
         
-        return qs_filters
+        return dict_strip_unicode_keys(qs_filters)
     
     def get_resource_uri(self, bundle_or_obj):
         """
@@ -579,12 +579,7 @@ class Resource(object):
         If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
-        data = {}
-        
-        for key, value in deserialized.items():
-            data[str(key)] = value
-        
-        bundle = self.build_bundle(data=data)
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized))
         
         try:
             updated_bundle = self.obj_update(bundle, pk=kwargs.get('pk'))
@@ -826,8 +821,8 @@ class ModelResource(Resource):
         
         return final_fields
     
-    def obj_get_list(self, **kwargs):
-        applicable_filters = self.build_filters(kwargs)
+    def obj_get_list(self, filters=None, **kwargs):
+        applicable_filters = self.build_filters(filters)
         return self._meta.queryset.filter(**applicable_filters)
     
     def obj_get(self, **kwargs):
