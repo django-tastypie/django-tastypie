@@ -369,11 +369,11 @@ class Resource(object):
             if method:
                 bundle.data[field_name] = method(bundle)
         
-        self.dehydrate(bundle)
+        bundle = self.dehydrate(bundle)
         return bundle
     
     def dehydrate(self, bundle):
-        pass
+        return bundle
     
     def full_hydrate(self, bundle):
         """
@@ -401,11 +401,11 @@ class Resource(object):
             if method:
                 method(bundle)
         
-        self.hydrate(bundle)
+        bundle = self.hydrate(bundle)
         return bundle
     
     def hydrate(self, bundle):
-        pass
+        return bundle
     
     def hydrate_m2m(self, bundle):
         """

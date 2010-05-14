@@ -61,6 +61,12 @@ class AnotherBasicResource(BasicResource):
     
     class Meta:
         resource_name = 'anotherbasic'
+    
+    def dehydrate(self, bundle):
+        if hasattr(bundle.obj, 'bar'):
+            bundle.data['bar'] = bundle.obj.bar
+        
+        return bundle
 
 
 class NoUriBasicResource(BasicResource):
@@ -128,6 +134,7 @@ class ResourceTestCase(TestCase):
         self.assertEqual(bundle_1.data['view_count'], 12)
         self.assertEqual(bundle_1.data['date_joined'].year, 2010)
         self.assertEqual(bundle_1.data['date_joined'].day, 30)
+        self.assertEqual(bundle_1.data.get('bar'), None)
         
         # Now check the fallback behaviors.
         test_object_2 = TestObject()
@@ -145,6 +152,7 @@ class ResourceTestCase(TestCase):
         test_object_3.view_count = 5
         test_object_3.created = datetime.datetime(2010, 3, 29, 11, 0, 0)
         test_object_3.is_active = False
+        test_object_3.bar = "But sometimes I'm not ignored!"
         another_1 = AnotherBasicResource()
         
         another_bundle_1 = another_1.full_dehydrate(test_object_3)
@@ -153,6 +161,7 @@ class ResourceTestCase(TestCase):
         self.assertEqual(another_bundle_1.data['date_joined'].year, 2010)
         self.assertEqual(another_bundle_1.data['date_joined'].day, 29)
         self.assertEqual(another_bundle_1.data['is_active'], False)
+        self.assertEqual(another_bundle_1.data['bar'], "But sometimes I'm not ignored!")
     
     def test_full_hydrate(self):
         basic = BasicResource()
@@ -1071,7 +1080,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(Note.objects.all().count(), 5)
         self.assertRaises(Note.DoesNotExist, Note.objects.get, pk=1)
     
-    def test_sself_referential(self):
+    def test_self_referential(self):
         class SelfResource(ModelResource):
             me_baby_me = fields.ToOneField('self', 'parent', null=True)
             
