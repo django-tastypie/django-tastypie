@@ -36,3 +36,7 @@ class BlueberryFillingFound(TastyPieError):
 
 class InvalidFilterError(TastyPieError):
     pass
+
+
+class InvalidSortError(TastyPieError):
+    pass

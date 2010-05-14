@@ -2,13 +2,13 @@ import base64
 import datetime
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, FieldError
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.http import HttpRequest, QueryDict
 from django.test import TestCase
 from tastypie.authentication import BasicAuthentication
 from tastypie.bundle import Bundle
-from tastypie.exceptions import InvalidFilterError
+from tastypie.exceptions import InvalidFilterError, InvalidSortError
 from tastypie import fields
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.serializers import Serializer
@@ -266,6 +266,7 @@ class NoteResource(ModelResource):
             'title': ALL,
             'slug': ['exact'],
         }
+        ordering = ['title', 'slug', 'resource_uri']
         queryset = Note.objects.filter(is_active=True)
     
     def get_resource_uri(self, bundle_or_obj):
@@ -315,6 +316,7 @@ class DetailedNoteResource(ModelResource):
             'user': ALL,
             'hello_world': ['exact'], # Note this is invalid for filtering.
         }
+        ordering = ['title', 'slug', 'user']
         queryset = Note.objects.filter(is_active=True)
     
     def get_resource_uri(self, bundle_or_obj):
@@ -550,6 +552,76 @@ class ModelResourceTestCase(TestCase):
         # Allow relationship traversal.
         self.assertEqual(resource_3.build_filters(filters={'subjects__name__startswith': 'News'}), {'subjects__name__startswith': 'News'})
     
+    def test_apply_sorting(self):
+        resource = NoteResource()
+        
+        # Valid none.
+        object_list = resource.obj_get_list()
+        ordered_list = resource.apply_sorting(object_list)
+        self.assertEqual([obj.id for obj in ordered_list], [1, 2, 4, 6])
+        
+        object_list = resource.obj_get_list()
+        ordered_list = resource.apply_sorting(object_list, options=None)
+        self.assertEqual([obj.id for obj in ordered_list], [1, 2, 4, 6])
+        
+        # Not a valid field.
+        object_list = resource.obj_get_list()
+        self.assertRaises(InvalidSortError, resource.apply_sorting, object_list, options={'sort_by': 'foobar'})
+        
+        # Not in the ordering dict.
+        object_list = resource.obj_get_list()
+        self.assertRaises(InvalidSortError, resource.apply_sorting, object_list, options={'sort_by': 'content'})
+        
+        # No attribute to sort by.
+        object_list = resource.obj_get_list()
+        self.assertRaises(InvalidSortError, resource.apply_sorting, object_list, options={'sort_by': 'resource_uri'})
+        
+        # Valid ascending.
+        object_list = resource.obj_get_list()
+        ordered_list = resource.apply_sorting(object_list, options={'sort_by': 'title'})
+        self.assertEqual([obj.id for obj in ordered_list], [2, 1, 6, 4])
+        
+        object_list = resource.obj_get_list()
+        ordered_list = resource.apply_sorting(object_list, options={'sort_by': 'slug'})
+        self.assertEqual([obj.id for obj in ordered_list], [2, 1, 6, 4])
+        
+        # Valid descending.
+        object_list = resource.obj_get_list()
+        ordered_list = resource.apply_sorting(object_list, options={'sort_by': '-title'})
+        self.assertEqual([obj.id for obj in ordered_list], [4, 6, 1, 2])
+        
+        object_list = resource.obj_get_list()
+        ordered_list = resource.apply_sorting(object_list, options={'sort_by': '-slug'})
+        self.assertEqual([obj.id for obj in ordered_list], [4, 6, 1, 2])
+        
+        # Valid (model attribute differs from field name).
+        resource_2 = DetailedNoteResource()
+        object_list = resource_2.obj_get_list()
+        ordered_list = resource_2.apply_sorting(object_list, options={'sort_by': '-user'})
+        self.assertEqual([obj.id for obj in ordered_list], [6, 4, 2, 1])
+        
+        # Invalid relation.
+        resource_2 = DetailedNoteResource()
+        object_list = resource_2.obj_get_list()
+        ordered_list = resource_2.apply_sorting(object_list, options={'sort_by': '-user__baz'})
+        
+        try:
+            [obj.id for obj in ordered_list]
+            self.fail()
+        except FieldError:
+            pass
+        
+        # Valid relation.
+        resource_2 = DetailedNoteResource()
+        object_list = resource_2.obj_get_list()
+        ordered_list = resource_2.apply_sorting(object_list, options={'sort_by': 'user__username'})
+        self.assertEqual([obj.id for obj in ordered_list], [4, 6, 1, 2])
+        
+        resource_2 = DetailedNoteResource()
+        object_list = resource_2.obj_get_list()
+        ordered_list = resource_2.apply_sorting(object_list, options={'sort_by': '-user__username'})
+        self.assertEqual([obj.id for obj in ordered_list], [1, 2, 4, 6])
+    
     def test_get_list(self):
         resource = NoteResource()
         request = HttpRequest()
@@ -598,6 +670,17 @@ class ModelResourceTestCase(TestCase):
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"meta": {"limit": 2, "next": null, "offset": 100, "previous": null, "total_count": 4}, "objects": []}')
+        
+        # Valid sorting.
+        request.GET = {'format': 'json', 'sort_by': 'title'}
+        resp = resource.get_list(request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}, {"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "Fri, 2 Apr 2010 10:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "Fri, 2 Apr 2010 10:05:00 -0500"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "Thu, 1 Apr 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "Thu, 1 Apr 2010 20:05:00 -0500"}]}')
+        
+        request.GET = {'format': 'json', 'sort_by': '-title'}
+        resp = resource.get_list(request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "Thu, 1 Apr 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "Thu, 1 Apr 2010 20:05:00 -0500"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "Fri, 2 Apr 2010 10:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "Fri, 2 Apr 2010 10:05:00 -0500"}, {"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}]}')
     
     def test_get_detail(self):
         resource = NoteResource()

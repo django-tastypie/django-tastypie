@@ -8,7 +8,7 @@ from tastypie.authentication import Authentication
 from tastypie.bundle import Bundle
 from tastypie.cache import NoCache
 from tastypie.constants import ALL, ALL_WITH_RELATIONS
-from tastypie.exceptions import NotFound, BadRequest, InvalidFilterError, HydrationError
+from tastypie.exceptions import NotFound, BadRequest, InvalidFilterError, HydrationError, InvalidSortError
 from tastypie.fields import *
 from tastypie.http import *
 from tastypie.paginator import Paginator
@@ -41,6 +41,7 @@ class ResourceOptions(object):
     resource_name = None
     default_format = 'application/json'
     filtering = {}
+    ordering = []
     object_class = None
     queryset = None
     fields = []
@@ -237,6 +238,12 @@ class Resource(object):
         This needs to be implemented at the user level.
         """
         return filters
+    
+    def apply_sorting(self, obj_list, options=None):
+        """
+        This needs to be implemented at the user level.
+        """
+        return obj_list
     
     def get_resource_uri(self, bundle_or_obj):
         """
@@ -447,7 +454,8 @@ class Resource(object):
         # TODO: Uncached for now. Invalidation that works for everyone may be
         #       impossible.
         objects = self.obj_get_list(filters=request.GET, **self.remove_api_resource_names(kwargs))
-        paginator = Paginator(request.GET, objects, resource_uri=self.get_resource_list_uri())
+        sorted_objects = self.apply_sorting(objects, options=request.GET)
+        paginator = Paginator(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri())
         
         try:
             to_be_serialized = paginator.page()
@@ -794,7 +802,7 @@ class ModelResource(Resource):
                     raise InvalidFilterError("Lookups are not allowed more than one level deep on the '%s' field." % filter_bits[0])
             
             if self.fields[filter_bits[0]].attribute is None:
-                raise InvalidFilterError("The '%s' field has no 'attribute' for searching with." % resource_field_name)
+                raise InvalidFilterError("The '%s' field has no 'attribute' for searching with." % filter_bits[0])
             
             if value == 'true':
                 value = True
@@ -808,6 +816,35 @@ class ModelResource(Resource):
             qs_filters[qs_filter] = value
         
         return dict_strip_unicode_keys(qs_filters)
+    
+    def apply_sorting(self, obj_list, options=None):
+        if options is None:
+            options = {}
+        
+        if not 'sort_by' in options:
+            # Nothing to alter the sort order. Return what we've got.
+            return obj_list
+        
+        sort_by_bits = options['sort_by'].split(LOOKUP_SEP)
+        field_name = sort_by_bits[0]
+        order = ''
+        
+        if sort_by_bits[0].startswith('-'):
+            field_name = sort_by_bits[0][1:]
+            order = '-'
+        
+        if not field_name in self.fields:
+            # It's not a field we know about. Move along citizen.
+            raise InvalidSortError("No matching '%s' field for ordering on." % field_name)
+        
+        if not field_name in self._meta.ordering:
+            raise InvalidSortError("The '%s' field does not allow ordering." % field_name)
+        
+        if self.fields[field_name].attribute is None:
+            raise InvalidSortError("The '%s' field has no 'attribute' for ordering with." % field_name)
+        
+        sort_expr = "%s%s" % (order, LOOKUP_SEP.join([self.fields[field_name].attribute] + sort_by_bits[1:]))
+        return obj_list.order_by(sort_expr)
     
     def obj_get_list(self, filters=None, **kwargs):
         applicable_filters = self.build_filters(filters)
