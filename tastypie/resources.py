@@ -233,61 +233,10 @@ class Resource(object):
         return Bundle(obj, data)
     
     def build_filters(self, filters=None):
-        # At the declarative level:
-        #     filtering = {
-        #         'resource_field_name': ['exact', 'startswith', 'endswith', 'contains'],
-        #         'resource_field_name_2': ['exact', 'gt', 'gte', 'lt', 'lte', 'range'],
-        #         'resource_field_name_3': ALL,
-        #         'resource_field_name_4': ALL_WITH_RELATIONS,
-        #         ...
-        #     }
-        # Accepts the filters as a dict. None by default, meaning no filters.
-        if filters is None:
-            filters = {}
-        
-        qs_filters = {}
-        
-        for filter_expr, value in filters.items():
-            filter_bits = filter_expr.split(LOOKUP_SEP)
-            
-            if not filter_bits[0] in self.fields:
-                # It's not a field we know about. Move along citizen.
-                continue
-            
-            if not filter_bits[0] in self._meta.filtering:
-                raise InvalidFilterError("The '%s' field does not allow filtering." % filter_bits[0])
-            
-            if filter_bits[-1] in QUERY_TERMS.keys():
-                filter_type = filter_bits.pop()
-            else:
-                filter_type = 'exact'
-            
-            # Check to see if it's allowed lookup type.
-            if not self._meta.filtering[filter_bits[0]] in (ALL, ALL_WITH_RELATIONS):
-                # Must be an explicit whitelist.
-                if not filter_type in self._meta.filtering[filter_bits[0]]:
-                    raise InvalidFilterError("'%s' is not an allowed filter on the '%s' field." % (filter_expr, filter_bits[0]))
-            
-            # Check to see if it's a relational lookup and if that's allowed.
-            if len(filter_bits) > 1:
-                if not self._meta.filtering[filter_bits[0]] == ALL_WITH_RELATIONS:
-                    raise InvalidFilterError("Lookups are not allowed more than one level deep on the '%s' field." % filter_bits[0])
-            
-            if self.fields[filter_bits[0]].attribute is None:
-                raise InvalidFilterError("The '%s' field has no 'attribute' for searching with." % resource_field_name)
-            
-            if value == 'true':
-                value = True
-            elif value == 'false':
-                value = False
-            elif value in ('nil', 'none', 'None'):
-                value = None
-            
-            db_field_name = LOOKUP_SEP.join([self.fields[filter_bits[0]].attribute] + filter_bits[1:])
-            qs_filter = "%s%s%s" % (db_field_name, LOOKUP_SEP, filter_type)
-            qs_filters[qs_filter] = value
-        
-        return dict_strip_unicode_keys(qs_filters)
+        """
+        This needs to be implemented at the user level.
+        """
+        return filters
     
     def get_resource_uri(self, bundle_or_obj):
         """
@@ -802,6 +751,63 @@ class ModelResource(Resource):
             final_fields[f.name].instance_name = f.name
         
         return final_fields
+    
+    def build_filters(self, filters=None):
+        # At the declarative level:
+        #     filtering = {
+        #         'resource_field_name': ['exact', 'startswith', 'endswith', 'contains'],
+        #         'resource_field_name_2': ['exact', 'gt', 'gte', 'lt', 'lte', 'range'],
+        #         'resource_field_name_3': ALL,
+        #         'resource_field_name_4': ALL_WITH_RELATIONS,
+        #         ...
+        #     }
+        # Accepts the filters as a dict. None by default, meaning no filters.
+        if filters is None:
+            filters = {}
+        
+        qs_filters = {}
+        
+        for filter_expr, value in filters.items():
+            filter_bits = filter_expr.split(LOOKUP_SEP)
+            
+            if not filter_bits[0] in self.fields:
+                # It's not a field we know about. Move along citizen.
+                continue
+            
+            if not filter_bits[0] in self._meta.filtering:
+                raise InvalidFilterError("The '%s' field does not allow filtering." % filter_bits[0])
+            
+            if filter_bits[-1] in QUERY_TERMS.keys():
+                filter_type = filter_bits.pop()
+            else:
+                filter_type = 'exact'
+            
+            # Check to see if it's allowed lookup type.
+            if not self._meta.filtering[filter_bits[0]] in (ALL, ALL_WITH_RELATIONS):
+                # Must be an explicit whitelist.
+                if not filter_type in self._meta.filtering[filter_bits[0]]:
+                    raise InvalidFilterError("'%s' is not an allowed filter on the '%s' field." % (filter_expr, filter_bits[0]))
+            
+            # Check to see if it's a relational lookup and if that's allowed.
+            if len(filter_bits) > 1:
+                if not self._meta.filtering[filter_bits[0]] == ALL_WITH_RELATIONS:
+                    raise InvalidFilterError("Lookups are not allowed more than one level deep on the '%s' field." % filter_bits[0])
+            
+            if self.fields[filter_bits[0]].attribute is None:
+                raise InvalidFilterError("The '%s' field has no 'attribute' for searching with." % resource_field_name)
+            
+            if value == 'true':
+                value = True
+            elif value == 'false':
+                value = False
+            elif value in ('nil', 'none', 'None'):
+                value = None
+            
+            db_field_name = LOOKUP_SEP.join([self.fields[filter_bits[0]].attribute] + filter_bits[1:])
+            qs_filter = "%s%s%s" % (db_field_name, LOOKUP_SEP, filter_type)
+            qs_filters[qs_filter] = value
+        
+        return dict_strip_unicode_keys(qs_filters)
     
     def obj_get_list(self, filters=None, **kwargs):
         applicable_filters = self.build_filters(filters)
