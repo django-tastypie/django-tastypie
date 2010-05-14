@@ -1,0 +1,3 @@
+# For filtering...
+ALL = 1
+ALL_WITH_RELATIONS = 2

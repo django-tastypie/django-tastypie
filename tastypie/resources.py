@@ -7,6 +7,7 @@ from django.utils.copycompat import deepcopy
 from tastypie.authentication import Authentication
 from tastypie.bundle import Bundle
 from tastypie.cache import NoCache
+from tastypie.constants import ALL, ALL_WITH_RELATIONS
 from tastypie.exceptions import NotFound, BadRequest, InvalidFilterError, HydrationError
 from tastypie.fields import *
 from tastypie.http import *
@@ -125,8 +126,6 @@ class Resource(object):
         
         if getattr(self._meta, 'include_resource_uri', True) and not 'resource_uri' in self.fields:
             self.fields['resource_uri'] = CharField(readonly=True)
-        
-        self._meta.available_filters = self._get_available_filters(self._meta.filtering)
     
     def __getattr__(self, name):
         if name in self.fields:
@@ -233,35 +232,15 @@ class Resource(object):
         
         return Bundle(obj, data)
     
-    def _get_available_filters(self, filtering):
+    def build_filters(self, filters=None):
         # At the declarative level:
         #     filtering = {
         #         'resource_field_name': ['exact', 'startswith', 'endswith', 'contains'],
         #         'resource_field_name_2': ['exact', 'gt', 'gte', 'lt', 'lte', 'range'],
-        #         'resource_field_name_3': 'all',
+        #         'resource_field_name_3': ALL,
+        #         'resource_field_name_4': ALL_WITH_RELATIONS,
         #         ...
         #     }
-        filters = set()
-        
-        for field_name, allowed_types in filtering.items():
-            if not field_name in self.fields:
-                raise InvalidFilterError("The '%s' is not a valid fieldname in this Resource." % field_name)
-            
-            if allowed_types == 'all':
-                for filter_type in QUERY_TERMS.keys():
-                    filters.add("%s%s%s" % (field_name, LOOKUP_SEP, filter_type))
-            elif not isinstance(allowed_types, basestring) and hasattr(allowed_types, '__iter__'):
-                for allowed_type in allowed_types:
-                    if not allowed_type in QUERY_TERMS:
-                        raise InvalidFilterError("The '%s' is not a supported filter type." % allowed_type)
-                    
-                    filters.add("%s%s%s" % (field_name, LOOKUP_SEP, allowed_type))
-            else:
-                raise InvalidFilterError("The allowed filters provided for '%s' need to be either 'all' or a list of allowed filter types." % field_name)
-        
-        return filters
-    
-    def build_filters(self, filters=None):
         # Accepts the filters as a dict. None by default, meaning no filters.
         if filters is None:
             filters = {}
@@ -269,29 +248,33 @@ class Resource(object):
         qs_filters = {}
         
         for filter_expr, value in filters.items():
-            if not '__' in filter_expr:
-                # Skip things that don't look like filters.
+            filter_bits = filter_expr.split(LOOKUP_SEP)
+            
+            if not filter_bits[0] in self.fields:
+                # It's not a field we know about. Move along citizen.
                 continue
             
-            if not filter_expr in self._meta.available_filters:
-                # Not a whitelisted filter. Bomb out.
-                raise InvalidFilterError("'%s' is not an allowed filter." % filter_expr)
-            
-            filter_bits = filter_expr.split(LOOKUP_SEP)
+            if not filter_bits[0] in self._meta.filtering:
+                raise InvalidFilterError("The '%s' field does not allow filtering." % filter_bits[0])
             
             if filter_bits[-1] in QUERY_TERMS.keys():
                 filter_type = filter_bits.pop()
             else:
                 filter_type = 'exact'
             
+            # Check to see if it's allowed lookup type.
+            if not self._meta.filtering[filter_bits[0]] in (ALL, ALL_WITH_RELATIONS):
+                # Must be an explicit whitelist.
+                if not filter_type in self._meta.filtering[filter_bits[0]]:
+                    raise InvalidFilterError("'%s' is not an allowed filter on the '%s' field." % (filter_expr, filter_bits[0]))
+            
+            # Check to see if it's a relational lookup and if that's allowed.
             if len(filter_bits) > 1:
-                raise InvalidFilterError("Lookups are not allowed more than one level deep on '%s'." % filter_expr)
+                if not self._meta.filtering[filter_bits[0]] == ALL_WITH_RELATIONS:
+                    raise InvalidFilterError("Lookups are not allowed more than one level deep on the '%s' field." % filter_bits[0])
             
-            if not filter_bits[0] in self.fields:
-                raise InvalidFilterError("The '%s' field could not be found." % filter_bits[0])
-            
-            if not self.fields[filter_bits[0]].attribute:
-                raise InvalidFilterError("The '%s' field has no 'attribute' for searching the database." % resource_field_name)
+            if self.fields[filter_bits[0]].attribute is None:
+                raise InvalidFilterError("The '%s' field has no 'attribute' for searching with." % resource_field_name)
             
             if value == 'true':
                 value = True
@@ -300,7 +283,8 @@ class Resource(object):
             elif value in ('nil', 'none', 'None'):
                 value = None
             
-            qs_filter = "%s%s%s" % (self.fields[filter_bits[0]].attribute, LOOKUP_SEP, filter_type)
+            db_field_name = LOOKUP_SEP.join([self.fields[filter_bits[0]].attribute] + filter_bits[1:])
+            qs_filter = "%s%s%s" % (db_field_name, LOOKUP_SEP, filter_type)
             qs_filters[qs_filter] = value
         
         return dict_strip_unicode_keys(qs_filters)
@@ -735,8 +719,6 @@ class ModelResource(Resource):
         
         if getattr(self._meta, 'include_absolute_url', True) and not 'absolute_url' in self.fields:
             self.fields['absolute_url'] = CharField(attribute='get_absolute_url', readonly=True)
-        
-        self._meta.available_filters = self._get_available_filters(self._meta.filtering)
     
     def should_skip_field(self, field):
         """
