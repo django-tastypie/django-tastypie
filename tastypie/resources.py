@@ -68,14 +68,12 @@ class ResourceOptions(object):
         # Make sure we're good to go.
         if self.serializer is None:
             raise ImproperlyConfigured("No serializer provided for %r." % self)
-        
-        if not self.resource_name:
-            raise ImproperlyConfigured("No resource_name provided for %r." % self)
 
 
 class DeclarativeMetaclass(type):
     def __new__(cls, name, bases, attrs):
         attrs['base_fields'] = {}
+        declared_fields = {}
         
         # Inherit any fields from parent(s).
         try:
@@ -93,9 +91,19 @@ class DeclarativeMetaclass(type):
             if isinstance(obj, ApiField):
                 field = attrs.pop(field_name)
                 field.instance_name = field_name
-                attrs['base_fields'][field_name] = field
+                declared_fields[field_name] = field
         
+        attrs['base_fields'].update(declared_fields)
+        attrs['declared_fields'] = declared_fields
         new_class = super(DeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
+        opts = getattr(new_class, 'Meta', None)
+        new_class._meta = ResourceOptions(opts)
+        
+        if getattr(new_class._meta, 'include_resource_uri', True):
+            if not 'resource_uri' in new_class.base_fields:
+                new_class.base_fields['resource_uri'] = CharField(readonly=True)
+        elif 'resource_uri' in new_class.base_fields and not 'resource_uri' in attrs:
+            del(new_class.base_fields['resource_uri'])
         
         for field_name, field_object in new_class.base_fields.items():
             # Cover self-referential Resources.
@@ -118,15 +126,10 @@ class Resource(object):
     __metaclass__ = DeclarativeMetaclass
     
     def __init__(self, api_name=None):
-        opts = getattr(self, 'Meta', None)
-        self._meta = ResourceOptions(opts)
         self.fields = deepcopy(self.base_fields)
         
         if not api_name is None:
             self._meta.api_name = api_name
-        
-        if getattr(self._meta, 'include_resource_uri', True) and not 'resource_uri' in self.fields:
-            self.fields['resource_uri'] = CharField(readonly=True)
     
     def __getattr__(self, name):
         if name in self.fields:
@@ -657,27 +660,40 @@ class Resource(object):
         return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
 
 
-class ModelResource(Resource):
-    def __init__(self, api_name=None):
-        opts = getattr(self, 'Meta', None)
-        self._meta = ResourceOptions(opts)
-        self.fields = deepcopy(self.base_fields)
-        fields = getattr(self._meta, 'fields', [])
-        excludes = getattr(self._meta, 'excludes', [])
+class ModelDeclarativeMetaclass(DeclarativeMetaclass):
+    def __new__(cls, name, bases, attrs):
+        new_class = super(ModelDeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
+        fields = getattr(new_class._meta, 'fields', [])
+        excludes = getattr(new_class._meta, 'excludes', [])
+        field_names = new_class.base_fields.keys()
+        
+        for field_name in field_names:
+            if field_name == 'resource_uri':
+                continue
+            if field_name in new_class.declared_fields:
+                continue
+            if len(fields) and not field_name in fields:
+                del(new_class.base_fields[field_name])
+            if len(excludes) and field_name in excludes:
+                del(new_class.base_fields[field_name])
         
         # Add in the new fields.
-        self.fields.update(self.get_fields(fields, excludes))
+        new_class.base_fields.update(new_class.get_fields(fields, excludes))
         
-        if not api_name is None:
-            self._meta.api_name = api_name
+        if getattr(new_class._meta, 'include_absolute_url', True):
+            if not 'absolute_url' in new_class.base_fields:
+                new_class.base_fields['absolute_url'] = CharField(attribute='get_absolute_url', readonly=True)
+        elif 'absolute_url' in new_class.base_fields and not 'absolute_url' in attrs:
+            del(new_class.base_fields['absolute_url'])
         
-        if getattr(self._meta, 'include_resource_uri', True) and not 'resource_uri' in self.fields:
-            self.fields['resource_uri'] = CharField(readonly=True)
-        
-        if getattr(self._meta, 'include_absolute_url', True) and not 'absolute_url' in self.fields:
-            self.fields['absolute_url'] = CharField(attribute='get_absolute_url', readonly=True)
+        return new_class
+
+
+class ModelResource(Resource):
+    __metaclass__ = ModelDeclarativeMetaclass
     
-    def should_skip_field(self, field):
+    @classmethod
+    def should_skip_field(cls, field):
         """
         Given a Django model field, return if it should be included in the
         contributed ApiFields.
@@ -688,7 +704,8 @@ class ModelResource(Resource):
         
         return False
     
-    def api_field_from_django_field(self, f, default=CharField):
+    @classmethod
+    def api_field_from_django_field(cls, f, default=CharField):
         """
         Returns the field type that would likely be associated with each
         Django type.
@@ -715,7 +732,8 @@ class ModelResource(Resource):
     
         return result
     
-    def get_fields(self, fields=None, excludes=None):
+    @classmethod
+    def get_fields(cls, fields=None, excludes=None):
         """
         Given any explicit fields to include and fields to exclude, add
         additional fields based on the associated model.
@@ -724,9 +742,12 @@ class ModelResource(Resource):
         fields = fields or []
         excludes = excludes or []
         
-        for f in self._meta.object_class._meta.fields:
+        if not cls._meta.object_class:
+            return final_fields
+        
+        for f in cls._meta.object_class._meta.fields:
             # If the field name is already present, skip
-            if f.name in self.fields:
+            if f.name in cls.base_fields:
                 continue
             
             # If field is not present in explicit field listing, skip
@@ -737,10 +758,10 @@ class ModelResource(Resource):
             if excludes and f.name in excludes:
                 continue
             
-            if self.should_skip_field(f):
+            if cls.should_skip_field(f):
                 continue
             
-            api_field_class = self.api_field_from_django_field(f)
+            api_field_class = cls.api_field_from_django_field(f)
             
             kwargs = {
                 'attribute': f.name,

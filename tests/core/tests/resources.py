@@ -273,7 +273,6 @@ class NoteResource(ModelResource):
         return '/api/v1/notes/%s/' % bundle_or_obj.obj.id
 
 
-# FIXME: Note that subclassing is currently broken.
 class LightlyCustomNoteResource(NoteResource):
     class Meta:
         resource_name = 'noteish'
@@ -1143,12 +1142,28 @@ class ModelResourceTestCase(TestCase):
             ijkl = fields.BooleanField(default=True)
             
             class Meta:
+                queryset = Note.objects.all()
                 resource_name = 'anothermini'
         
         another = AnotherMiniResource()
-        self.assertEqual(len(another.fields), 4)
-        self.assertEqual(len(another._meta.queryset.all()), 0)
-        self.assertEqual(another._meta.resource_name, 0)
+        self.assertEqual(len(another.fields), 10)
+        self.assertEqual(len(another._meta.queryset.all()), 6)
+        self.assertEqual(another._meta.resource_name, 'anothermini')
+        
+        class YetAnotherMiniResource(MiniResource):
+            mnop = fields.FloatField(default=True)
+            
+            class Meta:
+                queryset = Note.objects.all()
+                resource_name = 'yetanothermini'
+                fields = ['title', 'abcd', 'mnop']
+                include_absolute_url = True
+        
+        yetanother = YetAnotherMiniResource()
+        self.assertEqual(len(yetanother.fields), 5)
+        self.assertEqual(sorted(yetanother.fields.keys()), ['abcd', 'absolute_url', 'mnop', 'resource_uri', 'title'])
+        self.assertEqual(len(yetanother._meta.queryset.all()), 6)
+        self.assertEqual(yetanother._meta.resource_name, 'yetanothermini')
 
 
 class BasicAuthResourceTestCase(TestCase):
