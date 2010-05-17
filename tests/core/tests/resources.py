@@ -1123,6 +1123,16 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(len(me_baby_me.fields), 8)
         self.assertEqual(me_baby_me._meta.resource_name, 'me_baby_me')
         self.assertEqual(me_baby_me.fields['me_baby_me'].to, SelfResource)
+        
+        class AnotherSelfResource(SelfResource):
+            class Meta:
+                queryset = Note.objects.all()
+                resource_name = 'another_me_baby_me'
+        
+        another_me_baby_me = AnotherSelfResource()
+        self.assertEqual(len(another_me_baby_me.fields), 8)
+        self.assertEqual(another_me_baby_me._meta.resource_name, 'another_me_baby_me')
+        self.assertEqual(another_me_baby_me.fields['me_baby_me'].to, AnotherSelfResource)
     
     def test_subclassing(self):
         class MiniResource(ModelResource):

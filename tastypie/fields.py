@@ -318,6 +318,7 @@ class RelatedField(ApiField):
     """
     dehydrated_type = 'related'
     is_related = True
+    self_referential = False
     
     def __init__(self, to, attribute, related_name=None, null=False, full=False):
         """
@@ -351,6 +352,9 @@ class RelatedField(ApiField):
         self.readonly = False
         self.api_name = None
         self.resource_name = None
+        
+        if self.to == 'self':
+            self.self_referential = True
     
     def has_default(self):
         """

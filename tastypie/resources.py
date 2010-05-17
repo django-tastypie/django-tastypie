@@ -109,8 +109,9 @@ class DeclarativeMetaclass(type):
             # Cover self-referential Resources.
             # We can't do this quite like Django because there's no ``AppCache``
             # here (which I think we should avoid as long as possible).
-            if isinstance(field_object, RelatedField) and field_object.to == 'self':
-                field_object.to = new_class
+            if isinstance(field_object, RelatedField):
+                if field_object.self_referential or field_object.to == 'self':
+                    field_object.to = new_class
         
         return new_class
 
