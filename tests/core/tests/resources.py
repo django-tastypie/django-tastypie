@@ -1,5 +1,6 @@
 import base64
 import datetime
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured, FieldError
@@ -8,7 +9,7 @@ from django.http import HttpRequest, QueryDict
 from django.test import TestCase
 from tastypie.authentication import BasicAuthentication
 from tastypie.bundle import Bundle
-from tastypie.exceptions import InvalidFilterError, InvalidSortError
+from tastypie.exceptions import InvalidFilterError, InvalidSortError, ImmediateHttpResponse, BadRequest
 from tastypie import fields
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.serializers import Serializer
@@ -251,6 +252,64 @@ class ResourceTestCase(TestCase):
         
         another = AnotherMiniResource()
         self.assertEqual(len(another.fields), 4)
+    
+    def test_method_check(self):
+        basic = BasicResource()
+        request = HttpRequest()
+        request.method = 'GET'
+        request.GET = {'format': 'json'}
+        
+        # No allowed methods. Kaboom.
+        self.assertRaises(ImmediateHttpResponse, basic.method_check, request)
+        
+        # Not an allowed request.
+        self.assertRaises(ImmediateHttpResponse, basic.method_check, request, allowed=['post'])
+        
+        # Allowed (single).
+        request_method = basic.method_check(request, allowed=['get'])
+        self.assertEqual(request_method, 'get')
+        
+        # Allowed (multiple).
+        request_method = basic.method_check(request, allowed=['post', 'get', 'put'])
+        self.assertEqual(request_method, 'get')
+        
+        request = HttpRequest()
+        request.method = 'POST'
+        request.POST = {'format': 'json'}
+        
+        # Not an allowed request.
+        self.assertRaises(ImmediateHttpResponse, basic.method_check, request, allowed=['get'])
+        
+        # Allowed (multiple).
+        request_method = basic.method_check(request, allowed=['post', 'get', 'put'])
+        self.assertEqual(request_method, 'post')
+    
+    def test_auth_check(self):
+        basic = BasicResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        
+        # Allowed (single).
+        try:
+            basic.auth_check(request)
+        except:
+            self.fail()
+    
+    def test_create_response(self):
+        basic = BasicResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        
+        data = {'hello': 'world'}
+        output = basic.create_response(request, data)
+        self.assertEqual(output.status_code, 200)
+        self.assertEqual(output.content, '{"hello": "world"}')
+        
+        request.GET = {'format': 'xml'}
+        data = {'objects': [{'hello': 'world', 'abc': 123}], 'meta': {'page': 1}}
+        output = basic.create_response(request, data)
+        self.assertEqual(output.status_code, 200)
+        self.assertEqual(output.content, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><objects type="list"><object type="hash"><abc type="integer">123</abc><hello>world</hello></object></objects><meta type="hash"><page type="integer">1</page></meta></response>')
 
 
 # ====================
@@ -633,18 +692,31 @@ class ModelResourceTestCase(TestCase):
         # Test slicing.
         # First an invalid offset.
         request.GET = {'format': 'json', 'offset': 'abc', 'limit': 1}
-        resp = resource.get_list(request)
+        try:
+            resp = resource.get_list(request)
+            self.fail()
+        except BadRequest, e:
+            pass
+        
+        # Try again with ``wrap_view`` for sanity.
+        resp = resource.wrap_view('get_list')(request)
         self.assertEqual(resp.status_code, 400)
         
         # Then an out of range offset.
         request.GET = {'format': 'json', 'offset': -1, 'limit': 1}
-        resp = resource.get_list(request)
-        self.assertEqual(resp.status_code, 400)
+        try:
+            resp = resource.get_list(request)
+            self.fail()
+        except BadRequest, e:
+            pass
         
         # Then an out of range limit.
         request.GET = {'format': 'json', 'offset': 0, 'limit': -1}
-        resp = resource.get_list(request)
-        self.assertEqual(resp.status_code, 400)
+        try:
+            resp = resource.get_list(request)
+            self.fail()
+        except BadRequest, e:
+            pass
         
         # Valid slice.
         request.GET = {'format': 'json', 'offset': 0, 'limit': 2}
@@ -912,7 +984,14 @@ class ModelResourceTestCase(TestCase):
         request = HttpRequest()
         request.GET = {'format': 'jsonp', 'callback': '()'}
         request.method = 'GET'
-        resp = resource.dispatch_detail(request, pk=1)
+        try:
+            resp = resource.dispatch_detail(request, pk=1)
+            self.fail()
+        except BadRequest, e:
+            pass
+        
+        # Try again with ``wrap_view`` for sanity.
+        resp = resource.wrap_view('dispatch_detail')(request, pk=1)
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(resp.content, 'JSONP callback name is invalid.')
 
@@ -956,6 +1035,10 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.content, '{"objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "Thu, 1 Apr 2010 20:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "Thu, 1 Apr 2010 20:05:00 -0500"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "Fri, 2 Apr 2010 10:05:00 -0500", "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "Fri, 2 Apr 2010 10:05:00 -0500"}]}')
     
     def test_check_throttling(self):
+        # Stow.
+        old_debug = settings.DEBUG
+        settings.DEBUG = False
+        
         resource = ThrottledNoteResource()
         request = HttpRequest()
         request.GET = {'format': 'json'}
@@ -972,14 +1055,28 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
         
         # Throttled.
-        resp = resource.dispatch('list', request)
+        try:
+            resp = resource.dispatch('list', request)
+            self.fail()
+        except ImmediateHttpResponse, e:
+            self.assertEqual(e.response.status_code, 403)
+            self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+        
+        # Throttled.
+        try:
+            resp = resource.dispatch('list', request)
+            self.fail()
+        except ImmediateHttpResponse, e:
+            self.assertEqual(e.response.status_code, 403)
+            self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+        
+        # Check the ``wrap_view``.
+        resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp.status_code, 403)
         self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
         
-        # Throttled.
-        resp = resource.dispatch('list', request)
-        self.assertEqual(resp.status_code, 403)
-        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+        # Restore.
+        settings.DEBUG = old_debug
     
     def test_generate_cache_key(self):
         resource = NoteResource()
@@ -1185,8 +1282,15 @@ class BasicAuthResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'GET'
         
-        resp = resource.dispatch_list(request)
-        self.assertEqual(resp.status_code, 401)
+        try:
+            resp = resource.dispatch_list(request)
+            self.fail()
+        except ImmediateHttpResponse, e:
+            self.assertEqual(e.response.status_code, 401)
+        
+        # Try again with ``wrap_view`` for sanity.
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(e.response.status_code, 401)
         
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass')
@@ -1202,8 +1306,15 @@ class BasicAuthResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'GET'
         
-        resp = resource.dispatch_detail(request, pk=1)
-        self.assertEqual(resp.status_code, 401)
+        try:
+            resp = resource.dispatch_detail(request, pk=1)
+            self.fail()
+        except ImmediateHttpResponse, e:
+            self.assertEqual(e.response.status_code, 401)
+        
+        # Try again with ``wrap_view`` for sanity.
+        resp = resource.wrap_view('dispatch_detail')(request, pk=1)
+        self.assertEqual(e.response.status_code, 401)
         
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass')

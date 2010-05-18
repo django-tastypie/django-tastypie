@@ -8,7 +8,7 @@ from tastypie.authentication import Authentication
 from tastypie.bundle import Bundle
 from tastypie.cache import NoCache
 from tastypie.constants import ALL, ALL_WITH_RELATIONS
-from tastypie.exceptions import NotFound, BadRequest, InvalidFilterError, HydrationError, InvalidSortError
+from tastypie.exceptions import NotFound, BadRequest, InvalidFilterError, HydrationError, InvalidSortError, ImmediateHttpResponse
 from tastypie.fields import *
 from tastypie.http import *
 from tastypie.paginator import Paginator
@@ -138,7 +138,16 @@ class Resource(object):
     
     def wrap_view(self, view):
         def wrapper(request, *args, **kwargs):
-            return getattr(self, view)(request, *args, **kwargs)
+            try:
+                return getattr(self, view)(request, *args, **kwargs)
+            except BadRequest, e:
+                return HttpBadRequest(e.args[0])
+            except Exception, e:
+                if hasattr(e, 'response'):
+                    return e.response
+                
+                # A real, non-expected exception. Re-raise it.
+                raise
         return wrapper
     
     @property
@@ -176,37 +185,23 @@ class Resource(object):
         return self.dispatch('detail', request, **kwargs)
     
     def dispatch(self, request_type, request, **kwargs):
-        request_method = request.method.lower()
-        allowed_methods = getattr(self._meta, "%s_allowed_methods" % request_type)
-        
-        if not request_method in allowed_methods:
-            return HttpMethodNotAllowed()
+        allowed_methods = getattr(self._meta, "%s_allowed_methods" % request_type, None)
+        request_method = self.method_check(request, allowed=allowed_methods)
         
         method = getattr(self, "%s_%s" % (request_method, request_type), None)
         
         if method is None:
-            return HttpNotImplemented()
+            raise ImmediateHttpResponse(response=HttpNotImplemented())
         
-        # Authenticate the request as needed.
-        auth_result = self._meta.authentication.is_authenticated(request)
-        
-        if isinstance(auth_result, HttpResponse):
-            return auth_result
-        
-        if not auth_result is True:
-            return HttpUnauthorized()
-        
-        # Check to see if they should be throttled.
-        if self.throttle_check(request):
-            # Throttle limit exceeded.
-            return HttpForbidden()
+        self.auth_check(request)
+        self.throttle_check(request)
         
         # All clear. Process the request.
         request = convert_post_to_put(request)
         response = method(request, **kwargs)
         
         # Add the throttled request.
-        self._meta.throttle.accessed(self._meta.authentication.get_identifier(request), url=request.get_full_path(), request_method=request_method)
+        self.log_throttled_access(request)
         
         # If what comes back isn't a ``HttpResponse``, assume that the
         # request was accepted and that some action occurred. This also
@@ -227,9 +222,38 @@ class Resource(object):
         
         return kwargs_subset
     
+    def method_check(self, request, allowed=None):
+        if allowed is None:
+            allowed = []
+        
+        request_method = request.method.lower()
+        
+        if not request_method in allowed:
+            raise ImmediateHttpResponse(response=HttpMethodNotAllowed())
+        
+        return request_method
+    
+    def auth_check(self, request):
+        # Authenticate the request as needed.
+        auth_result = self._meta.authentication.is_authenticated(request)
+        
+        if isinstance(auth_result, HttpResponse):
+            raise ImmediateHttpResponse(response=auth_result)
+        
+        if not auth_result is True:
+            raise ImmediateHttpResponse(response=HttpUnauthorized())
+    
     def throttle_check(self, request):
         identifier = self._meta.authentication.get_identifier(request)
-        return self._meta.throttle.should_be_throttled(identifier)
+        
+        # Check to see if they should be throttled.
+        if self._meta.throttle.should_be_throttled(identifier):
+            # Throttle limit exceeded.
+            raise ImmediateHttpResponse(response=HttpForbidden())
+    
+    def log_throttled_access(self, request):
+        request_method = request.method.lower()
+        self._meta.throttle.accessed(self._meta.authentication.get_identifier(request), url=request.get_full_path(), request_method=request_method)
     
     def build_bundle(self, obj=None, data=None):
         if obj is None:
@@ -248,6 +272,8 @@ class Resource(object):
         This needs to be implemented at the user level.
         """
         return obj_list
+    
+    # URL-related methods.
     
     def get_resource_uri(self, bundle_or_obj):
         """
@@ -289,6 +315,8 @@ class Resource(object):
         simply override this method.
         """
         raise NotImplementedError()
+    
+    # Data preparation.
     
     def full_dehydrate(self, obj):
         """
@@ -409,6 +437,8 @@ class Resource(object):
         # Use a list plus a ``.join()`` because it's faster than concatenation.
         return "%s:%s:%s:%s" % (self._meta.api_name, self._meta.resource_name, ':'.join(args), ':'.join(smooshed))
     
+    # Data access methods.
+    
     def obj_get_list(self, filters=None, **kwargs):
         raise NotImplementedError()
     
@@ -451,6 +481,13 @@ class Resource(object):
     def obj_delete(self):
         raise NotImplementedError()
     
+    def create_response(self, request, data):
+        desired_format = self.determine_format(request)
+        serialized = self.serialize(request, data, desired_format)
+        return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
+    
+    # Views.
+    
     def get_list(self, request, **kwargs):
         """
         Should return a HttpResponse (200 OK).
@@ -459,20 +496,13 @@ class Resource(object):
         #       impossible.
         objects = self.obj_get_list(filters=request.GET, **self.remove_api_resource_names(kwargs))
         sorted_objects = self.apply_sorting(objects, options=request.GET)
+        
         paginator = Paginator(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri())
+        to_be_serialized = paginator.page()
         
-        try:
-            to_be_serialized = paginator.page()
-            
-            # FIXME: For now. Refactor & abstract.
-            to_be_serialized['objects'] = [self.full_dehydrate(obj=obj) for obj in to_be_serialized['objects']]
-            
-            desired_format = self.determine_format(request)
-            serialized = self.serialize(request, to_be_serialized, desired_format)
-        except BadRequest, e:
-            return HttpBadRequest(e.args[0])
-        
-        return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
+        # Dehydrate the bundles in preparation for serialization.
+        to_be_serialized['objects'] = [self.full_dehydrate(obj=obj) for obj in to_be_serialized['objects']]
+        return self.create_response(request, to_be_serialized)
     
     def get_detail(self, request, **kwargs):
         """
@@ -486,14 +516,7 @@ class Resource(object):
             return HttpMultipleChoices("More than one resource is found at this URI.")
         
         bundle = self.full_dehydrate(obj)
-        desired_format = self.determine_format(request)
-        
-        try:
-            serialized = self.serialize(request, bundle, desired_format)
-        except BadRequest, e:
-            return HttpBadRequest(e.args[0])
-        
-        return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
+        return self.create_response(request, bundle)
     
     def put_list(self, request, **kwargs):
         """
@@ -503,7 +526,7 @@ class Resource(object):
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         
         if not 'objects' in deserialized:
-            return HttpBadRequest("Invalid data sent.")
+            raise BadRequest("Invalid data sent.")
         
         self.obj_delete_list(**self.remove_api_resource_names(kwargs))
         
@@ -577,57 +600,19 @@ class Resource(object):
         """
         Should return a HttpResponse (200 OK).
         """
-        request_method = request.method.lower()
-        
-        if request_method != 'get':
-            return HttpMethodNotAllowed()
-        
-        auth_result = self._meta.authentication.is_authenticated(request)
-        
-        if isinstance(auth_result, HttpResponse):
-            return auth_result
-        
-        if not auth_result is True:
-            return HttpUnauthorized()
-        
-        # Check to see if they should be throttled.
-        if self.throttle_check(request):
-            # Throttle limit exceeded.
-            return HttpForbidden()
-        
-        desired_format = self.determine_format(request)
-        
-        # Add the throttled request.
-        self._meta.throttle.accessed(self._meta.authentication.get_identifier(request), url=request.get_full_path(), request_method=request_method)
-        
-        try:
-            serialized = self.serialize(request, self.build_schema(), desired_format)
-        except BadRequest, e:
-            return HttpBadRequest(e.args[0])
-        
-        return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
+        self.method_check(request, allowed=['get'])
+        self.auth_check(request)
+        self.throttle_check(request)
+        self.log_throttled_access(request)
+        return self.create_response(request, self.build_schema())
     
     def get_multiple(self, request, **kwargs):
         """
         Should return a HttpResponse (200 OK).
         """
-        request_method = request.method.lower()
-        
-        if request_method != 'get':
-            return HttpMethodNotAllowed()
-        
-        auth_result = self._meta.authentication.is_authenticated(request)
-        
-        if isinstance(auth_result, HttpResponse):
-            return auth_result
-        
-        if not auth_result is True:
-            return HttpForbidden()
-        
-        # Check to see if they should be throttled.
-        if self.throttle_check(request):
-            # Throttle limit exceeded.
-            return HttpBadRequest()
+        self.method_check(request, allowed=['get'])
+        self.auth_check(request)
+        self.throttle_check(request)
         
         # Rip apart the list then iterate.
         obj_pks = kwargs.get('pk_list', '').split(';')
@@ -649,16 +634,8 @@ class Resource(object):
         if len(not_found):
             object_list['not_found'] = not_found
         
-        # Add the throttled request.
-        self._meta.throttle.accessed(self._meta.authentication.get_identifier(request), url=request.get_full_path(), request_method=request_method)
-        desired_format = self.determine_format(request)
-        
-        try:
-            serialized = self.serialize(request, object_list, desired_format)
-        except BadRequest, e:
-            return HttpBadRequest(e.args[0])
-        
-        return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
+        self.log_throttled_access(request)
+        return self.create_response(request, object_list)
 
 
 class ModelDeclarativeMetaclass(DeclarativeMetaclass):

@@ -1,3 +1,6 @@
+from django.http import HttpResponse
+
+
 class TastyPieError(Exception):
     pass
 
@@ -40,3 +43,20 @@ class InvalidFilterError(TastyPieError):
 
 class InvalidSortError(TastyPieError):
     pass
+
+
+class ImmediateHttpResponse(TastyPieError):
+    """
+    This exception is used to interrupt the flow of processing to immediately
+    return a custom HttpResponse.
+    
+    Common uses include::
+    
+        * for authentication (like digest/OAuth)
+        * for throttling
+    
+    """
+    response = HttpResponse("Nothing provided.")
+    
+    def __init__(self, response):
+        self.response = response
