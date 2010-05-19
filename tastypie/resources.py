@@ -850,7 +850,7 @@ class ModelResource(Resource):
         return self._meta.queryset.filter(**applicable_filters)
     
     def obj_get(self, **kwargs):
-        return self._meta.queryset.get(pk=kwargs.get('pk'))
+        return self._meta.queryset.get(**kwargs)
     
     def obj_create(self, bundle, **kwargs):
         bundle.obj = self._meta.object_class()
@@ -886,7 +886,7 @@ class ModelResource(Resource):
     
     def obj_delete(self, **kwargs):
         try:
-            obj = self._meta.queryset.get(pk=kwargs.get('pk'))
+            obj = self._meta.queryset.get(**kwargs)
         except ObjectDoesNotExist:
             raise NotFound("A model instance matching the provided arguments could not be found.")
         
@@ -930,7 +930,7 @@ class ModelResource(Resource):
         except Resolver404:
             raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
         
-        return self.obj_get(**kwargs)
+        return self.obj_get(**self.remove_api_resource_names(kwargs))
 
 
 # Based off of ``piston.utils.coerce_put_post``. Similarly BSD-licensed.

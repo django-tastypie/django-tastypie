@@ -944,6 +944,11 @@ class ModelResourceTestCase(TestCase):
         self.assertTrue(isinstance(obj, Note))
         self.assertEqual(obj.title, u'First Post!')
         
+        # Test non-pk gets.
+        obj = resource.obj_get(slug='another-post')
+        self.assertTrue(isinstance(obj, Note))
+        self.assertEqual(obj.title, u'Another Post')
+        
         note = NoteResource()
         note_obj = note.obj_get(pk=1)
         self.assertEqual(note_obj.content, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
@@ -1207,6 +1212,11 @@ class ModelResourceTestCase(TestCase):
         note.obj_delete(pk=1)
         self.assertEqual(Note.objects.all().count(), 5)
         self.assertRaises(Note.DoesNotExist, Note.objects.get, pk=1)
+        
+        # Test non-pk deletes.
+        note.obj_delete(slug='another-post')
+        self.assertEqual(Note.objects.all().count(), 4)
+        self.assertRaises(Note.DoesNotExist, Note.objects.get, slug='another-post')
     
     def test_self_referential(self):
         class SelfResource(ModelResource):
