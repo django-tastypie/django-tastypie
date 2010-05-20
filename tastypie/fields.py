@@ -159,9 +159,13 @@ class FileField(ApiField):
     def dehydrate(self, obj):
         media_url = settings.MEDIA_URL
         path = self.convert(super(FileField, self).dehydrate(obj))
-        media_url = media_url.rstrip('/')
-        path = path.lstrip('/')
-        return u"%s/%s" % (media_url, path)
+        
+        if path:
+            media_url = media_url.rstrip('/')
+            path = path.lstrip('/')
+            return u"%s/%s" % (media_url, path)
+        
+        return path
     
     def convert(self, value):
         if value is None:

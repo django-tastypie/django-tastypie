@@ -154,6 +154,19 @@ class FileFieldTestCase(TestCase):
         
         field_2 = FileField(default='img/default_avatar.jpg')
         self.assertEqual(field_2.dehydrate(bundle), u'http://localhost:8080/media/img/default_avatar.jpg')
+        
+        note = Note.objects.get(pk=1)
+        note.image = ''
+        bundle = Bundle(obj=note)
+        
+        field_3 = FileField(attribute='image', default=True)
+        self.assertEqual(field_3.dehydrate(bundle), u'')
+        
+        note.image = None
+        bundle = Bundle(obj=note)
+        
+        field_4 = FileField(attribute='image', null=True)
+        self.assertEqual(field_4.dehydrate(bundle), None)
 
 
 class IntegerFieldTestCase(TestCase):
