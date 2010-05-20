@@ -255,6 +255,13 @@ class DateFieldTestCase(TestCase):
         field_3 = DateField(attribute='created_string')
         field_3.instance_name = 'date'
         self.assertEqual(field_3.hydrate(bundle_3), datetime.date(2010, 5, 12))
+        
+        bundle_4 = Bundle(data={
+            'date': '5 Apr 2010',
+        })
+        field_4 = DateField(attribute='created')
+        field_4.instance_name = 'date'
+        self.assertEqual(field_4.hydrate(bundle_4), datetime.date(2010, 4, 5))
 
 
 class DateTimeFieldTestCase(TestCase):
