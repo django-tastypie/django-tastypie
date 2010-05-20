@@ -262,6 +262,13 @@ class DateFieldTestCase(TestCase):
         field_4 = DateField(attribute='created')
         field_4.instance_name = 'date'
         self.assertEqual(field_4.hydrate(bundle_4), datetime.date(2010, 4, 5))
+        
+        bundle_5 = Bundle(data={
+            'date': None,
+        })
+        field_5 = DateField(attribute='created', null=True)
+        field_5.instance_name = 'date'
+        self.assertEqual(field_5.hydrate(bundle_5), None)
 
 
 class DateTimeFieldTestCase(TestCase):
@@ -306,6 +313,13 @@ class DateTimeFieldTestCase(TestCase):
         field_3 = DateTimeField(attribute='created_string')
         field_3.instance_name = 'datetime'
         self.assertEqual(field_3.hydrate(bundle_3), datetime.datetime(2010, 3, 30, 20, 5, tzinfo=tzoffset(None, -18000)))
+        
+        bundle_4 = Bundle(data={
+            'datetime': None,
+        })
+        field_4 = DateField(attribute='created', null=True)
+        field_4.instance_name = 'datetime'
+        self.assertEqual(field_4.hydrate(bundle_4), None)
 
 
 class UserResource(ModelResource):
