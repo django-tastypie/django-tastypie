@@ -907,7 +907,13 @@ class ModelResource(Resource):
                 # Clear it out, just to be safe.
                 related_mngr.clear()
             
-            related_mngr.add(*[related_bundle.obj for related_bundle in bundle.data[field_name]])
+            related_objs = []
+            
+            for related_bundle in bundle.data[field_name]:
+                related_bundle.obj.save()
+                related_objs.append(related_bundle.obj)
+            
+            related_mngr.add(*related_objs)
     
     def get_resource_uri(self, bundle_or_obj):
         kwargs = {

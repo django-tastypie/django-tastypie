@@ -438,6 +438,20 @@ class RelatedNoteResource(ModelResource):
         fields = ['title', 'slug', 'content', 'created', 'is_active']
 
 
+class AnotherRelatedNoteResource(ModelResource):
+    author = fields.ForeignKey(UserResource, 'author')
+    subjects = fields.ManyToManyField(SubjectResource, 'subjects', full=True)
+    
+    class Meta:
+        queryset = Note.objects.all()
+        resource_name = 'relatednotes'
+        filtering = {
+            'author': ALL,
+            'subjects': ALL_WITH_RELATIONS,
+        }
+        fields = ['title', 'slug', 'content', 'created', 'is_active']
+
+
 class ModelResourceTestCase(TestCase):
     fixtures = ['note_testdata.json']
     urls = 'core.tests.field_urls'
@@ -1169,6 +1183,31 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(latest.author.username, u'johndoe')
         self.assertEqual(latest.subjects.all().count(), 1)
         self.assertEqual([sub.id for sub in latest.subjects.all()], [2])
+        
+        self.assertEqual(Note.objects.all().count(), 8)
+        note = AnotherRelatedNoteResource()
+        related_bundle = Bundle(data={
+            'title': "Yet another another new post!",
+            'slug': "yet-another-another-new-post",
+            'content': "WHEEEEEE!",
+            'is_active': True,
+            'author': '/api/v1/users/1/',
+            'subjects': [{
+                'name': 'helloworld',
+                'url': 'http://example.com',
+                'created': '2010-05-20 14:22:00',
+            }],
+        })
+        note.obj_create(related_bundle)
+        self.assertEqual(Note.objects.all().count(), 9)
+        latest = Note.objects.get(slug='yet-another-another-new-post')
+        self.assertEqual(latest.title, u"Yet another another new post!")
+        self.assertEqual(latest.slug, u'yet-another-another-new-post')
+        self.assertEqual(latest.content, u'WHEEEEEE!')
+        self.assertEqual(latest.is_active, True)
+        self.assertEqual(latest.author.username, u'johndoe')
+        self.assertEqual(latest.subjects.all().count(), 1)
+        self.assertEqual([sub.id for sub in latest.subjects.all()], [3])
     
     def test_obj_update(self):
         self.assertEqual(Note.objects.all().count(), 6)
@@ -1205,6 +1244,32 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(latest.author.username, u'janedoe')
         self.assertEqual(latest.subjects.all().count(), 2)
         self.assertEqual([sub.id for sub in latest.subjects.all()], [1, 2])
+        
+        self.assertEqual(Note.objects.all().count(), 6)
+        note = AnotherRelatedNoteResource()
+        related_obj = note.obj_get(pk=1)
+        related_bundle = Bundle(data={
+            'title': "Yet another another new post!",
+            'slug': "yet-another-another-new-post",
+            'content': "WHEEEEEE!",
+            'is_active': True,
+            'author': '/api/v1/users/1/',
+            'subjects': [{
+                'name': 'helloworld',
+                'url': 'http://example.com',
+                'created': '2010-05-20 14:22:00',
+            }],
+        })
+        note.obj_update(related_bundle, pk=1)
+        self.assertEqual(Note.objects.all().count(), 6)
+        latest = Note.objects.get(slug='yet-another-another-new-post')
+        self.assertEqual(latest.title, u"Yet another another new post!")
+        self.assertEqual(latest.slug, u'yet-another-another-new-post')
+        self.assertEqual(latest.content, u'WHEEEEEE!')
+        self.assertEqual(latest.is_active, True)
+        self.assertEqual(latest.author.username, u'johndoe')
+        self.assertEqual(latest.subjects.all().count(), 1)
+        self.assertEqual([sub.id for sub in latest.subjects.all()], [3])
     
     def test_obj_delete(self):
         self.assertEqual(Note.objects.all().count(), 6)
