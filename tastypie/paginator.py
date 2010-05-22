@@ -46,9 +46,9 @@ class Paginator(object):
         
         In order of importance, it will use:
         
-          * The user-requested ``limit`` from the GET parameters, if specified.
-          * The object-level ``limit`` if specified.
-          * ``settings.API_LIMIT_PER_PAGE`` if specified.
+            * The user-requested ``limit`` from the GET parameters, if specified.
+            * The object-level ``limit`` if specified.
+            * ``settings.API_LIMIT_PER_PAGE`` if specified.
         
         Default is 20 per page.
         """
