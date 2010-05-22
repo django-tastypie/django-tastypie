@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.test import TestCase
 from tastypie.api import Api
-from tastypie.exceptions import NotRegistered, URLReverseError
+from tastypie.exceptions import NotRegistered
 from tastypie.resources import Resource, ModelResource
 from core.models import Note
 

@@ -452,10 +452,16 @@ class ToOneField(RelatedField):
 
 
 class ForeignKey(ToOneField):
+    """
+    A convenience subclass for those who prefer to mirror ``django.db.models``.
+    """
     pass
 
 
 class OneToOneField(ToOneField):
+    """
+    A convenience subclass for those who prefer to mirror ``django.db.models``.
+    """
     pass
 
 
@@ -520,10 +526,16 @@ class ToManyField(RelatedField):
 
 
 class ManyToManyField(ToManyField):
+    """
+    A convenience subclass for those who prefer to mirror ``django.db.models``.
+    """
     pass
 
 
 class OneToManyField(ToManyField):
+    """
+    A convenience subclass for those who prefer to mirror ``django.db.models``.
+    """
     pass
 
 
