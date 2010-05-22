@@ -41,6 +41,17 @@ class Paginator(object):
         self.resource_uri = resource_uri
     
     def get_limit(self):
+        """
+        Determines the proper maximum number of results to return.
+        
+        In order of importance, it will use:
+        
+          * The user-requested ``limit`` from the GET parameters, if specified.
+          * The object-level ``limit`` if specified.
+          * ``settings.API_LIMIT_PER_PAGE`` if specified.
+        
+        Default is 20 per page.
+        """
         limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)
         
         if 'limit' in self.request_data:
@@ -59,6 +70,14 @@ class Paginator(object):
         return limit
     
     def get_offset(self):
+        """
+        Determines the proper starting offset of results to return.
+        
+        It attempst to use the user-provided ``offset`` from the GET parameters,
+        if specified. Otherwise, it falls back to the object-level ``offset``.
+        
+        Default is 0.
+        """
         offset = self.offset
         
         if 'offset' in self.request_data:
@@ -75,28 +94,55 @@ class Paginator(object):
         return offset
     
     def get_slice(self, limit, offset):
+        """
+        Slices the result set to the specified ``limit`` & ``offset``.
+        """
         return self.objects[offset:offset + limit]
     
     def get_count(self):
+        """
+        Returns a count of the total number of objects seen.
+        """
         return len(self.objects)
 
     def get_previous(self, limit, offset):
+        """
+        If a previous page is available, will generate a URL to request that
+        page. If not available, this returns ``None``.
+        """
         if offset - limit < 0:
             return None
+        
         return self._generate_uri(limit, offset-limit)
 
     def get_next(self, limit, offset, count):
+        """
+        If a next page is available, will generate a URL to request that
+        page. If not available, this returns ``None``.
+        """
         if offset + limit >= count:
             return None
+        
         return self._generate_uri(limit, offset+limit)
 
     def _generate_uri(self, limit, offset):
         if self.resource_uri is None:
             return None
-        return '%s?%s' % (self.resource_uri,
-                          urlencode({'limit': limit, 'offset': offset}))
+        
+        request_params = self.request_data.copy()
+        request_params.update({'limit': limit, 'offset': offset})
+        return '%s?%s' % (
+            self.resource_uri,
+            urlencode(request_params)
+        )
 
     def page(self):
+        """
+        Generates all pertinent data about the requested page.
+        
+        Handles getting the correct ``limit`` & ``offset``, then slices off
+        the correct set of results and returns all pertinent metadata.
+        """
         limit = self.get_limit()
         offset = self.get_offset()
         count = self.get_count()

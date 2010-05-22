@@ -46,6 +46,19 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(meta['previous'], None)
         self.assertEqual(meta['next'], None)
         self.assertEqual(meta['total_count'], 6)
+    
+    def test_complex_get(self):
+        request = {
+            'slug__startswith': 'food',
+            'format': 'json',
+        }
+        paginator = Paginator(request, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=2)
+        meta = paginator.page()['meta']
+        self.assertEqual(meta['limit'], 2)
+        self.assertEqual(meta['offset'], 2)
+        self.assertEqual(meta['previous'], '/api/v1/notes/?slug__startswith=food&offset=0&limit=2&format=json')
+        self.assertEqual(meta['next'], '/api/v1/notes/?slug__startswith=food&offset=4&limit=2&format=json')
+        self.assertEqual(meta['total_count'], 6)
 
     def test_limit(self):
         paginator = Paginator({}, self.data_set, limit=20, offset=0)
