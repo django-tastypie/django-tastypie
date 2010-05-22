@@ -61,11 +61,18 @@ class AnotherBasicResource(BasicResource):
     is_active = fields.BooleanField(attribute='is_active', default=True)
     
     class Meta:
+        object_class = TestObject
         resource_name = 'anotherbasic'
     
     def dehydrate(self, bundle):
         if hasattr(bundle.obj, 'bar'):
             bundle.data['bar'] = bundle.obj.bar
+        
+        return bundle
+    
+    def hydrate(self, bundle):
+        if 'bar' in bundle.data:
+            bundle.obj.bar = 'O HAI BAR!'
         
         return bundle
 
@@ -181,6 +188,42 @@ class ResourceTestCase(TestCase):
         self.assertEqual(hydrated.obj.name, 'Daniel')
         self.assertEqual(hydrated.obj.view_count, 6)
         self.assertEqual(hydrated.obj.date_joined, datetime.datetime(2010, 2, 15, 12, 0, 0))
+        
+        another = AnotherBasicResource()
+        another_bundle_1 = Bundle(data={
+            'name': 'Daniel',
+            'view_count': 6,
+            'date_joined': datetime.datetime(2010, 2, 15, 12, 0, 0),
+        })
+        
+        # Now load up the data (without the ``bar`` key).
+        hydrated = another.full_hydrate(another_bundle_1)
+        
+        self.assertEqual(hydrated.data['name'], 'Daniel')
+        self.assertEqual(hydrated.data['view_count'], 6)
+        self.assertEqual(hydrated.data['date_joined'], datetime.datetime(2010, 2, 15, 12, 0, 0))
+        self.assertEqual(hydrated.obj.name, 'Daniel')
+        self.assertEqual(hydrated.obj.view_count, 6)
+        self.assertEqual(hydrated.obj.date_joined, datetime.datetime(2010, 2, 15, 12, 0, 0))
+        self.assertEqual(hasattr(hydrated.obj, 'bar'), False)
+        
+        another_bundle_2 = Bundle(data={
+            'name': 'Daniel',
+            'view_count': 6,
+            'date_joined': datetime.datetime(2010, 2, 15, 12, 0, 0),
+            'bar': True,
+        })
+        
+        # Now load up the data (this time with the ``bar`` key).
+        hydrated = another.full_hydrate(another_bundle_2)
+        
+        self.assertEqual(hydrated.data['name'], 'Daniel')
+        self.assertEqual(hydrated.data['view_count'], 6)
+        self.assertEqual(hydrated.data['date_joined'], datetime.datetime(2010, 2, 15, 12, 0, 0))
+        self.assertEqual(hydrated.obj.name, 'Daniel')
+        self.assertEqual(hydrated.obj.view_count, 6)
+        self.assertEqual(hydrated.obj.date_joined, datetime.datetime(2010, 2, 15, 12, 0, 0))
+        self.assertEqual(hydrated.obj.bar, 'O HAI BAR!')
     
     def test_obj_get_list(self):
         basic = BasicResource()

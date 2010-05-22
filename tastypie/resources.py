@@ -371,7 +371,7 @@ class Resource(object):
             method = getattr(self, "hydrate_%s" % field_name, None)
             
             if method:
-                method(bundle)
+                bundle = method(bundle)
         
         bundle = self.hydrate(bundle)
         return bundle
