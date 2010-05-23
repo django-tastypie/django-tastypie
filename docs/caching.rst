@@ -1,0 +1,6 @@
+.. _ref-caching:
+
+=======
+Caching
+=======
+
