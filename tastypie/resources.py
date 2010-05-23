@@ -29,6 +29,12 @@ except ImportError:
 
 
 class ResourceOptions(object):
+    """
+    A configuration class for ``Resource``.
+    
+    Provides sane defaults and the logic needed to augment these settings with
+    the internal ``class Meta`` used on ``Resource`` subclasses.
+    """
     serializer = Serializer()
     authentication = Authentication()
     cache = NoCache()
@@ -123,6 +129,9 @@ class Resource(object):
     Serialization/deserialization is handled "at the edges" (i.e. at the
     beginning/end of the request/response cycle) so that everything internally
     is Python data structures.
+    
+    This class tries to be non-model specific, so it can be hooked up to other
+    data sources, such as search results, files, other data, etc.
     """
     __metaclass__ = DeclarativeMetaclass
     
@@ -137,6 +146,14 @@ class Resource(object):
             return self.fields[name]
     
     def wrap_view(self, view):
+        """
+        Wraps methods so they can be called in a more functional way as well
+        as handling exceptions better.
+        
+        Note that if ``BadRequest`` or an exception with a ``response`` attr
+        are seen, there is special handling to either present a message back
+        to the user or return the response traveling with the exception.
+        """
         def wrapper(request, *args, **kwargs):
             try:
                 return getattr(self, view)(request, *args, **kwargs)
@@ -148,10 +165,18 @@ class Resource(object):
                 
                 # A real, non-expected exception. Re-raise it.
                 raise
+        
         return wrapper
     
     @property
     def urls(self):
+        """
+        The endpoints this ``Resource`` responds to.
+        
+        Mostly a standard URLconf, this is suitable for either automatic use
+        when registered with an ``Api`` class or for including directly in
+        a URLconf should you choose to.
+        """
         urlpatterns = patterns('',
             url(r"^(?P<resource_name>%s)/$" % self._meta.resource_name, self.wrap_view('dispatch_list'), name="api_dispatch_list"),
             url(r"^(?P<resource_name>%s)/schema/$" % self._meta.resource_name, self.wrap_view('get_schema'), name="api_get_schema"),
@@ -161,30 +186,68 @@ class Resource(object):
         return urlpatterns
     
     def determine_format(self, request):
+        """
+        Used to determine the desired format.
+        
+        Largely relies on ``tastypie.utils.mime.determine_format`` but here
+        as a point of extension.
+        """
         return determine_format(request, self._meta.serializer, default_format=self._meta.default_format)
-
+    
     def serialize(self, request, data, format, options=None):
+        """
+        Given a request, data and a desired format, produces a serialized
+        version suitable for transfer over the wire.
+        
+        Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
+        """
         options = options or {}
-
+        
         if 'text/javascript' in format:
             # get JSONP callback name. default to "callback"
             callback = request.GET.get('callback', 'callback')
+            
             if not is_valid_jsonp_callback_value(callback):
                 raise BadRequest('JSONP callback name is invalid.')
+            
             options['callback'] = callback
-
+        
         return self._meta.serializer.serialize(data, format, options)
-
+    
     def deserialize(self, request, data, format='application/json'):
+        """
+        Given a request, data and a format, deserializes the given data.
+        
+        It relies on the request properly sending a ``CONTENT_TYPE`` header,
+        falling back to ``application/json`` if not provided.
+        
+        Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
+        """
         return self._meta.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', 'application/json'))
     
     def dispatch_list(self, request, **kwargs):
+        """
+        A view for handling the various HTTP methods (GET/POST/PUT/DELETE) over
+        the entire list of resources.
+        
+        Relies on ``Resource.dispatch`` for the heavy-lifting.
+        """
         return self.dispatch('list', request, **kwargs)
     
     def dispatch_detail(self, request, **kwargs):
+        """
+        A view for handling the various HTTP methods (GET/POST/PUT/DELETE) on
+        a single resource.
+        
+        Relies on ``Resource.dispatch`` for the heavy-lifting.
+        """
         return self.dispatch('detail', request, **kwargs)
     
     def dispatch(self, request_type, request, **kwargs):
+        """
+        Handles the common operations (allowed HTTP method, authentication,
+        throttling, method lookup) surrounding most CRUD interactions.
+        """
         allowed_methods = getattr(self._meta, "%s_allowed_methods" % request_type, None)
         request_method = self.method_check(request, allowed=allowed_methods)
         
@@ -212,6 +275,15 @@ class Resource(object):
         return response
     
     def remove_api_resource_names(self, url_dict):
+        """
+        Given a dictionary of regex matches from a URLconf, removes
+        ``api_name`` and/or ``resource_name`` if found.
+        
+        This is useful for converting URLconf matches into something suitable
+        for data lookup. For example::
+        
+            Model.objects.filter(**self.remove_api_resource_names(matches))
+        """
         kwargs_subset = url_dict.copy()
         
         for key in ['api_name', 'resource_name']:
@@ -223,6 +295,23 @@ class Resource(object):
         return kwargs_subset
     
     def method_check(self, request, allowed=None):
+        """
+        Ensures that the HTTP method used on the request is allowed to be
+        handled by the resource.
+        
+        Takes an ``allowed`` parameter, which should be a list of lowercase
+        HTTP methods to check against. Usually, this looks like::
+        
+            # The most generic lookup.
+            self.method_check(request, self._meta.allowed_methods)
+            
+            # A lookup against what's allowed for list-type methods.
+            self.method_check(request, self._meta.list_allowed_methods)
+            
+            # A useful check when creating a new endpoint that only handles
+            # GET.
+            self.method_check(request, ['get'])
+        """
         if allowed is None:
             allowed = []
         
@@ -234,6 +323,13 @@ class Resource(object):
         return request_method
     
     def auth_check(self, request):
+        """
+        Handles checking if the user is authenticated and dealing with
+        unauthorized users.
+        
+        Mostly a hook, this uses class assigned to ``authentication`` from
+        ``Resource._meta``.
+        """
         # Authenticate the request as needed.
         auth_result = self._meta.authentication.is_authenticated(request)
         
@@ -244,6 +340,12 @@ class Resource(object):
             raise ImmediateHttpResponse(response=HttpUnauthorized())
     
     def throttle_check(self, request):
+        """
+        Handles checking if the user should be throttled.
+        
+        Mostly a hook, this uses class assigned to ``throttle`` from
+        ``Resource._meta``.
+        """
         identifier = self._meta.authentication.get_identifier(request)
         
         # Check to see if they should be throttled.
@@ -252,10 +354,24 @@ class Resource(object):
             raise ImmediateHttpResponse(response=HttpForbidden())
     
     def log_throttled_access(self, request):
+        """
+        Handles the recording of the user's access for throttling purposes.
+        
+        Mostly a hook, this uses class assigned to ``throttle`` from
+        ``Resource._meta``.
+        """
         request_method = request.method.lower()
         self._meta.throttle.accessed(self._meta.authentication.get_identifier(request), url=request.get_full_path(), request_method=request_method)
     
     def build_bundle(self, obj=None, data=None):
+        """
+        Given either an object, a data dictionary or both, builds a ``Bundle``
+        for use throughout the ``dehydrate/hydrate`` cycle.
+        
+        If no object is provided, an empty object from
+        ``Resource._meta.object_class`` is created so that attempts to access
+        ``bundle.obj`` do not fail.
+        """
         if obj is None:
             obj = self._meta.object_class()
         
@@ -263,13 +379,23 @@ class Resource(object):
     
     def build_filters(self, filters=None):
         """
-        This needs to be implemented at the user level.
+        Allows for the filtering of applicable objects.
+        
+        This needs to be implemented at the user level.'
+        
+        ``ModelResource`` includes a full working version specific to Django's
+        ``Models``.
         """
         return filters
     
     def apply_sorting(self, obj_list, options=None):
         """
+        Allows for the sorting of objects being returned.
+        
         This needs to be implemented at the user level.
+        
+        ``ModelResource`` includes a full working version specific to Django's
+        ``Models``.
         """
         return obj_list
     
@@ -282,10 +408,16 @@ class Resource(object):
         A ``return reverse("api_dispatch_detail", kwargs={'resource_name':
         self.resource_name, 'pk': object.id})`` should be all that would
         be needed.
+        
+        ``ModelResource`` includes a full working version specific to Django's
+        ``Models``.
         """
         raise NotImplementedError()
     
     def get_resource_list_uri(self):
+        """
+        Returns a URL specific to this resource's list endpoint.
+        """
         kwargs = {
             'resource_name': self._meta.resource_name,
         }
@@ -300,21 +432,18 @@ class Resource(object):
     
     def get_via_uri(self, uri):
         """
-        This needs to be implemented at the user level.
-        
         This pulls apart the salient bits of the URI and populates the
-        resource via a ``get`` with the ``pk``.
-        
-        Example::
-        
-            def get_via_uri(self, uri):
-                view, args, kwargs = resolve(uri)
-                return self.get(pk=kwargs['pk'])
+        resource via a ``obj_get``.
         
         If you need custom behavior based on other portions of the URI,
         simply override this method.
         """
-        raise NotImplementedError()
+        try:
+            view, args, kwargs = resolve(uri)
+        except Resolver404:
+            raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
+        
+        return self.obj_get(**self.remove_api_resource_names(kwargs))
     
     # Data preparation.
     
@@ -345,6 +474,15 @@ class Resource(object):
         return bundle
     
     def dehydrate(self, bundle):
+        """
+        A hook to allow a final manipulation of data once all fields/methods
+        have built out the dehydrated data.
+        
+        Useful if you need to access more than one dehydrated field or want
+        to annotate on additional data.
+        
+        Must return the modified bundle.
+        """
         return bundle
     
     def full_hydrate(self, bundle):
@@ -377,6 +515,15 @@ class Resource(object):
         return bundle
     
     def hydrate(self, bundle):
+        """
+        A hook to allow a final manipulation of data once all fields/methods
+        have built out the hydrated data.
+        
+        Useful if you need to access more than one hydrated field or want
+        to annotate on additional data.
+        
+        Must return the modified bundle.
+        """
         return bundle
     
     def hydrate_m2m(self, bundle):
@@ -409,6 +556,12 @@ class Resource(object):
         return bundle
     
     def build_schema(self):
+        """
+        Returns a dictionary of all the fields on the resource and some
+        properties about those fields.
+        
+        Used by the ``schema/`` endpoint to describe what will be available.
+        """
         data = {}
         
         for field_name, field_object in self.fields.items():
@@ -416,11 +569,19 @@ class Resource(object):
                 'type': field_object.dehydrated_type,
                 'nullable': field_object.null,
                 'readonly': field_object.readonly,
+                # FIXME: Include what filters are available.
+                # FIXME: Include if sorting is available on the field.
             }
         
         return data
     
     def dehydrate_resource_uri(self, bundle):
+        """
+        For the automatically included ``resource_uri`` field, dehydrate
+        the URI for the given bundle.
+        
+        Returns empty string if no URI can be generated.
+        """
         try:
             return self.get_resource_uri(bundle)
         except NotImplementedError:
@@ -429,6 +590,11 @@ class Resource(object):
             return ''
     
     def generate_cache_key(self, *args, **kwargs):
+        """
+        Creates a unique-enough cache key.
+        
+        This is based off the current api_name/resource_name/args/kwargs.
+        """
         smooshed = []
         
         for key, value in kwargs.items():
@@ -440,9 +606,21 @@ class Resource(object):
     # Data access methods.
     
     def obj_get_list(self, filters=None, **kwargs):
+        """
+        Fetches the list of objects available on the resource.
+        
+        This needs to be implemented at the user level.
+        
+        ``ModelResource`` includes a full working version specific to Django's
+        ``Models``.
+        """
         raise NotImplementedError()
     
     def cached_obj_get_list(self, **kwargs):
+        """
+        A version of ``obj_get_list`` that uses the cache as a means to get
+        commonly-accessed data faster.
+        """
         cache_key = self.generate_cache_key('list', **kwargs)
         obj_list = self._meta.cache.get(cache_key)
         
@@ -454,12 +632,21 @@ class Resource(object):
     
     def obj_get(self, **kwargs):
         """
+        Fetches an individual object on the resource.
         
-        If not found, should raise a ``NotFound`` exception.
+        This needs to be implemented at the user level. If the object can not
+        be found, this should raise a ``NotFound`` exception.
+        
+        ``ModelResource`` includes a full working version specific to Django's
+        ``Models``.
         """
         raise NotImplementedError()
     
     def cached_obj_get(self, **kwargs):
+        """
+        A version of ``obj_get`` that uses the cache as a means to get
+        commonly-accessed data faster.
+        """
         cache_key = self.generate_cache_key('detail', **kwargs)
         bundle = self._meta.cache.get(cache_key)
         
@@ -470,18 +657,56 @@ class Resource(object):
         return bundle
     
     def obj_create(self, bundle, **kwargs):
+        """
+        Creates a new object based on the provided data.
+        
+        This needs to be implemented at the user level.
+        
+        ``ModelResource`` includes a full working version specific to Django's
+        ``Models``.
+        """
         raise NotImplementedError()
     
     def obj_update(self, bundle, **kwargs):
+        """
+        Updates an existing object (or creates a new object) based on the
+        provided data.
+        
+        This needs to be implemented at the user level.
+        
+        ``ModelResource`` includes a full working version specific to Django's
+        ``Models``.
+        """
         raise NotImplementedError()
     
     def obj_delete_list(self, **kwargs):
+        """
+        Deletes an entire list of objects.
+        
+        This needs to be implemented at the user level.
+        
+        ``ModelResource`` includes a full working version specific to Django's
+        ``Models``.
+        """
         raise NotImplementedError()
     
     def obj_delete(self):
+        """
+        Deletes a single object.
+        
+        This needs to be implemented at the user level.
+        
+        ``ModelResource`` includes a full working version specific to Django's
+        ``Models``.
+        """
         raise NotImplementedError()
     
     def create_response(self, request, data):
+        """
+        Extracts the common "which-format/serialize/return-response" cycle.
+        
+        Mostly a useful shortcut/hook.
+        """
         desired_format = self.determine_format(request)
         serialized = self.serialize(request, data, desired_format)
         return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
@@ -490,6 +715,11 @@ class Resource(object):
     
     def get_list(self, request, **kwargs):
         """
+        Returns a serialized list of resources.
+        
+        Calls ``obj_get_list`` to provide the data, then handles that result
+        set and serializes it.
+        
         Should return a HttpResponse (200 OK).
         """
         # TODO: Uncached for now. Invalidation that works for everyone may be
@@ -506,6 +736,11 @@ class Resource(object):
     
     def get_detail(self, request, **kwargs):
         """
+        Returns a single serialized resource.
+        
+        Calls ``cached_obj_get/obj_get`` to provide the data, then handles that result
+        set and serializes it.
+        
         Should return a HttpResponse (200 OK).
         """
         try:
@@ -521,6 +756,10 @@ class Resource(object):
     def put_list(self, request, **kwargs):
         """
         Replaces a collection of resources with another collection.
+        
+        Calls ``delete_list`` to clear out the collection then ``obj_create``
+        with the provided the data to create the new collection.
+        
         Return ``HttpAccepted`` (204 No Content).
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
@@ -543,6 +782,12 @@ class Resource(object):
     
     def put_detail(self, request, **kwargs):
         """
+        Either updates an existing resource or creates a new one with the
+        provided data.
+        
+        Calls ``obj_update`` with the provided data first, but falls back to
+        ``obj_create`` if the object does not already exist.
+        
         If a new resource is created, return ``HttpCreated`` (201 Created).
         If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
         """
@@ -558,6 +803,11 @@ class Resource(object):
     
     def post_list(self, request, **kwargs):
         """
+        Creates a new resource/object with the provided data.
+        
+        Calls ``obj_create`` with the provided data and returns a response
+        with the new resource's location.
+        
         If a new resource is created, return ``HttpCreated`` (201 Created).
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
@@ -572,6 +822,8 @@ class Resource(object):
     
     def post_detail(self, request, **kwargs):
         """
+        Creates a new subcollection of the resource under a resource.
+        
         This is not implemented by default because most people's data models
         aren't self-referential.
         
@@ -581,6 +833,10 @@ class Resource(object):
     
     def delete_list(self, request, **kwargs):
         """
+        Destroys a collection of resources/objects.
+        
+        Calls ``obj_delete_list``.
+        
         If the resources are deleted, return ``HttpAccepted`` (204 No Content).
         """
         self.obj_delete_list(**self.remove_api_resource_names(kwargs))
@@ -588,7 +844,12 @@ class Resource(object):
     
     def delete_detail(self, request, **kwargs):
         """
+        Destroys a single resource/object.
+        
+        Calls ``obj_delete``.
+        
         If the resource is deleted, return ``HttpAccepted`` (204 No Content).
+        If the resource did not exist, return ``HttpGone`` (410 Gone).
         """
         try:
             self.obj_delete(**self.remove_api_resource_names(kwargs))
@@ -598,6 +859,11 @@ class Resource(object):
     
     def get_schema(self, request, **kwargs):
         """
+        Returns a serialized form of the schema of the resource.
+        
+        Calls ``build_schema`` to generate the data. This method only responds
+        to HTTP GET.
+        
         Should return a HttpResponse (200 OK).
         """
         self.method_check(request, allowed=['get'])
@@ -608,6 +874,12 @@ class Resource(object):
     
     def get_multiple(self, request, **kwargs):
         """
+        Returns a serialized list of resources based on the identifers
+        from the URL.
+        
+        Calls ``obj_get`` to fetch only the objects requested. This method
+        only responds to HTTP GET.
+        
         Should return a HttpResponse (200 OK).
         """
         self.method_check(request, allowed=['get'])
@@ -668,6 +940,15 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
 
 
 class ModelResource(Resource):
+    """
+    A subclass of ``Resource`` designed to work with Django's ``Models``.
+    
+    This class will introspect a given ``Model`` and build a field list based
+    on the fields found on the model (excluding relational fields).
+    
+    Given that it is aware of Django's ORM, it also handles the CRUD data
+    operations of the resource.
+    """
     __metaclass__ = ModelDeclarativeMetaclass
     
     @classmethod
@@ -689,7 +970,7 @@ class ModelResource(Resource):
         Django type.
         """
         result = default
-    
+        
         if f.get_internal_type() in ('DateField', 'DateTimeField'):
             result = DateTimeField
         elif f.get_internal_type() in ('BooleanField', 'NullBooleanField'):
@@ -760,6 +1041,15 @@ class ModelResource(Resource):
         return final_fields
     
     def build_filters(self, filters=None):
+        """
+        Given a dictionary of filters, create the necessary ORM-level filters.
+        
+        Keys should be resource fields, **NOT** model fields.
+        
+        Valid values are either a list of Django filter types (i.e.
+        ``['startswith', 'exact', 'lte']``), the ``ALL`` constant or the
+        ``ALL_WITH_RELATIONS`` constant.
+        """
         # At the declarative level:
         #     filtering = {
         #         'resource_field_name': ['exact', 'startswith', 'endswith', 'contains'],
@@ -817,6 +1107,15 @@ class ModelResource(Resource):
         return dict_strip_unicode_keys(qs_filters)
     
     def apply_sorting(self, obj_list, options=None):
+        """
+        Given a dictionary of options, apply some ORM-level sorting to the
+        provided ``QuerySet``.
+        
+        Looks for the ``sort_by`` key and handles either ascending (just the
+        field name) or descending (the field name with a ``-`` in front).
+        
+        The field name should be the resource field, **NOT** model field.
+        """
         if options is None:
             options = {}
         
@@ -846,13 +1145,28 @@ class ModelResource(Resource):
         return obj_list.order_by(sort_expr)
     
     def obj_get_list(self, filters=None, **kwargs):
+        """
+        A ORM-specific implementation of ``obj_get_list``.
+        
+        Takes an optional ``filters`` dictionary, which can be used to narrow
+        the query.
+        """
         applicable_filters = self.build_filters(filters)
         return self._meta.queryset.filter(**applicable_filters)
     
     def obj_get(self, **kwargs):
+        """
+        A ORM-specific implementation of ``obj_get``.
+        
+        Takes optional ``kwargs``, which are used to narrow the query to find
+        the instance.
+        """
         return self._meta.queryset.get(**kwargs)
     
     def obj_create(self, bundle, **kwargs):
+        """
+        A ORM-specific implementation of ``obj_create``.
+        """
         bundle.obj = self._meta.object_class()
         
         for key, value in kwargs.items():
@@ -867,6 +1181,9 @@ class ModelResource(Resource):
         return bundle
     
     def obj_update(self, bundle, **kwargs):
+        """
+        A ORM-specific implementation of ``obj_update``.
+        """
         if not bundle.obj or not bundle.obj.pk:
             try:
                 bundle.obj = self._meta.queryset.get(**kwargs)
@@ -882,9 +1199,20 @@ class ModelResource(Resource):
         return bundle
     
     def obj_delete_list(self, **kwargs):
+        """
+        A ORM-specific implementation of ``obj_delete_list``.
+        
+        Takes optional ``kwargs``, which can be used to narrow the query.
+        """
         self._meta.queryset.filter(**kwargs).delete()
     
     def obj_delete(self, **kwargs):
+        """
+        A ORM-specific implementation of ``obj_delete``.
+        
+        Takes optional ``kwargs``, which are used to narrow the query to find
+        the instance.
+        """
         try:
             obj = self._meta.queryset.get(**kwargs)
         except ObjectDoesNotExist:
@@ -893,6 +1221,15 @@ class ModelResource(Resource):
         obj.delete()
     
     def save_m2m(self, bundle):
+        """
+        Handles the saving of related M2M data.
+        
+        Due to the way Django works, the M2M data must be handled after the
+        main instance, which is why this isn't a part of the main ``save`` bits.
+        
+        Currently slightly inefficient in that it will clear out the whole
+        relation and recreate the related data as needed.
+        """
         for field_name, field_object in self.fields.items():
             if not getattr(field_object, 'is_m2m', False):
                 continue
@@ -916,6 +1253,11 @@ class ModelResource(Resource):
             related_mngr.add(*related_objs)
     
     def get_resource_uri(self, bundle_or_obj):
+        """
+        Handles generating a resource URI for a single resource.
+        
+        Uses the model's ``pk`` in order to create the URI.
+        """
         kwargs = {
             'resource_name': self._meta.resource_name,
         }
@@ -929,14 +1271,6 @@ class ModelResource(Resource):
             kwargs['api_name'] = self._meta.api_name
         
         return reverse("api_dispatch_detail", kwargs=kwargs)
-    
-    def get_via_uri(self, uri):
-        try:
-            view, args, kwargs = resolve(uri)
-        except Resolver404:
-            raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
-        
-        return self.obj_get(**self.remove_api_resource_names(kwargs))
 
 
 # Based off of ``piston.utils.coerce_put_post``. Similarly BSD-licensed.
