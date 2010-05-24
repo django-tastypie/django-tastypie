@@ -18,7 +18,7 @@ setup(
     },
     requires=[
         'mimeparse',
-        'python-dateutil',
+        'python_dateutil',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',
