@@ -8,18 +8,16 @@ Cody:
 - Test support for serialization/deserialization.
 
 Daniel:
+- Authentication
+    - ``OauthAuthentication``
+    - ``DigestAuthentication``
 - More integration tests (intermediate, advanced, composite, non-model)
 - Documentation.
 
-Matt:
-- Authentication
-    - ``OauthAuthentication``
 
 
 Long Term
 ---------
 
 - HTML browsing
-- Authentication
-    - ``APIKeyAuthentication``
 - Thread safety
