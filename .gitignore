@@ -7,3 +7,4 @@ dist
 build
 MANIFEST
 tests/tastypie.db
+.buildinfo
