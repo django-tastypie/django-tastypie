@@ -117,6 +117,17 @@ all non-relational fields on the ``Entry`` model and create it's own
 ``ApiFields`` that map to those fields, much like the way Django's ``ModelForm``
 class introspects.
 
+.. note::
+
+    The ``resource_name`` within the ``Meta`` class is optional. If not
+    provided, it is automatically generated off the classname, removing any
+    instances of ``Resource`` and lowercasing the string. So
+    ``EntryResource`` would become just ``entry``.
+    
+    It's included in this example for clarity, especially when looking at
+    the URLs, but you may feel free to omit it if you're comfortable with
+    this behavior.
+
 
 Hooking Up The Resource(s)
 ==========================

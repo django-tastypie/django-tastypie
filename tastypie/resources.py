@@ -105,6 +105,13 @@ class DeclarativeMetaclass(type):
         opts = getattr(new_class, 'Meta', None)
         new_class._meta = ResourceOptions(opts)
         
+        if not getattr(new_class._meta, 'resource_name', None):
+            # No ``resource_name`` provided. Attempt to auto-name the resource.
+            class_name = new_class.__name__
+            name_bits = [bit for bit in class_name.split('Resource') if bit]
+            resource_name = ''.join(name_bits).lower()
+            new_class._meta.resource_name = resource_name
+        
         if getattr(new_class._meta, 'include_resource_uri', True):
             if not 'resource_uri' in new_class.base_fields:
                 new_class.base_fields['resource_uri'] = CharField(readonly=True)

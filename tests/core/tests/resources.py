@@ -85,7 +85,6 @@ class NoUriBasicResource(BasicResource):
     class Meta:
         object_class = TestObject
         include_resource_uri = False
-        resource_name = 'nouribasic'
 
 
 class ResourceTestCase(TestCase):
@@ -100,6 +99,7 @@ class ResourceTestCase(TestCase):
         self.assertEqual(isinstance(basic.fields['date_joined'], fields.DateTimeField), True)
         self.assert_('resource_uri' in basic.fields)
         self.assertEqual(isinstance(basic.fields['resource_uri'], fields.CharField), True)
+        self.assertEqual(basic._meta.resource_name, 'basic')
         
         another = AnotherBasicResource()
         self.assertEqual(len(another.fields), 5)
@@ -111,17 +111,20 @@ class ResourceTestCase(TestCase):
         self.assertEqual(isinstance(another.date_joined, fields.DateField), True)
         self.assert_('is_active' in another.fields)
         self.assertEqual(isinstance(another.is_active, fields.BooleanField), True)
-        self.assert_('resource_uri' in basic.fields)
-        self.assertEqual(isinstance(basic.resource_uri, fields.CharField), True)
+        self.assert_('resource_uri' in another.fields)
+        self.assertEqual(isinstance(another.resource_uri, fields.CharField), True)
+        self.assertEqual(another._meta.resource_name, 'anotherbasic')
         
-        basic = NoUriBasicResource()
-        self.assertEqual(len(basic.fields), 3)
-        self.assert_('name' in basic.fields)
-        self.assertEqual(isinstance(basic.name, fields.CharField), True)
-        self.assert_('view_count' in basic.fields)
-        self.assertEqual(isinstance(basic.view_count, fields.IntegerField), True)
-        self.assert_('date_joined' in basic.fields)
-        self.assertEqual(isinstance(basic.date_joined, fields.DateTimeField), True)
+        nouri = NoUriBasicResource()
+        self.assertEqual(len(nouri.fields), 3)
+        self.assert_('name' in nouri.fields)
+        self.assertEqual(isinstance(nouri.name, fields.CharField), True)
+        self.assert_('view_count' in nouri.fields)
+        self.assertEqual(isinstance(nouri.view_count, fields.IntegerField), True)
+        self.assert_('date_joined' in nouri.fields)
+        self.assertEqual(isinstance(nouri.date_joined, fields.DateTimeField), True)
+        # Note - automatic resource naming.
+        self.assertEqual(nouri._meta.resource_name, 'nouribasic')
     
     def test_full_dehydrate(self):
         test_object_1 = TestObject()
@@ -442,7 +445,6 @@ class NoUriNoteResource(ModelResource):
     class Meta:
         queryset = Note.objects.filter(is_active=True)
         include_resource_uri = False
-        resource_name = 'nourinote'
 
 
 class WithAbsoluteURLNoteResource(ModelResource):
@@ -543,6 +545,10 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resource_3._meta.list_allowed_methods, ['get'])
         self.assertEqual(resource_3._meta.detail_allowed_methods, ['get', 'post', 'put'])
         self.assertEqual(isinstance(resource_3._meta.serializer, CustomSerializer), True)
+        
+        # Note - automatic resource naming.
+        resource_4 = NoUriNoteResource()
+        self.assertEqual(resource_4._meta.resource_name, 'nourinote')
     
     def test_urls(self):
         # The common case, where the ``Api`` specifies the name.
