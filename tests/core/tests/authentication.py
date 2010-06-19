@@ -1,9 +1,12 @@
 import base64
 from django.contrib.auth.models import User
+from django.core import mail
 from django.http import HttpRequest
 from django.test import TestCase
-from tastypie.authentication import Authentication, BasicAuthentication
+from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication
 from tastypie.http import HttpUnauthorized
+from tastypie.models import ApiKey
+
 
 class AuthenticationTestCase(TestCase):
     def test_is_authenticated(self):
@@ -54,4 +57,35 @@ class BasicAuthenticationTestCase(TestCase):
         john_doe.set_password('pass')
         john_doe.save()
         request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass')
+        self.assertEqual(auth.is_authenticated(request), True)
+
+
+class ApiKeyAuthenticationTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+    
+    def test_is_authenticated(self):
+        auth = ApiKeyAuthentication()
+        request = HttpRequest()
+        
+        # No username/api_key details should fail.
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+        
+        # Wrong username details.
+        request.GET['username'] = 'foo'
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+        
+        # No api_key.
+        request.GET['username'] = 'daniel'
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+        
+        # Wrong user/api_key.
+        request.GET['username'] = 'daniel'
+        request.GET['api_key'] = 'foo'
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+        
+        # Correct user/api_key.
+        john_doe = User.objects.get(username='johndoe')
+        john_doe.save()
+        request.GET['username'] = 'johndoe'
+        request.GET['api_key'] = john_doe.api_key.key
         self.assertEqual(auth.is_authenticated(request), True)

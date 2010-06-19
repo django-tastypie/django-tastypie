@@ -14,6 +14,7 @@ Requirements
 * dateutil (http://labix.org/python-dateutil)
 * lxml (http://codespeak.net/lxml/) if using the XML serializer
 * pyyaml (http://pyyaml.org/) if using the YAML serializer
+* uuid (present in 2.5+, downloadable from http://pypi.python.org/pypi/uuid/) if using the ``ApiKey`` authentication
 
 
 Why tastypie?
@@ -40,4 +41,4 @@ Reference Material
 * http://jacobian.org/writing/rest-worst-practices/
 
 :author: Daniel Lindsley
-:date: 2010/03/27
+:date: 2010/06/19

@@ -65,6 +65,8 @@ your project or ``PYTHONPATH``.
     * ``dateutil`` (http://labix.org/python-dateutil)
     * **OPTIONAL** - ``lxml`` (http://codespeak.net/lxml/) if using the XML serializer
     * **OPTIONAL** - ``pyyaml`` (http://pyyaml.org/) if using the YAML serializer
+    * **OPTIONAL** - ``uuid`` (present in 2.5+, downloadable from
+      http://pypi.python.org/pypi/uuid/) if using the ``ApiKey`` authentication
   
   2. Check out tastypie from GitHub_.
   3. Either symlink the ``tastypie`` directory into your project or copy the
