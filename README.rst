@@ -4,6 +4,9 @@ django-tastypie
 
 Creating delicious APIs for Django apps since 2010.
 
+Currently in beta (v0.8.1) but being used actively in production on several
+sites.
+
 
 Requirements
 ============
@@ -17,16 +20,58 @@ Requirements
 * uuid (present in 2.5+, downloadable from http://pypi.python.org/pypi/uuid/) if using the ``ApiKey`` authentication
 
 
+What's It Look Like?
+====================
+
+A basic example looks like::
+
+    # myapp/api.py
+    from tastypie.resources import ModelResource
+    from myapp.models import Entry
+    
+    
+    class EntryResource(ModelResource):
+        class Meta:
+            queryset = Entry.objects.all()
+    
+    # urls.py
+    from django.conf.urls.defaults import *
+    from tastypie.api import Api
+    from myapp.api import EntryResource
+    
+    v1_api = Api(name='v1')
+    v1_api.register(EntryResource())
+    
+    urlpatterns = patterns('',
+        # The normal jazz here then...
+        (r'^api/', include(v1_api.urls)),
+    )
+
+That gets you a fully working, read-write API for the ``Entry`` model that
+supports all CRUD operations in a RESTful way. JSON/XML/YAML support is already
+there, and it's easy to add related data/authentication/caching.
+
+You can find more in the documentation at
+http://toastdriven.github.com/django-tastypie/.
+
+
 Why tastypie?
 =============
 
-You want an API framework that has less magic, very flexible and maps well to
+There are other, better known API frameworks out there for Django. You need to
+assess the options available and decide for yourself. That said, here are some
+common reasons for tastypie.
+
+* You need an API that is RESTful and uses HTTP the right way.
+* You want to support deep relations.
+* You DON'T want to have to write your own serializer to make the output right.
+* You want an API framework that has less magic, very flexible and maps well to
 the problem domain.
-
-You want an API framework that doesn't involve overriding a 115+ line
+* You want an API framework that doesn't involve overriding a 115+ line
 ``__call__`` function to assert some control over your API.
-
-You want to support my perceived NIH syndrome, which is less about NIH and more
+* You want/need XML serialization that is treated equally to JSON (and YAML is
+there too).
+* You want to support my perceived NIH syndrome, which is less about NIH and more
 about trying to help out friends/coworkers.
 
 
