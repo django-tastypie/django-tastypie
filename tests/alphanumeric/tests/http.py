@@ -43,10 +43,10 @@ class HTTPTestCase(TestServerTestCase):
         expected = {"meta": {"limit": 20, "next": None, "offset": 0, "previous": None, "total_count": 6},
                     "objects": [{"artnr": "11111", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "name": "Skateboardrampe", "resource_uri": "/api/v1/products/11111/", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"},
                                 {"artnr": "76123", "created": "Tue, 4 May 2010 20:05:00 -0500", "name": "Bigwheel", "resource_uri": "/api/v1/products/76123/", "updated": "Tue, 4 May 2010 20:05:00 -0500"},
-                                {"artnr": "WS65150", "created": "Tue, 4 May 2010 20:05:00 -0500", "name": "Trampolin", "resource_uri": "/api/v1/products/WS65150/", "updated": "Tue, 4 May 2010 20:05:00 -0500"},
-                                {"artnr": "65100A", "created": "Tue, 4 May 2010 20:05:00 -0500", "name": "Laufrad", "resource_uri": "/api/v1/products/65100A/", "updated": "Tue, 4 May 2010 20:05:00 -0500"},
+                                {"artnr": "WS65150-01", "created": "Tue, 4 May 2010 20:05:00 -0500", "name": "Trampolin", "resource_uri": "/api/v1/products/WS65150-01/", "updated": "Tue, 4 May 2010 20:05:00 -0500"},
+                                {"artnr": "65100A-01", "created": "Tue, 4 May 2010 20:05:00 -0500", "name": "Laufrad", "resource_uri": "/api/v1/products/65100A-01/", "updated": "Tue, 4 May 2010 20:05:00 -0500"},
                                 {"artnr": "76123/01", "created": "Tue, 4 May 2010 20:05:00 -0500", "name": "Bigwheel", "resource_uri": "/api/v1/products/76123/01/", "updated": "Tue, 4 May 2010 20:05:00 -0500"},
-                                {"artnr": "WS65150/01", "created": "Tue, 4 May 2010 20:05:00 -0500", "name": "Trampolin", "resource_uri": "/api/v1/products/WS65150/01/", "updated": "Tue, 4 May 2010 20:05:00 -0500"}]
+                                {"artnr": "WS65150/01-01", "created": "Tue, 4 May 2010 20:05:00 -0500", "name": "Trampolin", "resource_uri": "/api/v1/products/WS65150/01-01/", "updated": "Tue, 4 May 2010 20:05:00 -0500"}]
                     }
         self.assertEqual(json.loads(response.read()), expected)
 

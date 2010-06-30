@@ -24,7 +24,7 @@
             "updated": "2010-05-04 20:05:00"
         },
         "model": "alphanumeric.product",
-        "pk": "WS65150"
+        "pk": "WS65150-01"
     },
     {
         "fields": {
@@ -33,7 +33,7 @@
             "updated": "2010-05-04 20:05:00"
         },
         "model": "alphanumeric.product",
-        "pk": "65100A"
+        "pk": "65100A-01"
     },
     {
         "fields": {
@@ -51,6 +51,6 @@
             "updated": "2010-05-04 20:05:00"
         },
         "model": "alphanumeric.product",
-        "pk": "WS65150/01"
+        "pk": "WS65150/01-01"
     }
 ]

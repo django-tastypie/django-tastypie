@@ -39,13 +39,13 @@ class ViewsTestCase(TestCase):
         self.assertEqual([obj['name'] for obj in deserialized['objects']], [u'Skateboardrampe', u'Bigwheel'])
         
         # Same tests with \w+ instead of \d+ for primary key regexp:
-        resp = self.client.get('/api/v1/products/WS65150/', data={'format': 'json'})
+        resp = self.client.get('/api/v1/products/WS65150-01/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content)
         self.assertEqual(len(deserialized), 5)
         self.assertEqual(deserialized['name'], u'Trampolin')
         
-        resp = self.client.get('/api/v1/products/set/WS65150;65100A/', data={'format': 'json'})
+        resp = self.client.get('/api/v1/products/set/WS65150-01;65100A-01/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content)
         self.assertEqual(len(deserialized), 1)
@@ -59,20 +59,20 @@ class ViewsTestCase(TestCase):
         self.assertEqual(len(deserialized), 5)
         self.assertEqual(deserialized['name'], u'Bigwheel')
         
-        resp = self.client.get('/api/v1/products/set/76123/01;65100A/', data={'format': 'json'})
+        resp = self.client.get('/api/v1/products/set/76123/01;65100A-01/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content)
         self.assertEqual(len(deserialized), 1)
         self.assertEqual(len(deserialized['objects']), 2)
         self.assertEqual([obj['name'] for obj in deserialized['objects']], [u'Bigwheel', u'Laufrad'])
 
-        resp = self.client.get('/api/v1/products/WS65150/01/', data={'format': 'json'})
+        resp = self.client.get('/api/v1/products/WS65150/01-01/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content)
         self.assertEqual(len(deserialized), 5)
         self.assertEqual(deserialized['name'], u'Trampolin')
         
-        resp = self.client.get('/api/v1/products/set/76123/01;WS65150/01/', data={'format': 'json'})
+        resp = self.client.get('/api/v1/products/set/76123/01;WS65150/01-01/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content)
         self.assertEqual(len(deserialized), 1)
