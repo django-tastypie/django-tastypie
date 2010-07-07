@@ -1,5 +1,5 @@
 #!/bin/bash
-PYTHONPATH=`pwd`:`pwd`/..:$PYTHONPATH
+export PYTHONPATH=`pwd`:`pwd`/..:$PYTHONPATH
 
 echo "** Core **"
 django-admin.py test core --settings=settings_core

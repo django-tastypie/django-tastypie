@@ -4,6 +4,7 @@ from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver4
 from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
 from django.http import HttpResponse
 from tastypie.authentication import Authentication
+from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.bundle import Bundle
 from tastypie.cache import NoCache
 from tastypie.constants import ALL, ALL_WITH_RELATIONS
@@ -39,6 +40,7 @@ class ResourceOptions(object):
     """
     serializer = Serializer()
     authentication = Authentication()
+    authorization = ReadOnlyAuthorization()
     cache = NoCache()
     throttle = BaseThrottle()
     allowed_methods = None
@@ -57,25 +59,25 @@ class ResourceOptions(object):
     include_resource_uri = True
     include_absolute_url = False
     
-    def __init__(self, meta=None):
+    def __new__(cls, meta=None):
+        overrides = {}
+
         # Handle overrides.
         if meta:
             for override_name, override_value in meta.__dict__.items():
                 # No internals please.
                 if not override_name.startswith('_'):
-                    setattr(self, override_name, override_value)
+                    overrides[override_name] = override_value
         
         # Shortcut to specify both at the class level.
-        if self.allowed_methods is not None:
-            self.list_allowed_methods = self.allowed_methods
-            self.detail_allowed_methods = self.allowed_methods
+        if overrides.get('allowed_methods', None) is not None:
+            overrides['list_allowed_methods'] = overrides['allowed_methods']
+            overrides['detail_allowed_methods'] = overrides['allowed_methods']
         
-        if not self.queryset is None:
-            self.object_class = self.queryset.model
+        if not overrides.get('queryset', None) is None:
+            overrides['object_class'] = overrides['queryset'].model
         
-        # Make sure we're good to go.
-        if self.serializer is None:
-            raise ImproperlyConfigured("No serializer provided for %r." % self)
+        return object.__new__(type('ResourceOptions', (cls,), overrides))
 
 
 class DeclarativeMetaclass(type):
@@ -266,7 +268,8 @@ class Resource(object):
         if method is None:
             raise ImmediateHttpResponse(response=HttpNotImplemented())
         
-        self.auth_check(request)
+        self.is_authenticated(request)
+        self.is_authorized(request)
         self.throttle_check(request)
         
         # All clear. Process the request.
@@ -331,11 +334,26 @@ class Resource(object):
             raise ImmediateHttpResponse(response=HttpMethodNotAllowed())
         
         return request_method
+
+    def is_authorized(self, request, object=None):
+        """
+        Handles checking of permissions to see if the user has authorization
+        to GET, POST, PUT, or DELETE this resource.  If ``object`` is provided,
+        the authorization backend can apply additional row-level permissions
+        checking.
+        """
+        auth_result = self._meta.authorization.is_authorized(request, object)
+
+        if isinstance(auth_result, HttpResponse):
+            raise ImmediateHttpResponse(response=auth_result)
+        
+        if not auth_result is True:
+            raise ImmediateHttpResponse(response=HttpUnauthorized())
     
-    def auth_check(self, request):
+    def is_authenticated(self, request):
         """
         Handles checking if the user is authenticated and dealing with
-        unauthorized users.
+        unauthenticated users.
         
         Mostly a hook, this uses class assigned to ``authentication`` from
         ``Resource._meta``.
@@ -877,7 +895,7 @@ class Resource(object):
         Should return a HttpResponse (200 OK).
         """
         self.method_check(request, allowed=['get'])
-        self.auth_check(request)
+        self.is_authenticated(request)
         self.throttle_check(request)
         self.log_throttled_access(request)
         return self.create_response(request, self.build_schema())
@@ -893,7 +911,7 @@ class Resource(object):
         Should return a HttpResponse (200 OK).
         """
         self.method_check(request, allowed=['get'])
-        self.auth_check(request)
+        self.is_authenticated(request)
         self.throttle_check(request)
         
         # Rip apart the list then iterate.

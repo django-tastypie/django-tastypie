@@ -337,7 +337,7 @@ class ResourceTestCase(TestCase):
         
         # Allowed (single).
         try:
-            basic.auth_check(request)
+            basic.is_authenticated(request)
         except:
             self.fail()
     
