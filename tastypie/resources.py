@@ -3,7 +3,6 @@ from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist, Mul
 from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404
 from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
 from django.http import HttpResponse
-from django.utils.copycompat import deepcopy
 from tastypie.authentication import Authentication
 from tastypie.bundle import Bundle
 from tastypie.cache import NoCache
@@ -24,8 +23,11 @@ except NameError:
 # post 1.1.1 Django (r11901)
 try:
     from django.utils.copycompat import deepcopy
+    from django.views.decorators.csrf import csrf_exempt
 except ImportError:
     from copy import deepcopy
+    def csrf_exempt(func):
+        return func
 
 
 class ResourceOptions(object):
@@ -161,6 +163,7 @@ class Resource(object):
         are seen, there is special handling to either present a message back
         to the user or return the response traveling with the exception.
         """
+        @csrf_exempt
         def wrapper(request, *args, **kwargs):
             try:
                 return getattr(self, view)(request, *args, **kwargs)
