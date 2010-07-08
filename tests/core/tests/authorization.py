@@ -92,15 +92,14 @@ class DjangoAuthorizationTestCase(TestCase):
         request.user = self.user
 
         # give delete permission
-        request.user.user_permissions.add(self.change)
-        request.method = 'PUT'
+        request.user.user_permissions.add(self.delete)
+        request.method = 'DELETE'
         self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
 
     def test_all(self):
         request = HttpRequest()
         request.user = self.user
 
-        # give delete permission
         request.user.user_permissions.add(self.add)
         request.user.user_permissions.add(self.change)
         request.user.user_permissions.add(self.delete)
