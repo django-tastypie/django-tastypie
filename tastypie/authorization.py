@@ -75,4 +75,9 @@ class DjangoAuthorization(Authorization):
             klass._meta.app_label,
             klass._meta.module_name)
 
+        # user must be logged in to check permissions
+        # authentication backend must set request.user
+        if not hasattr(request, 'user'):
+            return False
+
         return request.user.has_perm(permission_code)

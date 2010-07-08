@@ -85,7 +85,9 @@ class BasicAuthentication(Authentication):
 
         if user is None:
             return self._unauthorized()
-        
+
+        request.user = user
+
         return True
     
     def get_identifier(self, request):
@@ -127,7 +129,9 @@ class ApiKeyAuthentication(Authentication):
             user = User.objects.get(username=username)
         except (User.DoesNotExist, User.MultipleObjectsReturned):
             return self._unauthorized()
-        
+
+        request.user = user
+
         return self.get_key(user, api_key)
     
     def get_key(self, user, api_key):
