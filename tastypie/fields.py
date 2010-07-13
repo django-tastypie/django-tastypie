@@ -1,11 +1,11 @@
 from dateutil.parser import parse
 import re
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.core.urlresolvers import reverse, resolve
 from django.utils import datetime_safe
 from tastypie.bundle import Bundle
-from tastypie.exceptions import ApiFieldError
+from tastypie.exceptions import ApiFieldError, NotFound
 
 
 class NOT_PROVIDED:
@@ -22,7 +22,7 @@ class ApiField(object):
     """The base implementation of a field used by the resources."""
     dehydrated_type = 'string'
     
-    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, readonly=False):
+    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, readonly=False, primary_key=False):
         """
         Sets up the field. This is generally called when the containing
         ``Resource`` is initialized.
@@ -49,6 +49,7 @@ class ApiField(object):
         self.null = null
         self.readonly = readonly
         self.value = None
+        self.primary_key = primary_key
     
     def has_default(self):
         """Returns a boolean of whether this field has a default value."""
@@ -116,8 +117,10 @@ class ApiField(object):
         if self.readonly:
             return None
         
-        if bundle.data.get(self.instance_name) is None:
-            if self.has_default():
+        if not bundle.data.has_key(self.instance_name):
+            if hasattr(bundle.obj, self.instance_name):
+                return getattr(bundle.obj, self.instance_name)
+            elif self.has_default():
                 if callable(self._default):
                     return self._default()
                 
@@ -324,7 +327,7 @@ class RelatedField(ApiField):
     is_related = True
     self_referential = False
     
-    def __init__(self, to, attribute, related_name=None, null=False, full=False):
+    def __init__(self, to, attribute, related_name=None, null=False, full=False, primary_key=False):
         """
         Builds the field and prepares it to access to related data.
         
@@ -356,6 +359,7 @@ class RelatedField(ApiField):
         self.readonly = False
         self.api_name = None
         self.resource_name = None
+        self.primary_key = primary_key
         
         if self.to == 'self':
             self.self_referential = True
@@ -414,7 +418,14 @@ class RelatedField(ApiField):
         elif hasattr(value, 'items'):
             # Try to hydrate the data provided.
             self.fk_bundle = Bundle(data=value)
-            return self.fk_resource.full_hydrate(self.fk_bundle)
+            try:
+                # Attempt lookup by primary key
+                lookup_kwargs = dict((k, v) for k, v in value.iteritems() if getattr(self.fk_resource, k).primary_key)
+                if not lookup_kwargs:
+                    raise NotFound
+                return self.fk_resource.obj_update(self.fk_bundle, **lookup_kwargs)
+            except NotFound, MultipleObjectsReturned:
+                return self.fk_resource.full_hydrate(self.fk_bundle)
         else:
             raise ApiFieldError("The '%s' field has was given data that was not a URI and not a dictionary-alike: %s." % (self.instance_name, value))
 
@@ -425,8 +436,8 @@ class ToOneField(RelatedField):
     
     This subclass requires Django's ORM layer to work properly.
     """
-    def __init__(self, to, attribute, related_name=None, null=False, full=False):
-        super(ToOneField, self).__init__(to, attribute, related_name, null=null, full=full)
+    def __init__(self, to, attribute, related_name=None, null=False, full=False, primary_key=False):
+        super(ToOneField, self).__init__(to, attribute, related_name, null=null, full=full, primary_key=primary_key)
         self.fk_resource = None
     
     def dehydrate(self, bundle):
@@ -477,8 +488,8 @@ class ToManyField(RelatedField):
     """
     is_m2m = True
     
-    def __init__(self, to, attribute, related_name=None, null=False, full=False):
-        super(ToManyField, self).__init__(to, attribute, related_name, null=null, full=full)
+    def __init__(self, to, attribute, related_name=None, null=False, full=False, primary_key=False):
+        super(ToManyField, self).__init__(to, attribute, related_name, null=null, full=full, primary_key=primary_key)
         self.m2m_bundles = []
     
     def dehydrate(self, bundle):

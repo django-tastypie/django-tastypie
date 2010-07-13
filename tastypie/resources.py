@@ -1056,6 +1056,8 @@ class ModelResource(Resource):
             
             if f.null is True:
                 kwargs['null'] = True
+
+            kwargs['primary_key'] = f.primary_key
             
             if not f.null and f.blank is True:
                 kwargs['default'] = ''
