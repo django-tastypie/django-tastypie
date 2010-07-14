@@ -985,8 +985,8 @@ class ModelResource(Resource):
         Given a Django model field, return if it should be included in the
         contributed ApiFields.
         """
-        # Ignore certain fields (AutoField, related fields).
-        if field.primary_key or getattr(field, 'rel'):
+        # Ignore certain fields (related fields).
+        if getattr(field, 'rel'):
             return True
         
         return False

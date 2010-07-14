@@ -25,7 +25,7 @@ class ViewsTestCase(TestCase):
         resp = self.client.get('/api/v1/notes/1/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content)
-        self.assertEqual(len(deserialized), 8)
+        self.assertEqual(len(deserialized), 9)
         self.assertEqual(deserialized['title'], u'First Post!')
         
         resp = self.client.get('/api/v1/notes/set/2;1/', data={'format': 'json'})
