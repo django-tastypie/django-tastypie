@@ -1182,7 +1182,11 @@ class ModelResource(Resource):
         the query.
         """
         applicable_filters = self.build_filters(filters)
-        return self._meta.queryset.filter(**applicable_filters)
+        
+        try:
+            return self._meta.queryset.filter(**applicable_filters)
+        except ValueError, e:
+            raise NotFound("Invalid resource lookup data provided (mismatched type).")
     
     def obj_get(self, **kwargs):
         """
@@ -1191,7 +1195,10 @@ class ModelResource(Resource):
         Takes optional ``kwargs``, which are used to narrow the query to find
         the instance.
         """
-        return self._meta.queryset.get(**kwargs)
+        try:
+            return self._meta.queryset.get(**kwargs)
+        except ValueError, e:
+            raise NotFound("Invalid resource lookup data provided (mismatched type).")
     
     def obj_create(self, bundle, **kwargs):
         """

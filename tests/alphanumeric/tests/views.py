@@ -17,8 +17,6 @@ class ViewsTestCase(TestCase):
         resp = self.client.get('/api/v1/products/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content)
-        #import pprint
-        #pprint.pprint(deserialized)
         self.assertEqual(len(deserialized), 2)
         self.assertEqual(deserialized['meta']['limit'], 20)
         self.assertEqual(len(deserialized['objects']), 6)
@@ -30,7 +28,7 @@ class ViewsTestCase(TestCase):
         deserialized = json.loads(resp.content)
         self.assertEqual(len(deserialized), 5)
         self.assertEqual(deserialized['name'], u'Skateboardrampe')
-
+        
         resp = self.client.get('/api/v1/products/set/11111;76123/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content)
@@ -65,7 +63,7 @@ class ViewsTestCase(TestCase):
         self.assertEqual(len(deserialized), 1)
         self.assertEqual(len(deserialized['objects']), 2)
         self.assertEqual([obj['name'] for obj in deserialized['objects']], [u'Bigwheel', u'Laufrad'])
-
+        
         resp = self.client.get('/api/v1/products/WS65150/01-01/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content)
@@ -87,14 +85,14 @@ class ViewsTestCase(TestCase):
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp['location'], 'http://testserver/api/v1/products/12345/')
-    
+        
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/12345/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         obj = json.loads(resp.content)
         self.assertEqual(obj['name'], 'Ball')
         self.assertEqual(obj['artnr'], '12345')
-
+        
         # With appended characters
         request = HttpRequest()
         post_data = '{"name": "Ball 2", "artnr": "12345ABC"}'
@@ -103,14 +101,14 @@ class ViewsTestCase(TestCase):
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp['location'], 'http://testserver/api/v1/products/12345ABC/')
-    
+        
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/12345ABC/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         obj = json.loads(resp.content)
         self.assertEqual(obj['name'], 'Ball 2')
         self.assertEqual(obj['artnr'], '12345ABC')
-
+        
         # With prepended characters
         request = HttpRequest()
         post_data = '{"name": "Ball 3", "artnr": "WK12345"}'
@@ -119,7 +117,7 @@ class ViewsTestCase(TestCase):
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp['location'], 'http://testserver/api/v1/products/WK12345/')
-    
+        
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/WK12345/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
@@ -135,14 +133,14 @@ class ViewsTestCase(TestCase):
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp['location'], 'http://testserver/api/v1/products/76123/03/')
-    
+        
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/76123/03/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         obj = json.loads(resp.content)
         self.assertEqual(obj['name'], 'Bigwheel')
         self.assertEqual(obj['artnr'], '76123/03')
-
+        
         request = HttpRequest()
         post_data = '{"name": "Trampolin", "artnr": "WS65150/02"}'
         request._raw_post_data = post_data
@@ -150,7 +148,7 @@ class ViewsTestCase(TestCase):
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp['location'], 'http://testserver/api/v1/products/WS65150/02/')
-    
+        
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/WS65150/02/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
