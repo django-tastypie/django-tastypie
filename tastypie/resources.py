@@ -1062,6 +1062,9 @@ class ModelResource(Resource):
             if not f.null and f.blank is True:
                 kwargs['default'] = ''
             
+            if f.get_internal_type() == 'TextField':
+                kwargs['default'] = ''
+            
             if f.has_default():
                 kwargs['default'] = f.default
             
