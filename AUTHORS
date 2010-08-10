@@ -10,6 +10,8 @@ Contributors:
 * mdornseif for various patches
 * Jeff Triplett (jefftriplett) for various reports/patches.
 * Christian Klein (cklein) for the work on alphanumeric PK support.
+* Charles Leifer (coleifer) for a patch related to nullable OneToOneFields.
+
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 

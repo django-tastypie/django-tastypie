@@ -18,3 +18,10 @@ class Note(models.Model):
     def save(self, *args, **kwargs):
         self.updated = datetime.datetime.now()
         return super(Note, self).save(*args, **kwargs)
+
+class AnnotatedNote(models.Model):
+    note = models.OneToOneField(Note, related_name='annotated', null=True)
+    annotations = models.TextField()
+    
+    def __unicode__(self):
+        return u"Annotated %s" % self.note.title
