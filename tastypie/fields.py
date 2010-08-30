@@ -22,7 +22,7 @@ class ApiField(object):
     """The base implementation of a field used by the resources."""
     dehydrated_type = 'string'
     
-    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, readonly=False, primary_key=False):
+    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, readonly=False, unique=False):
         """
         Sets up the field. This is generally called when the containing
         ``Resource`` is initialized.
@@ -49,7 +49,7 @@ class ApiField(object):
         self.null = null
         self.readonly = readonly
         self.value = None
-        self.primary_key = primary_key
+        self.unique = unique
     
     def has_default(self):
         """Returns a boolean of whether this field has a default value."""
@@ -327,7 +327,7 @@ class RelatedField(ApiField):
     is_related = True
     self_referential = False
     
-    def __init__(self, to, attribute, related_name=None, null=False, full=False, primary_key=False):
+    def __init__(self, to, attribute, related_name=None, null=False, full=False, unique=False):
         """
         Builds the field and prepares it to access to related data.
         
@@ -359,7 +359,7 @@ class RelatedField(ApiField):
         self.readonly = False
         self.api_name = None
         self.resource_name = None
-        self.primary_key = primary_key
+        self.unique = unique
         
         if self.to == 'self':
             self.self_referential = True
@@ -419,12 +419,17 @@ class RelatedField(ApiField):
             # Try to hydrate the data provided.
             self.fk_bundle = Bundle(data=value)
             try:
-                # Attempt lookup by primary key
-                lookup_kwargs = dict((k, v) for k, v in value.iteritems() if getattr(self.fk_resource, k).primary_key)
-                if not lookup_kwargs:
-                    raise NotFound
-                return self.fk_resource.obj_update(self.fk_bundle, **lookup_kwargs)
-            except NotFound, MultipleObjectsReturned:
+                return self.fk_resource.obj_update(self.fk_bundle, **value)
+            except NotFound:
+                try:
+                    # Attempt lookup by primary key
+                    lookup_kwargs = dict((k, v) for k, v in value.iteritems() if getattr(self.fk_resource, k).unique)
+                    if not lookup_kwargs:
+                        raise NotFound
+                    return self.fk_resource.obj_update(self.fk_bundle, **lookup_kwargs)
+                except NotFound:
+                    return self.fk_resource.full_hydrate(self.fk_bundle)
+            except MultipleObjectsReturned:
                 return self.fk_resource.full_hydrate(self.fk_bundle)
         else:
             raise ApiFieldError("The '%s' field has was given data that was not a URI and not a dictionary-alike: %s." % (self.instance_name, value))
@@ -436,8 +441,8 @@ class ToOneField(RelatedField):
     
     This subclass requires Django's ORM layer to work properly.
     """
-    def __init__(self, to, attribute, related_name=None, null=False, full=False, primary_key=False):
-        super(ToOneField, self).__init__(to, attribute, related_name, null=null, full=full, primary_key=primary_key)
+    def __init__(self, to, attribute, related_name=None, null=False, full=False, unique=False):
+        super(ToOneField, self).__init__(to, attribute, related_name, null=null, full=full, unique=unique)
         self.fk_resource = None
     
     def dehydrate(self, bundle):
@@ -491,8 +496,8 @@ class ToManyField(RelatedField):
     """
     is_m2m = True
     
-    def __init__(self, to, attribute, related_name=None, null=False, full=False, primary_key=False):
-        super(ToManyField, self).__init__(to, attribute, related_name, null=null, full=full, primary_key=primary_key)
+    def __init__(self, to, attribute, related_name=None, null=False, full=False, unique=False):
+        super(ToManyField, self).__init__(to, attribute, related_name, null=null, full=full, unique=unique)
         self.m2m_bundles = []
     
     def dehydrate(self, bundle):

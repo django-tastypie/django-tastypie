@@ -1057,7 +1057,7 @@ class ModelResource(Resource):
             if f.null is True:
                 kwargs['null'] = True
 
-            kwargs['primary_key'] = f.primary_key
+            kwargs['unique'] = f.unique
             
             if not f.null and f.blank is True:
                 kwargs['default'] = ''
@@ -1225,8 +1225,18 @@ class ModelResource(Resource):
         A ORM-specific implementation of ``obj_update``.
         """
         if not bundle.obj or not bundle.obj.pk:
+            # Attempt to hydrate data from kwargs before doing a lookup for the object.
+            # This step is needed so certain values (like datetime) will pass model validation.
+            bundle.obj = self._meta.queryset.model()
+            bundle.data.update(kwargs)
+            bundle = self.full_hydrate(bundle)
+            lookup_kwargs = kwargs
+            lookup_kwargs.update(dict(
+                (k, getattr(bundle.obj, k))
+                for k in kwargs.keys()
+                if getattr(bundle.obj, k) is not None))
             try:
-                bundle.obj = self._meta.queryset.get(**kwargs)
+                bundle.obj = self._meta.queryset.get(**lookup_kwargs)
             except ObjectDoesNotExist:
                 raise NotFound("A model instance matching the provided arguments could not be found.")
         
