@@ -1227,14 +1227,20 @@ class ModelResource(Resource):
         if not bundle.obj or not bundle.obj.pk:
             # Attempt to hydrate data from kwargs before doing a lookup for the object.
             # This step is needed so certain values (like datetime) will pass model validation.
-            bundle.obj = self._meta.queryset.model()
-            bundle.data.update(kwargs)
-            bundle = self.full_hydrate(bundle)
-            lookup_kwargs = kwargs
-            lookup_kwargs.update(dict(
-                (k, getattr(bundle.obj, k))
-                for k in kwargs.keys()
-                if getattr(bundle.obj, k) is not None))
+            try:
+                bundle.obj = self._meta.queryset.model()
+                bundle.data.update(kwargs)
+                bundle = self.full_hydrate(bundle)
+                lookup_kwargs = kwargs.copy()
+                lookup_kwargs.update(dict(
+                    (k, getattr(bundle.obj, k))
+                    for k in kwargs.keys()
+                    if getattr(bundle.obj, k) is not None))
+            except:
+                # if there is trouble hydrating the data, fall back to just
+                # using kwargs by itself (usually it only contains a "pk" key
+                # and this will work fine.
+                lookup_kwargs = kwargs
             try:
                 bundle.obj = self._meta.queryset.get(**lookup_kwargs)
             except ObjectDoesNotExist:
