@@ -882,7 +882,7 @@ class Resource(object):
         try:
             self.obj_delete(**self.remove_api_resource_names(kwargs))
             return HttpAccepted()
-        except:
+        except NotFound:
             return HttpGone()
     
     def get_schema(self, request, **kwargs):
