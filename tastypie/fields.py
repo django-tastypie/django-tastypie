@@ -74,6 +74,7 @@ class ApiField(object):
             current_object = bundle.obj
             
             for attr in attrs:
+                previous_object = current_object
                 current_object = getattr(current_object, attr, None)
                 
                 if current_object is None:
@@ -88,7 +89,7 @@ class ApiField(object):
                         # accesses will fail misreably.
                         break
                     else:
-                        raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a default or null value." % (current_object, attr))
+                        raise ApiFieldError("The object '%r' has an empty attribute '%s' and doesn't allow a default or null value." % (previous_object, attr))
             
             if callable(current_object):
                 return current_object()
