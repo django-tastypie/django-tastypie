@@ -12,6 +12,7 @@ Contributors:
 * Christian Klein (cklein) for the work on alphanumeric PK support.
 * Charles Leifer (coleifer) for a patch related to nullable OneToOneFields.
 * Sean Bleier (sebleier) for a patch that prevents error hiding on delete.
+* Chris Adams (acdha) for doc fixes & other patches.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
