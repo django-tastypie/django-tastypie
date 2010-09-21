@@ -4,7 +4,7 @@ django-tastypie
 
 Creating delicious APIs for Django apps since 2010.
 
-Currently in beta (v0.8.1) but being used actively in production on several
+Currently in beta (v0.8.2) but being used actively in production on several
 sites.
 
 
@@ -65,13 +65,11 @@ There are other, better known API frameworks out there for Django. You need to
 assess the options available and decide for yourself. That said, here are some
 common reasons for tastypie.
 
-* You need an API that is RESTful and uses HTTP the right way.
+* You need an API that is RESTful and uses HTTP well.
 * You want to support deep relations.
 * You DON'T want to have to write your own serializer to make the output right.
-* You want an API framework that has less magic, very flexible and maps well to
+* You want an API framework that has little magic, very flexible and maps well to
   the problem domain.
-* You want an API framework that doesn't involve overriding a 115+ line
-  ``__call__`` function to assert some control over your API.
 * You want/need XML serialization that is treated equally to JSON (and YAML is
   there too).
 * You want to support my perceived NIH syndrome, which is less about NIH and more
