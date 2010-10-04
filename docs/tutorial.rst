@@ -148,7 +148,7 @@ do this, we simply instantiate the resource in our URLconf and hook up its
     urlpatterns = patterns('',
         # The normal jazz here...
         (r'^blog/', include('myapp.urls')),
-        (r'^api/entry/', include(entry_resource.urls)),
+        (r'^api/', include(entry_resource.urls)),
     )
 
 Now it's just a matter of firing up server (``./manage.py runserver``) and 
