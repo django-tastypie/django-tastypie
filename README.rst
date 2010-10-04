@@ -13,7 +13,10 @@ Requirements
 
 * Python 2.4+
 * Django 1.0+
-* mimeparse (http://code.google.com/p/mimeparse/)
+* mimeparse 0.1.3+ (http://code.google.com/p/mimeparse/)
+
+  * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
+
 * dateutil (http://labix.org/python-dateutil)
 * lxml (http://codespeak.net/lxml/) if using the XML serializer
 * pyyaml (http://pyyaml.org/) if using the YAML serializer
