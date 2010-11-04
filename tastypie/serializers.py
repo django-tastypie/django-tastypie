@@ -312,7 +312,7 @@ class Serializer(object):
         implemented.
         """
         options = options or {}
-        pass
+        return 'Sorry, not implemented yet. Please append "?format=json" to your URL.'
     
     def from_html(self, content):
         """
