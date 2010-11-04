@@ -14,6 +14,7 @@ Contributors:
 * Charles Leifer (coleifer) for a patch related to nullable OneToOneFields.
 * Sean Bleier (sebleier) for a patch that prevents error hiding on delete.
 * Chris Adams (acdha) for doc fixes & other patches.
+* jonozzz for a patch regarding Paginator optimizations.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
