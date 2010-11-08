@@ -15,6 +15,7 @@ Contributors:
 * Sean Bleier (sebleier) for a patch that prevents error hiding on delete.
 * Chris Adams (acdha) for doc fixes & other patches.
 * jonozzz for a patch regarding Paginator optimizations.
+* David Guaraglia (dguaraglia) for the requirements file.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
