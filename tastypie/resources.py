@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist, MultipleObjectsReturned
 from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404
@@ -46,7 +47,7 @@ class ResourceOptions(object):
     allowed_methods = None
     list_allowed_methods = ['get', 'post', 'put', 'delete']
     detail_allowed_methods = ['get', 'post', 'put', 'delete']
-    limit = 20
+    limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)
     api_name = None
     resource_name = None
     default_format = 'application/json'
@@ -755,7 +756,8 @@ class Resource(object):
         objects = self.obj_get_list(filters=request.GET, **self.remove_api_resource_names(kwargs))
         sorted_objects = self.apply_sorting(objects, options=request.GET)
         
-        paginator = Paginator(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri())
+        paginator = Paginator(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri(),
+           limit=self._meta.limit)
         to_be_serialized = paginator.page()
         
         # Dehydrate the bundles in preparation for serialization.
