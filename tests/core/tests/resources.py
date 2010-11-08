@@ -386,6 +386,14 @@ class LightlyCustomNoteResource(NoteResource):
         queryset = Note.objects.filter(is_active=True)
 
 
+class TinyLimitNoteResource(NoteResource):
+    class Meta:
+        limit = 3
+        resource_name = 'littlenote'
+        allowed_methods = ['get']
+        queryset = Note.objects.filter(is_active=True)
+
+
 class VeryCustomNoteResource(NoteResource):
     author = fields.CharField(attribute='author__username')
     constant = fields.IntegerField(default=20)
@@ -832,6 +840,16 @@ class ModelResourceTestCase(TestCase):
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 5}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "id": "1", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "id": "2", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "Thu, 1 Apr 2010 20:05:00 -0500", "id": "4", "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "Thu, 1 Apr 2010 20:05:00 -0500"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "Fri, 2 Apr 2010 10:05:00 -0500", "id": "6", "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "Fri, 2 Apr 2010 10:05:00 -0500"}, {"content": "Whee!", "created": "Wed, 21 Jul 2010 11:23:00 -0500", "id": "7", "is_active": true, "resource_uri": "/api/v1/notes/7/", "slug": "another-fresh-note", "title": "Another fresh note.", "updated": "%s"}]}' % dateformat.format(new_note.updated, 'r'))
+        
+        # Regression - Ensure that the limit on the Resource gets used if
+        # no other limit is requested.
+        resource = TinyLimitNoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        
+        resp = resource.get_list(request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"meta": {"limit": 3, "next": null, "offset": 0, "previous": null, "total_count": 5}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "id": "1", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "id": "2", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "Thu, 1 Apr 2010 20:05:00 -0500", "id": "4", "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "Thu, 1 Apr 2010 20:05:00 -0500"}]}')
     
     def test_get_detail(self):
         resource = NoteResource()
