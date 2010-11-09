@@ -728,6 +728,11 @@ class ModelResourceTestCase(TestCase):
         ordered_list = resource.apply_sorting(object_list, options={'sort_by': '-slug'})
         self.assertEqual([obj.id for obj in ordered_list], [4, 6, 1, 2])
         
+        # Valid combination.
+        object_list = resource.obj_get_list()
+        ordered_list = resource.apply_sorting(object_list, options={'sort_by': ['title', '-slug']})
+        self.assertEqual([obj.id for obj in ordered_list], [2, 1, 6, 4])
+        
         # Valid (model attribute differs from field name).
         resource_2 = DetailedNoteResource()
         object_list = resource_2.obj_get_list()
@@ -755,6 +760,12 @@ class ModelResourceTestCase(TestCase):
         object_list = resource_2.obj_get_list()
         ordered_list = resource_2.apply_sorting(object_list, options={'sort_by': '-user__username'})
         self.assertEqual([obj.id for obj in ordered_list], [1, 2, 4, 6])
+        
+        # Valid relational combination.
+        resource_2 = DetailedNoteResource()
+        object_list = resource_2.obj_get_list()
+        ordered_list = resource_2.apply_sorting(object_list, options={'sort_by': ['-user__username', 'title']})
+        self.assertEqual([obj.id for obj in ordered_list], [2, 1, 6, 4])
     
     def test_get_list(self):
         resource = NoteResource()
