@@ -21,6 +21,7 @@ A sample resource definition might look something like::
     from tastypie import fields
     from tastypie.authorization import DjangoAuthorization
     from tastypie.resources import ModelResource
+    from tastypie.constants import ALL, ALL_WITH_RELATIONS
     from myapp.models import Entry
     
     
