@@ -719,7 +719,7 @@ class Resource(object):
         """
         raise NotImplementedError()
     
-    def obj_delete(self):
+    def obj_delete(self, **kwargs):
         """
         Deletes a single object.
         
@@ -904,7 +904,7 @@ class Resource(object):
     
     def get_multiple(self, request, **kwargs):
         """
-        Returns a serialized list of resources based on the identifers
+        Returns a serialized list of resources based on the identifiers
         from the URL.
         
         Calls ``obj_get`` to fetch only the objects requested. This method

@@ -10,6 +10,11 @@ interfaces.
    
    tutorial
    settings
+   
+   resources
+   
+   cookbook
+   who_uses
 
 
 Getting Help
