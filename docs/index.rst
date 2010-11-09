@@ -13,6 +13,7 @@ interfaces.
    
    resources
    api
+   caching
    
    cookbook
    who_uses
