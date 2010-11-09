@@ -10,9 +10,9 @@ Table Of Contents
    
    resources
    api
-   
-   authentication
+   authentication_authorization
    caching
+   
    serialization
    throttling
    

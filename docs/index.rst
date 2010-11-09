@@ -14,6 +14,7 @@ interfaces.
    resources
    api
    caching
+   authentication_authorization
    
    cookbook
    who_uses
