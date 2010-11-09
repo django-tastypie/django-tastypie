@@ -10,4 +10,3 @@ interfaces.
    
    tutorial
    settings
-   reference/index.rst

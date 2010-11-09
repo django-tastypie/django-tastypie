@@ -4,9 +4,9 @@
 Getting Started with Tastypie
 =============================
 
-Tastypie is a reusable app (that is, it relies only on it's own code and
-focuses on providing just a REST-style API) and is suitable for providing an
-API to any application without having to modify the sources of that app.
+Tastypie is a reusable app (that is, it relies only on it's own code and focuses
+on providing just a REST-style API) and is suitable for providing an API to
+any application without having to modify the sources of that app.
 
 Not everyone's needs are the same, so Tastypie goes out of it's way to provide
 plenty of hooks for overridding or extending how it works.
@@ -101,9 +101,9 @@ Creating Resources
 ==================
 
 REST-style architecture talks about resources, so unsurprisingly integrating
-with Tastypie involves creating :class:`~tastypie.resources.Resource` classes.
-For our simple application, we'll create a file for these in ``myapp/api.py``,
-though they can live anywhere in your application::
+with Tastypie involves creating ``Resource`` classes. For our simple
+application, we'll create a file for these in ``myapp/api.py``, though they can
+live anywhere in your application::
 
     # myapp/api.py
     from tastypie.resources import ModelResource
@@ -115,16 +115,16 @@ though they can live anywhere in your application::
             queryset = Entry.objects.all()
             resource_name = 'entry'
 
-This class, by virtue of being a :class:`~tastypie.resources.ModelResource`
-subclass, will introspect all non-relational fields on the ``Entry`` model and
-create it's own :mod:`ApiFields <tastypie.fields>` that map to those fields,
-much like the way Django's ``ModelForm`` class introspects.
+This class, by virtue of being a ``ModelResource`` subclass, will introspect
+all non-relational fields on the ``Entry`` model and create it's own
+``ApiFields`` that map to those fields, much like the way Django's ``ModelForm``
+class introspects.
 
 .. note::
 
     The ``resource_name`` within the ``Meta`` class is optional. If not
     provided, it is automatically generated off the classname, removing any
-    instances of :class:`~tastypie.resources.Resource` and lowercasing the string. So
+    instances of ``Resource`` and lowercasing the string. So
     ``EntryResource`` would become just ``entry``.
     
     It's included in this example for clarity, especially when looking at
@@ -217,9 +217,9 @@ In order to handle our ``user`` relation, we'll need to create a
             queryset = Entry.objects.all()
             resource_name = 'entry'
 
-We simply created a new :class:`~tastypie.resources.ModelResource` subclass
-called ``UserResource``.  Then we added a field to ``EntryResource`` that
-specified that the ``user`` field points to a ``UserResource`` for that data.
+We simply created a new ``ModelResource`` subclass called ``UserResource``.
+Then we added a field to ``EntryResource`` that specified that the ``user``
+field points to a ``UserResource`` for that data.
 
 Now we should be able to get all of the fields back in our response. But since
 we have another full, working resource on our hands, we should hook that up
@@ -229,9 +229,8 @@ to our API as well. And there's a better way to do it.
 Adding To The Api
 =================
 
-Tastypie ships with an :class:`~tastypie.api.Api` class, which lets you bind
-multiple :class:`Resources <tastypie.resources.Resource>` together to form a
-coherent API. Adding it to the mix is simple.
+Tastypie ships with an ``Api`` class, which lets you bind multiple ``Resources``
+together to form a coherent API. Adding it to the mix is simple.
 
 We'll go back to our URLconf (``urls.py``) and change it to match the
 following::
@@ -251,9 +250,9 @@ following::
         (r'^api/', include(v1_api.urls)),
     )
 
-Note that we're now creating an :class:`~tastypie.api.Api` instance,
-registering our ``EntryResource`` and ``UserResource`` instances with it and
-that we've modified the urls to now point to ``v1_api.urls``.
+Note that we're now creating an ``Api`` instance, registering our
+``EntryResource`` and ``UserResource`` instances with it and that we've
+modified the urls to now point to ``v1_api.urls``.
 
 This makes even more data accessible, so if we start up the ``runserver``
 again, the following URLs should work:
