@@ -60,3 +60,6 @@ class MimeTestCase(TestCase):
         
         request.META = {'HTTP_ACCEPT': 'application/json; charset=UTF-8'}
         self.assertEqual(determine_format(request, serializer), 'application/json')
+        
+        request.META = {'HTTP_ACCEPT': 'text/javascript,application/json'}
+        self.assertEqual(determine_format(request, serializer), 'application/json')
