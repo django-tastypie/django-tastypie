@@ -324,7 +324,7 @@ more features, like:
   * :doc:`authentication`
   * :doc:`caching`
   * :doc:`throttling`
-  * :doc:`filtering_sorting`
+  * :doc:`resources` (filtering & sorting)
   * :doc:`serialization`
 
 Tastypie is also very easy to override and extend. For some common patterns and

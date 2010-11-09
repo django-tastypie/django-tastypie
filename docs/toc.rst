@@ -6,13 +6,16 @@ Table Of Contents
    
    index
    tutorial
+   
    settings
    authentication
    caching
    cookbook
-   filtering_sorting
+   resources
    serialization
    throttling
+   
+   who_uses
 
 
 Indices and tables
