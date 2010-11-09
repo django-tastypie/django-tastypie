@@ -1,4 +1,4 @@
-from ..testcases import TestServerTestCase
+from testcases import TestServerTestCase
 import httplib
 try:
     import json
