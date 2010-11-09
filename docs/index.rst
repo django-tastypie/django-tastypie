@@ -16,6 +16,7 @@ interfaces.
    caching
    authentication_authorization
    serialization
+   throttling
    
    cookbook
    who_uses
