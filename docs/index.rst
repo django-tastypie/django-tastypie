@@ -12,6 +12,7 @@ interfaces.
    settings
    
    resources
+   api
    
    cookbook
    who_uses

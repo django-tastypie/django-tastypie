@@ -6,15 +6,17 @@ Table Of Contents
    
    index
    tutorial
-   
    settings
+   
+   resources
+   api
+   
    authentication
    caching
-   cookbook
-   resources
    serialization
    throttling
    
+   cookbook
    who_uses
 
 

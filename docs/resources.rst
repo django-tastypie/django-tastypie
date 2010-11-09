@@ -325,6 +325,8 @@ return the response traveling with the exception.
 
 .. method:: Resource.urls(self):
 
+*Property*
+
 The endpoints this ``Resource`` responds to.
 
 Mostly a standard URLconf, this is suitable for either automatic use
