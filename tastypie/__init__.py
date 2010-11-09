@@ -1,2 +1,2 @@
 __author__ = 'Daniel Lindsley, Cody Soyland, Matt Croydon'
-__version__ = (0, 8, 3)
+__version__ = (0, 9, 0)
