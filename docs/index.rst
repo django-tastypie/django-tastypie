@@ -52,7 +52,7 @@ Quick Start
 
 4. In your root URLconf, add the following code (around where the admin code might be)::
     
-    from tastypie.api import API
+    from tastypie.api import Api
     from my_app.api.resources import MyModelResource
     
     v1_api = Api(api_name='v1')
