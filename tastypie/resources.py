@@ -65,10 +65,10 @@ class ResourceOptions(object):
 
         # Handle overrides.
         if meta:
-            for override_name, override_value in meta.__dict__.items():
+            for override_name in dir(meta):
                 # No internals please.
                 if not override_name.startswith('_'):
-                    overrides[override_name] = override_value
+                    overrides[override_name] = getattr(meta, override_name)
         
         # Shortcut to specify both at the class level.
         if overrides.get('allowed_methods', None) is not None:
@@ -719,7 +719,7 @@ class Resource(object):
         """
         raise NotImplementedError()
     
-    def obj_delete(self):
+    def obj_delete(self, **kwargs):
         """
         Deletes a single object.
         
@@ -904,7 +904,7 @@ class Resource(object):
     
     def get_multiple(self, request, **kwargs):
         """
-        Returns a serialized list of resources based on the identifers
+        Returns a serialized list of resources based on the identifiers
         from the URL.
         
         Calls ``obj_get`` to fetch only the objects requested. This method
@@ -1158,26 +1158,39 @@ class ModelResource(Resource):
             # Nothing to alter the sort order. Return what we've got.
             return obj_list
         
-        sort_by_bits = options['sort_by'].split(LOOKUP_SEP)
-        field_name = sort_by_bits[0]
-        order = ''
+        order_by_args = []
         
-        if sort_by_bits[0].startswith('-'):
-            field_name = sort_by_bits[0][1:]
-            order = '-'
+        if hasattr(options, 'getlist'):
+            sort_bits = options.getlist('sort_by')
+        else:
+            sort_bits = options.get('sort_by')
+            
+            if not isinstance(sort_bits, (list, tuple)):
+                sort_bits = [sort_bits]
         
-        if not field_name in self.fields:
-            # It's not a field we know about. Move along citizen.
-            raise InvalidSortError("No matching '%s' field for ordering on." % field_name)
+        for sort_by in sort_bits:
+            sort_by_bits = sort_by.split(LOOKUP_SEP)
+            
+            field_name = sort_by_bits[0]
+            order = ''
+            
+            if sort_by_bits[0].startswith('-'):
+                field_name = sort_by_bits[0][1:]
+                order = '-'
+            
+            if not field_name in self.fields:
+                # It's not a field we know about. Move along citizen.
+                raise InvalidSortError("No matching '%s' field for ordering on." % field_name)
+            
+            if not field_name in self._meta.ordering:
+                raise InvalidSortError("The '%s' field does not allow ordering." % field_name)
+            
+            if self.fields[field_name].attribute is None:
+                raise InvalidSortError("The '%s' field has no 'attribute' for ordering with." % field_name)
+            
+            order_by_args.append("%s%s" % (order, LOOKUP_SEP.join([self.fields[field_name].attribute] + sort_by_bits[1:])))
         
-        if not field_name in self._meta.ordering:
-            raise InvalidSortError("The '%s' field does not allow ordering." % field_name)
-        
-        if self.fields[field_name].attribute is None:
-            raise InvalidSortError("The '%s' field has no 'attribute' for ordering with." % field_name)
-        
-        sort_expr = "%s%s" % (order, LOOKUP_SEP.join([self.fields[field_name].attribute] + sort_by_bits[1:]))
-        return obj_list.order_by(sort_expr)
+        return obj_list.order_by(*order_by_args)
     
     def obj_get_list(self, filters=None, **kwargs):
         """

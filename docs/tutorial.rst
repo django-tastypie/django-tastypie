@@ -321,10 +321,10 @@ Beyond The Basics
 We now have a full working API for our application. But Tastypie supports many
 more features, like:
 
-  * :doc:`authentication`
+  * :doc:`authentication_authorization`
   * :doc:`caching`
   * :doc:`throttling`
-  * :doc:`filtering_sorting`
+  * :doc:`resources` (filtering & sorting)
   * :doc:`serialization`
 
 Tastypie is also very easy to override and extend. For some common patterns and

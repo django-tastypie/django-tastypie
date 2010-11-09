@@ -12,12 +12,9 @@ Daniel:
     - ``OauthAuthentication``
     - ``DigestAuthentication``
 - More integration tests (intermediate, advanced, composite, non-model)
-- Documentation.
-
 
 
 Long Term
 ---------
 
 - HTML browsing
-- Thread safety

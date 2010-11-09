@@ -7,12 +7,16 @@ Table Of Contents
    index
    tutorial
    settings
-   authentication
+   
+   resources
+   api
+   authentication_authorization
    caching
-   cookbook
-   filtering_sorting
    serialization
    throttling
+   
+   cookbook
+   who_uses
 
 
 Indices and tables

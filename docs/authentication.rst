@@ -1,6 +1,0 @@
-.. _ref-authentication:
-
-==============
-Authentication
-==============
-
