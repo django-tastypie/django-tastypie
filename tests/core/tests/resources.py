@@ -281,6 +281,9 @@ class ResourceTestCase(TestCase):
         })
     
     def test_subclassing(self):
+        class CommonMeta:
+            default_format = 'application/xml'
+        
         class MiniResource(Resource):
             abcd = fields.CharField(default='abcd')
             efgh = fields.IntegerField(default=1234)
@@ -294,11 +297,12 @@ class ResourceTestCase(TestCase):
         class AnotherMiniResource(MiniResource):
             ijkl = fields.BooleanField(default=True)
             
-            class Meta:
+            class Meta(CommonMeta):
                 resource_name = 'anothermini'
         
         another = AnotherMiniResource()
         self.assertEqual(len(another.fields), 4)
+        self.assertEqual(another._meta.default_format, 'application/xml')
     
     def test_method_check(self):
         basic = BasicResource()

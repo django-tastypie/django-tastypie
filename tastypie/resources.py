@@ -65,10 +65,10 @@ class ResourceOptions(object):
 
         # Handle overrides.
         if meta:
-            for override_name, override_value in meta.__dict__.items():
+            for override_name in dir(meta):
                 # No internals please.
                 if not override_name.startswith('_'):
-                    overrides[override_name] = override_value
+                    overrides[override_name] = getattr(meta, override_name)
         
         # Shortcut to specify both at the class level.
         if overrides.get('allowed_methods', None) is not None:
