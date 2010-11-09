@@ -12,7 +12,6 @@ Table Of Contents
    api
    authentication_authorization
    caching
-   
    serialization
    throttling
    

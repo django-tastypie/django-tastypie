@@ -31,7 +31,7 @@ URLconf)::
 
 
 ``Api`` Methods
-====================
+===============
 
 Implements a registry to tie together the various resources that make up
 an API.

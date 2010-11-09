@@ -15,6 +15,7 @@ interfaces.
    api
    caching
    authentication_authorization
+   serialization
    
    cookbook
    who_uses

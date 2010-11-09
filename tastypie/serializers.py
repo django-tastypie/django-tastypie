@@ -117,7 +117,7 @@ class Serializer(object):
         For a piece of data, attempts to recognize it and provide a simplified
         form of something complex.
         
-        This brings complex Python datastructures down to native types of the
+        This brings complex Python data structures down to native types of the
         serialization format(s).
         """
         if isinstance(data, (list, tuple)):
