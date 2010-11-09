@@ -28,7 +28,6 @@ Using these classes is simple. Simply provide them (or your own class) as a
 
     from django.contrib.auth.models import User
     from tastypie.cache import SimpleCache
-    from tastypie import fields
     from tastypie.resources import ModelResource
     
     
