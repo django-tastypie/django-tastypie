@@ -87,3 +87,8 @@ doctest:
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
+
+epub:
+	$(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) _build/epub
+	@echo
+	@echo "Build finished. The epub file is in _build/epub."
