@@ -179,7 +179,7 @@ class Resource(object):
                 # A real, non-expected exception.
                 # Handle the case where the full traceback is more helpful
                 # than the serialized error.
-                if settings.DEBUG and getattr(settings, 'TASTYPIE_FULL_DEBUG', 'False'):
+                if settings.DEBUG and getattr(settings, 'TASTYPIE_FULL_DEBUG', False):
                     raise
                 
                 # Rather than re-raising, we're going to things similar to
