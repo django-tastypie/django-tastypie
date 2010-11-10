@@ -20,7 +20,7 @@ A sample resource definition might look something like::
     from django.contrib.auth.models import User
     from tastypie import fields
     from tastypie.authorization import DjangoAuthorization
-    from tastypie.resources import ModelResource
+    from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
     from myapp.models import Entry
     
     
