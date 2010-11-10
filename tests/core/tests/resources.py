@@ -662,6 +662,18 @@ class ModelResourceTestCase(TestCase):
         # Valid simple (non-``__exact``).
         self.assertEqual(resource.build_filters(filters={'content__startswith': 'Hello'}), {'content__startswith': 'Hello'})
         
+        # Valid boolean.
+        self.assertEqual(resource.build_filters(filters={'title': 'true'}), {'title__exact': True})
+        self.assertEqual(resource.build_filters(filters={'title': 'True'}), {'title__exact': True})
+        self.assertEqual(resource.build_filters(filters={'title': True}), {'title__exact': True})
+        self.assertEqual(resource.build_filters(filters={'title': 'false'}), {'title__exact': False})
+        self.assertEqual(resource.build_filters(filters={'title': 'False'}), {'title__exact': False})
+        self.assertEqual(resource.build_filters(filters={'title': False}), {'title__exact': False})
+        self.assertEqual(resource.build_filters(filters={'title': 'nil'}), {'title__exact': None})
+        self.assertEqual(resource.build_filters(filters={'title': 'none'}), {'title__exact': None})
+        self.assertEqual(resource.build_filters(filters={'title': 'None'}), {'title__exact': None})
+        self.assertEqual(resource.build_filters(filters={'title': None}), {'title__exact': None})
+        
         # Valid multiple.
         self.assertEqual(resource.build_filters(filters={
             'slug__exact': 'Hello',

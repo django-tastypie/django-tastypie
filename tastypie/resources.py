@@ -1127,11 +1127,11 @@ class ModelResource(Resource):
             if self.fields[filter_bits[0]].attribute is None:
                 raise InvalidFilterError("The '%s' field has no 'attribute' for searching with." % filter_bits[0])
             
-            if value == 'true':
+            if value in ['true', 'True', True]:
                 value = True
-            elif value == 'false':
+            elif value in ['false', 'False', False]:
                 value = False
-            elif value in ('nil', 'none', 'None'):
+            elif value in ('nil', 'none', 'None', None):
                 value = None
             
             db_field_name = LOOKUP_SEP.join([self.fields[filter_bits[0]].attribute] + filter_bits[1:])
