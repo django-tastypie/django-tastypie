@@ -56,6 +56,10 @@ class HttpGone(HttpResponse):
     status_code = 410
 
 
+class HttpApplicationError(HttpResponse):
+    status_code = 500
+
+
 class HttpNotImplemented(HttpResponse):
     status_code = 501
 

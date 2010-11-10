@@ -20,6 +20,10 @@ try:
     set
 except NameError:
     from sets import Set as set
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 
 class CustomSerializer(Serializer):
@@ -1509,3 +1513,69 @@ class BasicAuthResourceTestCase(TestCase):
         
         resp = resource.dispatch_list(request)
         self.assertEqual(resp.status_code, 200)
+
+
+# Test out the 500 behavior.
+class YouFail(Exception):
+    pass
+
+
+class BustedResource(BasicResource):
+    def get_detail(self, request, **kwargs):
+        raise YouFail("Something blew up.")
+
+
+class BustedResourceTestCase(TestCase):
+    def setUp(self):
+        # We're going to heavily jack with settings. :/
+        super(BustedResourceTestCase, self).setUp()
+        self.old_debug = settings.DEBUG
+        self.old_full_debug = getattr(settings, 'TASTYPIE_FULL_DEBUG', False)
+        self.old_canned_error = getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later.")
+        
+        self.resource = BustedResource()
+        self.request = HttpRequest()
+        self.request.GET = {'format': 'json'}
+        self.request.method = 'GET'
+    
+    def tearDown(self):
+        settings.DEBUG = self.old_debug
+        settings.TASTYPIE_FULL_DEBUG = self.old_full_debug 
+        settings.TASTYPIE_CANNED_ERROR = self.old_canned_error
+        super(BustedResourceTestCase, self).setUp()
+    
+    def test_debug_on_with_full(self):
+        settings.DEBUG = True
+        settings.TASTYPIE_FULL_DEBUG = True
+        
+        try:
+            resp = self.resource.wrap_view('get_detail')(self.request, pk=1)
+            self.fail()
+        except YouFail:
+            pass
+    
+    def test_debug_on_without_full(self):
+        settings.DEBUG = True
+        settings.TASTYPIE_FULL_DEBUG = False
+        
+        resp = self.resource.wrap_view('get_detail')(self.request, pk=1)
+        self.assertEqual(resp.status_code, 500)
+        content = json.loads(resp.content)
+        self.assertEqual(content['error_message'], 'Something blew up.')
+        self.assertTrue(len(content['traceback']) > 0)
+    
+    def test_debug_off(self):
+        settings.DEBUG = False
+        settings.TASTYPIE_FULL_DEBUG = False
+        
+        resp = self.resource.wrap_view('get_detail')(self.request, pk=1)
+        self.assertEqual(resp.status_code, 500)
+        self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+        
+        # Now with a custom message.
+        settings.TASTYPIE_CANNED_ERROR = "Oops, you bwoke it."
+        
+        resp = self.resource.wrap_view('get_detail')(self.request, pk=1)
+        self.assertEqual(resp.status_code, 500)
+        self.assertEqual(resp.content, '{"error_message": "Oops, you bwoke it."}')
+    

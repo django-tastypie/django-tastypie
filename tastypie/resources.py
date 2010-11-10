@@ -176,10 +176,51 @@ class Resource(object):
                 if hasattr(e, 'response'):
                     return e.response
                 
-                # A real, non-expected exception. Re-raise it.
-                raise
+                # A real, non-expected exception.
+                # Handle the case where the full traceback is more helpful
+                # than the serialized error.
+                if settings.DEBUG and getattr(settings, 'TASTYPIE_FULL_DEBUG', 'False'):
+                    raise
+                
+                # Rather than re-raising, we're going to things similar to
+                # what Django does. The difference is returning a serialized
+                # error message.
+                return self._handle_500(request, e)
         
         return wrapper
+    
+    def _handle_500(self, request, exception):
+        import traceback
+        import sys
+        the_trace = '\n'.join(traceback.format_exception(*(sys.exc_info())))
+        
+        if settings.DEBUG:
+            data = {
+                "error_message": exception.message,
+                "traceback": the_trace,
+            }
+            desired_format = self.determine_format(request)
+            serialized = self.serialize(request, data, desired_format)
+            return HttpApplicationError(content=serialized, content_type=build_content_type(desired_format))
+        
+        # When DEBUG is False, send an error message to the admins.
+        from django.core.mail import mail_admins
+        subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), request.path)
+        try:
+            request_repr = repr(request)
+        except:
+            request_repr = "Request repr() unavailable"
+        
+        message = "%s\n\n%s" % (the_trace, request_repr)
+        mail_admins(subject, message, fail_silently=True)
+        
+        # Prep the data going out.
+        data = {
+            "error_message": getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later."),
+        }
+        desired_format = self.determine_format(request)
+        serialized = self.serialize(request, data, desired_format)
+        return HttpApplicationError(content=serialized, content_type=build_content_type(desired_format))
     
     @property
     def urls(self):
