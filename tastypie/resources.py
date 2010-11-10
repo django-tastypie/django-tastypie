@@ -491,9 +491,8 @@ class Resource(object):
                 field_object.resource_name = self._meta.resource_name
                 
             bundle.data[field_name] = field_object.dehydrate(bundle)
-        
-        # Run through optional overrides.
-        for field_name, field_object in self.fields.items():
+            
+            # Check for an optional method to do further dehydration.
             method = getattr(self, "dehydrate_%s" % field_name, None)
             
             if method:
@@ -533,8 +532,8 @@ class Resource(object):
                         setattr(bundle.obj, field_object.attribute, value)
                     elif not getattr(field_object, 'is_m2m', False):
                         setattr(bundle.obj, field_object.attribute, value.obj)
-        
-        for field_name, field_object in self.fields.items():
+            
+            # Check for an optional method to do further hydration.
             method = getattr(self, "hydrate_%s" % field_name, None)
             
             if method:
