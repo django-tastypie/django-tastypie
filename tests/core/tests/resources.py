@@ -514,6 +514,11 @@ class AnotherRelatedNoteResource(ModelResource):
         fields = ['title', 'slug', 'content', 'created', 'is_active']
 
 
+class NullableRelatedNoteResource(AnotherRelatedNoteResource):
+    author = fields.ForeignKey(UserResource, 'author')
+    subjects = fields.ManyToManyField(SubjectResource, 'subjects', null=True)
+
+
 class ModelResourceTestCase(TestCase):
     fixtures = ['note_testdata.json']
     urls = 'core.tests.field_urls'
@@ -1461,6 +1466,40 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(sorted(yetanother.fields.keys()), ['abcd', 'absolute_url', 'mnop', 'resource_uri', 'title'])
         self.assertEqual(len(yetanother._meta.queryset.all()), 6)
         self.assertEqual(yetanother._meta.resource_name, 'yetanothermini')
+    
+    def test_nullable_tomany_full_hydrate(self):
+        nrrnr = NullableRelatedNoteResource()
+        bundle_1 = Bundle(data={
+            'author': '/api/v1/users/1/',
+            'subjects': [],
+        })
+        
+        # Now load up the data.
+        hydrated = nrrnr.full_hydrate(bundle_1)
+        hydrated = nrrnr.hydrate_m2m(hydrated)
+        
+        self.assertEqual(hydrated.data['author'], '/api/v1/users/1/')
+        self.assertEqual(hydrated.data['subjects'], [])
+        
+        # Regression: not specifying the tomany field should still work if
+        # it is nullable.
+        bundle_2 = Bundle(data={
+            'author': '/api/v1/users/1/',
+        })
+        
+        hydrated2 = nrrnr.full_hydrate(bundle_2)
+        hydrated2 = nrrnr.hydrate_m2m(hydrated2)
+        
+        self.assertEqual(hydrated2.data['author'], '/api/v1/users/1/')
+        self.assertEqual(hydrated2.data['subjects'], [])
+        
+        # Regression pt. II - Make sure saving the objects works.
+        bundle_3 = Bundle(data={
+            'author': '/api/v1/users/1/',
+        })
+        hydrated3 = nrrnr.obj_create(bundle_2)
+        self.assertEqual(hydrated2.obj.author.username, u'johndoe')
+        self.assertEqual(hydrated2.obj.subjects.count(), 0)
 
 
 class BasicAuthResourceTestCase(TestCase):

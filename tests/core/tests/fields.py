@@ -584,7 +584,7 @@ class ManyToManyFieldTestCase(TestCase):
         field_2 = ManyToManyField(SubjectResource, 'subjects', null=True)
         field_2.instance_name = 'm2m'
         empty_bundle = Bundle()
-        self.assertEqual(field_2.hydrate_m2m(empty_bundle), None)
+        self.assertEqual(field_2.hydrate_m2m(empty_bundle), [])
         
         field_3 = ManyToManyField(SubjectResource, 'subjects', null=True)
         field_3.instance_name = 'm2m'
