@@ -61,3 +61,26 @@ An example::
     TASTYPIE_CANNED_ERROR = "Oops, we broke it!"
 
 Defaults to ``Sorry, this request could not be processed. Please try again later.``.
+
+
+``TASTYPIE_ALLOW_MISSING_SLASH``
+================================
+
+**Optional**
+
+This setting allows your URLs to be missing the final slash. Useful for
+integrating with other systems.
+
+You must also have ``settings.APPEND_SLASH = False`` so that Django does not
+emit HTTP 302 redirects.
+
+.. warning::
+
+  This settings causes the ``Resource.get_multiple`` to fail. If you need this
+  method, you will have to override the URLconf to meet your needs.
+
+An example::
+
+    TASTYPIE_ALLOW_MISSING_SLASH = True
+
+Defaults to ``False``.
