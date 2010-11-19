@@ -99,7 +99,9 @@ class Serializer(object):
         the data and returns the result.
         """
         desired_format = None
-        
+
+        format = format.split(';')[0]
+
         for short_format, long_format in self.content_types.items():
             if format == long_format:
                 if hasattr(self, "from_%s" % short_format):
