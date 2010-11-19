@@ -17,6 +17,7 @@ Contributors:
 * jonozzz for a patch regarding Paginator optimizations & a patch to multiple sort_by parameters.
 * David Guaraglia (dguaraglia) for the requirements file & a patch to limits.
 * whiteblack for a patch to Meta inheritance.
+* Josh Bohde (joshbohde) for a patch to ignore problematic deserialization charsets.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.

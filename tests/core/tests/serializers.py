@@ -160,3 +160,85 @@ class ResourceSerializationTestCase(TestCase):
             }
         }
         self.assertEqual(serializer.to_json(data), '{"stuff": {"foo": "bar", "object": {"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "id": "1", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}}}')
+
+
+class StubbedSerializer(Serializer):
+    def __init__(self, *args, **kwargs):
+        super(StubbedSerializer, self).__init__(*args, **kwargs)
+        self.from_json_called = False
+        self.from_xml_called = False
+        self.from_yaml_called = False
+        self.from_html_called = False
+        self.from_jsonp_called = False
+        
+    def from_json(self, data):
+        self.from_json_called = True
+        return True
+    
+    def from_xml(self, data):
+        self.from_xml_called = True
+        return True
+
+    def from_yaml(self, data):
+        self.from_yaml_called = True
+        return True
+
+    def from_html(self, data):
+        self.from_html_called = True
+        return True
+
+    def from_jsonp(self, data):
+        self.from_jsonp_called = True
+        return True
+
+class ContentHeaderTest(TestCase):
+    def test_deserialize_json(self):
+        serializer = StubbedSerializer()
+        serializer.deserialize('{}', 'application/json')
+        self.assertTrue(serializer.from_json_called)
+
+    def test_deserialize_json_with_charset(self):
+        serializer = StubbedSerializer()
+        serializer.deserialize('{}', 'application/json; charset=UTF-8')
+        self.assertTrue(serializer.from_json_called)
+    
+    def test_deserialize_xml(self):
+        serializer = StubbedSerializer()
+        serializer.deserialize('', 'application/xml')
+        self.assertTrue(serializer.from_xml_called)
+
+    def test_deserialize_xml_with_charset(self):
+        serializer = StubbedSerializer()
+        serializer.deserialize('', 'application/xml; charset=UTF-8')
+        self.assertTrue(serializer.from_xml_called)
+
+    def test_deserialize_yaml(self):
+        serializer = StubbedSerializer()
+        serializer.deserialize('', 'text/yaml')
+        self.assertTrue(serializer.from_yaml_called)
+
+    def test_deserialize_yaml_with_charset(self):
+        serializer = StubbedSerializer()
+        serializer.deserialize('', 'text/yaml; charset=UTF-8')
+        self.assertTrue(serializer.from_yaml_called)
+        
+    def test_deserialize_jsonp(self):
+        serializer = StubbedSerializer()
+        serializer.deserialize('{}', 'text/javascript')
+        self.assertTrue(serializer.from_jsonp_called)
+
+    def test_deserialize_jsonp_with_charset(self):
+        serializer = StubbedSerializer()
+        serializer.deserialize('{}', 'text/javascript; charset=UTF-8')
+        self.assertTrue(serializer.from_jsonp_called)
+    
+    def test_deserialize_html(self):
+        serializer = StubbedSerializer()
+        serializer.deserialize('', 'text/html')
+        self.assertTrue(serializer.from_html_called)
+
+    def test_deserialize_html_with_charset(self):
+        serializer = StubbedSerializer()
+        serializer.deserialize('', 'text/html; charset=UTF-8')
+        self.assertTrue(serializer.from_html_called)
+        
