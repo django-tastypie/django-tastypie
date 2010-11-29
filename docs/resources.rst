@@ -192,11 +192,12 @@ The inner ``Meta`` class allows for class-level configuration of how the
 ``ordering``
 ~~~~~~~~~~~~
 
-  Specifies the default ordering the ``Resource`` should present the individual
-  resources in. Default is ``[]``.
+  Specifies the what fields the ``Resource`` should should allow ordering on.
+  Default is ``[]``.
   
-  Values should be the fieldnames as strings, with an optional preceding ``-``
-  to control descending order.
+  Values should be the fieldnames as strings. When provided to the ``Resource``
+  by the ``order_by`` GET parameter, you can specify either the ``fieldname``
+  (ascending order) or ``-fieldname`` (descending order).
 
 ``object_class``
 ~~~~~~~~~~~~~~~~
