@@ -91,6 +91,90 @@ Think of it as package of user data & an object instance (either of which are
 optionally present).
 
 
+Why Resource URIs?
+==================
+
+Resource URIs play a heavy role in how Tastypie delivers data. This can seem
+very different from other solutions which simply inline related data. Though
+Tastypie can inline data like that (using ``full=True`` on the field with the
+relation), the default is to provide URIs.
+
+URIs are useful because it results in smaller payloads, letting you fetch only
+the data that is important to you. You can imagine an instance where an object
+has thousands of related items that you may not be interested in.
+
+URIs are also very cache-able, because the data at each endpoint is less likely
+to frequently change.
+
+And URIs encourage proper use of each endpoint to display the data that endpoint
+covers.
+
+Ideology aside, you should use whatever suits you. If you prefer fewer requests
+& fewer endpoints, use of ``full=True`` is available, but be aware of the
+consequences of each approach.
+
+
+Advanced Data Preparation
+=========================
+
+Tastypie uses a "dehydrate" cycle to prepare data for serialization & a
+"hydrate" cycle to take data sent to it & turn that back into useful Python
+objects.
+
+Within these cycles, there are several points of customization if you need them.
+
+``dehydrate``
+-------------
+
+``dehydrate_FOO``
+-----------------
+
+``hydrate``
+-----------
+
+``hydrate_FOO``
+---------------
+
+
+Reverse "Relationships"
+=======================
+
+Unlike Django's ORM, Tastypie does not automatically create reverse relations.
+This is because there is substantial technical complexity involved, as well as
+perhaps unintentionally exposing related data in an incorrect way to the end
+user of the API.
+
+However, it is still possible to create reverse relations. Doing so is slightly
+tricky, because classes are defined in order in Python modules & the class
+they are referring to must already exist. Implementing a reverse relationship
+looks like so::
+
+  from tastypie import fields
+  from tastypie.resources import ModelResource
+  from myapp.models import Note, Comment
+  
+  
+  class NoteResource(ModelResource):
+      # Can't put the relation to ``CommentResource`` here, as it hasn't been
+      # defined yet...
+      
+      def __init__(self, *args, **kwargs):
+          super(NoteResource, self).__init__(*args, **kwargs)
+          
+          # This happens late enough that ``CommentResource`` will exist.
+          self.fields['comments'] = fields.ToManyField(CommentResource, 'comments')
+      
+      class Meta:
+          queryset = Note.objects.all()
+  
+  
+  class CommentResource(ModelResource):
+      note = fields.ToOneField(NoteResource, 'notes')
+      
+      class Meta:
+          queryset = Comment.objects.all()
+
+
 Resource Options (AKA ``Meta``)
 ===============================
 
