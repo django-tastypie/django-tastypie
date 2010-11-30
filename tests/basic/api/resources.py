@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from tastypie.fields import CharField, ForeignKey
+from tastypie import fields
 from tastypie.resources import ModelResource
 from tastypie.authorization import Authorization
 from basic.models import Note
@@ -13,7 +13,7 @@ class UserResource(ModelResource):
 
 
 class NoteResource(ModelResource):
-    user = ForeignKey(UserResource, 'user')
+    user = fields.ForeignKey(UserResource, 'user')
     
     class Meta:
         resource_name = 'notes'

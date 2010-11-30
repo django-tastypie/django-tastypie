@@ -1414,7 +1414,8 @@ class ModelResourceTestCase(TestCase):
         me_baby_me = SelfResource()
         self.assertEqual(len(me_baby_me.fields), 9)
         self.assertEqual(me_baby_me._meta.resource_name, 'me_baby_me')
-        self.assertEqual(me_baby_me.fields['me_baby_me'].to, SelfResource)
+        self.assertEqual(me_baby_me.fields['me_baby_me'].to, 'self')
+        self.assertEqual(me_baby_me.fields['me_baby_me'].to_class, SelfResource)
         
         class AnotherSelfResource(SelfResource):
             class Meta:
@@ -1424,7 +1425,8 @@ class ModelResourceTestCase(TestCase):
         another_me_baby_me = AnotherSelfResource()
         self.assertEqual(len(another_me_baby_me.fields), 9)
         self.assertEqual(another_me_baby_me._meta.resource_name, 'another_me_baby_me')
-        self.assertEqual(another_me_baby_me.fields['me_baby_me'].to, AnotherSelfResource)
+        self.assertEqual(another_me_baby_me.fields['me_baby_me'].to, 'self')
+        self.assertEqual(another_me_baby_me.fields['me_baby_me'].to_class, AnotherSelfResource)
     
     def test_subclassing(self):
         class MiniResource(ModelResource):

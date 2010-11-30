@@ -129,7 +129,7 @@ class DeclarativeMetaclass(type):
             # here (which I think we should avoid as long as possible).
             if isinstance(field_object, RelatedField):
                 if field_object.self_referential or field_object.to == 'self':
-                    field_object.to = new_class
+                    field_object.to_class = new_class
         
         return new_class
 

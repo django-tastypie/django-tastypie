@@ -12,7 +12,7 @@ Requirements
 ============
 
 * Python 2.4+
-* Django 1.0+
+* Django 1.1+
 * mimeparse 0.1.3+ (http://code.google.com/p/mimeparse/)
 
   * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
