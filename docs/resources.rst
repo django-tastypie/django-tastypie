@@ -144,25 +144,19 @@ This is because there is substantial technical complexity involved, as well as
 perhaps unintentionally exposing related data in an incorrect way to the end
 user of the API.
 
-However, it is still possible to create reverse relations. Doing so is slightly
-tricky, because classes are defined in order in Python modules & the class
-they are referring to must already exist. Implementing a reverse relationship
-looks like so::
+However, it is still possible to create reverse relations. Instead of handing
+the ``ToOneField`` or ``ToManyField`` a class, pass them a string that
+represents the full path to the desired class. Implementing a reverse
+relationship looks like so::
 
+  # myapp/api/resources.py
   from tastypie import fields
   from tastypie.resources import ModelResource
   from myapp.models import Note, Comment
   
   
   class NoteResource(ModelResource):
-      # Can't put the relation to ``CommentResource`` here, as it hasn't been
-      # defined yet...
-      
-      def __init__(self, *args, **kwargs):
-          super(NoteResource, self).__init__(*args, **kwargs)
-          
-          # This happens late enough that ``CommentResource`` will exist.
-          self.fields['comments'] = fields.ToManyField(CommentResource, 'comments')
+      comments = fields.ToManyField('myapp.api.resources.CommentResource', 'comments')
       
       class Meta:
           queryset = Note.objects.all()
@@ -174,6 +168,28 @@ looks like so::
       class Meta:
           queryset = Comment.objects.all()
 
+.. warning::
+
+  Unlike Django, you can't use just the class name (i.e. ``'CommentResource'``),
+  even if it's in the same module. Tastypie (intentionally) lacks a construct
+  like the ``AppCache`` which makes that sort of thing work in Django. Sorry.
+
+Tastypie also supports self-referential relations. If you assume we added the
+appropriate self-referential ``ForeignKey`` to the ``Note`` model, implementing
+a similar relation in Tastypie would look like::
+
+  # myapp/api/resources.py
+  from tastypie import fields
+  from tastypie.resources import ModelResource
+  from myapp.models import Note
+  
+  
+  class NoteResource(ModelResource):
+      sub_notes = fields.ToManyField('self', 'notes')
+      
+      class Meta:
+          queryset = Note.objects.all()
+
 
 Resource Options (AKA ``Meta``)
 ===============================
@@ -182,37 +198,37 @@ The inner ``Meta`` class allows for class-level configuration of how the
 ``Resource`` should behave. The following options are available:
 
 ``serializer``
-~~~~~~~~~~~~~~
+--------------
 
   Controls which serializer class the ``Resource`` should use. Default is
   ``tastypie.serializers.Serializer()``.
 
 ``authentication``
-~~~~~~~~~~~~~~~~~~
+------------------
 
   Controls which authentication class the ``Resource`` should use. Default is
   ``tastypie.authentication.Authentication()``.
 
 ``authorization``
-~~~~~~~~~~~~~~~~~
+-----------------
 
   Controls which authorization class the ``Resource`` should use. Default is
   ``tastypie.authorization.ReadOnlyAuthorization()``.
 
 ``cache``
-~~~~~~~~~
+---------
 
   Controls which cache class the ``Resource`` should use. Default is
   ``tastypie.cache.NoCache()``.
 
 ``throttle``
-~~~~~~~~~~~~
+------------
 
   Controls which throttle class the ``Resource`` should use. Default is
   ``tastypie.throttle.BaseThrottle()``.
 
 ``allowed_methods``
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
   Controls what list & detail REST methods the ``Resource`` should respond to.
   Default is ``None``, which means delegate to the more specific
@@ -222,32 +238,32 @@ The inner ``Meta`` class allows for class-level configuration of how the
   to prevent having to specify the other options.
 
 ``list_allowed_methods``
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------
 
   Controls what list REST methods the ``Resource`` should respond to. Default
   is ``['get', 'post', 'put', 'delete']``.
 
 ``detail_allowed_methods``
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------
 
   Controls what list REST methods the ``Resource`` should respond to. Default
   is ``['get', 'post', 'put', 'delete']``.
 
 ``limit``
-~~~~~~~~~
+---------
 
   Controls what how many results the ``Resource`` will show at a time. Default
   is either the ``API_LIMIT_PER_PAGE`` setting (if provided) or ``20`` if not
   specified.
 
 ``api_name``
-~~~~~~~~~~~~
+------------
 
   An override for the ``Resource`` to use when generating resource URLs.
   Default is ``None``.
 
 ``resource_name``
-~~~~~~~~~~~~~~~~~
+-----------------
 
   An override for the ``Resource`` to use when generating resource URLs.
   Default is ``None``.
@@ -258,14 +274,14 @@ The inner ``Meta`` class allows for class-level configuration of how the
   ``samplecontent``).
 
 ``default_format``
-~~~~~~~~~~~~~~~~~~
+------------------
 
   Specifies the default serialization format the ``Resource`` should use if
   one is not requested (usually by the ``Accept`` header or ``format`` GET
   parameter). Default is ``application/json``.
 
 ``filtering``
-~~~~~~~~~~~~~
+-------------
 
   Provides a list of fields that the ``Resource`` will accept client
   filtering on. Default is ``{}``.
@@ -274,7 +290,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
   accepted filter types.
 
 ``ordering``
-~~~~~~~~~~~~
+------------
 
   Specifies the what fields the ``Resource`` should should allow ordering on.
   Default is ``[]``.
@@ -284,7 +300,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
   (ascending order) or ``-fieldname`` (descending order).
 
 ``object_class``
-~~~~~~~~~~~~~~~~
+----------------
 
   Provides the ``Resource`` with the object that serves as the data source.
   Default is ``None``.
@@ -293,7 +309,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
   ``queryset`` option and is the model class.
 
 ``queryset``
-~~~~~~~~~~~~
+------------
 
   Provides the ``Resource`` with the set of Django models to respond with.
   Default is ``None``.
@@ -301,25 +317,25 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Unused by ``Resource`` but present for consistency.
 
 ``fields``
-~~~~~~~~~~
+----------
 
   Controls what introspected fields the ``Resource`` should include.
   A whitelist of fields. Default is ``[]``.
 
 ``excludes``
-~~~~~~~~~~~~
+------------
 
   Controls what introspected fields the ``Resource`` should *NOT* include.
   A blacklist of fields. Default is ``[]``.
 
 ``include_resource_uri``
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------
 
   Specifies if the ``Resource`` should include an extra field that displays
   the detail URL (within the api) for that resource. Default is ``True``.
 
 ``include_absolute_url``
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------
 
   Specifies if the ``Resource`` should include an extra field that displays
   the ``get_absolute_url`` for that object (on the site proper). Default is
@@ -394,7 +410,7 @@ This class tries to be non-model specific, so it can be hooked up to other
 data sources, such as search results, files, other data, etc.
 
 ``wrap_view``
-~~~~~~~~~~~~~
+-------------
 
 .. method:: Resource.wrap_view(self, view):
 
@@ -406,7 +422,7 @@ there is special handling to either present a message back to the user or
 return the response traveling with the exception.
 
 ``urls``
-~~~~~~~~
+--------
 
 .. method:: Resource.urls(self):
 
@@ -419,7 +435,7 @@ when registered with an ``Api`` class or for including directly in
 a URLconf should you choose to.
 
 ``determine_format``
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 .. method:: Resource.determine_format(self, request):
 
@@ -429,7 +445,7 @@ Largely relies on ``tastypie.utils.mime.determine_format`` but here
 as a point of extension.
 
 ``serialize``
-~~~~~~~~~~~~~
+-------------
 
 .. method:: Resource.serialize(self, request, data, format, options=None):
 
@@ -439,7 +455,7 @@ version suitable for transfer over the wire.
 Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
 
 ``deserialize``
-~~~~~~~~~~~~~~~
+---------------
 
 .. method:: Resource.deserialize(self, request, data, format='application/json'):
 
@@ -451,7 +467,7 @@ falling back to ``application/json`` if not provided.
 Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
 
 ``dispatch_list``
-~~~~~~~~~~~~~~~~~
+-----------------
 
 .. method:: Resource.dispatch_list(self, request, **kwargs):
 
@@ -461,7 +477,7 @@ the entire list of resources.
 Relies on ``Resource.dispatch`` for the heavy-lifting.
 
 ``dispatch_detail``
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 .. method:: Resource.dispatch_detail(self, request, **kwargs):
 
@@ -471,7 +487,7 @@ a single resource.
 Relies on ``Resource.dispatch`` for the heavy-lifting.
 
 ``dispatch``
-~~~~~~~~~~~~
+------------
 
 .. method:: Resource.dispatch(self, request_type, request, **kwargs):
 
@@ -479,7 +495,7 @@ Handles the common operations (allowed HTTP method, authentication,
 throttling, method lookup) surrounding most CRUD interactions.
 
 ``remove_api_resource_names``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------
 
 .. method:: Resource.remove_api_resource_names(self, url_dict):
 
@@ -492,7 +508,7 @@ for data lookup. For example::
     Model.objects.filter(**self.remove_api_resource_names(matches))
 
 ``method_check``
-~~~~~~~~~~~~~~~~
+----------------
 
 .. method:: Resource.method_check(self, request, allowed=None):
 
@@ -513,7 +529,7 @@ HTTP methods to check against. Usually, this looks like::
     self.method_check(request, ['get'])
 
 ``is_authorized``
-~~~~~~~~~~~~~~~~~
+-----------------
 
 .. method:: Resource.is_authorized(self, request, object=None):
 
@@ -523,7 +539,7 @@ the authorization backend can apply additional row-level permissions
 checking.
 
 ``is_authenticated``
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 .. method:: Resource.is_authenticated(self, request):
 
@@ -534,7 +550,7 @@ Mostly a hook, this uses class assigned to ``authentication`` from
 ``Resource._meta``.
 
 ``throttle_check``
-~~~~~~~~~~~~~~~~~~
+------------------
 
 .. method:: Resource.throttle_check(self, request):
 
@@ -544,7 +560,7 @@ Mostly a hook, this uses class assigned to ``throttle`` from
 ``Resource._meta``.
 
 ``log_throttled_access``
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------
 
 .. method:: Resource.log_throttled_access(self, request):
 
@@ -554,7 +570,7 @@ Mostly a hook, this uses class assigned to ``throttle`` from
 ``Resource._meta``.
 
 ``build_bundle``
-~~~~~~~~~~~~~~~~
+----------------
 
 .. method:: Resource.build_bundle(self, obj=None, data=None):
 
@@ -566,7 +582,7 @@ If no object is provided, an empty object from
 ``bundle.obj`` do not fail.
 
 ``build_filters``
-~~~~~~~~~~~~~~~~~
+-----------------
 
 .. method:: Resource.build_filters(self, filters=None):
 
@@ -578,7 +594,7 @@ Allows for the filtering of applicable objects.
 ``Models``.
 
 ``apply_sorting``
-~~~~~~~~~~~~~~~~~
+-----------------
 
 .. method:: Resource.apply_sorting(self, obj_list, options=None):
 
@@ -590,7 +606,7 @@ Allows for the sorting of objects being returned.
 ``Models``.
 
 ``get_resource_uri``
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 .. method:: Resource.get_resource_uri(self, bundle_or_obj):
 
@@ -604,14 +620,14 @@ be needed.
 ``Models``.
 
 ``get_resource_list_uri``
-~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
 
 .. method:: Resource.get_resource_list_uri(self):
 
 Returns a URL specific to this resource's list endpoint.
 
 ``get_via_uri``
-~~~~~~~~~~~~~~~
+---------------
 
 .. method:: Resource.get_via_uri(self, uri):
 
@@ -622,7 +638,7 @@ If you need custom behavior based on other portions of the URI,
 simply override this method.
 
 ``full_dehydrate``
-~~~~~~~~~~~~~~~~~~
+------------------
 
 .. method:: Resource.full_dehydrate(self, obj):
 
@@ -630,7 +646,7 @@ Given an object instance, extract the information from it to populate
 the resource.
 
 ``dehydrate``
-~~~~~~~~~~~~~
+-------------
 
 .. method:: Resource.dehydrate(self, bundle):
 
@@ -643,7 +659,7 @@ to annotate on additional data.
 Must return the modified bundle.
 
 ``full_hydrate``
-~~~~~~~~~~~~~~~~
+----------------
 
 .. method:: Resource.full_hydrate(self, bundle):
 
@@ -651,7 +667,7 @@ Given a populated bundle, distill it and turn it back into
 a full-fledged object instance.
 
 ``hydrate``
-~~~~~~~~~~~
+-----------
 
 .. method:: Resource.hydrate(self, bundle):
 
@@ -664,14 +680,14 @@ to annotate on additional data.
 Must return the modified bundle.
 
 ``hydrate_m2m``
-~~~~~~~~~~~~~~~
+---------------
 
 .. method:: Resource.hydrate_m2m(self, bundle):
 
 Populate the ManyToMany data on the instance.
 
 ``build_schema``
-~~~~~~~~~~~~~~~~
+----------------
 
 .. method:: Resource.build_schema(self):
 
@@ -681,7 +697,7 @@ properties about those fields.
 Used by the ``schema/`` endpoint to describe what will be available.
 
 ``dehydrate_resource_uri``
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------
 
 .. method:: Resource.dehydrate_resource_uri(self, bundle):
 
@@ -691,7 +707,7 @@ the URI for the given bundle.
 Returns empty string if no URI can be generated.
 
 ``generate_cache_key``
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
 .. method:: Resource.generate_cache_key(self, *args, **kwargs):
 
@@ -700,7 +716,7 @@ Creates a unique-enough cache key.
 This is based off the current api_name/resource_name/args/kwargs.
 
 ``obj_get_list``
-~~~~~~~~~~~~~~~~
+----------------
 
 .. method:: Resource.obj_get_list(self, filters=None, **kwargs):
 
@@ -712,7 +728,7 @@ Fetches the list of objects available on the resource.
 ``Models``.
 
 ``cached_obj_get_list``
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 .. method:: Resource.cached_obj_get_list(self, **kwargs):
 
@@ -720,7 +736,7 @@ A version of ``obj_get_list`` that uses the cache as a means to get
 commonly-accessed data faster.
 
 ``obj_get``
-~~~~~~~~~~~
+-----------
 
 .. method:: Resource.obj_get(self, **kwargs):
 
@@ -733,7 +749,7 @@ be found, this should raise a ``NotFound`` exception.
 ``Models``.
 
 ``cached_obj_get``
-~~~~~~~~~~~~~~~~~~
+------------------
 
 .. method:: Resource.cached_obj_get(self, **kwargs):
 
@@ -741,7 +757,7 @@ A version of ``obj_get`` that uses the cache as a means to get
 commonly-accessed data faster.
 
 ``obj_create``
-~~~~~~~~~~~~~~
+--------------
 
 .. method:: Resource.obj_create(self, bundle, **kwargs):
 
@@ -753,7 +769,7 @@ Creates a new object based on the provided data.
 ``Models``.
 
 ``obj_update``
-~~~~~~~~~~~~~~
+--------------
 
 .. method:: Resource.obj_update(self, bundle, **kwargs):
 
@@ -766,7 +782,7 @@ provided data.
 ``Models``.
 
 ``obj_delete_list``
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 .. method:: Resource.obj_delete_list(self, **kwargs):
 
@@ -778,7 +794,7 @@ Deletes an entire list of objects.
 ``Models``.
 
 ``obj_delete``
-~~~~~~~~~~~~~~
+--------------
 
 .. method:: Resource.obj_delete(self, **kwargs):
 
@@ -790,7 +806,7 @@ Deletes a single object.
 ``Models``.
 
 ``create_response``
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 .. method:: Resource.create_response(self, request, data):
 
@@ -799,7 +815,7 @@ Extracts the common "which-format/serialize/return-response" cycle.
 Mostly a useful shortcut/hook.
 
 ``get_list``
-~~~~~~~~~~~~
+------------
 
 .. method:: Resource.get_list(self, request, **kwargs):
 
@@ -811,7 +827,7 @@ set and serializes it.
 Should return a HttpResponse (200 OK).
 
 ``get_detail``
-~~~~~~~~~~~~~~
+--------------
 
 .. method:: Resource.get_detail(self, request, **kwargs):
 
@@ -823,7 +839,7 @@ set and serializes it.
 Should return a HttpResponse (200 OK).
 
 ``put_list``
-~~~~~~~~~~~~
+------------
 
 .. method:: Resource.put_list(self, request, **kwargs):
 
@@ -835,7 +851,7 @@ with the provided the data to create the new collection.
 Return ``HttpAccepted`` (204 No Content).
 
 ``put_detail``
-~~~~~~~~~~~~~~
+--------------
 
 .. method:: Resource.put_detail(self, request, **kwargs):
 
@@ -849,7 +865,7 @@ If a new resource is created, return ``HttpCreated`` (201 Created).
 If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
 
 ``post_list``
-~~~~~~~~~~~~~
+-------------
 
 .. method:: Resource.post_list(self, request, **kwargs):
 
@@ -861,7 +877,7 @@ with the new resource's location.
 If a new resource is created, return ``HttpCreated`` (201 Created).
 
 ``post_detail``
-~~~~~~~~~~~~~~~
+---------------
 
 .. method:: Resource.post_detail(self, request, **kwargs):
 
@@ -873,7 +889,7 @@ aren't self-referential.
 If a new resource is created, return ``HttpCreated`` (201 Created).
 
 ``delete_list``
-~~~~~~~~~~~~~~~
+---------------
 
 .. method:: Resource.delete_list(self, request, **kwargs):
 
@@ -884,7 +900,7 @@ Calls ``obj_delete_list``.
 If the resources are deleted, return ``HttpAccepted`` (204 No Content).
 
 ``delete_detail``
-~~~~~~~~~~~~~~~~~
+-----------------
 
 .. method:: Resource.delete_detail(self, request, **kwargs):
 
@@ -896,7 +912,7 @@ If the resource is deleted, return ``HttpAccepted`` (204 No Content).
 If the resource did not exist, return ``HttpGone`` (410 Gone).
 
 ``get_schema``
-~~~~~~~~~~~~~~
+--------------
 
 .. method:: Resource.get_schema(self, request, **kwargs):
 
@@ -908,7 +924,7 @@ to HTTP GET.
 Should return a HttpResponse (200 OK).
 
 ``get_multiple``
-~~~~~~~~~~~~~~~~
+----------------
 
 .. method:: Resource.get_multiple(self, request, **kwargs):
 
@@ -933,7 +949,7 @@ Given that it is aware of Django's ORM, it also handles the CRUD data
 operations of the resource.
 
 ``should_skip_field``
-~~~~~~~~~~~~~~~~~~~~~
+---------------------
 
 .. method:: Resource.should_skip_field(cls, field):
 
@@ -943,7 +959,7 @@ Given a Django model field, return if it should be included in the
 contributed ApiFields.
 
 ``api_field_from_django_field``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------------
 
 .. method:: Resource.api_field_from_django_field(cls, f, default=CharField):
 
@@ -953,7 +969,7 @@ Returns the field type that would likely be associated with each
 Django type.
 
 ``get_fields``
-~~~~~~~~~~~~~~
+--------------
 
 .. method:: Resource.get_fields(cls, fields=None, excludes=None):
 
@@ -963,7 +979,7 @@ Given any explicit fields to include and fields to exclude, add
 additional fields based on the associated model.
 
 ``build_filters``
-~~~~~~~~~~~~~~~~~
+-----------------
 
 .. method:: Resource.build_filters(self, filters=None):
 
@@ -988,7 +1004,7 @@ At the declarative level::
 Accepts the filters as a dict. ``None`` by default, meaning no filters.
 
 ``apply_sorting``
-~~~~~~~~~~~~~~~~~
+-----------------
 
 .. method:: Resource.apply_sorting(self, obj_list, options=None):
 
@@ -1001,7 +1017,7 @@ field name) or descending (the field name with a ``-`` in front).
 The field name should be the resource field, **NOT** model field.
 
 ``obj_get_list``
-~~~~~~~~~~~~~~~~
+----------------
 
 .. method:: Resource.obj_get_list(self, filters=None, **kwargs):
 
@@ -1011,7 +1027,7 @@ Takes an optional ``filters`` dictionary, which can be used to narrow
 the query.
 
 ``obj_get``
-~~~~~~~~~~~
+-----------
 
 .. method:: Resource.obj_get(self, **kwargs):
 
@@ -1021,21 +1037,21 @@ Takes optional ``kwargs``, which are used to narrow the query to find
 the instance.
 
 ``obj_create``
-~~~~~~~~~~~~~~
+--------------
 
 .. method:: Resource.obj_create(self, bundle, **kwargs):
 
 A ORM-specific implementation of ``obj_create``.
 
 ``obj_update``
-~~~~~~~~~~~~~~
+--------------
 
 .. method:: Resource.obj_update(self, bundle, **kwargs):
 
 A ORM-specific implementation of ``obj_update``.
 
 ``obj_delete_list``
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 .. method:: Resource.obj_delete_list(self, **kwargs):
 
@@ -1044,7 +1060,7 @@ A ORM-specific implementation of ``obj_delete_list``.
 Takes optional ``kwargs``, which can be used to narrow the query.
 
 ``obj_delete``
-~~~~~~~~~~~~~~
+--------------
 
 .. method:: Resource.obj_delete(self, **kwargs):
 
@@ -1054,7 +1070,7 @@ Takes optional ``kwargs``, which are used to narrow the query to find
 the instance.
 
 ``save_m2m``
-~~~~~~~~~~~~
+------------
 
 .. method:: Resource.save_m2m(self, bundle):
 
@@ -1067,7 +1083,7 @@ Currently slightly inefficient in that it will clear out the whole
 relation and recreate the related data as needed.
 
 ``get_resource_uri``
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 .. method:: Resource.get_resource_uri(self, bundle_or_obj):
 

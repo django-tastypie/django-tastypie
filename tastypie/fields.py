@@ -3,7 +3,7 @@ import re
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.core.urlresolvers import reverse, resolve
-from django.utils import datetime_safe
+from django.utils import datetime_safe, importlib
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 
@@ -361,9 +361,11 @@ class RelatedField(ApiField):
         self.api_name = None
         self.resource_name = None
         self.unique = unique
+        self._to_class = None
         
         if self.to == 'self':
             self.self_referential = True
+            self._to_class = self.__class__
     
     def has_default(self):
         """
@@ -383,10 +385,40 @@ class RelatedField(ApiField):
         """
         Instaniates the related resource.
         """
-        related_resource = self.to()
+        related_resource = self.to_class()
         # Try to be efficient about DB queries.
         related_resource.instance = related_instance
         return related_resource
+    
+    @property
+    def to_class(self):
+        # We need to be lazy here, because when the metaclass constructs the
+        # Resources, other classes may not exist yet.
+        # That said, memoize this so we never have to relookup/reimport.
+        if self._to_class:
+            return self._to_class
+        
+        if not isinstance(self.to, basestring):
+            self._to_class = self.to
+            return self._to_class
+        
+        # It's a string. Let's figure it out.
+        if '.' in self.to:
+            # Try to import.
+            module_bits = self.to.split('.')
+            module_path, class_name = '.'.join(module_bits[:-1]), module_bits[-1]
+            module = importlib.import_module(module_path)
+        else:
+            # We've got a bare class name here, which won't work (No AppCache
+            # to rely on). Try to throw a useful error.
+            raise ImportError("Tastypie requires a Python-style path (<module.module.Class>) to lazy load related resources. Only given '%s'." % self.to)
+        
+        self._to_class = getattr(module, class_name, None)
+        
+        if self._to_class is None:
+            raise ImportError("Module '%s' does not appear to have a class called '%s'." % (module_path, class_name))
+        
+        return self._to_class
     
     def dehydrate_related(self, bundle, related_resource):
         """
@@ -407,7 +439,7 @@ class RelatedField(ApiField):
         dictionary-like structure is provided, a fresh resource is
         created.
         """
-        self.fk_resource = self.to()
+        self.fk_resource = self.to_class()
         
         if isinstance(value, basestring):
             # We got a URI. Load the object and assign it.
