@@ -75,6 +75,12 @@ class Api(object):
             return getattr(self, view)(request, *args, **kwargs)
         return wrapper
     
+    def override_urls(self):
+        """
+        A hook for adding your own URLs or overriding the default URLs.
+        """
+        return []
+    
     @property
     def urls(self):
         """
@@ -89,7 +95,7 @@ class Api(object):
             self._registry[name].api_name = self.api_name
             pattern_list.append((r"^(?P<api_name>%s)/" % self.api_name, include(self._registry[name].urls)))
         
-        urlpatterns = patterns('',
+        urlpatterns = self.override_urls() + patterns('',
             *pattern_list
         )
         return urlpatterns
