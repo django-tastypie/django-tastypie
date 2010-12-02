@@ -19,3 +19,13 @@ echo
 echo
 echo "** Alphanumeric Primary Keys **"
 django-admin.py test alphanumeric --settings=settings_alphanumeric
+
+echo
+echo
+echo "** Slashless **"
+django-admin.py test slashless --settings=settings_slashless
+
+echo
+echo
+echo "** Namespaced **"
+django-admin.py test namespaced --settings=settings_namespaced

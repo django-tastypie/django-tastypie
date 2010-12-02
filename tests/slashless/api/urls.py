@@ -1,10 +1,6 @@
-from django.conf import settings
 from django.conf.urls.defaults import *
 from tastypie.api import Api
-from basic.api.resources import NoteResource, UserResource
-
-settings.APPEND_SLASH = False
-settings.TASTYPIE_ALLOW_MISSING_SLASH = True
+from slashless.api.resources import NoteResource, UserResource
 
 api = Api(api_name='v1')
 api.register(NoteResource(), canonical=True)

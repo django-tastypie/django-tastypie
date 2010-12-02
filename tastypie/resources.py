@@ -50,6 +50,7 @@ class ResourceOptions(object):
     limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)
     api_name = None
     resource_name = None
+    urlconf_namespace = None
     default_format = 'application/json'
     filtering = {}
     ordering = []
@@ -221,6 +222,14 @@ class Resource(object):
         desired_format = self.determine_format(request)
         serialized = self.serialize(request, data, desired_format)
         return HttpApplicationError(content=serialized, content_type=build_content_type(desired_format))
+    
+    def _build_reverse_url(self, name, args=None, kwargs=None):
+        """
+        A convenience hook for overriding how URLs are built.
+        
+        See ``NamespacedModelResource._build_reverse_url`` for an example.
+        """
+        return reverse(name, args=args, kwargs=kwargs)
     
     def base_urls(self):
         """
@@ -513,7 +522,7 @@ class Resource(object):
             kwargs['api_name'] = self._meta.api_name
         
         try:
-            return reverse("api_dispatch_list", kwargs=kwargs)
+            return self._build_reverse_url("api_dispatch_list", kwargs=kwargs)
         except NoReverseMatch:
             return None
     
@@ -1398,7 +1407,16 @@ class ModelResource(Resource):
         if self._meta.api_name is not None:
             kwargs['api_name'] = self._meta.api_name
         
-        return reverse("api_dispatch_detail", kwargs=kwargs)
+        return self._build_reverse_url("api_dispatch_detail", kwargs=kwargs)
+
+
+class NamespacedModelResource(ModelResource):
+    """
+    A ModelResource subclass that respects Django namespaces.
+    """
+    def _build_reverse_url(self, name, args=None, kwargs=None):
+        namespaced = "%s:%s" % (self._meta.urlconf_namespace, name)
+        return reverse(namespaced, args=args, kwargs=kwargs)
 
 
 # Based off of ``piston.utils.coerce_put_post``. Similarly BSD-licensed.

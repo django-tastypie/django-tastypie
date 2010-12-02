@@ -112,7 +112,7 @@ class Api(object):
             api_name = self.api_name
         
         for name in sorted(self._registry.keys()):
-            available_resources[name] = reverse("api_dispatch_list", kwargs={
+            available_resources[name] = self._build_reverse_url("api_dispatch_list", kwargs={
                 'api_name': api_name,
                 'resource_name': name,
             })
@@ -120,3 +120,31 @@ class Api(object):
         desired_format = determine_format(request, serializer)
         serialized = serializer.serialize(available_resources, desired_format)
         return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
+    
+    def _build_reverse_url(self, name, args=None, kwargs=None):
+        """
+        A convenience hook for overriding how URLs are built.
+        
+        See ``NamespacedApi._build_reverse_url`` for an example.
+        """
+        return reverse(name, args=args, kwargs=kwargs)
+
+
+class NamespacedApi(Api):
+    """
+    An API subclass that respects Django namespaces.
+    """
+    def __init__(self, api_name="v1", urlconf_namespace=None):
+        super(NamespacedApi, self).__init__(api_name=api_name)
+        self.urlconf_namespace = urlconf_namespace
+    
+    def register(self, resource, canonical=True):
+        super(NamespacedApi, self).register(resource, canonical=canonical)
+        
+        if canonical is True:
+            # Plop in the namespace here as well.
+            resource._meta.urlconf_namespace = self.urlconf_namespace
+    
+    def _build_reverse_url(self, name, args=None, kwargs=None):
+        namespaced = "%s:%s" % (self.urlconf_namespace, name)
+        return reverse(namespaced, args=args, kwargs=kwargs)
