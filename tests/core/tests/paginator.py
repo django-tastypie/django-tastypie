@@ -124,3 +124,10 @@ class PaginatorTestCase(TestCase):
 
         paginator.offset = 'hAI!'
         self.assertRaises(BadRequest, paginator.get_offset)
+    
+    def test_regression_nonqueryset(self):
+        paginator = Paginator({}, ['foo', 'bar', 'baz'], limit=2, offset=0)
+        # This would fail due to ``count`` being present on ``list`` but called
+        # differently.
+        page = paginator.page()
+        self.assertEqual(page['objects'], ['foo', 'bar'])
