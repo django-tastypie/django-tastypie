@@ -68,6 +68,17 @@ If present, unregisters a resource from the API.
 
 Returns the canonical resource for a given ``resource_name``.
 
+``override_urls``
+-----------------
+
+.. method:: Api.override_urls(self):
+
+A hook for adding your own URLs or overriding the default URLs. Useful for
+adding custom endpoints or overriding the built-in ones.
+
+Should return a list of individual URLconf lines (**NOT** wrapped in
+``patterns``).
+
 ``urls``
 ~~~~~~~~
 

@@ -421,6 +421,28 @@ Note that if ``BadRequest`` or an exception with a ``response`` attr are seen,
 there is special handling to either present a message back to the user or
 return the response traveling with the exception.
 
+``base_urls``
+-------------
+
+.. method:: Resource.base_urls(self):
+
+The standard URLs this ``Resource`` should respond to. These include the
+list, detail, schema & multiple endpoints by default.
+
+Should return a list of individual URLconf lines (**NOT** wrapped in
+``patterns``).
+
+``override_urls``
+-----------------
+
+.. method:: Resource.override_urls(self):
+
+A hook for adding your own URLs or overriding the default URLs. Useful for
+adding custom endpoints or overriding the built-in ones (from ``base_urls``).
+
+Should return a list of individual URLconf lines (**NOT** wrapped in
+``patterns``).
+
 ``urls``
 --------
 
@@ -428,7 +450,8 @@ return the response traveling with the exception.
 
 *Property*
 
-The endpoints this ``Resource`` responds to.
+The endpoints this ``Resource`` responds to. A combination of ``base_urls`` &
+``override_urls``.
 
 Mostly a standard URLconf, this is suitable for either automatic use
 when registered with an ``Api`` class or for including directly in
