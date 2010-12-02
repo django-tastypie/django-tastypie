@@ -3,7 +3,6 @@ Primary authors:
 * Daniel Lindsley
 * Cody Soyland
 * Matt Croydon
-* Chris Adams (Documentation)
 
 
 Contributors:
@@ -13,11 +12,12 @@ Contributors:
 * Christian Klein (cklein) for the work on alphanumeric PK support.
 * Charles Leifer (coleifer) for a patch related to nullable OneToOneFields.
 * Sean Bleier (sebleier) for a patch that prevents error hiding on delete.
-* Chris Adams (acdha) for doc fixes & other patches.
+* Chris Adams (acdha) for documentation fixes & other patches.
 * jonozzz for a patch regarding Paginator optimizations & a patch to multiple sort_by parameters.
 * David Guaraglia (dguaraglia) for the requirements file & a patch to limits.
 * whiteblack for a patch to Meta inheritance.
 * Josh Bohde (joshbohde) for a patch to ignore problematic deserialization charsets.
+* Travis Cline (traviscline) for patches regarding URLconf namespacing & pagination.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
