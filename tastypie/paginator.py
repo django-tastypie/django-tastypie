@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.core.urlresolvers import NoReverseMatch
 from tastypie.exceptions import BadRequest
 from urllib import urlencode
 
