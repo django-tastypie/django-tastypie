@@ -44,9 +44,9 @@ class ResourceOptions(object):
     authorization = ReadOnlyAuthorization()
     cache = NoCache()
     throttle = BaseThrottle()
-    allowed_methods = None
-    list_allowed_methods = ['get', 'post', 'put', 'delete']
-    detail_allowed_methods = ['get', 'post', 'put', 'delete']
+    allowed_methods = ['get', 'post', 'put', 'delete']
+    list_allowed_methods = None
+    detail_allowed_methods = None
     limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)
     api_name = None
     resource_name = None
@@ -63,7 +63,7 @@ class ResourceOptions(object):
     
     def __new__(cls, meta=None):
         overrides = {}
-
+        
         # Handle overrides.
         if meta:
             for override_name in dir(meta):
@@ -71,10 +71,13 @@ class ResourceOptions(object):
                 if not override_name.startswith('_'):
                     overrides[override_name] = getattr(meta, override_name)
         
-        # Shortcut to specify both at the class level.
-        if overrides.get('allowed_methods', None) is not None:
-            overrides['list_allowed_methods'] = overrides['allowed_methods']
-            overrides['detail_allowed_methods'] = overrides['allowed_methods']
+        allowed_methods = overrides.get('allowed_methods', ['get', 'post', 'put', 'delete'])
+        
+        if overrides.get('list_allowed_methods', None) is None:
+            overrides['list_allowed_methods'] = allowed_methods
+        
+        if overrides.get('detail_allowed_methods', None) is None:
+            overrides['detail_allowed_methods'] = allowed_methods
         
         if not overrides.get('queryset', None) is None:
             overrides['object_class'] = overrides['queryset'].model

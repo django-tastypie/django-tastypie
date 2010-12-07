@@ -571,6 +571,21 @@ class ModelResourceTestCase(TestCase):
         # Note - automatic resource naming.
         resource_4 = NoUriNoteResource()
         self.assertEqual(resource_4._meta.resource_name, 'nourinote')
+        
+        # Test to make sure that, even with a mix of basic & advanced
+        # configuration, options are set right.
+        class TestOptionsResource(ModelResource):
+            class Meta:
+                queryset = Note.objects.all()
+                allowed_methods = ['post']
+                list_allowed_methods = ['post', 'put']
+        
+        resource_5 = TestOptionsResource()
+        self.assertEqual(resource_5._meta.allowed_methods, ['post'])
+        # Should be the overridden values.
+        self.assertEqual(resource_5._meta.list_allowed_methods, ['post', 'put'])
+        # Should inherit from the basic configuration.
+        self.assertEqual(resource_5._meta.detail_allowed_methods, ['post'])
     
     def test_urls(self):
         # The common case, where the ``Api`` specifies the name.
