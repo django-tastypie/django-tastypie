@@ -1,9 +1,3 @@
-import base64
-from django.contrib.auth import authenticate
-from django.contrib.auth.models import Permission
-from http import HttpUnauthorized
-
-
 class Authorization(object):
     """
     A base class that provides no permissions checking.

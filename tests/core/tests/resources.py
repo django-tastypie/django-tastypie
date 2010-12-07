@@ -3,9 +3,9 @@ import datetime
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.core.exceptions import ImproperlyConfigured, FieldError
-from django.core.urlresolvers import reverse, NoReverseMatch
-from django.http import HttpRequest, QueryDict
+from django.core.exceptions import FieldError
+from django.core.urlresolvers import reverse
+from django.http import HttpRequest
 from django.test import TestCase
 from django.utils import dateformat
 from tastypie.authentication import BasicAuthentication
@@ -16,10 +16,6 @@ from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
 from core.models import Note, Subject
-try:
-    set
-except NameError:
-    from sets import Set as set
 try:
     import json
 except ImportError:
