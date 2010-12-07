@@ -703,7 +703,28 @@ class Resource(object):
     
     # Data access methods.
     
-    def obj_get_list(self, filters=None, **kwargs):
+    def get_object_list(self, request):
+        """
+        A hook to allow making returning the list of available objects.
+        
+        This needs to be implemented at the user level.
+        
+        ``ModelResource`` includes a full working version specific to Django's
+        ``Models``.
+        """
+        raise NotImplementedError()
+    
+    def apply_authorization_limits(self, request, object_list):
+        """
+        Allows the ``Authorization`` class to further limit the object list.
+        Also a hook to customize per ``Resource``.
+        """
+        if hasattr(self._meta.authorization, 'apply_limits'):
+            object_list = self._meta.authorization.apply_limits(request, object_list)
+        
+        return object_list
+    
+    def obj_get_list(self, request=None, **kwargs):
         """
         Fetches the list of objects available on the resource.
         
@@ -714,7 +735,7 @@ class Resource(object):
         """
         raise NotImplementedError()
     
-    def cached_obj_get_list(self, **kwargs):
+    def cached_obj_get_list(self, request=None, **kwargs):
         """
         A version of ``obj_get_list`` that uses the cache as a means to get
         commonly-accessed data faster.
@@ -723,12 +744,12 @@ class Resource(object):
         obj_list = self._meta.cache.get(cache_key)
         
         if obj_list is None:
-            obj_list = self.obj_get_list(**kwargs)
+            obj_list = self.obj_get_list(request=request, **kwargs)
             self._meta.cache.set(cache_key, obj_list)
         
         return obj_list
     
-    def obj_get(self, **kwargs):
+    def obj_get(self, request=None, **kwargs):
         """
         Fetches an individual object on the resource.
         
@@ -740,7 +761,7 @@ class Resource(object):
         """
         raise NotImplementedError()
     
-    def cached_obj_get(self, **kwargs):
+    def cached_obj_get(self, request=None, **kwargs):
         """
         A version of ``obj_get`` that uses the cache as a means to get
         commonly-accessed data faster.
@@ -749,12 +770,12 @@ class Resource(object):
         bundle = self._meta.cache.get(cache_key)
         
         if bundle is None:
-            bundle = self.obj_get(**kwargs)
+            bundle = self.obj_get(request=request, **kwargs)
             self._meta.cache.set(cache_key, bundle)
         
         return bundle
     
-    def obj_create(self, bundle, **kwargs):
+    def obj_create(self, bundle, request=None, **kwargs):
         """
         Creates a new object based on the provided data.
         
@@ -765,7 +786,7 @@ class Resource(object):
         """
         raise NotImplementedError()
     
-    def obj_update(self, bundle, **kwargs):
+    def obj_update(self, bundle, request=None, **kwargs):
         """
         Updates an existing object (or creates a new object) based on the
         provided data.
@@ -777,7 +798,7 @@ class Resource(object):
         """
         raise NotImplementedError()
     
-    def obj_delete_list(self, **kwargs):
+    def obj_delete_list(self, request=None, **kwargs):
         """
         Deletes an entire list of objects.
         
@@ -788,7 +809,7 @@ class Resource(object):
         """
         raise NotImplementedError()
     
-    def obj_delete(self, **kwargs):
+    def obj_delete(self, request=None, **kwargs):
         """
         Deletes a single object.
         
@@ -822,7 +843,7 @@ class Resource(object):
         """
         # TODO: Uncached for now. Invalidation that works for everyone may be
         #       impossible.
-        objects = self.obj_get_list(filters=request.GET, **self.remove_api_resource_names(kwargs))
+        objects = self.obj_get_list(request=request, **self.remove_api_resource_names(kwargs))
         sorted_objects = self.apply_sorting(objects, options=request.GET)
         
         paginator = Paginator(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri(),
@@ -843,7 +864,7 @@ class Resource(object):
         Should return a HttpResponse (200 OK).
         """
         try:
-            obj = self.cached_obj_get(**self.remove_api_resource_names(kwargs))
+            obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
         except ObjectDoesNotExist:
             return HttpGone()
         except MultipleObjectsReturned:
@@ -866,7 +887,7 @@ class Resource(object):
         if not 'objects' in deserialized:
             raise BadRequest("Invalid data sent.")
         
-        self.obj_delete_list(**self.remove_api_resource_names(kwargs))
+        self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
         
         for object_data in deserialized['objects']:
             data = {}
@@ -875,7 +896,7 @@ class Resource(object):
                 data[str(key)] = value
             
             bundle = self.build_bundle(data=data)
-            self.obj_create(bundle)
+            self.obj_create(bundle, request=request)
         
         return HttpAccepted()
     
@@ -894,10 +915,10 @@ class Resource(object):
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized))
         
         try:
-            updated_bundle = self.obj_update(bundle, pk=kwargs.get('pk'))
+            updated_bundle = self.obj_update(bundle, request=request, pk=kwargs.get('pk'))
             return HttpAccepted()
         except:
-            updated_bundle = self.obj_create(bundle, pk=kwargs.get('pk'))
+            updated_bundle = self.obj_create(bundle, request=request, pk=kwargs.get('pk'))
             return HttpCreated(location=self.get_resource_uri(updated_bundle))
     
     def post_list(self, request, **kwargs):
@@ -916,7 +937,7 @@ class Resource(object):
             data[str(key)] = value
         
         bundle = self.build_bundle(data=data)
-        updated_bundle = self.obj_create(bundle)
+        updated_bundle = self.obj_create(bundle, request=request)
         return HttpCreated(location=self.get_resource_uri(updated_bundle))
     
     def post_detail(self, request, **kwargs):
@@ -938,7 +959,7 @@ class Resource(object):
         
         If the resources are deleted, return ``HttpAccepted`` (204 No Content).
         """
-        self.obj_delete_list(**self.remove_api_resource_names(kwargs))
+        self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
         return HttpAccepted()
     
     def delete_detail(self, request, **kwargs):
@@ -951,7 +972,7 @@ class Resource(object):
         If the resource did not exist, return ``HttpGone`` (410 Gone).
         """
         try:
-            self.obj_delete(**self.remove_api_resource_names(kwargs))
+            self.obj_delete(request=request, **self.remove_api_resource_names(kwargs))
             return HttpAccepted()
         except NotFound:
             return HttpGone()
@@ -992,7 +1013,7 @@ class Resource(object):
         
         for pk in obj_pks:
             try:
-                obj = self.obj_get(pk=pk)
+                obj = self.obj_get(request, pk=pk)
                 bundle = self.full_dehydrate(obj)
                 objects.append(bundle)
             except ObjectDoesNotExist:
@@ -1261,21 +1282,40 @@ class ModelResource(Resource):
         
         return obj_list.order_by(*order_by_args)
     
-    def obj_get_list(self, filters=None, **kwargs):
+    def get_object_list(self, request):
+        """
+        An ORM-specific implementation of ``get_object_list``.
+        
+        Returns a queryset that may have been limited by authorization or other
+        overrides.
+        """
+        base_object_list = self._meta.queryset
+        
+        # Limit it as needed.
+        authed_object_list = self.apply_authorization_limits(request, base_object_list)
+        
+        return authed_object_list
+    
+    def obj_get_list(self, request=None, **kwargs):
         """
         A ORM-specific implementation of ``obj_get_list``.
         
-        Takes an optional ``filters`` dictionary, which can be used to narrow
-        the query.
+        Takes an optional ``request`` object, whose ``GET`` dictionary can be
+        used to narrow the query.
         """
-        applicable_filters = self.build_filters(filters)
+        filters = None
+        
+        if hasattr(request, 'GET'):
+            filters = request.GET
+        
+        applicable_filters = self.build_filters(filters=filters)
         
         try:
-            return self._meta.queryset.filter(**applicable_filters)
+            return self.get_object_list(request).filter(**applicable_filters)
         except ValueError, e:
             raise NotFound("Invalid resource lookup data provided (mismatched type).")
     
-    def obj_get(self, **kwargs):
+    def obj_get(self, request=None, **kwargs):
         """
         A ORM-specific implementation of ``obj_get``.
         
@@ -1283,11 +1323,11 @@ class ModelResource(Resource):
         the instance.
         """
         try:
-            return self._meta.queryset.get(**kwargs)
+            return self.get_object_list(request).get(**kwargs)
         except ValueError, e:
             raise NotFound("Invalid resource lookup data provided (mismatched type).")
     
-    def obj_create(self, bundle, **kwargs):
+    def obj_create(self, bundle, request=None, **kwargs):
         """
         A ORM-specific implementation of ``obj_create``.
         """
@@ -1304,7 +1344,7 @@ class ModelResource(Resource):
         self.save_m2m(m2m_bundle)
         return bundle
     
-    def obj_update(self, bundle, **kwargs):
+    def obj_update(self, bundle, request=None, **kwargs):
         """
         A ORM-specific implementation of ``obj_update``.
         """
@@ -1312,7 +1352,7 @@ class ModelResource(Resource):
             # Attempt to hydrate data from kwargs before doing a lookup for the object.
             # This step is needed so certain values (like datetime) will pass model validation.
             try:
-                bundle.obj = self._meta.queryset.model()
+                bundle.obj = self.get_object_list(request).model()
                 bundle.data.update(kwargs)
                 bundle = self.full_hydrate(bundle)
                 lookup_kwargs = kwargs.copy()
@@ -1326,7 +1366,7 @@ class ModelResource(Resource):
                 # and this will work fine.
                 lookup_kwargs = kwargs
             try:
-                bundle.obj = self._meta.queryset.get(**lookup_kwargs)
+                bundle.obj = self.get_object_list(request).get(**lookup_kwargs)
             except ObjectDoesNotExist:
                 raise NotFound("A model instance matching the provided arguments could not be found.")
         
@@ -1338,15 +1378,15 @@ class ModelResource(Resource):
         self.save_m2m(m2m_bundle)
         return bundle
     
-    def obj_delete_list(self, **kwargs):
+    def obj_delete_list(self, request=None, **kwargs):
         """
         A ORM-specific implementation of ``obj_delete_list``.
         
         Takes optional ``kwargs``, which can be used to narrow the query.
         """
-        self._meta.queryset.filter(**kwargs).delete()
+        self.get_object_list(request).filter(**kwargs).delete()
     
-    def obj_delete(self, **kwargs):
+    def obj_delete(self, request=None, **kwargs):
         """
         A ORM-specific implementation of ``obj_delete``.
         
@@ -1354,7 +1394,7 @@ class ModelResource(Resource):
         the instance.
         """
         try:
-            obj = self._meta.queryset.get(**kwargs)
+            obj = self.get_object_list(request).get(**kwargs)
         except ObjectDoesNotExist:
             raise NotFound("A model instance matching the provided arguments could not be found.")
         

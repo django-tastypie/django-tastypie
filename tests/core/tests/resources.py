@@ -9,6 +9,7 @@ from django.http import HttpRequest
 from django.test import TestCase
 from django.utils import dateformat
 from tastypie.authentication import BasicAuthentication
+from tastypie.authorization import Authorization
 from tastypie.bundle import Bundle
 from tastypie.exceptions import InvalidFilterError, InvalidSortError, ImmediateHttpResponse, BadRequest
 from tastypie import fields
@@ -513,6 +514,31 @@ class AnotherRelatedNoteResource(ModelResource):
 class NullableRelatedNoteResource(AnotherRelatedNoteResource):
     author = fields.ForeignKey(UserResource, 'author')
     subjects = fields.ManyToManyField(SubjectResource, 'subjects', null=True)
+
+
+# Per user authorization bits.
+class PerUserAuthorization(Authorization):
+    def apply_limits(self, request, object_list):
+        if request and hasattr(request, 'GET') and request.GET.get('user'):
+            if request.GET['user'].is_authenticated():
+                object_list = object_list.filter(author=request.GET['user'])
+            else:
+                object_list = object_list.none()
+        
+        return object_list
+
+
+class PerUserNoteResource(NoteResource):
+    class Meta:
+        resource_name = 'perusernotes'
+        queryset = Note.objects.all()
+        authorization = PerUserAuthorization()
+    
+    def apply_authorization_limits(self, request, object_list):
+        # Just to demonstrate the per-resource hooks.
+        object_list = super(PerUserNoteResource, self).apply_authorization_limits(request, object_list)
+        return object_list.filter(is_active=True)
+# End per user authorization bits.
 
 
 class ModelResourceTestCase(TestCase):
@@ -1513,6 +1539,42 @@ class ModelResourceTestCase(TestCase):
         hydrated3 = nrrnr.obj_create(bundle_2)
         self.assertEqual(hydrated2.obj.author.username, u'johndoe')
         self.assertEqual(hydrated2.obj.subjects.count(), 0)
+    
+    def test_per_user_authorization(self):
+        from django.contrib.auth.models import AnonymousUser, User
+        
+        punr = PerUserNoteResource()
+        empty_request = type('MockRequest', (object,), {'GET': {}})
+        anony_request = type('MockRequest', (object,), {'GET': {
+            'user': AnonymousUser()
+        }})
+        authed_request = type('MockRequest', (object,), {'GET': {
+            'user': User.objects.get(username='johndoe')
+        }})
+        authed_request2 = type('MockRequest', (object,), {'GET': {
+            'user': User.objects.get(username='janedoe')
+        }})
+        
+        self.assertEqual(punr._meta.queryset.count(), 6)
+        
+        # Requests without a user get all active objects, regardless of author.
+        self.assertEqual(punr.get_object_list(empty_request).count(), 4)
+        self.assertEqual(punr.obj_get_list(request=empty_request).count(), 4)
+        
+        # Requests with an Anonymous user get no objects.
+        self.assertEqual(punr.get_object_list(anony_request).count(), 0)
+        self.assertEqual(punr.obj_get_list(request=anony_request).count(), 0)
+        
+        # Requests with an authenticated user get all objects for that user
+        # that are active.
+        self.assertEqual(punr.get_object_list(authed_request).count(), 2)
+        self.assertEqual(punr.obj_get_list(request=authed_request).count(), 2)
+        
+        # Demonstrate that a different user gets different objects.
+        self.assertEqual(punr.get_object_list(authed_request2).count(), 2)
+        self.assertEqual(punr.obj_get_list(request=authed_request2).count(), 2)
+        self.assertEqual(list(punr.get_object_list(authed_request).values_list('id', flat=True)), [1, 2])
+        self.assertEqual(list(punr.get_object_list(authed_request2).values_list('id', flat=True)), [4, 6])
 
 
 class BasicAuthResourceTestCase(TestCase):

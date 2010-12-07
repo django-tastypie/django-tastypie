@@ -738,10 +738,32 @@ Creates a unique-enough cache key.
 
 This is based off the current api_name/resource_name/args/kwargs.
 
+``get_object_list``
+-------------------
+
+.. method:: Resource.get_object_list(self, request):
+
+A hook to allow making returning the list of available objects.
+
+*This needs to be implemented at the user level.*
+
+``ModelResource`` includes a full working version specific to Django's
+``Models``.
+
+``apply_authorization_limits``
+------------------------------
+
+.. method:: Resource.apply_authorization_limits(self, request, object_list):
+
+Allows the ``Authorization`` class to further limit the object list.
+Also a hook to customize per ``Resource``.
+
+Calls ``Authorization.apply_limits`` if available.
+
 ``obj_get_list``
 ----------------
 
-.. method:: Resource.obj_get_list(self, filters=None, **kwargs):
+.. method:: Resource.obj_get_list(self, request=None, **kwargs):
 
 Fetches the list of objects available on the resource.
 
@@ -753,7 +775,7 @@ Fetches the list of objects available on the resource.
 ``cached_obj_get_list``
 -----------------------
 
-.. method:: Resource.cached_obj_get_list(self, **kwargs):
+.. method:: Resource.cached_obj_get_list(self, request=None, **kwargs):
 
 A version of ``obj_get_list`` that uses the cache as a means to get
 commonly-accessed data faster.
@@ -761,7 +783,7 @@ commonly-accessed data faster.
 ``obj_get``
 -----------
 
-.. method:: Resource.obj_get(self, **kwargs):
+.. method:: Resource.obj_get(self, request=None, **kwargs):
 
 Fetches an individual object on the resource.
 
@@ -774,7 +796,7 @@ be found, this should raise a ``NotFound`` exception.
 ``cached_obj_get``
 ------------------
 
-.. method:: Resource.cached_obj_get(self, **kwargs):
+.. method:: Resource.cached_obj_get(self, request=None, **kwargs):
 
 A version of ``obj_get`` that uses the cache as a means to get
 commonly-accessed data faster.
@@ -782,7 +804,7 @@ commonly-accessed data faster.
 ``obj_create``
 --------------
 
-.. method:: Resource.obj_create(self, bundle, **kwargs):
+.. method:: Resource.obj_create(self, bundle, request=None, **kwargs):
 
 Creates a new object based on the provided data.
 
@@ -794,7 +816,7 @@ Creates a new object based on the provided data.
 ``obj_update``
 --------------
 
-.. method:: Resource.obj_update(self, bundle, **kwargs):
+.. method:: Resource.obj_update(self, bundle, request=None, **kwargs):
 
 Updates an existing object (or creates a new object) based on the
 provided data.
@@ -807,7 +829,7 @@ provided data.
 ``obj_delete_list``
 -------------------
 
-.. method:: Resource.obj_delete_list(self, **kwargs):
+.. method:: Resource.obj_delete_list(self, request=None, **kwargs):
 
 Deletes an entire list of objects.
 
@@ -819,7 +841,7 @@ Deletes an entire list of objects.
 ``obj_delete``
 --------------
 
-.. method:: Resource.obj_delete(self, **kwargs):
+.. method:: Resource.obj_delete(self, request=None, **kwargs):
 
 Deletes a single object.
 
@@ -1038,6 +1060,16 @@ Looks for the ``sort_by`` key and handles either ascending (just the
 field name) or descending (the field name with a ``-`` in front).
 
 The field name should be the resource field, **NOT** model field.
+
+``get_object_list``
+-------------------
+
+.. method:: Resource.get_object_list(self, request):
+
+A ORM-specific implementation of ``get_object_list``.
+
+Returns a ``QuerySet`` that may have been limited by authorization or other
+overrides.
 
 ``obj_get_list``
 ----------------
