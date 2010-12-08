@@ -519,9 +519,9 @@ class NullableRelatedNoteResource(AnotherRelatedNoteResource):
 # Per user authorization bits.
 class PerUserAuthorization(Authorization):
     def apply_limits(self, request, object_list):
-        if request and hasattr(request, 'GET') and request.GET.get('user'):
-            if request.GET['user'].is_authenticated():
-                object_list = object_list.filter(author=request.GET['user'])
+        if request and hasattr(request, 'user'):
+            if request.user.is_authenticated():
+                object_list = object_list.filter(author=request.user)
             else:
                 object_list = object_list.none()
         
@@ -1545,15 +1545,9 @@ class ModelResourceTestCase(TestCase):
         
         punr = PerUserNoteResource()
         empty_request = type('MockRequest', (object,), {'GET': {}})
-        anony_request = type('MockRequest', (object,), {'GET': {
-            'user': AnonymousUser()
-        }})
-        authed_request = type('MockRequest', (object,), {'GET': {
-            'user': User.objects.get(username='johndoe')
-        }})
-        authed_request2 = type('MockRequest', (object,), {'GET': {
-            'user': User.objects.get(username='janedoe')
-        }})
+        anony_request = type('MockRequest', (object,), {'user': AnonymousUser()})
+        authed_request = type('MockRequest', (object,), {'user': User.objects.get(username='johndoe')})
+        authed_request2 = type('MockRequest', (object,), {'user': User.objects.get(username='janedoe')})
         
         self.assertEqual(punr._meta.queryset.count(), 6)
         
