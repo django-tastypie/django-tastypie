@@ -16,7 +16,7 @@ Contributors:
 * jonozzz for a patch regarding Paginator optimizations & a patch to multiple sort_by parameters.
 * David Guaraglia (dguaraglia) for the requirements file & a patch to limits.
 * whiteblack for a patch to Meta inheritance.
-* Josh Bohde (joshbohde) for a patch to ignore problematic deserialization charsets.
+* Josh Bohde (joshbohde) for a patch to ignore problematic deserialization charsets & for docs on "nested" resources.
 * Travis Cline (traviscline) for patches regarding URLconf namespacing & pagination.
 
 
