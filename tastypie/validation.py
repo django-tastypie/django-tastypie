@@ -1,0 +1,59 @@
+from django.core.exceptions import ImproperlyConfigured
+
+
+class Validation(object):
+    """
+    A basic validation stub that does no validation.
+    """
+    def __init__(self, **kwargs):
+        pass
+    
+    def is_valid(self, bundle, request=None):
+        """
+        Performs a check on the data within the bundle (and optionally the
+        request) to ensure it is valid.
+        
+        Should return a dictionary of error messages. If the dictionary has
+        zero items, the data is considered valid. If there are errors, keys
+        in the dictionary should be field names and the values should be a list
+        of errors, even if there is only one.
+        """
+        return {}
+
+
+class FormValidation(Validation):
+    """
+    A validation class that uses a Django ``Form`` to validate the data.
+    
+    This class requires a ``form_class`` argument, which should be a Django
+    ``Form`` (or ``ModelForm``, though ``save`` will never be called) class.
+    This form will be used to validate the data in ``bundle.data``.
+    """
+    def __init__(self, **kwargs):
+        if not 'form_class' in kwargs:
+            raise ImproperlyConfigured("You must provide a 'form_class' to 'FormValidation' classes.")
+        
+        self.form_class = kwargs.pop('form_class')
+        super(FormValidation, self).__init__(**kwargs)
+    
+    def is_valid(self, bundle, request=None):
+        """
+        Performs a check on ``bundle.data``to ensure it is valid.
+        
+        If the form is valid, an empty list (all valid) will be returned. If
+        not, a list of errors will be returned.
+        """
+        data = bundle.data
+        
+        # Ensure we get a bound Form, regardless of the state of the bundle.
+        if data is None:
+            data = {}
+        
+        form = self.form_class(data)
+        
+        if form.is_valid():
+            return {}
+        
+        # The data is invalid. Let's collect all the error messages & return
+        # them.
+        return form.errors

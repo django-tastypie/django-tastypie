@@ -11,6 +11,7 @@ Table Of Contents
    resources
    api
    authentication_authorization
+   validation
    caching
    serialization
    throttling

@@ -14,6 +14,7 @@ interfaces.
    resources
    api
    caching
+   validation
    authentication_authorization
    serialization
    throttling

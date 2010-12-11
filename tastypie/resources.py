@@ -17,6 +17,7 @@ from tastypie.serializers import Serializer
 from tastypie.throttle import BaseThrottle
 from tastypie.utils import is_valid_jsonp_callback_value, dict_strip_unicode_keys, trailing_slash
 from tastypie.utils.mime import determine_format, build_content_type
+from tastypie.validation import Validation
 try:
     set
 except NameError:
@@ -44,6 +45,7 @@ class ResourceOptions(object):
     authorization = ReadOnlyAuthorization()
     cache = NoCache()
     throttle = BaseThrottle()
+    validation = Validation()
     allowed_methods = ['get', 'post', 'put', 'delete']
     list_allowed_methods = None
     detail_allowed_methods = None
@@ -830,6 +832,41 @@ class Resource(object):
         serialized = self.serialize(request, data, desired_format)
         return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
     
+    def is_valid(self, bundle, request=None):
+        """
+        Handles checking if the data provided by the user is valid.
+        
+        Mostly a hook, this uses class assigned to ``validation`` from
+        ``Resource._meta``.
+        
+        If validation fails, an error is raised with the error messages
+        serialized inside it.
+        """
+        errors = self._meta.validation.is_valid(bundle, request)
+        
+        if len(errors):
+            if request:
+                desired_format = self.determine_format(request)
+            else:
+                desired_format = self._meta.default_format
+            
+            serialized = self.serialize(request, errors, desired_format)
+            response = HttpBadRequest(content=serialized, content_type=build_content_type(desired_format))
+            raise ImmediateHttpResponse(response=response)
+    
+    def rollback(self, bundles):
+        """
+        Given the list of bundles, delete all objects pertaining to those
+        bundles.
+        
+        This needs to be implemented at the user level. No exceptions should
+        be raised if possible.
+        
+        ``ModelResource`` includes a full working version specific to Django's
+        ``Models``.
+        """
+        raise NotImplementedError()
+    
     # Views.
     
     def get_list(self, request, **kwargs):
@@ -888,6 +925,7 @@ class Resource(object):
             raise BadRequest("Invalid data sent.")
         
         self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
+        bundles_seen = []
         
         for object_data in deserialized['objects']:
             data = {}
@@ -896,7 +934,17 @@ class Resource(object):
                 data[str(key)] = value
             
             bundle = self.build_bundle(data=data)
+            
+            # Attempt to be transactional, deleting any previously created
+            # objects if validation fails.
+            try:
+                self.is_valid(bundle, request)
+            except ImmediateHttpResponse:
+                self.rollback(bundles_seen)
+                raise
+            
             self.obj_create(bundle, request=request)
+            bundles_seen.append(bundle)
         
         return HttpAccepted()
     
@@ -913,6 +961,7 @@ class Resource(object):
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized))
+        self.is_valid(bundle, request)
         
         try:
             updated_bundle = self.obj_update(bundle, request=request, pk=kwargs.get('pk'))
@@ -937,6 +986,7 @@ class Resource(object):
             data[str(key)] = value
         
         bundle = self.build_bundle(data=data)
+        self.is_valid(bundle, request)
         updated_bundle = self.obj_create(bundle, request=request)
         return HttpCreated(location=self.get_resource_uri(updated_bundle))
     
@@ -1399,6 +1449,17 @@ class ModelResource(Resource):
             raise NotFound("A model instance matching the provided arguments could not be found.")
         
         obj.delete()
+    
+    def rollback(self, bundles):
+        """
+        A ORM-specific implementation of ``rollback``.
+        
+        Given the list of bundles, delete all models pertaining to those
+        bundles.
+        """
+        for bundle in bundles:
+            if bundle.obj and getattr(bundle.obj, 'pk', None):
+                bundle.obj.delete()
     
     def save_m2m(self, bundle):
         """

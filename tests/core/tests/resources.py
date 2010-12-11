@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import FieldError
 from django.core.urlresolvers import reverse
+from django import forms
 from django.http import HttpRequest
 from django.test import TestCase
 from django.utils import dateformat
@@ -16,6 +17,7 @@ from tastypie import fields
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
+from tastypie.validation import Validation, FormValidation
 from core.models import Note, Subject
 try:
     import json
@@ -255,6 +257,11 @@ class ResourceTestCase(TestCase):
     def test_obj_delete(self):
         basic = BasicResource()
         self.assertRaises(NotImplementedError, basic.obj_delete)
+    
+    def test_rollback(self):
+        basic = BasicResource()
+        bundles_seen = []
+        self.assertRaises(NotImplementedError, basic.rollback, bundles_seen)
     
     def test_build_schema(self):
         basic = BasicResource()
@@ -1439,6 +1446,104 @@ class ModelResourceTestCase(TestCase):
         note.obj_delete(slug='another-post')
         self.assertEqual(Note.objects.all().count(), 4)
         self.assertRaises(Note.DoesNotExist, Note.objects.get, slug='another-post')
+    
+    def test_rollback(self):
+        self.assertEqual(Note.objects.all().count(), 6)
+        note = NoteResource()
+        
+        bundles_seen = []
+        note.rollback(bundles_seen)
+        self.assertEqual(Note.objects.all().count(), 6)
+        
+        # The one that exists should be deleted, the others ignored.
+        bundles_seen = [Bundle(obj=Note.objects.get(pk=1)), Bundle(obj=Note()), Bundle()]
+        note.rollback(bundles_seen)
+        self.assertEqual(Note.objects.all().count(), 5)
+    
+    def test_is_valid(self):
+        # Using the plug.
+        note = NoteResource()
+        bundle = Bundle(data={})
+        
+        try:
+            note.is_valid(bundle)
+        except:
+            self.fail("Stock 'is_valid' should pass without exception.")
+        
+        # An actual form.
+        class NoteForm(forms.Form):
+            title = forms.CharField(max_length=100)
+            slug = forms.CharField(max_length=50)
+            content = forms.CharField(required=False, widget=forms.Textarea)
+            is_active = forms.BooleanField()
+            
+            # Define a custom clean to make sure non-field errors are making it
+            # through.
+            def clean(self):
+                if not self.cleaned_data.get('content', ''):
+                    raise forms.ValidationError('Having no content makes for a very boring note.')
+                
+                return self.cleaned_data
+        
+        class ValidatedNoteResource(ModelResource):
+            class Meta:
+                queryset = Note.objects.all()
+                resource_name = 'validated'
+                validation = FormValidation(form_class=NoteForm)
+        
+        class ValidatedXMLNoteResource(ModelResource):
+            class Meta:
+                queryset = Note.objects.all()
+                resource_name = 'validated'
+                validation = FormValidation(form_class=NoteForm)
+                default_format = 'application/xml'
+        
+        validated = ValidatedNoteResource()
+        validated_xml = ValidatedXMLNoteResource()
+        
+        # Test empty data.
+        bundle = Bundle(data={})
+        self.assertRaises(ImmediateHttpResponse, validated.is_valid, bundle)
+        
+        try:
+            validated.is_valid(bundle)
+            self.fail("This just passed above, but fails here? WRONG!")
+        except ImmediateHttpResponse, e:
+            self.assertEqual(e.response.content, '{"__all__": ["Having no content makes for a very boring note."], "is_active": ["This field is required."], "slug": ["This field is required."], "title": ["This field is required."]}')
+        
+        try:
+            validated_xml.is_valid(bundle)
+            self.fail("The XML variant is no different & is_valid should have still failed.")
+        except ImmediateHttpResponse, e:
+            self.assertEqual(e.response.content, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><is_active type="list"><value>This field is required.</value></is_active><slug type="list"><value>This field is required.</value></slug><__all__ type="list"><value>Having no content makes for a very boring note.</value></__all__><title type="list"><value>This field is required.</value></title></response>')
+        
+        # Test something that fails validation.
+        bundle = Bundle(data={
+            'title': 123,
+            'slug': '123456789012345678901234567890123456789012345678901234567890',
+            'content': '',
+            'is_active': True,
+        })
+        self.assertRaises(ImmediateHttpResponse, validated.is_valid, bundle)
+        
+        try:
+            validated.is_valid(bundle)
+            self.fail("This just passed above, but fails here? WRONG AGAIN!")
+        except ImmediateHttpResponse, e:
+            self.assertEqual(e.response.content, '{"__all__": ["Having no content makes for a very boring note."], "slug": ["Ensure this value has at most 50 characters (it has 60)."]}')
+        
+        # Test something that passes validation.
+        bundle = Bundle(data={
+            'title': 'Test Content',
+            'slug': 'test-content',
+            'content': "It doesn't get any more awesome than this.",
+            'is_active': True,
+        })
+        
+        try:
+            validated.is_valid(bundle)
+        except ImmediateHttpResponse, e:
+            self.fail("Valid data was provided, yet still somehow errored. Why?")
     
     def test_self_referential(self):
         class SelfResource(ModelResource):

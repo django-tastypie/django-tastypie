@@ -215,6 +215,12 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Controls which authorization class the ``Resource`` should use. Default is
   ``tastypie.authorization.ReadOnlyAuthorization()``.
 
+``validation``
+--------------
+
+  Controls which validation class the ``Resource`` should use. Default is
+  ``tastypie.validation.Validation()``.
+
 ``cache``
 ---------
 
@@ -412,7 +418,7 @@ data sources, such as search results, files, other data, etc.
 ``wrap_view``
 -------------
 
-.. method:: Resource.wrap_view(self, view):
+.. method:: Resource.wrap_view(self, view)
 
 Wraps methods so they can be called in a more functional way as well
 as handling exceptions better.
@@ -424,7 +430,7 @@ return the response traveling with the exception.
 ``base_urls``
 -------------
 
-.. method:: Resource.base_urls(self):
+.. method:: Resource.base_urls(self)
 
 The standard URLs this ``Resource`` should respond to. These include the
 list, detail, schema & multiple endpoints by default.
@@ -435,7 +441,7 @@ Should return a list of individual URLconf lines (**NOT** wrapped in
 ``override_urls``
 -----------------
 
-.. method:: Resource.override_urls(self):
+.. method:: Resource.override_urls(self)
 
 A hook for adding your own URLs or overriding the default URLs. Useful for
 adding custom endpoints or overriding the built-in ones (from ``base_urls``).
@@ -446,7 +452,7 @@ Should return a list of individual URLconf lines (**NOT** wrapped in
 ``urls``
 --------
 
-.. method:: Resource.urls(self):
+.. method:: Resource.urls(self)
 
 *Property*
 
@@ -460,7 +466,7 @@ a URLconf should you choose to.
 ``determine_format``
 --------------------
 
-.. method:: Resource.determine_format(self, request):
+.. method:: Resource.determine_format(self, request)
 
 Used to determine the desired format.
 
@@ -470,7 +476,7 @@ as a point of extension.
 ``serialize``
 -------------
 
-.. method:: Resource.serialize(self, request, data, format, options=None):
+.. method:: Resource.serialize(self, request, data, format, options=None)
 
 Given a request, data and a desired format, produces a serialized
 version suitable for transfer over the wire.
@@ -480,7 +486,7 @@ Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
 ``deserialize``
 ---------------
 
-.. method:: Resource.deserialize(self, request, data, format='application/json'):
+.. method:: Resource.deserialize(self, request, data, format='application/json')
 
 Given a request, data and a format, deserializes the given data.
 
@@ -492,7 +498,7 @@ Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
 ``dispatch_list``
 -----------------
 
-.. method:: Resource.dispatch_list(self, request, **kwargs):
+.. method:: Resource.dispatch_list(self, request, **kwargs)
 
 A view for handling the various HTTP methods (GET/POST/PUT/DELETE) over
 the entire list of resources.
@@ -502,7 +508,7 @@ Relies on ``Resource.dispatch`` for the heavy-lifting.
 ``dispatch_detail``
 -------------------
 
-.. method:: Resource.dispatch_detail(self, request, **kwargs):
+.. method:: Resource.dispatch_detail(self, request, **kwargs)
 
 A view for handling the various HTTP methods (GET/POST/PUT/DELETE) on
 a single resource.
@@ -512,7 +518,7 @@ Relies on ``Resource.dispatch`` for the heavy-lifting.
 ``dispatch``
 ------------
 
-.. method:: Resource.dispatch(self, request_type, request, **kwargs):
+.. method:: Resource.dispatch(self, request_type, request, **kwargs)
 
 Handles the common operations (allowed HTTP method, authentication,
 throttling, method lookup) surrounding most CRUD interactions.
@@ -520,7 +526,7 @@ throttling, method lookup) surrounding most CRUD interactions.
 ``remove_api_resource_names``
 -----------------------------
 
-.. method:: Resource.remove_api_resource_names(self, url_dict):
+.. method:: Resource.remove_api_resource_names(self, url_dict)
 
 Given a dictionary of regex matches from a URLconf, removes
 ``api_name`` and/or ``resource_name`` if found.
@@ -533,7 +539,7 @@ for data lookup. For example::
 ``method_check``
 ----------------
 
-.. method:: Resource.method_check(self, request, allowed=None):
+.. method:: Resource.method_check(self, request, allowed=None)
 
 Ensures that the HTTP method used on the request is allowed to be
 handled by the resource.
@@ -554,7 +560,7 @@ HTTP methods to check against. Usually, this looks like::
 ``is_authorized``
 -----------------
 
-.. method:: Resource.is_authorized(self, request, object=None):
+.. method:: Resource.is_authorized(self, request, object=None)
 
 Handles checking of permissions to see if the user has authorization
 to GET, POST, PUT, or DELETE this resource.  If ``object`` is provided,
@@ -564,7 +570,7 @@ checking.
 ``is_authenticated``
 --------------------
 
-.. method:: Resource.is_authenticated(self, request):
+.. method:: Resource.is_authenticated(self, request)
 
 Handles checking if the user is authenticated and dealing with
 unauthenticated users.
@@ -575,7 +581,7 @@ Mostly a hook, this uses class assigned to ``authentication`` from
 ``throttle_check``
 ------------------
 
-.. method:: Resource.throttle_check(self, request):
+.. method:: Resource.throttle_check(self, request)
 
 Handles checking if the user should be throttled.
 
@@ -585,7 +591,7 @@ Mostly a hook, this uses class assigned to ``throttle`` from
 ``log_throttled_access``
 ------------------------
 
-.. method:: Resource.log_throttled_access(self, request):
+.. method:: Resource.log_throttled_access(self, request)
 
 Handles the recording of the user's access for throttling purposes.
 
@@ -595,7 +601,7 @@ Mostly a hook, this uses class assigned to ``throttle`` from
 ``build_bundle``
 ----------------
 
-.. method:: Resource.build_bundle(self, obj=None, data=None):
+.. method:: Resource.build_bundle(self, obj=None, data=None)
 
 Given either an object, a data dictionary or both, builds a ``Bundle``
 for use throughout the ``dehydrate/hydrate`` cycle.
@@ -607,7 +613,7 @@ If no object is provided, an empty object from
 ``build_filters``
 -----------------
 
-.. method:: Resource.build_filters(self, filters=None):
+.. method:: Resource.build_filters(self, filters=None)
 
 Allows for the filtering of applicable objects.
 
@@ -619,7 +625,7 @@ Allows for the filtering of applicable objects.
 ``apply_sorting``
 -----------------
 
-.. method:: Resource.apply_sorting(self, obj_list, options=None):
+.. method:: Resource.apply_sorting(self, obj_list, options=None)
 
 Allows for the sorting of objects being returned.
 
@@ -631,7 +637,7 @@ Allows for the sorting of objects being returned.
 ``get_resource_uri``
 --------------------
 
-.. method:: Resource.get_resource_uri(self, bundle_or_obj):
+.. method:: Resource.get_resource_uri(self, bundle_or_obj)
 
 *This needs to be implemented at the user level.*
 
@@ -645,14 +651,14 @@ be needed.
 ``get_resource_list_uri``
 -------------------------
 
-.. method:: Resource.get_resource_list_uri(self):
+.. method:: Resource.get_resource_list_uri(self)
 
 Returns a URL specific to this resource's list endpoint.
 
 ``get_via_uri``
 ---------------
 
-.. method:: Resource.get_via_uri(self, uri):
+.. method:: Resource.get_via_uri(self, uri)
 
 This pulls apart the salient bits of the URI and populates the
 resource via a ``obj_get``.
@@ -663,7 +669,7 @@ simply override this method.
 ``full_dehydrate``
 ------------------
 
-.. method:: Resource.full_dehydrate(self, obj):
+.. method:: Resource.full_dehydrate(self, obj)
 
 Given an object instance, extract the information from it to populate
 the resource.
@@ -671,7 +677,7 @@ the resource.
 ``dehydrate``
 -------------
 
-.. method:: Resource.dehydrate(self, bundle):
+.. method:: Resource.dehydrate(self, bundle)
 
 A hook to allow a final manipulation of data once all fields/methods
 have built out the dehydrated data.
@@ -684,7 +690,7 @@ Must return the modified bundle.
 ``full_hydrate``
 ----------------
 
-.. method:: Resource.full_hydrate(self, bundle):
+.. method:: Resource.full_hydrate(self, bundle)
 
 Given a populated bundle, distill it and turn it back into
 a full-fledged object instance.
@@ -692,7 +698,7 @@ a full-fledged object instance.
 ``hydrate``
 -----------
 
-.. method:: Resource.hydrate(self, bundle):
+.. method:: Resource.hydrate(self, bundle)
 
 A hook to allow a final manipulation of data once all fields/methods
 have built out the hydrated data.
@@ -705,14 +711,14 @@ Must return the modified bundle.
 ``hydrate_m2m``
 ---------------
 
-.. method:: Resource.hydrate_m2m(self, bundle):
+.. method:: Resource.hydrate_m2m(self, bundle)
 
 Populate the ManyToMany data on the instance.
 
 ``build_schema``
 ----------------
 
-.. method:: Resource.build_schema(self):
+.. method:: Resource.build_schema(self)
 
 Returns a dictionary of all the fields on the resource and some
 properties about those fields.
@@ -722,7 +728,7 @@ Used by the ``schema/`` endpoint to describe what will be available.
 ``dehydrate_resource_uri``
 --------------------------
 
-.. method:: Resource.dehydrate_resource_uri(self, bundle):
+.. method:: Resource.dehydrate_resource_uri(self, bundle)
 
 For the automatically included ``resource_uri`` field, dehydrate
 the URI for the given bundle.
@@ -732,7 +738,7 @@ Returns empty string if no URI can be generated.
 ``generate_cache_key``
 ----------------------
 
-.. method:: Resource.generate_cache_key(self, *args, **kwargs):
+.. method:: Resource.generate_cache_key(self, *args, **kwargs)
 
 Creates a unique-enough cache key.
 
@@ -741,7 +747,7 @@ This is based off the current api_name/resource_name/args/kwargs.
 ``get_object_list``
 -------------------
 
-.. method:: Resource.get_object_list(self, request):
+.. method:: Resource.get_object_list(self, request)
 
 A hook to allow making returning the list of available objects.
 
@@ -753,7 +759,7 @@ A hook to allow making returning the list of available objects.
 ``apply_authorization_limits``
 ------------------------------
 
-.. method:: Resource.apply_authorization_limits(self, request, object_list):
+.. method:: Resource.apply_authorization_limits(self, request, object_list)
 
 Allows the ``Authorization`` class to further limit the object list.
 Also a hook to customize per ``Resource``.
@@ -763,7 +769,7 @@ Calls ``Authorization.apply_limits`` if available.
 ``obj_get_list``
 ----------------
 
-.. method:: Resource.obj_get_list(self, request=None, **kwargs):
+.. method:: Resource.obj_get_list(self, request=None, **kwargs)
 
 Fetches the list of objects available on the resource.
 
@@ -775,7 +781,7 @@ Fetches the list of objects available on the resource.
 ``cached_obj_get_list``
 -----------------------
 
-.. method:: Resource.cached_obj_get_list(self, request=None, **kwargs):
+.. method:: Resource.cached_obj_get_list(self, request=None, **kwargs)
 
 A version of ``obj_get_list`` that uses the cache as a means to get
 commonly-accessed data faster.
@@ -783,7 +789,7 @@ commonly-accessed data faster.
 ``obj_get``
 -----------
 
-.. method:: Resource.obj_get(self, request=None, **kwargs):
+.. method:: Resource.obj_get(self, request=None, **kwargs)
 
 Fetches an individual object on the resource.
 
@@ -796,7 +802,7 @@ be found, this should raise a ``NotFound`` exception.
 ``cached_obj_get``
 ------------------
 
-.. method:: Resource.cached_obj_get(self, request=None, **kwargs):
+.. method:: Resource.cached_obj_get(self, request=None, **kwargs)
 
 A version of ``obj_get`` that uses the cache as a means to get
 commonly-accessed data faster.
@@ -804,7 +810,7 @@ commonly-accessed data faster.
 ``obj_create``
 --------------
 
-.. method:: Resource.obj_create(self, bundle, request=None, **kwargs):
+.. method:: Resource.obj_create(self, bundle, request=None, **kwargs)
 
 Creates a new object based on the provided data.
 
@@ -816,7 +822,7 @@ Creates a new object based on the provided data.
 ``obj_update``
 --------------
 
-.. method:: Resource.obj_update(self, bundle, request=None, **kwargs):
+.. method:: Resource.obj_update(self, bundle, request=None, **kwargs)
 
 Updates an existing object (or creates a new object) based on the
 provided data.
@@ -829,7 +835,7 @@ provided data.
 ``obj_delete_list``
 -------------------
 
-.. method:: Resource.obj_delete_list(self, request=None, **kwargs):
+.. method:: Resource.obj_delete_list(self, request=None, **kwargs)
 
 Deletes an entire list of objects.
 
@@ -841,7 +847,7 @@ Deletes an entire list of objects.
 ``obj_delete``
 --------------
 
-.. method:: Resource.obj_delete(self, request=None, **kwargs):
+.. method:: Resource.obj_delete(self, request=None, **kwargs)
 
 Deletes a single object.
 
@@ -853,16 +859,43 @@ Deletes a single object.
 ``create_response``
 -------------------
 
-.. method:: Resource.create_response(self, request, data):
+.. method:: Resource.create_response(self, request, data)
 
 Extracts the common "which-format/serialize/return-response" cycle.
 
 Mostly a useful shortcut/hook.
 
+``is_valid``
+------------
+
+.. method:: Resource.is_valid(self, bundle, request=None)
+
+Handles checking if the data provided by the user is valid.
+
+Mostly a hook, this uses class assigned to ``validation`` from
+``Resource._meta``.
+
+If validation fails, an error is raised with the error messages
+serialized inside it.
+
+``rollback``
+------------
+
+.. method:: Resource.rollback(self, bundles)
+
+Given the list of bundles, delete all objects pertaining to those
+bundles.
+
+This needs to be implemented at the user level. No exceptions should
+be raised if possible.
+
+``ModelResource`` includes a full working version specific to Django's
+``Models``.
+
 ``get_list``
 ------------
 
-.. method:: Resource.get_list(self, request, **kwargs):
+.. method:: Resource.get_list(self, request, **kwargs)
 
 Returns a serialized list of resources.
 
@@ -874,7 +907,7 @@ Should return a HttpResponse (200 OK).
 ``get_detail``
 --------------
 
-.. method:: Resource.get_detail(self, request, **kwargs):
+.. method:: Resource.get_detail(self, request, **kwargs)
 
 Returns a single serialized resource.
 
@@ -886,7 +919,7 @@ Should return a HttpResponse (200 OK).
 ``put_list``
 ------------
 
-.. method:: Resource.put_list(self, request, **kwargs):
+.. method:: Resource.put_list(self, request, **kwargs)
 
 Replaces a collection of resources with another collection.
 
@@ -898,7 +931,7 @@ Return ``HttpAccepted`` (204 No Content).
 ``put_detail``
 --------------
 
-.. method:: Resource.put_detail(self, request, **kwargs):
+.. method:: Resource.put_detail(self, request, **kwargs)
 
 Either updates an existing resource or creates a new one with the
 provided data.
@@ -912,7 +945,7 @@ If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
 ``post_list``
 -------------
 
-.. method:: Resource.post_list(self, request, **kwargs):
+.. method:: Resource.post_list(self, request, **kwargs)
 
 Creates a new resource/object with the provided data.
 
@@ -924,7 +957,7 @@ If a new resource is created, return ``HttpCreated`` (201 Created).
 ``post_detail``
 ---------------
 
-.. method:: Resource.post_detail(self, request, **kwargs):
+.. method:: Resource.post_detail(self, request, **kwargs)
 
 Creates a new subcollection of the resource under a resource.
 
@@ -936,7 +969,7 @@ If a new resource is created, return ``HttpCreated`` (201 Created).
 ``delete_list``
 ---------------
 
-.. method:: Resource.delete_list(self, request, **kwargs):
+.. method:: Resource.delete_list(self, request, **kwargs)
 
 Destroys a collection of resources/objects.
 
@@ -947,7 +980,7 @@ If the resources are deleted, return ``HttpAccepted`` (204 No Content).
 ``delete_detail``
 -----------------
 
-.. method:: Resource.delete_detail(self, request, **kwargs):
+.. method:: Resource.delete_detail(self, request, **kwargs)
 
 Destroys a single resource/object.
 
@@ -959,7 +992,7 @@ If the resource did not exist, return ``HttpGone`` (410 Gone).
 ``get_schema``
 --------------
 
-.. method:: Resource.get_schema(self, request, **kwargs):
+.. method:: Resource.get_schema(self, request, **kwargs)
 
 Returns a serialized form of the schema of the resource.
 
@@ -971,7 +1004,7 @@ Should return a HttpResponse (200 OK).
 ``get_multiple``
 ----------------
 
-.. method:: Resource.get_multiple(self, request, **kwargs):
+.. method:: Resource.get_multiple(self, request, **kwargs)
 
 Returns a serialized list of resources based on the identifiers
 from the URL.
@@ -996,7 +1029,7 @@ operations of the resource.
 ``should_skip_field``
 ---------------------
 
-.. method:: Resource.should_skip_field(cls, field):
+.. method:: ModelResource.should_skip_field(cls, field)
 
 *Class method*
 
@@ -1006,7 +1039,7 @@ contributed ApiFields.
 ``api_field_from_django_field``
 -------------------------------
 
-.. method:: Resource.api_field_from_django_field(cls, f, default=CharField):
+.. method:: ModelResource.api_field_from_django_field(cls, f, default=CharField)
 
 *Class method*
 
@@ -1016,7 +1049,7 @@ Django type.
 ``get_fields``
 --------------
 
-.. method:: Resource.get_fields(cls, fields=None, excludes=None):
+.. method:: ModelResource.get_fields(cls, fields=None, excludes=None)
 
 *Class method*
 
@@ -1026,7 +1059,7 @@ additional fields based on the associated model.
 ``build_filters``
 -----------------
 
-.. method:: Resource.build_filters(self, filters=None):
+.. method:: ModelResource.build_filters(self, filters=None)
 
 Given a dictionary of filters, create the necessary ORM-level filters.
 
@@ -1051,7 +1084,7 @@ Accepts the filters as a dict. ``None`` by default, meaning no filters.
 ``apply_sorting``
 -----------------
 
-.. method:: Resource.apply_sorting(self, obj_list, options=None):
+.. method:: ModelResource.apply_sorting(self, obj_list, options=None)
 
 Given a dictionary of options, apply some ORM-level sorting to the
 provided ``QuerySet``.
@@ -1064,7 +1097,7 @@ The field name should be the resource field, **NOT** model field.
 ``get_object_list``
 -------------------
 
-.. method:: Resource.get_object_list(self, request):
+.. method:: ModelResource.get_object_list(self, request)
 
 A ORM-specific implementation of ``get_object_list``.
 
@@ -1074,7 +1107,7 @@ overrides.
 ``obj_get_list``
 ----------------
 
-.. method:: Resource.obj_get_list(self, filters=None, **kwargs):
+.. method:: ModelResource.obj_get_list(self, filters=None, **kwargs)
 
 A ORM-specific implementation of ``obj_get_list``.
 
@@ -1084,7 +1117,7 @@ the query.
 ``obj_get``
 -----------
 
-.. method:: Resource.obj_get(self, **kwargs):
+.. method:: ModelResource.obj_get(self, **kwargs)
 
 A ORM-specific implementation of ``obj_get``.
 
@@ -1094,21 +1127,21 @@ the instance.
 ``obj_create``
 --------------
 
-.. method:: Resource.obj_create(self, bundle, **kwargs):
+.. method:: ModelResource.obj_create(self, bundle, **kwargs)
 
 A ORM-specific implementation of ``obj_create``.
 
 ``obj_update``
 --------------
 
-.. method:: Resource.obj_update(self, bundle, **kwargs):
+.. method:: ModelResource.obj_update(self, bundle, **kwargs)
 
 A ORM-specific implementation of ``obj_update``.
 
 ``obj_delete_list``
 -------------------
 
-.. method:: Resource.obj_delete_list(self, **kwargs):
+.. method:: ModelResource.obj_delete_list(self, **kwargs)
 
 A ORM-specific implementation of ``obj_delete_list``.
 
@@ -1117,17 +1150,27 @@ Takes optional ``kwargs``, which can be used to narrow the query.
 ``obj_delete``
 --------------
 
-.. method:: Resource.obj_delete(self, **kwargs):
+.. method:: ModelResource.obj_delete(self, **kwargs)
 
 A ORM-specific implementation of ``obj_delete``.
 
 Takes optional ``kwargs``, which are used to narrow the query to find
 the instance.
 
+``rollback``
+------------
+
+.. method:: ModelResource.rollback(self, bundles)
+
+A ORM-specific implementation of ``rollback``.
+
+Given the list of bundles, delete all models pertaining to those
+bundles.
+
 ``save_m2m``
 ------------
 
-.. method:: Resource.save_m2m(self, bundle):
+.. method:: ModelResource.save_m2m(self, bundle)
 
 Handles the saving of related M2M data.
 
@@ -1140,7 +1183,7 @@ relation and recreate the related data as needed.
 ``get_resource_uri``
 --------------------
 
-.. method:: Resource.get_resource_uri(self, bundle_or_obj):
+.. method:: ModelResource.get_resource_uri(self, bundle_or_obj)
 
 Handles generating a resource URI for a single resource.
 
