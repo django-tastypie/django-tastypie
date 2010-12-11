@@ -1,45 +1,45 @@
 from django.http import HttpResponse
 
 
-class TastyPieError(Exception):
+class TastypieError(Exception):
     """A base exception for other tastypie-related errors."""
     pass
 
 
-class HydrationError(TastyPieError):
+class HydrationError(TastypieError):
     """Raised when there is an error hydrating data."""
     pass
 
 
-class NotRegistered(TastyPieError):
+class NotRegistered(TastypieError):
     """
     Raised when the requested resource isn't registered with the ``Api`` class.
     """
     pass
 
 
-class NotFound(TastyPieError):
+class NotFound(TastypieError):
     """
     Raised when the resource/object in question can't be found.
     """
     pass
 
 
-class ApiFieldError(TastyPieError):
+class ApiFieldError(TastypieError):
     """
     Raised when there is a configuration error with a ``ApiField``.
     """
     pass
 
 
-class UnsupportedFormat(TastyPieError):
+class UnsupportedFormat(TastypieError):
     """
     Raised when an unsupported serialization format is requested.
     """
     pass
 
 
-class BadRequest(TastyPieError):
+class BadRequest(TastypieError):
     """
     A generalized exception for indicating incorrect request parameters.
     
@@ -49,11 +49,11 @@ class BadRequest(TastyPieError):
     pass
 
 
-class BlueberryFillingFound(TastyPieError):
+class BlueberryFillingFound(TastypieError):
     pass
 
 
-class InvalidFilterError(TastyPieError):
+class InvalidFilterError(TastypieError):
     """
     Raised when the end user attempts to use a filter that has not be
     explicitly allowed.
@@ -61,7 +61,7 @@ class InvalidFilterError(TastyPieError):
     pass
 
 
-class InvalidSortError(TastyPieError):
+class InvalidSortError(TastypieError):
     """
     Raised when the end user attempts to sort on a field that has not be
     explicitly allowed.
@@ -69,7 +69,7 @@ class InvalidSortError(TastyPieError):
     pass
 
 
-class ImmediateHttpResponse(TastyPieError):
+class ImmediateHttpResponse(TastypieError):
     """
     This exception is used to interrupt the flow of processing to immediately
     return a custom HttpResponse.
