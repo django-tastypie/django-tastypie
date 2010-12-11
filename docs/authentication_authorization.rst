@@ -104,7 +104,7 @@ required method and one optional method::
     from tastypie.authorization import Authorization
     
     
-    class SillyAuthentication(NoCache):
+    class SillyAuthentication(Authentication):
         def is_authenticated(self, request, **kwargs):
             if 'daniel' in request.user.username:
               return True
