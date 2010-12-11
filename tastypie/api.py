@@ -112,10 +112,16 @@ class Api(object):
             api_name = self.api_name
         
         for name in sorted(self._registry.keys()):
-            available_resources[name] = self._build_reverse_url("api_dispatch_list", kwargs={
-                'api_name': api_name,
-                'resource_name': name,
-            })
+            available_resources[name] = {
+                'list_endpoint': self._build_reverse_url("api_dispatch_list", kwargs={
+                    'api_name': api_name,
+                    'resource_name': name,
+                }),
+                'schema': self._build_reverse_url("api_get_schema", kwargs={
+                    'api_name': api_name,
+                    'resource_name': name,
+                }),
+            }
         
         desired_format = determine_format(request, serializer)
         serialized = serializer.serialize(available_resources, desired_format)

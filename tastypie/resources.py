@@ -662,15 +662,23 @@ class Resource(object):
         
         Used by the ``schema/`` endpoint to describe what will be available.
         """
-        data = {}
+        data = {
+            'fields': {},
+            'default_format': self._meta.default_format,
+        }
+        
+        if self._meta.ordering:
+            data['ordering'] = self._meta.ordering
+        
+        if self._meta.filtering:
+            data['filtering'] = self._meta.filtering
         
         for field_name, field_object in self.fields.items():
-            data[field_name] = {
+            data['fields'][field_name] = {
                 'type': field_object.dehydrated_type,
                 'nullable': field_object.null,
                 'readonly': field_object.readonly,
-                # FIXME: Include what filters are available.
-                # FIXME: Include if sorting is available on the field.
+                'help_text': field_object.help_text,
             }
         
         return data

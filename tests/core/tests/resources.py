@@ -266,25 +266,70 @@ class ResourceTestCase(TestCase):
     def test_build_schema(self):
         basic = BasicResource()
         self.assertEqual(basic.build_schema(), {
-            'view_count': {
-                'readonly': False,
-                'type': 'integer',
-                'nullable': False
+            'fields': {
+                'view_count': {
+                    'help_text': 'Integer data. Ex: 2673',
+                    'readonly': False,
+                    'type': 'integer',
+                    'nullable': False
+                },
+                'date_joined': {
+                    'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
+                    'readonly': False,
+                    'type': 'datetime',
+                    'nullable': True
+                },
+                'name': {
+                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'readonly': False,
+                    'type': 'string',
+                    'nullable': False
+                },
+                'resource_uri': {
+                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'readonly': True,
+                    'type': 'string',
+                    'nullable': False
+                }
             },
-            'date_joined': {
-                'readonly': False,
-                'type': 'datetime',
-                'nullable': True
+            'default_format': 'application/json'
+        })
+        
+        basic = BasicResource()
+        basic._meta.ordering = ['date_joined', 'name']
+        basic._meta.filtering = {'date_joined': ['gt', 'gte'], 'name': ALL}
+        self.assertEqual(basic.build_schema(), {
+            'fields': {
+                'view_count': {
+                    'help_text': 'Integer data. Ex: 2673',
+                    'readonly': False,
+                    'type': 'integer',
+                    'nullable': False
+                },
+                'date_joined': {
+                    'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
+                    'readonly': False,
+                    'type': 'datetime',
+                    'nullable': True
+                },
+                'name': {
+                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'readonly': False,
+                    'type': 'string',
+                    'nullable': False
+                },
+                'resource_uri': {
+                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'readonly': True,
+                    'type': 'string',
+                    'nullable': False
+                }
             },
-            'name': {
-                'readonly': False,
-                'type': 'string',
-                'nullable': False
-            },
-            'resource_uri': {
-                'readonly': True,
-                'type': 'string',
-                'nullable': False
+            'default_format': 'application/json',
+            'ordering': ['date_joined', 'name'],
+            'filtering': {
+                'date_joined': ['gt', 'gte'],
+                'name': ALL,
             }
         })
     
@@ -1193,7 +1238,7 @@ class ModelResourceTestCase(TestCase):
         
         resp = resource.get_schema(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"content": {"nullable": false, "readonly": false, "type": "string"}, "created": {"nullable": false, "readonly": false, "type": "datetime"}, "id": {"nullable": false, "readonly": false, "type": "string"}, "is_active": {"nullable": false, "readonly": false, "type": "boolean"}, "resource_uri": {"nullable": false, "readonly": true, "type": "string"}, "slug": {"nullable": false, "readonly": false, "type": "string"}, "title": {"nullable": false, "readonly": false, "type": "string"}, "updated": {"nullable": false, "readonly": false, "type": "datetime"}}')
+        self.assertEqual(resp.content, '{"default_format": "application/json", "fields": {"content": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string"}, "created": {"help_text": "A date & time as a string. Ex: \\"2010-11-10T03:07:43\\"", "nullable": false, "readonly": false, "type": "datetime"}, "id": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string"}, "is_active": {"help_text": "Boolean data. Ex: True", "nullable": false, "readonly": false, "type": "boolean"}, "resource_uri": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": true, "type": "string"}, "slug": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string"}, "title": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string"}, "updated": {"help_text": "A date & time as a string. Ex: \\"2010-11-10T03:07:43\\"", "nullable": false, "readonly": false, "type": "datetime"}}, "filtering": {"content": ["startswith", "exact"], "slug": ["exact"], "title": 1}, "ordering": ["title", "slug", "resource_uri"]}')
     
     def test_get_multiple(self):
         resource = NoteResource()

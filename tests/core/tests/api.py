@@ -127,4 +127,4 @@ class ApiTestCase(TestCase):
         
         resp = api.top_level(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"notes": "/api/v1/notes/", "users": "/api/v1/users/"}')
+        self.assertEqual(resp.content, '{"notes": {"list_endpoint": "/api/v1/notes/", "schema": "/api/v1/notes/schema/"}, "users": {"list_endpoint": "/api/v1/users/", "schema": "/api/v1/users/schema/"}}')

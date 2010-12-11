@@ -12,7 +12,7 @@ class ViewsTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content)
         self.assertEqual(len(deserialized), 1)
-        self.assertEqual(deserialized['products'], u'/api/v1/products/')
+        self.assertEqual(deserialized['products'], {'list_endpoint': '/api/v1/products/', 'schema': '/api/v1/products/schema/'})
         
         resp = self.client.get('/api/v1/products/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)

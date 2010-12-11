@@ -23,7 +23,7 @@ class HTTPTestCase(TestServerTestCase):
         connection.close()
         data = response.read()
         self.assertEqual(response.status, 200)
-        self.assertEqual(data, '{"products": "/api/v1/products/"}')
+        self.assertEqual(data, '{"products": {"list_endpoint": "/api/v1/products/", "schema": "/api/v1/products/schema/"}}')
 
     def test_get_apis_xml(self):
         connection = self.get_connection()
@@ -32,7 +32,7 @@ class HTTPTestCase(TestServerTestCase):
         connection.close()
         data = response.read()
         self.assertEqual(response.status, 200)
-        self.assertEqual(data, "<?xml version='1.0' encoding='utf-8'?>\n<response><products>/api/v1/products/</products></response>")
+        self.assertEqual(data, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><products type="hash"><list_endpoint>/api/v1/products/</list_endpoint><schema>/api/v1/products/schema/</schema></products></response>')
 
     def test_get_list(self):
         connection = self.get_connection()

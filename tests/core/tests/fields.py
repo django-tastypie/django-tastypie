@@ -19,14 +19,16 @@ class ApiFieldTestCase(TestCase):
         self.assertEqual(field_1._default, NOT_PROVIDED)
         self.assertEqual(field_1.null, False)
         self.assertEqual(field_1.value, None)
+        self.assertEqual(field_1.help_text, '')
         
-        field_2 = ApiField(attribute='foo', default=True, null=True, readonly=True)
+        field_2 = ApiField(attribute='foo', default=True, null=True, readonly=True, help_text='Foo.')
         self.assertEqual(field_2.instance_name, None)
         self.assertEqual(field_2.attribute, 'foo')
         self.assertEqual(field_2._default, True)
         self.assertEqual(field_2.null, True)
         self.assertEqual(field_2.value, None)
         self.assertEqual(field_2.readonly, True)
+        self.assertEqual(field_2.help_text, 'Foo.')
     
     def test_dehydrated_type(self):
         field_1 = ApiField()
@@ -122,6 +124,13 @@ class ApiFieldTestCase(TestCase):
 class CharFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
     
+    def test_init(self):
+        field_1 = CharField()
+        self.assertEqual(field_1.help_text, 'Unicode string data. Ex: "Hello World"')
+        
+        field_2 = CharField(help_text="Custom.")
+        self.assertEqual(field_2.help_text, 'Custom.')
+    
     def test_dehydrated_type(self):
         field_1 = CharField()
         self.assertEqual(field_1.dehydrated_type, 'string')
@@ -139,6 +148,13 @@ class CharFieldTestCase(TestCase):
 
 class FileFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
+    
+    def test_init(self):
+        field_1 = FileField()
+        self.assertEqual(field_1.help_text, 'A file path as a string. Ex: "/tmp/photos/my_photo.jpg"')
+        
+        field_2 = FileField(help_text="Custom.")
+        self.assertEqual(field_2.help_text, 'Custom.')
     
     def test_dehydrated_type(self):
         field_1 = FileField()
@@ -172,6 +188,13 @@ class FileFieldTestCase(TestCase):
 class IntegerFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
     
+    def test_init(self):
+        field_1 = IntegerField()
+        self.assertEqual(field_1.help_text, 'Integer data. Ex: 2673')
+        
+        field_2 = IntegerField(help_text="Custom.")
+        self.assertEqual(field_2.help_text, 'Custom.')
+    
     def test_dehydrated_type(self):
         field_1 = IntegerField()
         self.assertEqual(field_1.dehydrated_type, 'integer')
@@ -193,6 +216,13 @@ class IntegerFieldTestCase(TestCase):
 class FloatFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
     
+    def test_init(self):
+        field_1 = FloatField()
+        self.assertEqual(field_1.help_text, 'Floating point numeric data. Ex: 26.73')
+        
+        field_2 = FloatField(help_text="Custom.")
+        self.assertEqual(field_2.help_text, 'Custom.')
+    
     def test_dehydrated_type(self):
         field_1 = FloatField()
         self.assertEqual(field_1.dehydrated_type, 'float')
@@ -211,6 +241,13 @@ class FloatFieldTestCase(TestCase):
 class BooleanFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
     
+    def test_init(self):
+        field_1 = BooleanField()
+        self.assertEqual(field_1.help_text, 'Boolean data. Ex: True')
+        
+        field_2 = BooleanField(help_text="Custom.")
+        self.assertEqual(field_2.help_text, 'Custom.')
+    
     def test_dehydrated_type(self):
         field_1 = BooleanField()
         self.assertEqual(field_1.dehydrated_type, 'boolean')
@@ -228,6 +265,13 @@ class BooleanFieldTestCase(TestCase):
 
 class DateFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
+    
+    def test_init(self):
+        field_1 = CharField()
+        self.assertEqual(field_1.help_text, 'Unicode string data. Ex: "Hello World"')
+        
+        field_2 = CharField(help_text="Custom.")
+        self.assertEqual(field_2.help_text, 'Custom.')
     
     def test_dehydrated_type(self):
         field_1 = DateField()
@@ -286,6 +330,13 @@ class DateFieldTestCase(TestCase):
 
 class DateTimeFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
+    
+    def test_init(self):
+        field_1 = CharField()
+        self.assertEqual(field_1.help_text, 'Unicode string data. Ex: "Hello World"')
+        
+        field_2 = CharField(help_text="Custom.")
+        self.assertEqual(field_2.help_text, 'Custom.')
     
     def test_dehydrated_type(self):
         field_1 = DateTimeField()
@@ -356,8 +407,9 @@ class ForeignKeyTestCase(TestCase):
         self.assertEqual(field_1.null, False)
         self.assertEqual(field_1.full, False)
         self.assertEqual(field_1.readonly, False)
+        self.assertEqual(field_1.help_text, 'A single related resource. Can be either a URI or set of nested resource data.')
         
-        field_2 = ForeignKey(UserResource, 'author', null=True)
+        field_2 = ForeignKey(UserResource, 'author', null=True, help_text="Points to a User.")
         self.assertEqual(field_2.instance_name, None)
         self.assertEqual(issubclass(field_2.to, UserResource), True)
         self.assertEqual(field_2.attribute, 'author')
@@ -365,6 +417,7 @@ class ForeignKeyTestCase(TestCase):
         self.assertEqual(field_2.null, True)
         self.assertEqual(field_2.full, False)
         self.assertEqual(field_2.readonly, False)
+        self.assertEqual(field_2.help_text, 'Points to a User.')
     
     def test_dehydrated_type(self):
         field_1 = ForeignKey(UserResource, 'author')
@@ -495,8 +548,9 @@ class ManyToManyFieldTestCase(TestCase):
         self.assertEqual(field_1.null, False)
         self.assertEqual(field_1.full, False)
         self.assertEqual(field_1.readonly, False)
+        self.assertEqual(field_1.help_text, 'Many related resources. Can be either a list of URIs or list of individually nested resource data.')
         
-        field_2 = ManyToManyField(SubjectResource, 'subjects', null=True)
+        field_2 = ManyToManyField(SubjectResource, 'subjects', null=True, help_text='Points to many Subjects.')
         self.assertEqual(field_2.instance_name, None)
         self.assertEqual(issubclass(field_2.to, SubjectResource), True)
         self.assertEqual(field_2.attribute, 'subjects')
@@ -504,6 +558,7 @@ class ManyToManyFieldTestCase(TestCase):
         self.assertEqual(field_2.null, True)
         self.assertEqual(field_2.full, False)
         self.assertEqual(field_2.readonly, False)
+        self.assertEqual(field_2.help_text, 'Points to many Subjects.')
     
     def test_dehydrated_type(self):
         field_1 = ManyToManyField(SubjectResource, 'subjects')

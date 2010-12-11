@@ -25,7 +25,7 @@ class ViewsWithoutSlashesTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content)
         self.assertEqual(len(deserialized), 2)
-        self.assertEqual(deserialized['notes'], u'/api/v1/notes')
+        self.assertEqual(deserialized['notes'], {'list_endpoint': '/api/v1/notes', 'schema': '/api/v1/notes/schema'})
         
         resp = self.client.get('/api/v1/notes', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
