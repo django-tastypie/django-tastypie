@@ -18,6 +18,7 @@ Contributors:
 * whiteblack for a patch to Meta inheritance.
 * Josh Bohde (joshbohde) for a patch to ignore problematic deserialization charsets & for docs on "nested" resources.
 * Travis Cline (traviscline) for patches regarding URLconf namespacing & pagination.
+* Jannis Leidel (jezdez) for patches regarding the ApiKey model & an admin inline.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
