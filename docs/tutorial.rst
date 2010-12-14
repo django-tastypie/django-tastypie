@@ -35,7 +35,7 @@ Here is ``myapp/models.py``::
         user = models.ForeignKey(User)
         pub_date = models.DateTimeField(default=datetime.datetime.now)
         title = models.CharField(max_length=200)
-        slug = models.SlugField
+        slug = models.SlugField()
         body = models.TextField()
         
         def __unicode__(self):
