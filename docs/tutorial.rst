@@ -77,6 +77,12 @@ your project or ``PYTHONPATH``.
   3. Either symlink the ``tastypie`` directory into your project or copy the
      directory in. What ever works best for you.
 
+.. note::
+
+    Once tastypie reaches version 1.0, it will become officially available on
+    PyPI_. Once that is the case, a ``sudo pip install tastypie`` or ``sudo
+    easy_install tastypie`` should be available.
+
 .. _GitHub: http://github.com/toastdriven/django-tastypie
 .. _PyPI: http://pypi.python.org/
 
@@ -85,8 +91,8 @@ Configuration
 =============
 
 The only mandatory configuration is adding ``'tastypie'`` to your
-``INSTALLED_APPS``. This isn't strictly necessary, as Tastypie has only one
-non-required model, but may ease usage.
+``INSTALLED_APPS``. This isn't strictly necessary, as Tastypie has only two
+non-required models, but may ease usage.
 
 You have the option to set up a number of settings (see :doc:`settings`) but
 they all have sane defaults and are not required unless you need to tweak their
