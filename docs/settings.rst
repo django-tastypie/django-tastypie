@@ -12,8 +12,8 @@ This is a comprehensive list of the settings Tastypie recognizes.
 
 **Optional**
 
-This setting controls what the default number of records Tastypie will show
-in a list view is.
+This setting controls the default number of records Tastypie will show
+in a list view.
 
 This is only used when a user does not specify a ``limit`` GET parameter and
 the ``Resource`` subclass has not overridden the number to be shown.
@@ -37,9 +37,9 @@ technical 500 is displayed.
 
 If not set or set to ``False``, Tastypie will return a serialized response.
 If ``settings.DEBUG`` is ``True``, you'll get the actual exception message plus
-a traceback. If ``settings.DEBUG`` is ``False``, Tastypie will ``mail_admins``
-and provide a canned error message (which you can override with
-``TASTYPIE_CANNED_ERROR``) in the response.
+a traceback. If ``settings.DEBUG`` is ``False``, Tastypie will call
+``mail_admins()`` and provide a canned error message (which you can override
+with ``TASTYPIE_CANNED_ERROR``) in the response.
 
 An example::
 
@@ -60,7 +60,7 @@ An example::
 
     TASTYPIE_CANNED_ERROR = "Oops, we broke it!"
 
-Defaults to ``Sorry, this request could not be processed. Please try again later.``.
+Defaults to ``"Sorry, this request could not be processed. Please try again later."``.
 
 
 ``TASTYPIE_ALLOW_MISSING_SLASH``
@@ -76,8 +76,8 @@ emit HTTP 302 redirects.
 
 .. warning::
 
-  This settings causes the ``Resource.get_multiple`` to fail. If you need this
-  method, you will have to override the URLconf to meet your needs.
+  This setting causes the ``Resource.get_multiple()`` method to fail. If you
+  need this method, you will have to override the URLconf to meet your needs.
 
 An example::
 
