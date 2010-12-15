@@ -8,8 +8,8 @@ Tastypie is a reusable app (that is, it relies only on it's own code and
 focuses on providing just a REST-style API) and is suitable for providing an
 API to any application without having to modify the sources of that app.
 
-Not everyone's needs are the same, so Tastypie goes out of it's way to provide
-plenty of hooks for overridding or extending how it works.
+Not everyone's needs are the same, so Tastypie goes out of its way to provide
+plenty of hooks for overriding or extending how it works.
 
 .. note::
 
@@ -18,7 +18,7 @@ plenty of hooks for overridding or extending how it works.
 
 .. _#tastypie on irc.freenode.net: irc://irc.freenode.net/tastypie
 
-This tutorial assumes that you have a basic understand of Django as well as
+This tutorial assumes that you have a basic understanding of Django as well as
 how proper REST-style APIs ought to work. We will only explain the portions
 of the code that are Tastypie-specific in any kind of depth.
 
@@ -77,7 +77,7 @@ your project or ``PYTHONPATH``.
 
 .. note::
 
-    Once tastypie passes version 1.0, it will become officially available on
+    Once tastypie reaches version 1.0, it will become officially available on
     PyPI_. Once that is the case, a ``sudo pip install tastypie`` or ``sudo
     easy_install tastypie`` should be available.
 
@@ -93,7 +93,7 @@ The only mandatory configuration is adding ``'tastypie'`` to your
 non-required model, but may ease usage.
 
 You have the option to set up a number of settings (see :doc:`settings`) but
-most have sane defaults and are not required unless you need to tweak their
+they all have sane defaults and are not required unless you need to tweak their
 values.
 
 
@@ -127,9 +127,9 @@ much like the way Django's ``ModelForm`` class introspects.
     instances of :class:`~tastypie.resources.Resource` and lowercasing the string. So
     ``EntryResource`` would become just ``entry``.
     
-    It's included in this example for clarity, especially when looking at
-    the URLs, but you may feel free to omit it if you're comfortable with
-    this behavior.
+    We've included the ``resource_name`` attribute in this example for clarity,
+    especially when looking at the URLs, but you should feel free to omit it if
+    you're comfortable with the automatic behavior.
 
 
 Hooking Up The Resource(s)
@@ -187,7 +187,7 @@ how you want to represent that data.
 And since that relation isn't there, any attempt to POST/PUT new data will
 fail, because no ``user`` is present, which is a required field on the model.
 
-This is easy to fix, but we'll need to flesh out out API a little more.
+This is easy to fix, but we'll need to flesh out our API a little more.
 
 
 Creating More Resources
