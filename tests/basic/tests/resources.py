@@ -24,6 +24,7 @@ class LazyUserResource(ModelResource):
     
     class Meta:
         queryset = User.objects.all()
+        api_name = 'foo'
 
 
 class NoteResource(ModelResource):
@@ -75,7 +76,14 @@ class NoteModelResourceTestCase(TestCase):
         except ImportError:
             pass
         
-        self.assertTrue(isinstance(lur.notes.to_class(), NoteResource))
+        to_class = lur.notes.to_class()
+        self.assertTrue(isinstance(to_class, NoteResource))
+        # This is important, as without passing on the ``api_name``, URL
+        # reversals will fail. Fakes the instance as ``None``, since for
+        # testing purposes, we don't care.
+        related = lur.notes.get_related_resource(None)
+        self.assertEqual(related._meta.api_name, 'foo')
+
 
 class AnnotatedNoteModelResourceTestCase(TestCase):
     def test_one_to_one_regression(self):
