@@ -171,7 +171,7 @@ class Resource(object):
         def wrapper(request, *args, **kwargs):
             try:
                 return getattr(self, view)(request, *args, **kwargs)
-            except BadRequest, e:
+            except (BadRequest, ApiFieldError), e:
                 return HttpBadRequest(e.args[0])
             except Exception, e:
                 if hasattr(e, 'response'):
