@@ -84,3 +84,18 @@ An example::
     TASTYPIE_ALLOW_MISSING_SLASH = True
 
 Defaults to ``False``.
+
+
+``TASTYPIE_DATETIME_FORMATTING``
+================================
+
+**Optional**
+
+This setting allows you to globally choose what format your datetime/date/time
+data will be formatted in. Valid options are ``iso-8601`` & ``rfc-2822``.
+
+An example::
+
+    TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
+
+Defaults to ``iso-8601``.

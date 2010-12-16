@@ -138,6 +138,42 @@ Given a format, attempts to determine the correct MIME type.
 If not available on the current ``Serializer``, returns
 ``application/json`` by default.
 
+``format_datetime``
+~~~~~~~~~~~~~~~~~~~
+
+.. method:: Serializer.format_datetime(data):
+
+A hook to control how datetimes are formatted.
+
+Can be overridden at the ``Serializer`` level (``datetime_formatting``)
+or globally (via ``settings.TASTYPIE_DATETIME_FORMATTING``).
+
+Default is ``iso-8601``, which looks like "2010-12-16T03:02:14".
+
+``format_date``
+~~~~~~~~~~~~~~~
+
+.. method:: Serializer.format_date(data):
+
+A hook to control how dates are formatted.
+
+Can be overridden at the ``Serializer`` level (``datetime_formatting``)
+or globally (via ``settings.TASTYPIE_DATETIME_FORMATTING``).
+
+Default is ``iso-8601``, which looks like "2010-12-16".
+
+``format_time``
+~~~~~~~~~~~~~~~
+
+.. method:: Serializer.format_time(data):
+
+A hook to control how times are formatted.
+
+Can be overridden at the ``Serializer`` level (``datetime_formatting``)
+or globally (via ``settings.TASTYPIE_DATETIME_FORMATTING``).
+
+Default is ``iso-8601``, which looks like "03:02:14".
+
 ``serialize``
 ~~~~~~~~~~~~~
 

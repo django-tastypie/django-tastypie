@@ -40,14 +40,59 @@ class HTTPTestCase(TestServerTestCase):
         response = connection.getresponse()
         connection.close()
         self.assertEqual(response.status, 200)
-        expected = {"meta": {"limit": 20, "next": None, "offset": 0, "previous": None, "total_count": 6},
-                    "objects": [{"artnr": "11111", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "name": "Skateboardrampe", "resource_uri": "/api/v1/products/11111/", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"},
-                                {"artnr": "76123", "created": "Tue, 4 May 2010 20:05:00 -0500", "name": "Bigwheel", "resource_uri": "/api/v1/products/76123/", "updated": "Tue, 4 May 2010 20:05:00 -0500"},
-                                {"artnr": "WS65150-01", "created": "Tue, 4 May 2010 20:05:00 -0500", "name": "Trampolin", "resource_uri": "/api/v1/products/WS65150-01/", "updated": "Tue, 4 May 2010 20:05:00 -0500"},
-                                {"artnr": "65100A-01", "created": "Tue, 4 May 2010 20:05:00 -0500", "name": "Laufrad", "resource_uri": "/api/v1/products/65100A-01/", "updated": "Tue, 4 May 2010 20:05:00 -0500"},
-                                {"artnr": "76123/01", "created": "Tue, 4 May 2010 20:05:00 -0500", "name": "Bigwheel", "resource_uri": "/api/v1/products/76123/01/", "updated": "Tue, 4 May 2010 20:05:00 -0500"},
-                                {"artnr": "WS65150/01-01", "created": "Tue, 4 May 2010 20:05:00 -0500", "name": "Trampolin", "resource_uri": "/api/v1/products/WS65150/01-01/", "updated": "Tue, 4 May 2010 20:05:00 -0500"}]
-                    }
+        expected = {
+            'meta': {
+                'previous': None,
+                'total_count': 6,
+                'offset': 0,
+                'limit': 20,
+                'next': None
+            },
+            'objects': [
+                {
+                    'updated': '2010-03-30T20:05:00',
+                    'resource_uri': '/api/v1/products/11111/',
+                    'name': 'Skateboardrampe',
+                    'artnr': '11111',
+                    'created': '2010-03-30T20:05:00'
+                },
+                {
+                    'updated': '2010-05-04T20:05:00',
+                    'resource_uri': '/api/v1/products/76123/',
+                    'name': 'Bigwheel',
+                    'artnr': '76123',
+                    'created': '2010-05-04T20:05:00'
+                },
+                {
+                    'updated': '2010-05-04T20:05:00',
+                    'resource_uri': '/api/v1/products/WS65150-01/',
+                    'name': 'Trampolin',
+                    'artnr': 'WS65150-01',
+                    'created': '2010-05-04T20:05:00'
+                },
+                {
+                    'updated': '2010-05-04T20:05:00',
+                    'resource_uri': '/api/v1/products/65100A-01/',
+                    'name': 'Laufrad',
+                    'artnr': '65100A-01',
+                    'created': '2010-05-04T20:05:00'
+                },
+                {
+                    'updated': '2010-05-04T20:05:00',
+                    'resource_uri': '/api/v1/products/76123/01/',
+                    'name': 'Bigwheel',
+                    'artnr': '76123/01',
+                    'created': '2010-05-04T20:05:00'
+                },
+                {
+                    'updated': '2010-05-04T20:05:00',
+                    'resource_uri': '/api/v1/products/WS65150/01-01/',
+                    'name': 'Trampolin',
+                    'artnr': 'WS65150/01-01',
+                    'created': '2010-05-04T20:05:00'
+                }
+            ]
+        }
         self.assertEqual(json.loads(response.read()), expected)
 
     def test_post_object(self):

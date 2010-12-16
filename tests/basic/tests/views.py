@@ -51,3 +51,14 @@ class ViewsTestCase(TestCase):
         self.assertEqual(obj['content'], 'A new post.')
         self.assertEqual(obj['is_active'], True)
         self.assertEqual(obj['user'], '/api/v1/users/1/')
+    
+    def test_api_field_error(self):
+        # When a field error is encountered, we should be presenting the message
+        # back to the user.
+        request = HttpRequest()
+        post_data = '{"content": "More internet memes.", "is_active": true, "title": "IT\'S OVER 9000!", "slug": "its-over", "user": "/api/v1/users/9001/"}'
+        request._raw_post_data = post_data
+        
+        resp = self.client.post('/api/v1/notes/', data=post_data, content_type='application/json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.content, "Could not find the provided object via resource URI '/api/v1/users/9001/'.")

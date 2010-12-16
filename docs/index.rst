@@ -20,6 +20,7 @@ interfaces.
    throttling
    
    cookbook
+   debugging
    who_uses
 
 
