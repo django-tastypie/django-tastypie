@@ -17,6 +17,7 @@ Table Of Contents
    throttling
    
    cookbook
+   debugging
    who_uses
 
 
