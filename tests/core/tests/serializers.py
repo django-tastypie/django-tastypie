@@ -1,4 +1,5 @@
 import datetime
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
 from tastypie.serializers import Serializer
@@ -46,11 +47,104 @@ class SerializerTestCase(TestCase):
             'true': True,
             'false': False,
         }
+    
+    def test_format_datetime(self):
+        serializer = Serializer()
+        self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33')
+        
+        serializer = Serializer(datetime_formatting='iso-8601')
+        self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33')
+        
+        serializer = Serializer(datetime_formatting='rfc-2822')
+        self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), u'Thu, 16 Dec 2010 02:31:33 -0600')
+        
+        serializer = Serializer(datetime_formatting='random-garbage')
+        self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33')
+        
+        # Stow.
+        old_format = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING', 'iso-8601')
+        
+        settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601'
+        serializer = Serializer()
+        self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33')
+        
+        settings.TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
+        serializer = Serializer()
+        self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), u'Thu, 16 Dec 2010 02:31:33 -0600')
+        
+        settings.TASTYPIE_DATETIME_FORMATTING = 'random-garbage'
+        serializer = Serializer()
+        self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33')
+        
+        # Restore.
+        settings.TASTYPIE_DATETIME_FORMATTING = old_format
+    
+    def test_format_date(self):
+        serializer = Serializer()
+        self.assertEqual(serializer.format_date(datetime.date(2010, 12, 16)), '2010-12-16')
+        
+        serializer = Serializer(datetime_formatting='iso-8601')
+        self.assertEqual(serializer.format_date(datetime.date(2010, 12, 16)), '2010-12-16')
+        
+        serializer = Serializer(datetime_formatting='rfc-2822')
+        self.assertEqual(serializer.format_date(datetime.date(2010, 12, 16)), u'16 Dec 2010')
+        
+        serializer = Serializer(datetime_formatting='random-garbage')
+        self.assertEqual(serializer.format_date(datetime.date(2010, 12, 16)), '2010-12-16')
+        
+        # Stow.
+        old_format = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING', 'iso-8601')
+        
+        settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601'
+        serializer = Serializer()
+        self.assertEqual(serializer.format_date(datetime.date(2010, 12, 16)), '2010-12-16')
+        
+        settings.TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
+        serializer = Serializer()
+        self.assertEqual(serializer.format_date(datetime.date(2010, 12, 16)), u'16 Dec 2010')
+        
+        settings.TASTYPIE_DATETIME_FORMATTING = 'random-garbage'
+        serializer = Serializer()
+        self.assertEqual(serializer.format_date(datetime.date(2010, 12, 16)), '2010-12-16')
+        
+        # Restore.
+        settings.TASTYPIE_DATETIME_FORMATTING = old_format
+    
+    def test_format_time(self):
+        serializer = Serializer()
+        self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), '02:31:33')
+        
+        serializer = Serializer(datetime_formatting='iso-8601')
+        self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), '02:31:33')
+        
+        serializer = Serializer(datetime_formatting='rfc-2822')
+        self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), u'02:31:33 -0600')
+        
+        serializer = Serializer(datetime_formatting='random-garbage')
+        self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), '02:31:33')
+        
+        # Stow.
+        old_format = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING', 'iso-8601')
+        
+        settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601'
+        serializer = Serializer()
+        self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), '02:31:33')
+        
+        settings.TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
+        serializer = Serializer()
+        self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), u'02:31:33 -0600')
+        
+        settings.TASTYPIE_DATETIME_FORMATTING = 'random-garbage'
+        serializer = Serializer()
+        self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), '02:31:33')
+        
+        # Restore.
+        settings.TASTYPIE_DATETIME_FORMATTING = old_format
 
     def test_to_xml(self):
         serializer = Serializer()
         sample_1 = self.get_sample1()
-        self.assertEqual(serializer.to_xml(sample_1), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><age type="integer">27</age><name>Daniel</name><date_joined>27 Mar 2010</date_joined></response>')
+        self.assertEqual(serializer.to_xml(sample_1), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><age type="integer">27</age><name>Daniel</name><date_joined>2010-03-27</date_joined></response>')
 
     def test_to_xml2(self):
         serializer = Serializer()
@@ -71,7 +165,7 @@ class SerializerTestCase(TestCase):
         serializer = Serializer()
         
         sample_1 = self.get_sample1()
-        self.assertEqual(serializer.to_json(sample_1), '{"age": 27, "date_joined": "27 Mar 2010", "name": "Daniel"}')
+        self.assertEqual(serializer.to_json(sample_1), '{"age": 27, "date_joined": "2010-03-27", "name": "Daniel"}')
     
     def test_from_json(self):
         serializer = Serializer()
@@ -111,7 +205,7 @@ class SerializerTestCase(TestCase):
 
         sample_1 = self.get_sample1()
         options = {'callback': 'myCallback'}
-        self.assertEqual(serializer.to_jsonp(sample_1, options), 'myCallback({"age": 27, "date_joined": "27 Mar 2010", "name": "Daniel"})')
+        self.assertEqual(serializer.to_jsonp(sample_1, options), 'myCallback({"age": 27, "date_joined": "2010-03-27", "name": "Daniel"})')
 
 class ResourceSerializationTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -123,12 +217,12 @@ class ResourceSerializationTestCase(TestCase):
 
     def test_to_xml_multirepr(self):
         serializer = Serializer()
-        self.assertEqual(serializer.to_xml(self.obj_list), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<objects><object><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><created>Tue, 30 Mar 2010 20:05:00 -0500</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id>1</id><resource_uri></resource_uri></object><object><updated>Wed, 31 Mar 2010 20:05:00 -0500</updated><created>Wed, 31 Mar 2010 20:05:00 -0500</created><title>Another Post</title><is_active type="boolean">True</is_active><slug>another-post</slug><content>The dog ate my cat today. He looks seriously uncomfortable.</content><id>2</id><resource_uri></resource_uri></object><object><updated>Thu, 1 Apr 2010 20:05:00 -0500</updated><created>Thu, 1 Apr 2010 20:05:00 -0500</created><title>Recent Volcanic Activity.</title><is_active type="boolean">True</is_active><slug>recent-volcanic-activity</slug><content>My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.</content><id>4</id><resource_uri></resource_uri></object><object><updated>Fri, 2 Apr 2010 10:05:00 -0500</updated><created>Fri, 2 Apr 2010 10:05:00 -0500</created><title>Granny\'s Gone</title><is_active type="boolean">True</is_active><slug>grannys-gone</slug><content>Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!</content><id>6</id><resource_uri></resource_uri></object></objects>')
+        self.assertEqual(serializer.to_xml(self.obj_list), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<objects><object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id>1</id><resource_uri></resource_uri></object><object><updated>2010-03-31T20:05:00</updated><created>2010-03-31T20:05:00</created><title>Another Post</title><is_active type="boolean">True</is_active><slug>another-post</slug><content>The dog ate my cat today. He looks seriously uncomfortable.</content><id>2</id><resource_uri></resource_uri></object><object><updated>2010-04-01T20:05:00</updated><created>2010-04-01T20:05:00</created><title>Recent Volcanic Activity.</title><is_active type="boolean">True</is_active><slug>recent-volcanic-activity</slug><content>My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.</content><id>4</id><resource_uri></resource_uri></object><object><updated>2010-04-02T10:05:00</updated><created>2010-04-02T10:05:00</created><title>Granny\'s Gone</title><is_active type="boolean">True</is_active><slug>grannys-gone</slug><content>Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!</content><id>6</id><resource_uri></resource_uri></object></objects>')
 
     def test_to_xml_single(self):
         serializer = Serializer()
         resource = self.obj_list[0]
-        self.assertEqual(serializer.to_xml(resource), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<object><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><created>Tue, 30 Mar 2010 20:05:00 -0500</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id>1</id><resource_uri></resource_uri></object>')
+        self.assertEqual(serializer.to_xml(resource), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id>1</id><resource_uri></resource_uri></object>')
 
     def test_to_xml_nested(self):
         serializer = Serializer()
@@ -139,16 +233,16 @@ class ResourceSerializationTestCase(TestCase):
                 'object': resource,
             }
         }
-        self.assertEqual(serializer.to_xml(data), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><stuff type="hash"><foo>bar</foo><object><updated>Tue, 30 Mar 2010 20:05:00 -0500</updated><created>Tue, 30 Mar 2010 20:05:00 -0500</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id>1</id><resource_uri></resource_uri></object></stuff></response>')
+        self.assertEqual(serializer.to_xml(data), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><stuff type="hash"><foo>bar</foo><object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id>1</id><resource_uri></resource_uri></object></stuff></response>')
 
     def test_to_json_multirepr(self):
         serializer = Serializer()
-        self.assertEqual(serializer.to_json(self.obj_list), '[{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "id": "1", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "Wed, 31 Mar 2010 20:05:00 -0500", "id": "2", "is_active": true, "resource_uri": "", "slug": "another-post", "title": "Another Post", "updated": "Wed, 31 Mar 2010 20:05:00 -0500"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "Thu, 1 Apr 2010 20:05:00 -0500", "id": "4", "is_active": true, "resource_uri": "", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "Thu, 1 Apr 2010 20:05:00 -0500"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "Fri, 2 Apr 2010 10:05:00 -0500", "id": "6", "is_active": true, "resource_uri": "", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "Fri, 2 Apr 2010 10:05:00 -0500"}]')
+        self.assertEqual(serializer.to_json(self.obj_list), '[{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": "2", "is_active": true, "resource_uri": "", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": "4", "is_active": true, "resource_uri": "", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": "6", "is_active": true, "resource_uri": "", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]')
 
     def test_to_json_single(self):
         serializer = Serializer()
         resource = self.obj_list[0]
-        self.assertEqual(serializer.to_json(resource), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "id": "1", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}')
+        self.assertEqual(serializer.to_json(resource), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
 
     def test_to_json_nested(self):
         serializer = Serializer()
@@ -159,7 +253,7 @@ class ResourceSerializationTestCase(TestCase):
                 'object': resource,
             }
         }
-        self.assertEqual(serializer.to_json(data), '{"stuff": {"foo": "bar", "object": {"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "Tue, 30 Mar 2010 20:05:00 -0500", "id": "1", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "Tue, 30 Mar 2010 20:05:00 -0500"}}}')
+        self.assertEqual(serializer.to_json(data), '{"stuff": {"foo": "bar", "object": {"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}}}')
 
 
 class StubbedSerializer(Serializer):

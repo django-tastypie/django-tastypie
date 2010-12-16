@@ -1,5 +1,6 @@
 import datetime
 from StringIO import StringIO
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.serializers import json
 from django.template import loader, Context
@@ -47,14 +48,18 @@ class Serializer(object):
         'html': 'text/html',
     }
     
-    def __init__(self, formats=None, content_types=None):
+    def __init__(self, formats=None, content_types=None, datetime_formatting=None):
         self.supported_formats = []
+        self.datetime_formatting = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING', 'iso-8601')
         
         if formats is not None:
             self.formats = formats
         
         if content_types is not None:
             self.content_types = content_types
+        
+        if datetime_formatting is not None:
+            self.datetime_formatting = datetime_formatting
         
         for format in self.formats:
             try:
@@ -73,6 +78,48 @@ class Serializer(object):
             return self.content_types[format]
         except KeyError:
             return 'application/json'
+    
+    def format_datetime(self, data):
+        """
+        A hook to control how datetimes are formatted.
+        
+        Can be overridden at the ``Serializer`` level (``datetime_formatting``)
+        or globally (via ``settings.TASTYPIE_DATETIME_FORMATTING``).
+        
+        Default is ``iso-8601``, which looks like "2010-12-16T03:02:14".
+        """
+        if self.datetime_formatting == 'rfc-2822':
+            return format_datetime(data)
+        
+        return data.isoformat()
+    
+    def format_date(self, data):
+        """
+        A hook to control how dates are formatted.
+        
+        Can be overridden at the ``Serializer`` level (``datetime_formatting``)
+        or globally (via ``settings.TASTYPIE_DATETIME_FORMATTING``).
+        
+        Default is ``iso-8601``, which looks like "2010-12-16".
+        """
+        if self.datetime_formatting == 'rfc-2822':
+            return format_date(data)
+        
+        return data.isoformat()
+    
+    def format_time(self, data):
+        """
+        A hook to control how times are formatted.
+        
+        Can be overridden at the ``Serializer`` level (``datetime_formatting``)
+        or globally (via ``settings.TASTYPIE_DATETIME_FORMATTING``).
+        
+        Default is ``iso-8601``, which looks like "03:02:14".
+        """
+        if self.datetime_formatting == 'rfc-2822':
+            return format_time(data)
+        
+        return data.isoformat()
     
     def serialize(self, bundle, format='application/json', options={}):
         """
@@ -142,11 +189,11 @@ class Serializer(object):
             else:
                 return self.to_simple(data.value, options)
         elif isinstance(data, datetime.datetime):
-            return format_datetime(data)
+            return self.format_datetime(data)
         elif isinstance(data, datetime.date):
-            return format_date(data)
+            return self.format_date(data)
         elif isinstance(data, datetime.time):
-            return format_time(data)
+            return self.format_time(data)
         elif isinstance(data, bool):
             return data
         elif type(data) in (long, int, float):
