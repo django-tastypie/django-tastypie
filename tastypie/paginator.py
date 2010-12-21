@@ -96,6 +96,10 @@ class Paginator(object):
         """
         Slices the result set to the specified ``limit`` & ``offset``.
         """
+        # If it's zero, return everything.
+        if limit == 0:
+            return self.objects[offset:]
+        
         return self.objects[offset:offset + limit]
     
     def get_count(self):
@@ -150,16 +154,17 @@ class Paginator(object):
         offset = self.get_offset()
         count = self.get_count()
         objects = self.get_slice(limit, offset)
-        previous = self.get_previous(limit, offset)
-        next = self.get_next(limit, offset, count)
+        meta = {
+            'offset': offset,
+            'limit': limit,
+            'total_count': count,
+        }
+        
+        if limit:
+            meta['previous'] = self.get_previous(limit, offset)
+            meta['next'] = self.get_next(limit, offset, count)
 
         return {
             'objects': objects,
-            'meta': {
-                'offset': offset,
-                'limit': limit,
-                'total_count': count,
-                'previous': previous,
-                'next': next,
-            }
+            'meta': meta,
         }
