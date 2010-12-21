@@ -1764,6 +1764,26 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(punr.obj_get_list(request=authed_request2).count(), 2)
         self.assertEqual(list(punr.get_object_list(authed_request).values_list('id', flat=True)), [1, 2])
         self.assertEqual(list(punr.get_object_list(authed_request2).values_list('id', flat=True)), [4, 6])
+    
+    def test_browser_cache(self):
+        resource = NoteResource()
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        
+        # First as a normal request.
+        resp = resource.wrap_view('dispatch_detail')(request, pk=1)
+        # resp = resource.get_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
+        self.assertFalse(resp.has_header('Cache-Control'))
+        
+        # Now as Ajax.
+        request.META = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        resp = resource.wrap_view('dispatch_detail')(request, pk=1)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
+        self.assertTrue(resp.has_header('cache-control'))
+        self.assertEqual(resp._headers['cache-control'], ('Cache-Control', 'no-cache'))
 
 
 class BasicAuthResourceTestCase(TestCase):

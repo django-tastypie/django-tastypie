@@ -4,6 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404
 from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
 from django.http import HttpResponse
+from django.utils.cache import patch_cache_control
 from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.bundle import Bundle
@@ -170,7 +171,17 @@ class Resource(object):
         @csrf_exempt
         def wrapper(request, *args, **kwargs):
             try:
-                return getattr(self, view)(request, *args, **kwargs)
+                callback = getattr(self, view)
+                response = callback(request, *args, **kwargs)
+                
+                
+                if request.is_ajax():
+                    # IE excessively caches XMLHttpRequests, so we're disabling
+                    # the browser cache here.
+                    # See http://www.enhanceie.com/ie/bugs.asp for details.
+                    patch_cache_control(response, no_cache=True)
+                
+                return response
             except (BadRequest, ApiFieldError), e:
                 return HttpBadRequest(e.args[0])
             except Exception, e:
