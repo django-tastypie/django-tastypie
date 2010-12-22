@@ -495,7 +495,8 @@ class RelatedField(ApiField):
                 raise ApiFieldError("Could not find the provided object via resource URI '%s'." % value)
         elif hasattr(value, 'items'):
             # Try to hydrate the data provided.
-            self.fk_bundle = Bundle(data=dict_strip_unicode_keys(value))
+            value = dict_strip_unicode_keys(value)
+            self.fk_bundle = Bundle(data=value)
             try:
                 return self.fk_resource.obj_update(self.fk_bundle, **value)
             except NotFound:
