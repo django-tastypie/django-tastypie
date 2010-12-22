@@ -942,12 +942,7 @@ class Resource(object):
         bundles_seen = []
         
         for object_data in deserialized['objects']:
-            data = {}
-            
-            for key, value in object_data.items():
-                data[str(key)] = value
-            
-            bundle = self.build_bundle(data=data)
+            bundle = self.build_bundle(data=dict_strip_unicode_keys(object_data))
             
             # Attempt to be transactional, deleting any previously created
             # objects if validation fails.
@@ -994,12 +989,7 @@ class Resource(object):
         If a new resource is created, return ``HttpCreated`` (201 Created).
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
-        data = {}
-        
-        for key, value in deserialized.items():
-            data[str(key)] = value
-        
-        bundle = self.build_bundle(data=data)
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized))
         self.is_valid(bundle, request)
         updated_bundle = self.obj_create(bundle, request=request)
         return HttpCreated(location=self.get_resource_uri(updated_bundle))

@@ -501,6 +501,21 @@ class ForeignKeyTestCase(TestCase):
         self.assertEqual(fk_bundle.data['email'], u'smith@example.com')
         self.assertEqual(fk_bundle.obj.username, u'mistersmith')
         self.assertEqual(fk_bundle.obj.email, u'smith@example.com')
+        
+        # Regression - Make sure Unicode keys get converted to regular strings
+        #              so that we can **kwargs them.
+        field_6 = ForeignKey(UserResource, 'author')
+        field_6.instance_name = 'fk'
+        bundle.data['fk'] = {
+            u'username': u'mistersmith',
+            u'email': u'smith@example.com',
+            u'password': u'foobar',
+        }
+        fk_bundle = field_6.hydrate(bundle)
+        self.assertEqual(fk_bundle.data['username'], u'mistersmith')
+        self.assertEqual(fk_bundle.data['email'], u'smith@example.com')
+        self.assertEqual(fk_bundle.obj.username, u'mistersmith')
+        self.assertEqual(fk_bundle.obj.email, u'smith@example.com')
 
 
 class SubjectResource(ModelResource):

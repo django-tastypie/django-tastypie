@@ -5,6 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.utils import datetime_safe, importlib
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
+from tastypie.utils import dict_strip_unicode_keys
 
 
 class NOT_PROVIDED:
@@ -494,7 +495,7 @@ class RelatedField(ApiField):
                 raise ApiFieldError("Could not find the provided object via resource URI '%s'." % value)
         elif hasattr(value, 'items'):
             # Try to hydrate the data provided.
-            self.fk_bundle = Bundle(data=value)
+            self.fk_bundle = Bundle(data=dict_strip_unicode_keys(value))
             try:
                 return self.fk_resource.obj_update(self.fk_bundle, **value)
             except NotFound:
