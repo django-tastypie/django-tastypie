@@ -1198,6 +1198,7 @@ class ModelResource(Resource):
             
             kwargs = {
                 'attribute': f.name,
+                'help_text': f.help_text,
             }
             
             if f.null is True:
