@@ -34,3 +34,8 @@ echo
 echo
 echo "** Related Resource **"
 django-admin.py test related_resource --settings=settings_related
+
+echo
+echo
+echo "** Validation **"
+django-admin.py test validation --settings=settings_validation
