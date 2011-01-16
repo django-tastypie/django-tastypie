@@ -578,10 +578,9 @@ class ToManyField(RelatedField):
     is_m2m = True
     help_text = 'Many related resources. Can be either a list of URIs or list of individually nested resource data.'
     
-    def __init__(self, to, attribute, related_name=None, null=False, full=False, unique=False, filter_related=None, help_text=help_text):
+    def __init__(self, to, attribute, related_name=None, null=False, full=False, unique=False, help_text=help_text):
         super(ToManyField, self).__init__(to, attribute, related_name, null=null, full=full, unique=unique, help_text=help_text)
         self.m2m_bundles = []
-        self.filter_related = filter_related
     
     def dehydrate(self, bundle):
         if not bundle.obj or not bundle.obj.pk:
@@ -600,8 +599,9 @@ class ToManyField(RelatedField):
         m2m_dehydrated = []
        
         # Filter the related queryset if needed 
-        if self.filter_related and isinstance(self.filter_related, dict):
-            m2m_qs = getattr(bundle.obj, self.attribute).filter(**self.filter_related)
+        qs_kwargs = self._resource._meta.related_queryset_filters
+        if qs_kwargs is not None and isinstance(qs_kwargs, dict):
+            m2m_qs = getattr(bundle.obj, self.attribute).filter(**qs_kwargs)
         else:
             m2m_qs = getattr(bundle.obj, self.attribute).all()
         # TODO: Also model-specific and leaky. Relies on there being a

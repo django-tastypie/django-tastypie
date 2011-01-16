@@ -59,6 +59,7 @@ class ResourceOptions(object):
     ordering = []
     object_class = None
     queryset = None
+    related_queryset_filters = {}
     fields = []
     excludes = []
     include_resource_uri = True
