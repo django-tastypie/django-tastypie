@@ -1,3 +1,4 @@
+import warnings
 from django.conf import settings
 from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
@@ -1291,7 +1292,7 @@ class ModelResource(Resource):
         Given a dictionary of options, apply some ORM-level sorting to the
         provided ``QuerySet``.
         
-        Looks for the ``sort_by`` key and handles either ascending (just the
+        Looks for the ``order_by`` key and handles either ascending (just the
         field name) or descending (the field name with a ``-`` in front).
         
         The field name should be the resource field, **NOT** model field.
@@ -1299,28 +1300,34 @@ class ModelResource(Resource):
         if options is None:
             options = {}
         
-        if not 'sort_by' in options:
-            # Nothing to alter the sort order. Return what we've got.
-            return obj_list
+        parameter_name = 'order_by'
+        
+        if not 'order_by' in options:
+            if not 'sort_by' in options:
+                # Nothing to alter the order. Return what we've got.
+                return obj_list
+            else:
+                warnings.warn("'sort_by' is a deprecated parameter. Please use 'order_by' instead.")
+                parameter_name = 'sort_by'
         
         order_by_args = []
         
         if hasattr(options, 'getlist'):
-            sort_bits = options.getlist('sort_by')
+            order_bits = options.getlist(parameter_name)
         else:
-            sort_bits = options.get('sort_by')
+            order_bits = options.get(parameter_name)
             
-            if not isinstance(sort_bits, (list, tuple)):
-                sort_bits = [sort_bits]
+            if not isinstance(order_bits, (list, tuple)):
+                order_bits = [order_bits]
         
-        for sort_by in sort_bits:
-            sort_by_bits = sort_by.split(LOOKUP_SEP)
+        for order_by in order_bits:
+            order_by_bits = order_by.split(LOOKUP_SEP)
             
-            field_name = sort_by_bits[0]
+            field_name = order_by_bits[0]
             order = ''
             
-            if sort_by_bits[0].startswith('-'):
-                field_name = sort_by_bits[0][1:]
+            if order_by_bits[0].startswith('-'):
+                field_name = order_by_bits[0][1:]
                 order = '-'
             
             if not field_name in self.fields:
@@ -1333,7 +1340,7 @@ class ModelResource(Resource):
             if self.fields[field_name].attribute is None:
                 raise InvalidSortError("The '%s' field has no 'attribute' for ordering with." % field_name)
             
-            order_by_args.append("%s%s" % (order, LOOKUP_SEP.join([self.fields[field_name].attribute] + sort_by_bits[1:])))
+            order_by_args.append("%s%s" % (order, LOOKUP_SEP.join([self.fields[field_name].attribute] + order_by_bits[1:])))
         
         return obj_list.order_by(*order_by_args)
     
