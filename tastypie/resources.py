@@ -4,7 +4,7 @@ from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404
 from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseNotFound
 from django.utils.cache import patch_cache_control
 from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
@@ -207,6 +207,10 @@ class Resource(object):
         import traceback
         import sys
         the_trace = '\n'.join(traceback.format_exception(*(sys.exc_info())))
+        response_class = HttpApplicationError
+        
+        if isinstance(exception, (NotFound, ObjectDoesNotExist)):
+            response_class = HttpResponseNotFound
         
         if settings.DEBUG:
             data = {
@@ -215,18 +219,20 @@ class Resource(object):
             }
             desired_format = self.determine_format(request)
             serialized = self.serialize(request, data, desired_format)
-            return HttpApplicationError(content=serialized, content_type=build_content_type(desired_format))
+            return response_class(content=serialized, content_type=build_content_type(desired_format))
         
-        # When DEBUG is False, send an error message to the admins.
-        from django.core.mail import mail_admins
-        subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), request.path)
-        try:
-            request_repr = repr(request)
-        except:
-            request_repr = "Request repr() unavailable"
-        
-        message = "%s\n\n%s" % (the_trace, request_repr)
-        mail_admins(subject, message, fail_silently=True)
+        # When DEBUG is False, send an error message to the admins (unless it's
+        # a 404, in which case we check the setting).
+        if not isinstance(exception, (NotFound, ObjectDoesNotExist)) or getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False):
+            from django.core.mail import mail_admins
+            subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), request.path)
+            try:
+                request_repr = repr(request)
+            except:
+                request_repr = "Request repr() unavailable"
+            
+            message = "%s\n\n%s" % (the_trace, request_repr)
+            mail_admins(subject, message, fail_silently=True)
         
         # Prep the data going out.
         data = {
@@ -234,7 +240,7 @@ class Resource(object):
         }
         desired_format = self.determine_format(request)
         serialized = self.serialize(request, data, desired_format)
-        return HttpApplicationError(content=serialized, content_type=build_content_type(desired_format))
+        return response_class(content=serialized, content_type=build_content_type(desired_format))
     
     def _build_reverse_url(self, name, args=None, kwargs=None):
         """

@@ -1,5 +1,9 @@
 import os
 
+ADMINS = (
+    ('test@example.com', 'Mr. Test'),
+)
+
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 MEDIA_ROOT = os.path.normpath(os.path.join(BASE_PATH, 'media'))

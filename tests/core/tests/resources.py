@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import FieldError
+from django.core import mail
 from django.core.urlresolvers import reverse
 from django import forms
 from django.http import HttpRequest
@@ -12,7 +13,7 @@ from django.utils import dateformat
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
 from tastypie.bundle import Bundle
-from tastypie.exceptions import InvalidFilterError, InvalidSortError, ImmediateHttpResponse, BadRequest
+from tastypie.exceptions import InvalidFilterError, InvalidSortError, ImmediateHttpResponse, BadRequest, NotFound
 from tastypie import fields
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.serializers import Serializer
@@ -1863,8 +1864,11 @@ class YouFail(Exception):
 
 
 class BustedResource(BasicResource):
-    def get_detail(self, request, **kwargs):
+    def get_list(self, request, **kwargs):
         raise YouFail("Something blew up.")
+    
+    def get_detail(self, request, **kwargs):
+        raise NotFound("It's just not there.")
 
 
 class BustedResourceTestCase(TestCase):
@@ -1874,6 +1878,7 @@ class BustedResourceTestCase(TestCase):
         self.old_debug = settings.DEBUG
         self.old_full_debug = getattr(settings, 'TASTYPIE_FULL_DEBUG', False)
         self.old_canned_error = getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later.")
+        self.old_broken_links = getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False)
         
         self.resource = BustedResource()
         self.request = HttpRequest()
@@ -1884,6 +1889,7 @@ class BustedResourceTestCase(TestCase):
         settings.DEBUG = self.old_debug
         settings.TASTYPIE_FULL_DEBUG = self.old_full_debug 
         settings.TASTYPIE_CANNED_ERROR = self.old_canned_error
+        settings.SEND_BROKEN_LINK_EMAILS = self.old_broken_links
         super(BustedResourceTestCase, self).setUp()
     
     def test_debug_on_with_full(self):
@@ -1891,7 +1897,7 @@ class BustedResourceTestCase(TestCase):
         settings.TASTYPIE_FULL_DEBUG = True
         
         try:
-            resp = self.resource.wrap_view('get_detail')(self.request, pk=1)
+            resp = self.resource.wrap_view('get_list')(self.request, pk=1)
             self.fail()
         except YouFail:
             pass
@@ -1899,25 +1905,44 @@ class BustedResourceTestCase(TestCase):
     def test_debug_on_without_full(self):
         settings.DEBUG = True
         settings.TASTYPIE_FULL_DEBUG = False
+        mail.outbox = []
         
-        resp = self.resource.wrap_view('get_detail')(self.request, pk=1)
+        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 500)
         content = json.loads(resp.content)
         self.assertEqual(content['error_message'], 'Something blew up.')
         self.assertTrue(len(content['traceback']) > 0)
+        self.assertEqual(len(mail.outbox), 0)
     
     def test_debug_off(self):
         settings.DEBUG = False
         settings.TASTYPIE_FULL_DEBUG = False
+        mail.outbox = []
         
-        resp = self.resource.wrap_view('get_detail')(self.request, pk=1)
+        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 500)
         self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+        self.assertEqual(len(mail.outbox), 1)
+        
+        # Ensure that 404s don't send email.
+        resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+        self.assertEqual(len(mail.outbox), 1)
+        
+        # Ensure that 404s (with broken link emails enabled) DO send email.
+        settings.SEND_BROKEN_LINK_EMAILS = True
+        resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+        self.assertEqual(len(mail.outbox), 2)
         
         # Now with a custom message.
         settings.TASTYPIE_CANNED_ERROR = "Oops, you bwoke it."
         
-        resp = self.resource.wrap_view('get_detail')(self.request, pk=1)
+        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 500)
         self.assertEqual(resp.content, '{"error_message": "Oops, you bwoke it."}')
+        self.assertEqual(len(mail.outbox), 3)
+        mail.outbox = []
     
