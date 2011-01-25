@@ -1365,11 +1365,14 @@ class ModelResource(Resource):
         Takes an optional ``request`` object, whose ``GET`` dictionary can be
         used to narrow the query.
         """
-        filters = None
+        filters = {}
         
         if hasattr(request, 'GET'):
-            filters = request.GET
+            # Grab a mutable copy.
+            filters = request.GET.copy()
         
+        # Update with the provided kwargs.
+        filters.update(kwargs)
         applicable_filters = self.build_filters(filters=filters)
         
         try:

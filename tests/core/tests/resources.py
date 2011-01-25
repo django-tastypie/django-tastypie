@@ -1209,6 +1209,20 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(customs[5].is_active, True)
         self.assertEqual(customs[5].title, u"Granny's Gone")
         self.assertEqual(customs[5].author.username, u'janedoe')
+        
+        # Ensure filtering by request params works.
+        mock_request = MockRequest()
+        mock_request.GET['title'] = u"Granny's Gone"
+        notes = NoteResource().obj_get_list(request=mock_request)
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes[0].title, u"Granny's Gone")
+        
+        # Ensure kwargs override request params.
+        mock_request = MockRequest()
+        mock_request.GET['title'] = u"Granny's Gone"
+        notes = NoteResource().obj_get_list(request=mock_request, title='Recent Volcanic Activity.')
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes[0].title, u'Recent Volcanic Activity.')
     
     def test_obj_get(self):
         resource = NoteResource()
