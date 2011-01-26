@@ -278,6 +278,18 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Controls which validation class the ``Resource`` should use. Default is
   ``tastypie.validation.Validation()``.
 
+``paginator_class``
+-------------------
+
+  Controls which paginator class the ``Resource`` should use. Default is
+  ``tastypie.paginator.Paginator()``.
+
+.. note::
+
+  This is different than the other options in that you supply a class rather
+  than an instance. This is done because the Paginator has some per-request
+  initialization options.
+
 ``cache``
 ---------
 

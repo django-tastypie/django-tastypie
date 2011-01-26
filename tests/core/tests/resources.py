@@ -15,6 +15,7 @@ from tastypie.authorization import Authorization
 from tastypie.bundle import Bundle
 from tastypie.exceptions import InvalidFilterError, InvalidSortError, ImmediateHttpResponse, BadRequest, NotFound
 from tastypie import fields
+from tastypie.paginator import Paginator
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
@@ -518,6 +519,21 @@ class VeryCustomNoteResource(NoteResource):
         fields = ['title', 'content', 'created', 'is_active']
 
 
+class CustomPaginator(Paginator):
+    def page(self):
+        data = super(CustomPaginator, self).page()
+        data['extra'] = 'Some extra stuff here.'
+        return data
+
+
+class CustomPageNoteResource(NoteResource):
+    class Meta:
+        limit = 10
+        resource_name = 'pagey'
+        paginator_class = CustomPaginator
+        queryset = Note.objects.all()
+
+
 class UserResource(ModelResource):
     class Meta:
         queryset = User.objects.all()
@@ -714,6 +730,9 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resource_5._meta.list_allowed_methods, ['post', 'put'])
         # Should inherit from the basic configuration.
         self.assertEqual(resource_5._meta.detail_allowed_methods, ['post'])
+        
+        resource_6 = CustomPageNoteResource()
+        self.assertEqual(resource_6._meta.paginator_class, CustomPaginator)
     
     def test_can_create(self):
         resource_1 = NoteResource()
@@ -1856,6 +1875,14 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
         self.assertTrue(resp.has_header('cache-control'))
         self.assertEqual(resp._headers['cache-control'], ('Cache-Control', 'no-cache'))
+    
+    def test_custom_paginator(self):
+        mock_request = MockRequest()
+        customs = CustomPageNoteResource().get_list(mock_request)
+        data = json.loads(customs.content)
+        self.assertEqual(len(data), 3)
+        self.assertEqual(len(data['objects']), 6)
+        self.assertEqual(data['extra'], 'Some extra stuff here.')
 
 
 class BasicAuthResourceTestCase(TestCase):

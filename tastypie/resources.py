@@ -48,6 +48,7 @@ class ResourceOptions(object):
     cache = NoCache()
     throttle = BaseThrottle()
     validation = Validation()
+    paginator_class = Paginator
     allowed_methods = ['get', 'post', 'put', 'delete']
     list_allowed_methods = None
     detail_allowed_methods = None
@@ -933,8 +934,7 @@ class Resource(object):
         objects = self.obj_get_list(request=request, **self.remove_api_resource_names(kwargs))
         sorted_objects = self.apply_sorting(objects, options=request.GET)
         
-        paginator = Paginator(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri(),
-           limit=self._meta.limit)
+        paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri(), limit=self._meta.limit)
         to_be_serialized = paginator.page()
         
         # Dehydrate the bundles in preparation for serialization.
