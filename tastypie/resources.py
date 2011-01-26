@@ -83,9 +83,6 @@ class ResourceOptions(object):
         if overrides.get('detail_allowed_methods', None) is None:
             overrides['detail_allowed_methods'] = allowed_methods
         
-        if not overrides.get('queryset', None) is None:
-            overrides['object_class'] = overrides['queryset'].model
-        
         return object.__new__(type('ResourceOptions', (cls,), overrides))
 
 
@@ -1094,6 +1091,11 @@ class Resource(object):
 
 class ModelDeclarativeMetaclass(DeclarativeMetaclass):
     def __new__(cls, name, bases, attrs):
+        meta = attrs.get('Meta')
+
+        if meta and hasattr(meta, 'queryset'):
+          setattr(meta, 'object_class', meta.queryset.model)
+
         new_class = super(ModelDeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
         fields = getattr(new_class._meta, 'fields', [])
         excludes = getattr(new_class._meta, 'excludes', [])
