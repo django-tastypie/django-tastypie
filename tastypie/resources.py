@@ -1,9 +1,10 @@
+import warnings
 from django.conf import settings
 from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404
 from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseNotFound
 from django.utils.cache import patch_cache_control
 from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
@@ -206,6 +207,10 @@ class Resource(object):
         import traceback
         import sys
         the_trace = '\n'.join(traceback.format_exception(*(sys.exc_info())))
+        response_class = HttpApplicationError
+        
+        if isinstance(exception, (NotFound, ObjectDoesNotExist)):
+            response_class = HttpResponseNotFound
         
         if settings.DEBUG:
             data = {
@@ -214,18 +219,20 @@ class Resource(object):
             }
             desired_format = self.determine_format(request)
             serialized = self.serialize(request, data, desired_format)
-            return HttpApplicationError(content=serialized, content_type=build_content_type(desired_format))
+            return response_class(content=serialized, content_type=build_content_type(desired_format))
         
-        # When DEBUG is False, send an error message to the admins.
-        from django.core.mail import mail_admins
-        subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), request.path)
-        try:
-            request_repr = repr(request)
-        except:
-            request_repr = "Request repr() unavailable"
-        
-        message = "%s\n\n%s" % (the_trace, request_repr)
-        mail_admins(subject, message, fail_silently=True)
+        # When DEBUG is False, send an error message to the admins (unless it's
+        # a 404, in which case we check the setting).
+        if not isinstance(exception, (NotFound, ObjectDoesNotExist)) or getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False):
+            from django.core.mail import mail_admins
+            subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), request.path)
+            try:
+                request_repr = repr(request)
+            except:
+                request_repr = "Request repr() unavailable"
+            
+            message = "%s\n\n%s" % (the_trace, request_repr)
+            mail_admins(subject, message, fail_silently=True)
         
         # Prep the data going out.
         data = {
@@ -233,7 +240,7 @@ class Resource(object):
         }
         desired_format = self.determine_format(request)
         serialized = self.serialize(request, data, desired_format)
-        return HttpApplicationError(content=serialized, content_type=build_content_type(desired_format))
+        return response_class(content=serialized, content_type=build_content_type(desired_format))
     
     def _build_reverse_url(self, name, args=None, kwargs=None):
         """
@@ -1291,7 +1298,7 @@ class ModelResource(Resource):
         Given a dictionary of options, apply some ORM-level sorting to the
         provided ``QuerySet``.
         
-        Looks for the ``sort_by`` key and handles either ascending (just the
+        Looks for the ``order_by`` key and handles either ascending (just the
         field name) or descending (the field name with a ``-`` in front).
         
         The field name should be the resource field, **NOT** model field.
@@ -1299,28 +1306,34 @@ class ModelResource(Resource):
         if options is None:
             options = {}
         
-        if not 'sort_by' in options:
-            # Nothing to alter the sort order. Return what we've got.
-            return obj_list
+        parameter_name = 'order_by'
+        
+        if not 'order_by' in options:
+            if not 'sort_by' in options:
+                # Nothing to alter the order. Return what we've got.
+                return obj_list
+            else:
+                warnings.warn("'sort_by' is a deprecated parameter. Please use 'order_by' instead.")
+                parameter_name = 'sort_by'
         
         order_by_args = []
         
         if hasattr(options, 'getlist'):
-            sort_bits = options.getlist('sort_by')
+            order_bits = options.getlist(parameter_name)
         else:
-            sort_bits = options.get('sort_by')
+            order_bits = options.get(parameter_name)
             
-            if not isinstance(sort_bits, (list, tuple)):
-                sort_bits = [sort_bits]
+            if not isinstance(order_bits, (list, tuple)):
+                order_bits = [order_bits]
         
-        for sort_by in sort_bits:
-            sort_by_bits = sort_by.split(LOOKUP_SEP)
+        for order_by in order_bits:
+            order_by_bits = order_by.split(LOOKUP_SEP)
             
-            field_name = sort_by_bits[0]
+            field_name = order_by_bits[0]
             order = ''
             
-            if sort_by_bits[0].startswith('-'):
-                field_name = sort_by_bits[0][1:]
+            if order_by_bits[0].startswith('-'):
+                field_name = order_by_bits[0][1:]
                 order = '-'
             
             if not field_name in self.fields:
@@ -1333,7 +1346,7 @@ class ModelResource(Resource):
             if self.fields[field_name].attribute is None:
                 raise InvalidSortError("The '%s' field has no 'attribute' for ordering with." % field_name)
             
-            order_by_args.append("%s%s" % (order, LOOKUP_SEP.join([self.fields[field_name].attribute] + sort_by_bits[1:])))
+            order_by_args.append("%s%s" % (order, LOOKUP_SEP.join([self.fields[field_name].attribute] + order_by_bits[1:])))
         
         return obj_list.order_by(*order_by_args)
     
@@ -1358,11 +1371,14 @@ class ModelResource(Resource):
         Takes an optional ``request`` object, whose ``GET`` dictionary can be
         used to narrow the query.
         """
-        filters = None
+        filters = {}
         
         if hasattr(request, 'GET'):
-            filters = request.GET
+            # Grab a mutable copy.
+            filters = request.GET.copy()
         
+        # Update with the provided kwargs.
+        filters.update(kwargs)
         applicable_filters = self.build_filters(filters=filters)
         
         try:

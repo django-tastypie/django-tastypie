@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import FieldError
+from django.core import mail
 from django.core.urlresolvers import reverse
 from django import forms
 from django.http import HttpRequest
@@ -12,7 +13,7 @@ from django.utils import dateformat
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
 from tastypie.bundle import Bundle
-from tastypie.exceptions import InvalidFilterError, InvalidSortError, ImmediateHttpResponse, BadRequest
+from tastypie.exceptions import InvalidFilterError, InvalidSortError, ImmediateHttpResponse, BadRequest, NotFound
 from tastypie import fields
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.serializers import Serializer
@@ -849,49 +850,54 @@ class ModelResourceTestCase(TestCase):
         
         # Not a valid field.
         object_list = resource.obj_get_list()
-        self.assertRaises(InvalidSortError, resource.apply_sorting, object_list, options={'sort_by': 'foobar'})
+        self.assertRaises(InvalidSortError, resource.apply_sorting, object_list, options={'order_by': 'foobar'})
         
         # Not in the ordering dict.
         object_list = resource.obj_get_list()
-        self.assertRaises(InvalidSortError, resource.apply_sorting, object_list, options={'sort_by': 'content'})
+        self.assertRaises(InvalidSortError, resource.apply_sorting, object_list, options={'order_by': 'content'})
         
         # No attribute to sort by.
         object_list = resource.obj_get_list()
-        self.assertRaises(InvalidSortError, resource.apply_sorting, object_list, options={'sort_by': 'resource_uri'})
+        self.assertRaises(InvalidSortError, resource.apply_sorting, object_list, options={'order_by': 'resource_uri'})
         
         # Valid ascending.
         object_list = resource.obj_get_list()
-        ordered_list = resource.apply_sorting(object_list, options={'sort_by': 'title'})
+        ordered_list = resource.apply_sorting(object_list, options={'order_by': 'title'})
         self.assertEqual([obj.id for obj in ordered_list], [2, 1, 6, 4])
         
         object_list = resource.obj_get_list()
-        ordered_list = resource.apply_sorting(object_list, options={'sort_by': 'slug'})
+        ordered_list = resource.apply_sorting(object_list, options={'order_by': 'slug'})
         self.assertEqual([obj.id for obj in ordered_list], [2, 1, 6, 4])
         
         # Valid descending.
         object_list = resource.obj_get_list()
-        ordered_list = resource.apply_sorting(object_list, options={'sort_by': '-title'})
+        ordered_list = resource.apply_sorting(object_list, options={'order_by': '-title'})
         self.assertEqual([obj.id for obj in ordered_list], [4, 6, 1, 2])
         
         object_list = resource.obj_get_list()
-        ordered_list = resource.apply_sorting(object_list, options={'sort_by': '-slug'})
+        ordered_list = resource.apply_sorting(object_list, options={'order_by': '-slug'})
+        self.assertEqual([obj.id for obj in ordered_list], [4, 6, 1, 2])
+        
+        # Ensure the deprecated parameter still works.
+        object_list = resource.obj_get_list()
+        ordered_list = resource.apply_sorting(object_list, options={'sort_by': '-title'})
         self.assertEqual([obj.id for obj in ordered_list], [4, 6, 1, 2])
         
         # Valid combination.
         object_list = resource.obj_get_list()
-        ordered_list = resource.apply_sorting(object_list, options={'sort_by': ['title', '-slug']})
+        ordered_list = resource.apply_sorting(object_list, options={'order_by': ['title', '-slug']})
         self.assertEqual([obj.id for obj in ordered_list], [2, 1, 6, 4])
         
         # Valid (model attribute differs from field name).
         resource_2 = DetailedNoteResource()
         object_list = resource_2.obj_get_list()
-        ordered_list = resource_2.apply_sorting(object_list, options={'sort_by': '-user'})
+        ordered_list = resource_2.apply_sorting(object_list, options={'order_by': '-user'})
         self.assertEqual([obj.id for obj in ordered_list], [6, 4, 2, 1])
         
         # Invalid relation.
         resource_2 = DetailedNoteResource()
         object_list = resource_2.obj_get_list()
-        ordered_list = resource_2.apply_sorting(object_list, options={'sort_by': '-user__baz'})
+        ordered_list = resource_2.apply_sorting(object_list, options={'order_by': '-user__baz'})
         
         try:
             [obj.id for obj in ordered_list]
@@ -902,18 +908,18 @@ class ModelResourceTestCase(TestCase):
         # Valid relation.
         resource_2 = DetailedNoteResource()
         object_list = resource_2.obj_get_list()
-        ordered_list = resource_2.apply_sorting(object_list, options={'sort_by': 'user__username'})
+        ordered_list = resource_2.apply_sorting(object_list, options={'order_by': 'user__username'})
         self.assertEqual([obj.id for obj in ordered_list], [4, 6, 1, 2])
         
         resource_2 = DetailedNoteResource()
         object_list = resource_2.obj_get_list()
-        ordered_list = resource_2.apply_sorting(object_list, options={'sort_by': '-user__username'})
+        ordered_list = resource_2.apply_sorting(object_list, options={'order_by': '-user__username'})
         self.assertEqual([obj.id for obj in ordered_list], [1, 2, 4, 6])
         
         # Valid relational combination.
         resource_2 = DetailedNoteResource()
         object_list = resource_2.obj_get_list()
-        ordered_list = resource_2.apply_sorting(object_list, options={'sort_by': ['-user__username', 'title']})
+        ordered_list = resource_2.apply_sorting(object_list, options={'order_by': ['-user__username', 'title']})
         self.assertEqual([obj.id for obj in ordered_list], [2, 1, 6, 4])
     
     def test_get_list(self):
@@ -985,12 +991,12 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.content, '{"meta": {"limit": 0, "offset": 0, "total_count": 4}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": "2", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": "4", "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": "6", "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]}')
         
         # Valid sorting.
-        request.GET = {'format': 'json', 'sort_by': 'title'}
+        request.GET = {'format': 'json', 'order_by': 'title'}
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": "2", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": "6", "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": "4", "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}]}')
         
-        request.GET = {'format': 'json', 'sort_by': '-title'}
+        request.GET = {'format': 'json', 'order_by': '-title'}
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": "4", "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": "6", "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}, {"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": "2", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}]}')
@@ -1204,6 +1210,20 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(customs[5].is_active, True)
         self.assertEqual(customs[5].title, u"Granny's Gone")
         self.assertEqual(customs[5].author.username, u'janedoe')
+        
+        # Ensure filtering by request params works.
+        mock_request = MockRequest()
+        mock_request.GET['title'] = u"Granny's Gone"
+        notes = NoteResource().obj_get_list(request=mock_request)
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes[0].title, u"Granny's Gone")
+        
+        # Ensure kwargs override request params.
+        mock_request = MockRequest()
+        mock_request.GET['title'] = u"Granny's Gone"
+        notes = NoteResource().obj_get_list(request=mock_request, title='Recent Volcanic Activity.')
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes[0].title, u'Recent Volcanic Activity.')
     
     def test_obj_get(self):
         resource = NoteResource()
@@ -1844,8 +1864,11 @@ class YouFail(Exception):
 
 
 class BustedResource(BasicResource):
-    def get_detail(self, request, **kwargs):
+    def get_list(self, request, **kwargs):
         raise YouFail("Something blew up.")
+    
+    def get_detail(self, request, **kwargs):
+        raise NotFound("It's just not there.")
 
 
 class BustedResourceTestCase(TestCase):
@@ -1855,6 +1878,7 @@ class BustedResourceTestCase(TestCase):
         self.old_debug = settings.DEBUG
         self.old_full_debug = getattr(settings, 'TASTYPIE_FULL_DEBUG', False)
         self.old_canned_error = getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later.")
+        self.old_broken_links = getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False)
         
         self.resource = BustedResource()
         self.request = HttpRequest()
@@ -1865,6 +1889,7 @@ class BustedResourceTestCase(TestCase):
         settings.DEBUG = self.old_debug
         settings.TASTYPIE_FULL_DEBUG = self.old_full_debug 
         settings.TASTYPIE_CANNED_ERROR = self.old_canned_error
+        settings.SEND_BROKEN_LINK_EMAILS = self.old_broken_links
         super(BustedResourceTestCase, self).setUp()
     
     def test_debug_on_with_full(self):
@@ -1872,7 +1897,7 @@ class BustedResourceTestCase(TestCase):
         settings.TASTYPIE_FULL_DEBUG = True
         
         try:
-            resp = self.resource.wrap_view('get_detail')(self.request, pk=1)
+            resp = self.resource.wrap_view('get_list')(self.request, pk=1)
             self.fail()
         except YouFail:
             pass
@@ -1880,25 +1905,44 @@ class BustedResourceTestCase(TestCase):
     def test_debug_on_without_full(self):
         settings.DEBUG = True
         settings.TASTYPIE_FULL_DEBUG = False
+        mail.outbox = []
         
-        resp = self.resource.wrap_view('get_detail')(self.request, pk=1)
+        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 500)
         content = json.loads(resp.content)
         self.assertEqual(content['error_message'], 'Something blew up.')
         self.assertTrue(len(content['traceback']) > 0)
+        self.assertEqual(len(mail.outbox), 0)
     
     def test_debug_off(self):
         settings.DEBUG = False
         settings.TASTYPIE_FULL_DEBUG = False
+        mail.outbox = []
         
-        resp = self.resource.wrap_view('get_detail')(self.request, pk=1)
+        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 500)
         self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+        self.assertEqual(len(mail.outbox), 1)
+        
+        # Ensure that 404s don't send email.
+        resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+        self.assertEqual(len(mail.outbox), 1)
+        
+        # Ensure that 404s (with broken link emails enabled) DO send email.
+        settings.SEND_BROKEN_LINK_EMAILS = True
+        resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+        self.assertEqual(len(mail.outbox), 2)
         
         # Now with a custom message.
         settings.TASTYPIE_CANNED_ERROR = "Oops, you bwoke it."
         
-        resp = self.resource.wrap_view('get_detail')(self.request, pk=1)
+        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 500)
         self.assertEqual(resp.content, '{"error_message": "Oops, you bwoke it."}')
+        self.assertEqual(len(mail.outbox), 3)
+        mail.outbox = []
     

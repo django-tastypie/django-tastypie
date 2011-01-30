@@ -1089,7 +1089,7 @@ Accepts the filters as a dict. ``None`` by default, meaning no filters.
 Given a dictionary of options, apply some ORM-level sorting to the
 provided ``QuerySet``.
 
-Looks for the ``sort_by`` key and handles either ascending (just the
+Looks for the ``order_by`` key and handles either ascending (just the
 field name) or descending (the field name with a ``-`` in front).
 
 The field name should be the resource field, **NOT** model field.
