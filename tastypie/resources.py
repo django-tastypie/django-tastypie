@@ -57,7 +57,6 @@ class ResourceOptions(object):
     urlconf_namespace = None
     default_format = 'application/json'
     filtering = {}
-    allow_sorting = True
     ordering = []
     object_class = None
     queryset = None
@@ -905,8 +904,8 @@ class Resource(object):
         #       impossible.
         objects = self.obj_get_list(request=request, **self.remove_api_resource_names(kwargs))
 
-        # Optionally apply sorting if it is allowed
-        if self._meta.allow_sorting:
+        # Optionally apply sorting if it is allowed for any fields
+        if len(self._meta.ordering):
             objects = self.apply_sorting(objects, options=request.GET)
         
         paginator = Paginator(request.GET, objects, resource_uri=self.get_resource_list_uri(),
