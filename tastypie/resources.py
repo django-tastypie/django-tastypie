@@ -414,6 +414,12 @@ class Resource(object):
         
         request_method = request.method.lower()
         
+        if request_method == "options":
+            allows = ','.join(map(str.upper, allowed))
+            response = HttpResponse(allows)
+            response['Allow'] = allows
+            raise ImmediateHttpResponse(response=response)
+        
         if not request_method in allowed:
             raise ImmediateHttpResponse(response=HttpMethodNotAllowed())
         
