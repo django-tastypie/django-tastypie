@@ -57,6 +57,7 @@ class ResourceOptions(object):
     urlconf_namespace = None
     default_format = 'application/json'
     filtering = {}
+    allow_sorting = True
     ordering = []
     object_class = None
     queryset = None
@@ -903,9 +904,12 @@ class Resource(object):
         # TODO: Uncached for now. Invalidation that works for everyone may be
         #       impossible.
         objects = self.obj_get_list(request=request, **self.remove_api_resource_names(kwargs))
-        sorted_objects = self.apply_sorting(objects, options=request.GET)
+
+        # Optionally apply sorting if it is allowed
+        if self._meta.allow_sorting:
+            objects = self.apply_sorting(objects, options=request.GET)
         
-        paginator = Paginator(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri(),
+        paginator = Paginator(request.GET, objects, resource_uri=self.get_resource_list_uri(),
            limit=self._meta.limit)
         to_be_serialized = paginator.page()
         
