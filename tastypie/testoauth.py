@@ -9,9 +9,9 @@ import urllib2
 CONSUMER_KEY = '123123123'
 CONSUMER_SECRET = 'abcabcabc'
 
-REQUEST_TOKEN_URL = 'http://app.dev.shopety.com/oauth/request_token/'
-AUTHORIZE_URL = 'http://app.dev.shopety.com/oauth/authorize/?oauth_token='
-ACCESS_TOKEN_URL = 'http://app.dev.shopety.com/oauth/access_token/'
+REQUEST_TOKEN_URL = 'http://your_request_token_url'
+AUTHORIZE_URL = 'http://your_authorize_url'
+ACCESS_TOKEN_URL = 'http://your_access_token_url'
 
 parameters = {'oauth_consumer_key': CONSUMER_KEY,'oauth_signature_method': 'PLAINTEXT','oauth_signature': '%s&' %CONSUMER_SECRET,'oauth_timestamp': str(int(time.time())),'oauth_nonce': 'requestnonce','oauth_version': '1.0','oauth_callback': 'http://app.dev.shopety.com/oauth/authorize','scope': 'all',}
 params = urllib.urlencode(parameters)
