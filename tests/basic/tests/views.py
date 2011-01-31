@@ -62,3 +62,30 @@ class ViewsTestCase(TestCase):
         resp = self.client.post('/api/v1/notes/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(resp.content, "Could not find the provided object via resource URI '/api/v1/users/9001/'.")
+
+
+    def test_options(self):
+        resp = self.client.options('/api/v1/notes/')
+        self.assertEqual(resp.status_code, 200)
+        allows = 'GET,POST,PUT,DELETE'
+        self.assertEqual(resp['Allow'], allows)
+        self.assertEqual(resp.content, allows)
+
+        resp = self.client.options('/api/v1/notes/1/')
+        self.assertEqual(resp.status_code, 200)
+        allows = 'GET,POST,PUT,DELETE'
+        self.assertEqual(resp['Allow'], allows)
+        self.assertEqual(resp.content, allows)
+
+        resp = self.client.options('/api/v1/notes/schema/')
+        self.assertEqual(resp.status_code, 200)
+        allows = 'GET'
+        self.assertEqual(resp['Allow'], allows)
+        self.assertEqual(resp.content, allows)
+
+        resp = self.client.options('/api/v1/notes/set/2;1/')
+        self.assertEqual(resp.status_code, 200)
+        allows = 'GET'
+        self.assertEqual(resp['Allow'], allows)
+        self.assertEqual(resp.content, allows)
+
