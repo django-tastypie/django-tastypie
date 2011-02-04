@@ -177,7 +177,7 @@ class FileField(ApiField):
     Covers both ``models.FileField`` and ``models.ImageField``.
     """
     dehydrated_type = 'string'
-    help_text = 'A file path as a string. Ex: "/tmp/photos/my_photo.jpg"'
+    help_text = 'A file URL as a string. Ex: "/media/photos/my_photo.jpg"'
     
     def dehydrate(self, obj):
         return self.convert(super(FileField, self).dehydrate(obj))
@@ -186,7 +186,7 @@ class FileField(ApiField):
         if value is None:
             return None
         
-        return unicode(value)
+        return value.url
 
 
 class IntegerField(ApiField):
