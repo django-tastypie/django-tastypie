@@ -1,6 +1,5 @@
 from dateutil.parser import parse
 import re
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.utils import datetime_safe, importlib
 from tastypie.bundle import Bundle
@@ -181,15 +180,7 @@ class FileField(ApiField):
     help_text = 'A file path as a string. Ex: "/tmp/photos/my_photo.jpg"'
     
     def dehydrate(self, obj):
-        media_url = settings.MEDIA_URL
-        path = self.convert(super(FileField, self).dehydrate(obj))
-        
-        if path:
-            media_url = media_url.rstrip('/')
-            path = path.lstrip('/')
-            return u"%s/%s" % (media_url, path)
-        
-        return path
+        return self.convert(super(FileField, self).dehydrate(obj))
     
     def convert(self, value):
         if value is None:
