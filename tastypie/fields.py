@@ -186,7 +186,10 @@ class FileField(ApiField):
         if value is None:
             return None
         
-        return value.url
+        try:
+            return value.url
+        except ValueError:
+            return None
 
 
 class IntegerField(ApiField):
