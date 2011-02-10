@@ -20,6 +20,7 @@ Contributors:
 * Travis Cline (traviscline) for patches regarding URLconf namespacing & pagination.
 * Jannis Leidel (jezdez) for patches regarding the ApiKey model & an admin inline.
 * Malcolm Tredinnick (malcolmt) for documentation corrections.
+* Vincent Driessen (nvie) for FileField related patches.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.

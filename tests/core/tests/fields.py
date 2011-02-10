@@ -6,7 +6,7 @@ from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.fields import *
 from tastypie.resources import ModelResource
-from core.models import Note, Subject
+from core.models import Note, Subject, MediaBit
 
 
 class ApiFieldTestCase(TestCase):
@@ -151,7 +151,7 @@ class FileFieldTestCase(TestCase):
     
     def test_init(self):
         field_1 = FileField()
-        self.assertEqual(field_1.help_text, 'A file path as a string. Ex: "/tmp/photos/my_photo.jpg"')
+        self.assertEqual(field_1.help_text, 'A file URL as a string. Ex: "http://media.example.com/media/photos/my_photo.jpg"')
         
         field_2 = FileField(help_text="Custom.")
         self.assertEqual(field_2.help_text, 'Custom.')
@@ -161,25 +161,24 @@ class FileFieldTestCase(TestCase):
         self.assertEqual(field_1.dehydrated_type, 'string')
     
     def test_dehydrate(self):
-        note = Note.objects.get(pk=1)
-        note.image = '/images/foo/bar/clarus.gif'
-        bundle = Bundle(obj=note)
+        bit = MediaBit.objects.get(pk=1)
+        bundle = Bundle(obj=bit)
         
         field_1 = FileField(attribute='image', default=True)
-        self.assertEqual(field_1.dehydrate(bundle), u'http://localhost:8080/media/images/foo/bar/clarus.gif')
+        self.assertEqual(field_1.dehydrate(bundle), u'http://localhost:8080/media/lulz/catz.gif')
         
-        field_2 = FileField(default='img/default_avatar.jpg')
-        self.assertEqual(field_2.dehydrate(bundle), u'http://localhost:8080/media/img/default_avatar.jpg')
+        field_2 = FileField(default='http://media.example.com/img/default_avatar.jpg')
+        self.assertEqual(field_2.dehydrate(bundle), u'http://media.example.com/img/default_avatar.jpg')
         
-        note = Note.objects.get(pk=1)
-        note.image = ''
-        bundle = Bundle(obj=note)
+        bit = MediaBit.objects.get(pk=1)
+        bit.image = ''
+        bundle = Bundle(obj=bit)
         
         field_3 = FileField(attribute='image', default=True)
-        self.assertEqual(field_3.dehydrate(bundle), u'')
+        self.assertEqual(field_3.dehydrate(bundle), None)
         
-        note.image = None
-        bundle = Bundle(obj=note)
+        bit.image = None
+        bundle = Bundle(obj=bit)
         
         field_4 = FileField(attribute='image', null=True)
         self.assertEqual(field_4.dehydrate(bundle), None)
