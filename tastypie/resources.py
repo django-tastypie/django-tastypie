@@ -214,7 +214,7 @@ class Resource(object):
         
         if settings.DEBUG:
             data = {
-                "error_message": exception.message,
+                "error_message": unicode(exception),
                 "traceback": the_trace,
             }
             desired_format = self.determine_format(request)
