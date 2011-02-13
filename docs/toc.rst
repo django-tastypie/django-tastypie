@@ -9,6 +9,7 @@ Table Of Contents
    settings
    
    resources
+   fields
    api
    authentication_authorization
    validation

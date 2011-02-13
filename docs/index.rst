@@ -12,6 +12,7 @@ interfaces.
    settings
    
    resources
+   fields
    api
    caching
    validation
