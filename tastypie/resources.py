@@ -353,7 +353,15 @@ class Resource(object):
             raise ImmediateHttpResponse(response=HttpNotImplemented())
         
         self.is_authenticated(request)
-        self.is_authorized(request)
+        if request_type == 'detail':
+            try:
+                lookup_keys = self.remove_api_resource_names(kwargs)
+                instance = self._meta.object_class.objects.get(**lookup_keys)
+            except ObjectDoesNotExist:
+                instance = None
+            self.is_authorized(request, object=instance)
+        else:
+            self.is_authorized(request)
         self.throttle_check(request)
         
         # All clear. Process the request.

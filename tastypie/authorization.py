@@ -74,4 +74,4 @@ class DjangoAuthorization(Authorization):
         if not hasattr(request, 'user'):
             return False
 
-        return request.user.has_perm(permission_code)
+        return request.user.has_perm(permission_code, object)
