@@ -1448,7 +1448,7 @@ class ModelResource(Resource):
             base_object_list = self.get_object_list(request).filter(**applicable_filters)
             return self.apply_authorization_limits(request, base_object_list)
         except ValueError, e:
-            raise NotFound("Invalid resource lookup data provided (mismatched type).")
+            raise BadRequest("Invalid resource lookup data provided (mismatched type).")
     
     def obj_get(self, request=None, **kwargs):
         """
