@@ -1418,7 +1418,7 @@ class ModelResource(Resource):
         try:
             return self.get_object_list(request).filter(**applicable_filters)
         except ValueError, e:
-            raise NotFound("Invalid resource lookup data provided (mismatched type).")
+            raise BadRequest("Invalid resource lookup data provided (mismatched type).")
     
     def obj_get(self, request=None, **kwargs):
         """
