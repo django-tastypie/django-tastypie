@@ -20,6 +20,10 @@ setup(
         'mimeparse',
         'python_dateutil',
     ],
+    install_requires=[
+        'mimeparse',
+        'python_dateutil',
+    ],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
