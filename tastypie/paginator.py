@@ -138,9 +138,16 @@ class Paginator(object):
         
         request_params = self.request_data.copy()
         request_params.update({'limit': limit, 'offset': offset})
+
+        try:
+            # QueryDict has a urlencode method that can handle multiple values for the same key
+            encoded_params = request_params.urlencode()
+        except AttributeError:
+            encoded_params = urlencode(request_params)
+
         return '%s?%s' % (
             self.resource_uri,
-            urlencode(request_params)
+            encoded_params
         )
 
     def page(self):
