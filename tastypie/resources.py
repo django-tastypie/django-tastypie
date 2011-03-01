@@ -614,7 +614,7 @@ class Resource(object):
             if field_object.attribute:
                 value = field_object.hydrate(bundle)
                 
-                if value is not None:
+                if value is not None or field_object.null:
                     # We need to avoid populating M2M data here as that will
                     # cause things to blow up.
                     if not getattr(field_object, 'is_related', False):
