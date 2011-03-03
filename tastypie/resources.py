@@ -1464,7 +1464,7 @@ class ModelResource(Resource):
         
         Takes optional ``kwargs``, which can be used to narrow the query.
         """
-        self.get_object_list(request).filter(**kwargs).delete()
+        self.obj_get_list(request).filter(**kwargs).delete()
     
     def obj_delete(self, request=None, **kwargs):
         """
