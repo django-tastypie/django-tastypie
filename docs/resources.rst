@@ -67,15 +67,72 @@ Why ``Resource`` vs. ``ModelResource``?
 
 Make no mistake that Django models are far and away the most popular source of
 data. However, in practice, there are many times where the ORM isn't the data
-source. Hooking up things like a NoSQL store, a search solution like Haystack
-or even managed filesystem data are all good use cases for ``Resource`` knowing
-nothing about the ORM.
+source. Hooking up things like a NoSQL store (see :doc:`non_orm_data_sources`),
+a search solution like Haystack or even managed filesystem data are all good
+use cases for ``Resource`` knowing nothing about the ORM.
 
 
 Flow Through The Request/Response Cycle
 =======================================
 
-TBD
+Tastypie can be thought of as a set of class-based views that provide the API
+functionality. As such, many part of the request/response cycle are standard
+Django behaviors. For instance, all routing/middleware/response-handling aspects
+are the same as a typical Django app. Where it differs is in the view itself.
+
+As an example, we'll walk through what a GET request to a list endpoint (say
+``/api/v1/user/?format=json``) looks like:
+
+* The ``Resource.urls`` are checked by Django's url resolvers.
+* On a match for the list view, ``Resource.wrap_view('dispatch_list')`` is
+  called. ``wrap_view`` provides basic error handling & allows for returning
+  serialized errors.
+* Because ``dispatch_list`` was passed to ``wrap_view``,
+  ``Resource.dispatch_list`` is called next. This is a thin wrapper around
+  ``Resource.dispatch``.
+* ``dispatch`` does a bunch of heavy lifting. It ensures:
+
+  * the requested HTTP method is in ``allowed_methods`` (``method_check``),
+  * the class has a method that can handle the request (``get_list``),
+  * the user is authenticated (``is_authenticated``),
+  * the user is authorized (``is_authorized``),
+  * & the user has not exceeded their throttle (``throttle_check``).
+  
+  At this point, ``dispatch`` actually calls the requested method (``get_list``).
+
+* ``get_list`` does the actual work of the API. It does:
+
+  * A fetch of the available objects via ``Resource.obj_get_list``. In the case
+    of ``ModelResource``, this builds the ORM filters to apply
+    (``ModelResource.build_filters``). It then gets the ``QuerySet`` via
+    ``ModelResource.get_object_list`` (which performs
+    ``Resource.apply_authorization_limits`` to possibly limit the set the user
+    can work with) and applies the built filters to it.
+  * It then sorts the objects based on user input
+    (``ModelResource.apply_sorting``).
+  * Then it paginates the results using the supplied ``Paginator`` & pulls out
+    the data to be serialized.
+  * The objects in the page have ``full_dehydrate`` applied to each of them,
+    causing Tastypie to translate the raw object data into the fields the
+    endpoint supports.
+  * Finally, it calls ``Resource.create_response``.
+
+* ``create_response`` is a shortcut method that:
+
+  * Determines the desired response format (``Resource.determine_format``),
+  * Serializes the data given to it in the proper format,
+  * And returns a Django ``HttpResponse`` (200 OK) with the serialized data.
+
+* We bubble back up the call stack to ``dispatch``. The last thing ``dispatch``
+  does is potentially store that a request occurred for future throttling
+  (``Resource.log_throttled_access``) then either returns the ``HttpResponse``
+  or wraps whatever data came back in a response (so Django doesn't freak out).
+
+Processing on other endpoints or using the other HTTP methods results in a
+similar cycle, usually differing only in what "actual work" method gets called
+(which follows the format of "``<http_method>_<list_or_detail>"). In the case
+of POST/PUT, the ``hydrate`` cycle additionally takes place and is used to take
+the user data & convert it to raw data for storage.
 
 
 What Are Bundles?
