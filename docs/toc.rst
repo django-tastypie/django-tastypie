@@ -7,6 +7,7 @@ Table Of Contents
    index
    tutorial
    settings
+   non_orm_data_sources
    
    resources
    api

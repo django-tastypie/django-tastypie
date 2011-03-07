@@ -10,6 +10,7 @@ interfaces.
    
    tutorial
    settings
+   non_orm_data_sources
    
    resources
    api
