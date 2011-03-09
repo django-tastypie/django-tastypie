@@ -614,7 +614,7 @@ class Resource(object):
             if field_object.attribute:
                 value = field_object.hydrate(bundle)
                 
-                if value is not None or field_object.null:
+                if value is not None:
                     # We need to avoid populating M2M data here as that will
                     # cause things to blow up.
                     if not getattr(field_object, 'is_related', False):
@@ -752,14 +752,25 @@ class Resource(object):
         return object_list
     
     def can_create(self):
+        """
+        Checks to ensure ``post`` is within ``allowed_methods``.
+        """
         allowed = set(self._meta.list_allowed_methods + self._meta.detail_allowed_methods)
         return 'post' in allowed
     
     def can_update(self):
+        """
+        Checks to ensure ``put`` is within ``allowed_methods``.
+        
+        Used when hydrating related data.
+        """
         allowed = set(self._meta.list_allowed_methods + self._meta.detail_allowed_methods)
         return 'put' in allowed
     
     def can_delete(self):
+        """
+        Checks to ensure ``delete`` is within ``allowed_methods``.
+        """
         allowed = set(self._meta.list_allowed_methods + self._meta.detail_allowed_methods)
         return 'delete' in allowed
     
