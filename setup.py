@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name='django-tastypie',
-    version='0.9.7',
+    version='0.9.8-beta',
     description='A flexible & capable API layer for Django.',
     author='Daniel Lindsley',
     author_email='daniel@toastdriven.com',
