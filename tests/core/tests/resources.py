@@ -265,33 +265,25 @@ class ResourceTestCase(TestCase):
         self.assertEqual(hydrated.obj.view_count, 6)
         self.assertEqual(hydrated.obj.date_joined, datetime.datetime(2010, 2, 15, 12, 0, 0))
         self.assertEqual(hydrated.obj.bar, 'O HAI BAR!')
-
-
-        # Test that a nullable value with a previous non-null value
-        # can be set to None
         
+        # Test that a nullable value with a previous non-null value
+        # can be set to None.
         nullable = NullableNameResource()
-
         obj = nullable._meta.object_class()
         obj.name = "Daniel"
-
         null_bundle = Bundle(obj=obj, data={'name': None})
         hydrated = nullable.full_hydrate(null_bundle)
-
+        
         self.assertTrue(hydrated.obj.name is None)
-
-    
+        
         # Test that a nullable value with a previous non-null value
         # is not overridden if no value was given
-
         obj = nullable._meta.object_class()
         obj.name = "Daniel"
-
         empty_null_bundle = Bundle(obj=obj, data={})
         hydrated = nullable.full_hydrate(empty_null_bundle)
-
+        
         self.assertEquals(hydrated.obj.name, "Daniel")
-    
     
     def test_obj_get_list(self):
         basic = BasicResource()
