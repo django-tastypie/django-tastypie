@@ -1,17 +1,16 @@
+from django.contrib.auth.models import User
 from django.test import TestCase
 from core.tests.mocks import MockRequest
-
-from django.contrib.auth.models import User
 from related_resource.api.resources import NoteResource, UserResource
 from related_resource.api.urls import api
 
 
 class RelatedResourceTest(TestCase):
     urls = 'related_resource.api.urls'
-
+    
     def setUp(self):
         self.user = User.objects.create(username="testy_mctesterson")
-
+    
     def test_cannot_access_user_resource(self):
         resource = api.canonical_resource_for('users')
         request = MockRequest()
@@ -19,11 +18,9 @@ class RelatedResourceTest(TestCase):
         request.method = 'PUT'
         request.raw_post_data = '{"username": "foobar"}'
         resp = resource.wrap_view('dispatch_detail')(request, pk=self.user.pk)
-
+        
         self.assertEqual(resp.status_code, 405)
-        self.assertEqual(User.objects.get(id=self.user.id).username,
-                         self.user.username)
-    
+        self.assertEqual(User.objects.get(id=self.user.id).username, self.user.username)
     
     def test_related_resource_authorization(self):
         resource = api.canonical_resource_for('notes')
@@ -34,7 +31,4 @@ class RelatedResourceTest(TestCase):
         
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(User.objects.get(id=self.user.id).username,
-                         self.user.username)
-    
-        
+        self.assertEqual(User.objects.get(id=self.user.id).username, self.user.username)

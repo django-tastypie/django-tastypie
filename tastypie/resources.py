@@ -751,6 +751,18 @@ class Resource(object):
         
         return object_list
     
+    def can_create(self):
+        allowed = set(self._meta.list_allowed_methods + self._meta.detail_allowed_methods)
+        return 'post' in allowed
+    
+    def can_update(self):
+        allowed = set(self._meta.list_allowed_methods + self._meta.detail_allowed_methods)
+        return 'put' in allowed
+    
+    def can_delete(self):
+        allowed = set(self._meta.list_allowed_methods + self._meta.detail_allowed_methods)
+        return 'delete' in allowed
+    
     def obj_get_list(self, request=None, **kwargs):
         """
         Fetches the list of objects available on the resource.

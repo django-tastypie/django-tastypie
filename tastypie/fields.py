@@ -493,14 +493,23 @@ class RelatedField(ApiField):
             # Try to hydrate the data provided.
             value = dict_strip_unicode_keys(value)
             self.fk_bundle = Bundle(data=value)
+            
+            # We need to check to see if updates are allowed on the FK
+            # resource. If not, we'll just return a populated bundle instead
+            # of mistakenly updating something that should be read-only.
+            if not self.fk_resource.can_update():
+                return self.fk_resource.full_hydrate(self.fk_bundle)
+            
             try:
                 return self.fk_resource.obj_update(self.fk_bundle, **value)
             except NotFound:
                 try:
                     # Attempt lookup by primary key
                     lookup_kwargs = dict((k, v) for k, v in value.iteritems() if getattr(self.fk_resource, k).unique)
+                    
                     if not lookup_kwargs:
-                        raise NotFound
+                        raise NotFound()
+                    
                     return self.fk_resource.obj_update(self.fk_bundle, **lookup_kwargs)
                 except NotFound:
                     return self.fk_resource.full_hydrate(self.fk_bundle)

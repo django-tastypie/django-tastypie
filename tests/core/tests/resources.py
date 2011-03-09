@@ -594,6 +594,13 @@ class NullableRelatedNoteResource(AnotherRelatedNoteResource):
     subjects = fields.ManyToManyField(SubjectResource, 'subjects', null=True)
 
 
+class TestOptionsResource(ModelResource):
+    class Meta:
+        queryset = Note.objects.all()
+        allowed_methods = ['post']
+        list_allowed_methods = ['post', 'put']
+
+
 # Per user authorization bits.
 class PerUserAuthorization(Authorization):
     def apply_limits(self, request, object_list):
@@ -674,18 +681,36 @@ class ModelResourceTestCase(TestCase):
         
         # Test to make sure that, even with a mix of basic & advanced
         # configuration, options are set right.
-        class TestOptionsResource(ModelResource):
-            class Meta:
-                queryset = Note.objects.all()
-                allowed_methods = ['post']
-                list_allowed_methods = ['post', 'put']
-        
         resource_5 = TestOptionsResource()
         self.assertEqual(resource_5._meta.allowed_methods, ['post'])
         # Should be the overridden values.
         self.assertEqual(resource_5._meta.list_allowed_methods, ['post', 'put'])
         # Should inherit from the basic configuration.
         self.assertEqual(resource_5._meta.detail_allowed_methods, ['post'])
+    
+    def test_can_create(self):
+        resource_1 = NoteResource()
+        self.assertEqual(resource_1.can_create(), True)
+        
+        resource_2 = LightlyCustomNoteResource()
+        self.assertEqual(resource_2.can_create(), False)
+    
+    def test_can_update(self):
+        resource_1 = NoteResource()
+        self.assertEqual(resource_1.can_update(), True)
+        
+        resource_2 = LightlyCustomNoteResource()
+        self.assertEqual(resource_2.can_update(), False)
+        
+        resource_3 = TestOptionsResource()
+        self.assertEqual(resource_3.can_update(), True)
+    
+    def test_can_delete(self):
+        resource_1 = NoteResource()
+        self.assertEqual(resource_1.can_delete(), True)
+        
+        resource_2 = LightlyCustomNoteResource()
+        self.assertEqual(resource_2.can_delete(), False)
     
     def test_fields(self):
         # Different from the ``ResourceTestCase.test_fields``, we're checking

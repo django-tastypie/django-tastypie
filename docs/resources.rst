@@ -823,6 +823,29 @@ Also a hook to customize per ``Resource``.
 
 Calls ``Authorization.apply_limits`` if available.
 
+``can_create``
+--------------
+
+.. method:: Resource.can_create(self)
+
+Checks to ensure ``post`` is within ``allowed_methods``.
+
+``can_update``
+--------------
+
+.. method:: Resource.can_update(self)
+
+Checks to ensure ``put`` is within ``allowed_methods``.
+
+Used when hydrating related data.
+
+``can_delete``
+--------------
+
+.. method:: Resource.can_delete(self)
+
+Checks to ensure ``delete`` is within ``allowed_methods``.
+
 ``obj_get_list``
 ----------------
 
