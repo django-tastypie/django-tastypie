@@ -1261,6 +1261,48 @@ class ModelResource(Resource):
         
         return final_fields
     
+    def check_filtering(self, field_name, filter_type='exact', filter_bits=None):
+        """
+        Given a field name, a optional filter type and an optional list of
+        additional relations, determine if a field can be filtered on.
+        
+        If a filter does not meet the needed conditions, it should raise an
+        ``InvalidFilterError``.
+        
+        If the filter meets the conditions, a list of attribute names (not
+        field names) will be returned.
+        """
+        if filter_bits is None:
+            filter_bits = []
+        
+        if not field_name in self._meta.filtering:
+            raise InvalidFilterError("The '%s' field does not allow filtering." % field_name)
+        
+        # Check to see if it's an allowed lookup type.
+        if not self._meta.filtering[field_name] in (ALL, ALL_WITH_RELATIONS):
+            # Must be an explicit whitelist.
+            if not filter_type in self._meta.filtering[field_name]:
+                raise InvalidFilterError("'%s' is not an allowed filter on the '%s' field." % (filter_type, field_name))
+        
+        if self.fields[field_name].attribute is None:
+            raise InvalidFilterError("The '%s' field has no 'attribute' for searching with." % field_name)
+        
+        # Check to see if it's a relational lookup and if that's allowed.
+        if len(filter_bits):
+            if not getattr(self.fields[field_name], 'is_related', False):
+                raise InvalidFilterError("The '%s' field does not support relations." % field_name)
+            
+            if not self._meta.filtering[field_name] == ALL_WITH_RELATIONS:
+                raise InvalidFilterError("Lookups are not allowed more than one level deep on the '%s' field." % field_name)
+            
+            # Recursively descend through the remaining lookups in the filter,
+            # if any. We should ensure that all along the way, we're allowed
+            # to filter on that field by the related resource.
+            related_resource = self.fields[field_name].get_related_resource(None)
+            return [self.fields[field_name].attribute] + related_resource.check_filtering(filter_bits[0], filter_type, filter_bits[1:])
+        
+        return [self.fields[field_name].attribute]
+    
     def build_filters(self, filters=None):
         """
         Given a dictionary of filters, create the necessary ORM-level filters.
@@ -1287,32 +1329,17 @@ class ModelResource(Resource):
         
         for filter_expr, value in filters.items():
             filter_bits = filter_expr.split(LOOKUP_SEP)
+            field_name = filter_bits.pop(0)
+            filter_type = 'exact'
             
-            if not filter_bits[0] in self.fields:
+            if not field_name in self.fields:
                 # It's not a field we know about. Move along citizen.
                 continue
             
-            if not filter_bits[0] in self._meta.filtering:
-                raise InvalidFilterError("The '%s' field does not allow filtering." % filter_bits[0])
-            
-            if filter_bits[-1] in QUERY_TERMS.keys():
+            if len(filter_bits) and filter_bits[-1] in QUERY_TERMS.keys():
                 filter_type = filter_bits.pop()
-            else:
-                filter_type = 'exact'
             
-            # Check to see if it's allowed lookup type.
-            if not self._meta.filtering[filter_bits[0]] in (ALL, ALL_WITH_RELATIONS):
-                # Must be an explicit whitelist.
-                if not filter_type in self._meta.filtering[filter_bits[0]]:
-                    raise InvalidFilterError("'%s' is not an allowed filter on the '%s' field." % (filter_expr, filter_bits[0]))
-            
-            # Check to see if it's a relational lookup and if that's allowed.
-            if len(filter_bits) > 1:
-                if not self._meta.filtering[filter_bits[0]] == ALL_WITH_RELATIONS:
-                    raise InvalidFilterError("Lookups are not allowed more than one level deep on the '%s' field." % filter_bits[0])
-            
-            if self.fields[filter_bits[0]].attribute is None:
-                raise InvalidFilterError("The '%s' field has no 'attribute' for searching with." % filter_bits[0])
+            lookup_bits = self.check_filtering(field_name, filter_type, filter_bits)
             
             if value in ['true', 'True', True]:
                 value = True
@@ -1321,7 +1348,7 @@ class ModelResource(Resource):
             elif value in ('nil', 'none', 'None', None):
                 value = None
             
-            db_field_name = LOOKUP_SEP.join([self.fields[filter_bits[0]].attribute] + filter_bits[1:])
+            db_field_name = LOOKUP_SEP.join(lookup_bits)
             qs_filter = "%s%s%s" % (db_field_name, LOOKUP_SEP, filter_type)
             qs_filters[qs_filter] = value
         

@@ -602,6 +602,9 @@ class SubjectResource(ModelResource):
     class Meta:
         queryset = Subject.objects.all()
         resource_name = 'subjects'
+        filtering = {
+            'name': ALL,
+        }
 
 
 class RelatedNoteResource(ModelResource):
@@ -616,6 +619,18 @@ class RelatedNoteResource(ModelResource):
             'subjects': ALL_WITH_RELATIONS,
         }
         fields = ['title', 'slug', 'content', 'created', 'is_active']
+
+
+class AnotherSubjectResource(ModelResource):
+    notes = fields.ToManyField(DetailedNoteResource, 'notes')
+    
+    class Meta:
+        queryset = Subject.objects.all()
+        resource_name = 'anothersubjects'
+        excludes = ['notes']
+        filtering = {
+            'notes': ALL_WITH_RELATIONS,
+        }
 
 
 class AnotherRelatedNoteResource(ModelResource):
@@ -906,6 +921,19 @@ class ModelResourceTestCase(TestCase):
         
         # Allow relationship traversal.
         self.assertEqual(resource_3.build_filters(filters={'subjects__name__startswith': 'News'}), {'subjects__name__startswith': 'News'})
+        
+        # Ensure related fields that do not have filtering throw an exception.
+        self.assertRaises(InvalidFilterError, resource_3.build_filters, filters={'subjects__url__startswith': 'News'})
+        
+        # Ensure related fields that do not exist throw an exception.
+        self.assertRaises(InvalidFilterError, resource_3.build_filters, filters={'subjects__foo__startswith': 'News'})
+        
+        # Check where the field name doesn't match the database relation.
+        resource_4 = AnotherSubjectResource()
+        self.assertEqual(resource_4.build_filters(filters={'notes__user__startswith': 'Daniel'}), {'notes__author__startswith': 'Daniel'})
+        
+        # Make sure that fields that don't have attributes can't be filtered on.
+        self.assertRaises(InvalidFilterError, resource_4.build_filters, filters={'notes__hello_world': 'News'})
     
     def test_apply_sorting(self):
         resource = NoteResource()

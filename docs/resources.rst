@@ -1148,6 +1148,20 @@ Django type.
 Given any explicit fields to include and fields to exclude, add
 additional fields based on the associated model.
 
+``check_filtering``
+-------------------
+
+.. method:: ModelResource.check_filtering(self, field_name, filter_type='exact', filter_bits=None)
+
+Given a field name, a optional filter type and an optional list of
+additional relations, determine if a field can be filtered on.
+
+If a filter does not meet the needed conditions, it should raise an
+``InvalidFilterError``.
+
+If the filter meets the conditions, a list of attribute names (not
+field names) will be returned.
+
 ``build_filters``
 -----------------
 
