@@ -333,8 +333,8 @@ class RelatedField(ApiField):
     """
     Provides access to data that is related within the database.
     
-    A base class not intended for direct use but provides functionality that
-    ``ForeignKey`` and ``ManyToManyField`` build upon.
+    The ``RelatedField`` base class is not intended for direct use but provides
+    functionality that ``ToOneField`` and ``ToManyField`` build upon.
     
     The contents of this field actually point to another ``Resource``,
     rather than the related object. This allows the field to represent its data

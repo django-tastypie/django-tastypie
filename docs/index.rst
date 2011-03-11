@@ -14,6 +14,7 @@ interfaces.
    
    resources
    api
+   fields
    caching
    validation
    authentication_authorization
