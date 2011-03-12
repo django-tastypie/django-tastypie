@@ -97,3 +97,34 @@ by lightly overriding the ``dispatch`` method in a similar way::
         # The normal jazz here, then...
         (r'^api/(?P<username>\w+)/', include(entry_resource.urls)),
     )
+
+Creating per-user resources
+---------------------------
+
+One might want to create an API which will require every user to authenticate
+and every user will be working only with objects associated with him. Let's see
+how to implement it for two basic operations: listing and creation of an object.
+
+For listing we want to list only objects for which 'user' field matches
+'request.user'. This could be done my applying filter in ``apply_authorization_limits``
+method of your resource.
+
+For creating we'd have to wrap ``obj_create`` method of ``ModelResource``. Then the
+resulting code will look something like::
+
+    # myapp/api/resources.py
+    class EnvironmentResource(ModelResource):
+        class Meta:
+            queryset = Environment.objects.all()
+            resource_name = 'environment'
+
+            list_allowed_methods = ['get', 'post']
+
+            authentication = ApiKeyAuthentication()
+            authorization = Authorization()
+
+        def obj_create(self, bundle, request=None, **kwargs):
+            return super(EnvironmentResource, self).obj_create(bundle, request, user=request.user)
+
+        def apply_authorization_limits(self, request, object_list):
+            return object_list.filter(user=request.user)
