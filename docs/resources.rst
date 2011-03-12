@@ -321,7 +321,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 ``detail_allowed_methods``
 --------------------------
 
-  Controls what list REST methods the ``Resource`` should respond to. Default
+  Controls what detail REST methods the ``Resource`` should respond to. Default
   is ``['get', 'post', 'put', 'delete']``.
 
 ``limit``
