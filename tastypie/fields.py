@@ -1,6 +1,7 @@
 from dateutil.parser import parse
 import re
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
+from django.db.models.manager import Manager
 from django.utils import datetime_safe, importlib
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
@@ -595,11 +596,12 @@ class ToManyField(RelatedField):
             return []
         
         try:
-            foreign_obj = getattr(bundle.obj, self.attribute)
+            related = getattr(bundle.obj, self.attribute)
         except ObjectDoesNotExist:
-            foreign_obj = None
+            related = None
 
-        if not foreign_obj:
+
+        if not related:
             if not self.null:
                 raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (bundle.obj, self.attribute))
             
@@ -608,8 +610,12 @@ class ToManyField(RelatedField):
         self.m2m_resources = []
         m2m_dehydrated = []
 
-        queryset = foreign_obj._default_manager.all()
-        for m2m in queryset:
+        if isinstance(related, Manager):
+            manager = related
+        else:
+            manager = related._default_manager
+
+        for m2m in manager.all():
             m2m_resource = self.get_related_resource(m2m)
             m2m_bundle = Bundle(obj=m2m)
             self.m2m_resources.append(m2m_resource)
