@@ -594,7 +594,12 @@ class ToManyField(RelatedField):
             
             return []
         
-        if not getattr(bundle.obj, self.attribute):
+        try:
+            foreign_obj = getattr(bundle.obj, self.attribute)
+        except ObjectDoesNotExist:
+            foreign_obj = None
+
+        if not foreign_obj:
             if not self.null:
                 raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (bundle.obj, self.attribute))
             
@@ -602,10 +607,9 @@ class ToManyField(RelatedField):
         
         self.m2m_resources = []
         m2m_dehydrated = []
-        
-        # TODO: Also model-specific and leaky. Relies on there being a
-        #       ``Manager`` there.
-        for m2m in getattr(bundle.obj, self.attribute).all():
+
+        queryset = foreign_obj._default_manager.all()
+        for m2m in queryset:
             m2m_resource = self.get_related_resource(m2m)
             m2m_bundle = Bundle(obj=m2m)
             self.m2m_resources.append(m2m_resource)
