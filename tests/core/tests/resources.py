@@ -648,7 +648,7 @@ class AnotherRelatedNoteResource(ModelResource):
 
 
 class NullableRelatedNoteResource(AnotherRelatedNoteResource):
-    author = fields.ForeignKey(UserResource, 'author')
+    author = fields.ForeignKey(UserResource, 'author', null=True)
     subjects = fields.ManyToManyField(SubjectResource, 'subjects', null=True)
 
 
@@ -1819,6 +1819,20 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(sorted(yetanother.fields.keys()), ['abcd', 'absolute_url', 'mnop', 'resource_uri', 'title'])
         self.assertEqual(len(yetanother._meta.queryset.all()), 6)
         self.assertEqual(yetanother._meta.resource_name, 'yetanothermini')
+    
+    def test_nullable_toone_full_hydrate(self):
+        nrrnr = NullableRelatedNoteResource()
+        
+        # Regression: not specifying the ToOneField should still work if
+        # it is nullable.
+        bundle_1 = Bundle(data={
+            'subjects': [],
+        })
+        
+        hydrated1 = nrrnr.full_hydrate(bundle_1)
+        
+        self.assertEqual(hydrated1.data.get('author'), None)
+        self.assertEqual(hydrated1.data['subjects'], [])
     
     def test_nullable_tomany_full_hydrate(self):
         nrrnr = NullableRelatedNoteResource()

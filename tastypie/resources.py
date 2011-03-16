@@ -623,7 +623,8 @@ class Resource(object):
                     if not getattr(field_object, 'is_related', False):
                         setattr(bundle.obj, field_object.attribute, value)
                     elif not getattr(field_object, 'is_m2m', False):
-                        setattr(bundle.obj, field_object.attribute, value.obj)
+                        if value is not None:
+                            setattr(bundle.obj, field_object.attribute, value.obj)
             
             # Check for an optional method to do further hydration.
             method = getattr(self, "hydrate_%s" % field_name, None)
