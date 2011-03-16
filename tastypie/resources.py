@@ -1498,8 +1498,7 @@ class ModelResource(Resource):
                     (k, getattr(bundle.obj, k))
                     for k in kwargs.keys()
                     if getattr(bundle.obj, k) is not None))
-            except Exception, e:
-                print e
+            except:
                 # if there is trouble hydrating the data, fall back to just
                 # using kwargs by itself (usually it only contains a "pk" key
                 # and this will work fine.
