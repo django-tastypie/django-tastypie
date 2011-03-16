@@ -1488,12 +1488,18 @@ class ModelResource(Resource):
                 bundle.obj = self.get_object_list(request).model()
                 bundle.data.update(kwargs)
                 bundle = self.full_hydrate(bundle)
+                # the resource_uri will break the lookups in
+                # the bundle.obj. at this stage we don't need it anymore
+                # this case is handled if nested resources should be saved
+                if 'resource_uri' in kwargs:
+                    del kwargs['resource_uri']
                 lookup_kwargs = kwargs.copy()
                 lookup_kwargs.update(dict(
                     (k, getattr(bundle.obj, k))
                     for k in kwargs.keys()
                     if getattr(bundle.obj, k) is not None))
-            except:
+            except Exception, e:
+                print e
                 # if there is trouble hydrating the data, fall back to just
                 # using kwargs by itself (usually it only contains a "pk" key
                 # and this will work fine.

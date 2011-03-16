@@ -1,3 +1,8 @@
+try:
+    import json
+except ImportError:
+    import simplejson as json
+
 from django.contrib.auth.models import User
 from django.test import TestCase
 from core.tests.mocks import MockRequest
@@ -32,3 +37,34 @@ class RelatedResourceTest(TestCase):
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(User.objects.get(id=self.user.id).username, self.user.username)
+
+    def test_nested_related_resource_put(self):
+        resource = api.canonical_resource_for('mediabit-full')
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        resp = resource.get_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 200)
+        deserialized = json.loads(resp.content)
+        self.assertEqual(deserialized['title'], 'Funny Cat Picture')
+        self.assertEqual(deserialized['note']['title'], 'First Post!')
+        
+        # modifying the resource
+        deserialized['title'] = 'Very Funny Cat Picture'
+        deserialized['note']['title'] = 'Really First Post!'
+        serialized = json.dumps(deserialized)
+
+        # test if we can write back the requested resource
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.raw_post_data = serialized
+        resp = resource.put_detail(request)
+        self.assertEqual(resp.status_code, 204)
+        
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        resp = resource.get_detail(request, pk=1)
+        deserialized = json.loads(resp.content)
+        self.assertEqual(deserialized['title'], 'Very Funny Cat Picture')
+        self.assertEqual(deserialized['note']['title'], 'Really First Post!')

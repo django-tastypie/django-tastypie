@@ -34,5 +34,14 @@
         },
         "model": "core.note",
         "pk": 2
+    },
+    {
+        "fields": {
+            "note": 1,
+            "title": "Funny Cat Picture",
+            "image": "lulz/catz.gif"
+        },
+        "model": "core.mediabit",
+        "pk": 1
     }
 ]
