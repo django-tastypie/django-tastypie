@@ -883,6 +883,11 @@ class ModelResourceTestCase(TestCase):
         # Valid simple (explicit ``__exact``).
         self.assertEqual(resource.build_filters(filters={'title__exact': 'Hello world.'}), {'title__exact': 'Hello world.'})
         
+        # Valid in.
+        self.assertEqual(resource.build_filters(filters={'title__in': ''}), {'title__in': ''})
+        self.assertEqual(resource.build_filters(filters={'title__in': 'foo'}), {'title__in': ['foo']})
+        self.assertEqual(resource.build_filters(filters={'title__in': 'foo,bar'}), {'title__in': ['foo', 'bar']})
+        
         # Valid simple (non-``__exact``).
         self.assertEqual(resource.build_filters(filters={'content__startswith': 'Hello'}), {'content__startswith': 'Hello'})
         

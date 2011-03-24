@@ -1349,6 +1349,10 @@ class ModelResource(Resource):
             elif value in ('nil', 'none', 'None', None):
                 value = None
             
+            # Split on ',' if not empty string and either an in or range filter.
+            if filter_type in ('in', 'range') and len(value):
+                value = value.split(',')
+            
             db_field_name = LOOKUP_SEP.join(lookup_bits)
             qs_filter = "%s%s%s" % (db_field_name, LOOKUP_SEP, filter_type)
             qs_filters[qs_filter] = value
