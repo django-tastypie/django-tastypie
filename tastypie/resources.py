@@ -623,7 +623,8 @@ class Resource(object):
                     if not getattr(field_object, 'is_related', False):
                         setattr(bundle.obj, field_object.attribute, value)
                     elif not getattr(field_object, 'is_m2m', False):
-                        setattr(bundle.obj, field_object.attribute, value.obj)
+                        if value is not None:
+                            setattr(bundle.obj, field_object.attribute, value.obj)
             
             # Check for an optional method to do further hydration.
             method = getattr(self, "hydrate_%s" % field_name, None)
@@ -1347,6 +1348,10 @@ class ModelResource(Resource):
                 value = False
             elif value in ('nil', 'none', 'None', None):
                 value = None
+            
+            # Split on ',' if not empty string and either an in or range filter.
+            if filter_type in ('in', 'range') and len(value):
+                value = value.split(',')
             
             db_field_name = LOOKUP_SEP.join(lookup_bits)
             qs_filter = "%s%s%s" % (db_field_name, LOOKUP_SEP, filter_type)
