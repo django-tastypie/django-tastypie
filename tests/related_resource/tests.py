@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
+from core.models import Note
 from core.tests.mocks import MockRequest
 from related_resource.api.resources import NoteResource, UserResource
 from related_resource.api.urls import api
@@ -32,3 +33,14 @@ class RelatedResourceTest(TestCase):
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(User.objects.get(id=self.user.id).username, self.user.username)
+
+    def test_related_resource_partial_update(self):
+        note = Note.objects.create(author=self.user, content="Note Content", title="Note Title", slug="note-title")
+        resource = api.canonical_resource_for('notes')
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.raw_post_data = '{"content": "The note has been changed"}'
+        resp = resource.put_detail(request, pk=note.pk)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(Note.objects.get(id=note.id).content, "The note has been changed")

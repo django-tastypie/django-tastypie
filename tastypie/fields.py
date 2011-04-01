@@ -548,7 +548,9 @@ class ToOneField(RelatedField):
     
     def hydrate(self, bundle):
         if bundle.data.get(self.instance_name) is None:
-            if self.null:
+            if self.instance_name and hasattr(bundle.obj, self.instance_name):
+                return getattr(bundle.obj, self.instance_name)
+            elif self.null:
                 return None
             else:
                 raise ApiFieldError("The '%s' field has no data and doesn't allow a null value." % self.instance_name)
