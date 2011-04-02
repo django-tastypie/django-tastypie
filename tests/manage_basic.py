@@ -6,6 +6,7 @@ import sys
 from os.path import abspath, dirname, join
 from django.core.management import execute_manager
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.dirname(__file__))
 try:
     import settings_basic as settings
 except ImportError:
