@@ -17,4 +17,17 @@ LJWorld Marketplace
 Forkinit
 --------
 
+Read-only API access to recipes.
+
+* http://forkinit.com/
 * http://forkinit.com/api/v1/?format=json
+
+
+Read The Docs
+-------------
+
+A hosted documentation site, primarily for Python docs. General purpose
+read-write access.
+
+* http://readthedocs.org/
+* http://readthedocs.org/api/v1/?format=json
