@@ -138,6 +138,11 @@ Covers both ``models.FileField`` and ``models.ImageField``.
 
 A floating point field.
 
+``DecimalField``
+----------------
+
+A decimal data field.
+
 ``IntegerField``
 ----------------
 

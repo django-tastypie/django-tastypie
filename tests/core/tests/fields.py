@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 from dateutil.tz import *
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -235,6 +236,32 @@ class FloatFieldTestCase(TestCase):
         
         field_2 = IntegerField(default=18.5)
         self.assertEqual(field_2.dehydrate(bundle), 18)
+
+
+class DecimalFieldTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+
+    def test_init(self):
+        field_1 = DecimalField()
+        self.assertEqual(field_1.help_text, 'Decimal data. Ex: 26.73')
+
+        field_2 = DecimalField(help_text="Custom.")
+        self.assertEqual(field_2.help_text, 'Custom.')
+
+    def test_dehydrated_type(self):
+        field_1 = DecimalField()
+        self.assertEqual(field_1.dehydrated_type, 'decimal')
+
+    def test_dehydrate(self):
+        note = Note.objects.get(pk=1)
+        bundle = Bundle(obj=note)
+
+        field_1 = DecimalField(default=Decimal("20"))
+        self.assertEqual(field_1.dehydrate(bundle), Decimal("20.0"))
+
+        field_2 = IntegerField(default=Decimal("18.5"))
+        self.assertEqual(field_2.dehydrate(bundle), 18)
+
 
 
 class BooleanFieldTestCase(TestCase):

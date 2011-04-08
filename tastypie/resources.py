@@ -1191,8 +1191,10 @@ class ModelResource(Resource):
             result = DateTimeField
         elif f.get_internal_type() in ('BooleanField', 'NullBooleanField'):
             result = BooleanField
-        elif f.get_internal_type() in ('DecimalField', 'FloatField'):
+        elif f.get_internal_type() == 'FloatField':
             result = FloatField
+        elif f.get_internal_type() == 'DecimalField':
+            result = DecimalField
         elif f.get_internal_type() in ('IntegerField', 'PositiveIntegerField', 'PositiveSmallIntegerField', 'SmallIntegerField'):
             result = IntegerField
         elif f.get_internal_type() in ('FileField', 'ImageField'):

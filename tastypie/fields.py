@@ -1,5 +1,6 @@
 from dateutil.parser import parse
 import re
+import decimal
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.db.models.manager import Manager
 from django.utils import datetime_safe, importlib
@@ -230,6 +231,23 @@ class FloatField(ApiField):
             return None
         
         return float(value)
+
+
+class DecimalField(ApiField):
+    """
+    A decimal field.
+    """
+    dehydrated_type = 'decimal'
+    help_text = 'Decimal data. Ex: 26.73'
+
+    def dehydrate(self, obj):
+        return self.convert(super(DecimalField, self).dehydrate(obj))
+
+    def convert(self, value):
+        if value is None:
+            return None
+
+        return decimal.Decimal(value)
 
 
 class BooleanField(ApiField):
