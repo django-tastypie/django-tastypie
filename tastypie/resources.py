@@ -65,6 +65,7 @@ class ResourceOptions(object):
     excludes = []
     include_resource_uri = True
     include_absolute_url = False
+    initial_data = None
     
     def __new__(cls, meta=None):
         overrides = {}
@@ -1468,7 +1469,16 @@ class ModelResource(Resource):
         """
         A ORM-specific implementation of ``obj_create``.
         """
-        bundle.obj = self._meta.object_class()
+
+        if self._meta.initial_data:
+            if callable(self._meta.initial_data):
+                initial_data = self._meta.initial_data(bundle, request)
+            else:
+                initial_data = self._meta.initial_data
+        else:
+            initial_data = {}
+
+        bundle.obj = self._meta.object_class(**initial_data)
         
         for key, value in kwargs.items():
             setattr(bundle.obj, key, value)

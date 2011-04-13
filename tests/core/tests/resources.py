@@ -533,6 +533,17 @@ class CustomPageNoteResource(NoteResource):
         paginator_class = CustomPaginator
         queryset = Note.objects.all()
 
+@staticmethod
+def get_initial_data(meta, bundle, request):
+    from datetime import datetime
+    return {"title": "The Cat Is Back",
+            "created": datetime(2010, 04, 03, 20, 05)}
+
+class WithInitialDataNoteResource(NoteResource):
+    class Meta:
+        initial_data = get_initial_data
+        resource_name = "notialdata"
+        queryset = Note.objects.all()
 
 class UserResource(ModelResource):
     class Meta:
@@ -1199,6 +1210,19 @@ class ModelResourceTestCase(TestCase):
         new_note = Note.objects.get(slug='cat-is-back')
         self.assertEqual(new_note.content, "The cat is back. The dog coughed him up out back.")
     
+    def test_post_list_with_initial_data(self):
+        self.assertEqual(Note.objects.count(), 6)
+        resource = WithInitialDataNoteResource()
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "is_active": true, "slug": "cat-is-back", "updated": "2010-04-03 20:05:00"}'
+        resp = resource.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(Note.objects.count(), 7)
+        new_note = Note.objects.get(title="The Cat Is Back")
+        self.assertEqual(new_note.content, "The cat is back. The dog coughed him up out back.")
+
     def test_post_detail(self):
         resource = NoteResource()
         request = HttpRequest()

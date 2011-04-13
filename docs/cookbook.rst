@@ -21,6 +21,27 @@ provide additional values::
             bundle.data['custom_field'] = "Whatever you want"
             return bundle
 
+Adding initial data when creating objects
+-----------------------------------------
+
+When using Django ModelForms you can provide_ initial data to populate model
+fields which were not specified on the form. To achieve this behaviour with
+Tastypie you can specify an ``initial_data`` function in your ModelResource's
+Meta class. This function should return a dict, which will be passed as kwargs
+when instantiating the model.
+
+For example, to automatically set the "created_by" field on your model to the
+currently logged in user, you would do::
+
+    @staticmethod
+    def get_initial_data(meta, bundle, request):
+        return {"created_by": request.user}
+
+    class MyModelResource(ModelResource):
+        class Meta:
+            initial_data = get_initial_data
+
+.. _provide: http://docs.djangoproject.com/en/dev/ref/forms/api/#django.forms.Form.initial
 
 Using Your ``Resource`` In Regular Views
 ----------------------------------------
