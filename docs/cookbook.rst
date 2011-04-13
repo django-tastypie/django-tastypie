@@ -26,8 +26,8 @@ Adding initial data when creating objects
 
 When using Django ModelForms you can provide_ initial data to populate model
 fields which were not specified on the form. To achieve this behaviour with
-Tastypie you can specify an ``initial_data`` function in your ModelResource's
-Meta class. This function should return a dict, which will be passed as kwargs
+Tastypie you can specify an initial_data method in your ModelResource's
+Meta class. This method should return a dict, which will be passed as kwargs
 when instantiating the model.
 
 For example, to automatically set the "created_by" field on your model to the
