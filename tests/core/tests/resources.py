@@ -533,8 +533,7 @@ class CustomPageNoteResource(NoteResource):
         paginator_class = CustomPaginator
         queryset = Note.objects.all()
 
-@staticmethod
-def get_initial_data(meta, bundle, request):
+def get_initial_data(bundle, request):
     from datetime import datetime
     return {"title": "The Cat Is Back",
             "created": datetime(2010, 04, 03, 20, 05)}

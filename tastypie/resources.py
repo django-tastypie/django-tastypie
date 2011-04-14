@@ -1472,7 +1472,7 @@ class ModelResource(Resource):
 
         if self._meta.initial_data:
             if callable(self._meta.initial_data):
-                initial_data = self._meta.initial_data(bundle, request)
+                initial_data = self._meta.initial_data.im_func(bundle, request)
             else:
                 initial_data = self._meta.initial_data
         else:
