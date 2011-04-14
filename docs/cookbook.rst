@@ -33,8 +33,7 @@ when instantiating the model.
 For example, to automatically set the "created_by" field on your model to the
 currently logged in user, you would do::
 
-    @staticmethod
-    def get_initial_data(meta, bundle, request):
+    def get_initial_data(bundle, request):
         return {"created_by": request.user}
 
     class MyModelResource(ModelResource):
