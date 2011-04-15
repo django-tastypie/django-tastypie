@@ -26,19 +26,21 @@ Adding initial data when creating objects
 
 When using Django ModelForms you can provide_ initial data to populate model
 fields which were not specified on the form. To achieve this behaviour with
-Tastypie you can specify an initial_data method in your ModelResource's
-Meta class. This method should return a dict, which will be passed as kwargs
-when instantiating the model.
+Tastypie you can override the :meth:`~tastypie.initial.InitialData.get_data`
+method. This method returns a dictionary containing field names and values 
+which will be used when creating new objects via this resource. 
 
 For example, to automatically set the "created_by" field on your model to the
-currently logged in user, you would do::
+currently logged in user::
 
-    def get_initial_data(bundle, request):
-        return {"created_by": request.user}
+    from tastypie.initial import InitialData
+    class SetUserInitialData(InitialData):
+        def get_data(request):
+            return {"created_by": request.user}
 
-    class MyModelResource(ModelResource):
-        class Meta:
-            initial_data = get_initial_data
+        class MyModelResource(ModelResource):
+            class Meta:
+                initial_data = SetUserInitialData()
 
 .. _provide: http://docs.djangoproject.com/en/dev/ref/forms/api/#django.forms.Form.initial
 
