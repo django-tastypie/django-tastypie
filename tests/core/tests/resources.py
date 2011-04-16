@@ -1012,13 +1012,13 @@ class ModelResourceTestCase(TestCase):
         # Valid relation.
         resource_2 = DetailedNoteResource()
         object_list = resource_2.obj_get_list()
-        ordered_list = resource_2.apply_sorting(object_list, options={'order_by': 'user__username'})
-        self.assertEqual([obj.id for obj in ordered_list], [4, 6, 1, 2])
+        ordered_list = resource_2.apply_sorting(object_list, options={'order_by': 'user__id'})
+        self.assertEqual([obj.id for obj in ordered_list], [1, 2, 4, 6])
         
         resource_2 = DetailedNoteResource()
         object_list = resource_2.obj_get_list()
-        ordered_list = resource_2.apply_sorting(object_list, options={'order_by': '-user__username'})
-        self.assertEqual([obj.id for obj in ordered_list], [1, 2, 4, 6])
+        ordered_list = resource_2.apply_sorting(object_list, options={'order_by': '-user__id'})
+        self.assertEqual([obj.id for obj in ordered_list], [6, 4, 2, 1])
         
         # Valid relational combination.
         resource_2 = DetailedNoteResource()
