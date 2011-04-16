@@ -31,3 +31,12 @@ read-write access.
 
 * http://readthedocs.org/
 * http://readthedocs.org/api/v1/?format=json
+
+
+Luzme
+-----
+
+An e-book search site that lets you fetch pricing information.
+
+* http://luzme.com/
+* http://luzme.readthedocs.org/en/latest/
