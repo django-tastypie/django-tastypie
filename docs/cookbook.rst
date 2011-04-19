@@ -97,3 +97,60 @@ by lightly overriding the ``dispatch`` method in a similar way::
         # The normal jazz here, then...
         (r'^api/(?P<username>\w+)/', include(entry_resource.urls)),
     )
+
+
+Adding Search Functionality
+---------------------------
+
+Another common request is being able to integrate search functionality. This
+approach uses Haystack_, though you could hook it up to any search technology.
+We leave the CRUD methods of the resource alone, choosing to add a new endpoint
+at ``/api/v1/notes/search/``::
+
+    from django.conf.urls.defaults import *
+    from django.core.paginator import Paginator, InvalidPage
+    from django.http import Http404
+    from haystack.query import SearchQuerySet
+    from tastypie.resources import ModelResource
+    from tastypie.utils import trailing_slash
+    from notes.models import Note
+    
+    
+    class NoteResource(ModelResource):
+        class Meta:
+            queryset = Note.objects.all()
+            resource_name = 'notes'
+        
+        def override_urls(self):
+            return [
+                url(r"^(?P<resource_name>%s)/search%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_search'), name="api_get_search"),
+            ]
+        
+        def get_search(self, request, **kwargs):
+            self.method_check(request, allowed=['get'])
+            self.is_authenticated(request)
+            self.throttle_check(request)
+            
+            # Do the query.
+            sqs = SearchQuerySet().models(Note).load_all().auto_query(request.GET.get('q', ''))
+            paginator = Paginator(sqs, 20)
+            
+            try:
+                page = paginator.page(int(request.GET.get('page', 1)))
+            except InvalidPage:
+                raise Http404("Sorry, no results on that page.")
+            
+            objects = []
+            
+            for result in page.object_list:
+                bundle = self.full_dehydrate(result.object)
+                objects.append(bundle)
+            
+            object_list = {
+                'objects': objects,
+            }
+            
+            self.log_throttled_access(request)
+            return self.create_response(request, object_list)
+
+.. _Haystack: http://haystacksearch.org/
