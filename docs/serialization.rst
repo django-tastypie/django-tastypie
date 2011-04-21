@@ -58,10 +58,11 @@ methods. So adding the server time to all output might look like so::
         def to_json(self, data, options=None):
             options = options or {}
             
+            data = self.to_simple(data, options)
+
             # Add in the current time.
             data['requested_time'] = time.time()
-            
-            data = self.to_simple(data, options)
+
             return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True)
         
         def from_json(self, content):
