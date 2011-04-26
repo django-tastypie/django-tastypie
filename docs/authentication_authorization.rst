@@ -53,6 +53,13 @@ This authentication scheme uses HTTP Basic Auth to check a user's credentials.
 The username is their ``django.contrib.auth.models.User`` username (assuming
 it is present) and their password should also correspond to that entry.
 
+.. warning::
+
+  If you're using ``mod_wsgi``, you will need to enable
+  ``WSGIPassAuthorization``. See `this post`_ for details.
+
+.. _`this post`: http://www.nerdydork.com/basic-authentication-on-mod_wsgi.html
+
 ``ApiKeyAuthentication``
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
