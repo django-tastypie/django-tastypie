@@ -1207,8 +1207,7 @@ The field name should be the resource field, **NOT** model field.
 
 A ORM-specific implementation of ``get_object_list``.
 
-Returns a ``QuerySet`` that may have been limited by authorization or other
-overrides.
+Returns a ``QuerySet`` that may have been limited by other overrides.
 
 ``obj_get_list``
 ----------------

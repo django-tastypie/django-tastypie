@@ -1423,15 +1423,9 @@ class ModelResource(Resource):
         """
         An ORM-specific implementation of ``get_object_list``.
         
-        Returns a queryset that may have been limited by authorization or other
-        overrides.
+        Returns a queryset that may have been limited by other overrides.
         """
-        base_object_list = self._meta.queryset
-        
-        # Limit it as needed.
-        authed_object_list = self.apply_authorization_limits(request, base_object_list)
-        
-        return authed_object_list
+        return self._meta.queryset._clone()
     
     def obj_get_list(self, request=None, **kwargs):
         """
@@ -1451,7 +1445,8 @@ class ModelResource(Resource):
         applicable_filters = self.build_filters(filters=filters)
         
         try:
-            return self.get_object_list(request).filter(**applicable_filters)
+            base_object_list = self.get_object_list(request).filter(**applicable_filters)
+            return self.apply_authorization_limits(request, base_object_list)
         except ValueError, e:
             raise NotFound("Invalid resource lookup data provided (mismatched type).")
     
@@ -1463,7 +1458,8 @@ class ModelResource(Resource):
         the instance.
         """
         try:
-            return self.get_object_list(request).get(**kwargs)
+            base_object_list = self.get_object_list(request).get(**kwargs)
+            return self.apply_authorization_limits(request, base_object_list)
         except ValueError, e:
             raise NotFound("Invalid resource lookup data provided (mismatched type).")
     
@@ -1506,7 +1502,7 @@ class ModelResource(Resource):
                 # and this will work fine.
                 lookup_kwargs = kwargs
             try:
-                bundle.obj = self.get_object_list(request).get(**lookup_kwargs)
+                bundle.obj = self.apply_authorization_limits(request, self.get_object_list(request).get(**lookup_kwargs))
             except ObjectDoesNotExist:
                 raise NotFound("A model instance matching the provided arguments could not be found.")
         
@@ -1524,7 +1520,15 @@ class ModelResource(Resource):
         
         Takes optional ``kwargs``, which can be used to narrow the query.
         """
-        self.get_object_list(request).filter(**kwargs).delete()
+        base_object_list = self.get_object_list(request).filter(**kwargs)
+        authed_object_list = self.apply_authorization_limits(request, base_object_list)
+        
+        if hasattr(authed_object_list, 'delete'):
+            # It's likely a ``QuerySet``. Call ``.delete()`` for efficiency.
+            authed_object_list.delete()
+        else:
+            for authed_obj in authed_object_list:
+                authed_object_list.delete()
     
     def obj_delete(self, request=None, **kwargs):
         """
@@ -1534,7 +1538,7 @@ class ModelResource(Resource):
         the instance.
         """
         try:
-            obj = self.get_object_list(request).get(**kwargs)
+            obj = self.apply_authorization_limits(request, self.get_object_list(request).get(**kwargs))
         except ObjectDoesNotExist:
             raise NotFound("A model instance matching the provided arguments could not be found.")
         
