@@ -4,7 +4,7 @@ django-tastypie
 
 Creating delicious APIs for Django apps since 2010.
 
-Currently in beta (v0.8.2) but being used actively in production on several
+Currently in beta (v0.9.8) but being used actively in production on several
 sites.
 
 
@@ -90,4 +90,4 @@ Reference Material
 * http://jacobian.org/writing/rest-worst-practices/
 
 :author: Daniel Lindsley
-:date: 2010/06/19
+:date: 2011/04/27
