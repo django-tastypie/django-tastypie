@@ -226,16 +226,21 @@ class Resource(object):
         
         # When DEBUG is False, send an error message to the admins (unless it's
         # a 404, in which case we check the setting).
-        if not isinstance(exception, (NotFound, ObjectDoesNotExist)) or getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False):
-            from django.core.mail import mail_admins
-            subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), request.path)
-            try:
-                request_repr = repr(request)
-            except:
-                request_repr = "Request repr() unavailable"
+        if not isinstance(exception, (NotFound, ObjectDoesNotExist)): 
+            if getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False):
+                from django.core.mail import mail_admins
+                subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), request.path)
+                try:
+                    request_repr = repr(request)
+                except:
+                    request_repr = "Request repr() unavailable"
             
-            message = "%s\n\n%s" % (the_trace, request_repr)
-            mail_admins(subject, message, fail_silently=True)
+                message = "%s\n\n%s" % (the_trace, request_repr)
+                mail_admins(subject, message, fail_silently=True)
+            else:
+                import logging
+                logger = logging.getLogger('tastypie')
+                logger.exception("Request could not be processed")
         
         # Prep the data going out.
         data = {
