@@ -14,6 +14,7 @@ from tastypie.constants import ALL, ALL_WITH_RELATIONS
 from tastypie.exceptions import NotFound, BadRequest, InvalidFilterError, HydrationError, InvalidSortError, ImmediateHttpResponse
 from tastypie.fields import *
 from tastypie.http import *
+from tastypie.initial import InitialData
 from tastypie.paginator import Paginator
 from tastypie.serializers import Serializer
 from tastypie.throttle import BaseThrottle
@@ -52,6 +53,7 @@ class ResourceOptions(object):
     throttle = BaseThrottle()
     validation = Validation()
     paginator_class = Paginator
+    initial_data = InitialData()
     allowed_methods = ['get', 'post', 'put', 'delete']
     list_allowed_methods = None
     detail_allowed_methods = None
@@ -1467,7 +1469,9 @@ class ModelResource(Resource):
         """
         A ORM-specific implementation of ``obj_create``.
         """
-        bundle.obj = self._meta.object_class()
+
+        initial_data = self._meta.initial_data.get_data(request)
+        bundle.obj = self._meta.object_class(kwargs=initial_data)
         
         for key, value in kwargs.items():
             setattr(bundle.obj, key, value)
