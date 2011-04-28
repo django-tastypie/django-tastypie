@@ -2,6 +2,7 @@ import base64
 import copy
 import datetime
 from decimal import Decimal
+import django
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -24,6 +25,7 @@ from tastypie.throttle import CacheThrottle
 from tastypie.validation import Validation, FormValidation
 from core.models import Note, Subject, MediaBit
 from core.tests.mocks import MockRequest
+from core.utils import SimpleHandler
 try:
     import json
 except ImportError:
@@ -2313,31 +2315,55 @@ class BustedResourceTestCase(TestCase):
     def test_debug_off(self):
         settings.DEBUG = False
         settings.TASTYPIE_FULL_DEBUG = False
-        mail.outbox = []
         
-        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
-        self.assertEqual(resp.status_code, 500)
-        self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
-        self.assertEqual(len(mail.outbox), 1)
-        
-        # Ensure that 404s don't send email.
-        resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
-        self.assertEqual(resp.status_code, 404)
-        self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
-        self.assertEqual(len(mail.outbox), 1)
-        
-        # Ensure that 404s (with broken link emails enabled) DO send email.
-        settings.SEND_BROKEN_LINK_EMAILS = True
-        resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
-        self.assertEqual(resp.status_code, 404)
-        self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
-        self.assertEqual(len(mail.outbox), 2)
-        
-        # Now with a custom message.
-        settings.TASTYPIE_CANNED_ERROR = "Oops, you bwoke it."
-        
-        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
-        self.assertEqual(resp.status_code, 500)
-        self.assertEqual(resp.content, '{"error_message": "Oops, you bwoke it."}')
-        self.assertEqual(len(mail.outbox), 3)
-        mail.outbox = []
+        if django.VERSION >= (1, 3, 0):
+            SimpleHandler.logged = []
+
+            resp = self.resource.wrap_view('get_list')(self.request, pk=1)
+            self.assertEqual(resp.status_code, 500)
+            self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+            self.assertEqual(len(SimpleHandler.logged), 1)
+            
+            # Ensure that 404s don't send email.
+            resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
+            self.assertEqual(resp.status_code, 404)
+            self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+            self.assertEqual(len(SimpleHandler.logged), 1)
+            
+            # Now with a custom message.
+            settings.TASTYPIE_CANNED_ERROR = "Oops, you bwoke it."
+            
+            resp = self.resource.wrap_view('get_list')(self.request, pk=1)
+            self.assertEqual(resp.status_code, 500)
+            self.assertEqual(resp.content, '{"error_message": "Oops, you bwoke it."}')
+            self.assertEqual(len(SimpleHandler.logged), 2)
+            SimpleHandler.logged = []
+        else:
+            mail.outbox = []
+            
+            resp = self.resource.wrap_view('get_list')(self.request, pk=1)
+            self.assertEqual(resp.status_code, 500)
+            self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+            self.assertEqual(len(mail.outbox), 1)
+            
+            # Ensure that 404s don't send email.
+            resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
+            self.assertEqual(resp.status_code, 404)
+            self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+            self.assertEqual(len(mail.outbox), 1)
+            
+            # Ensure that 404s (with broken link emails enabled) DO send email.
+            settings.SEND_BROKEN_LINK_EMAILS = True
+            resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
+            self.assertEqual(resp.status_code, 404)
+            self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+            self.assertEqual(len(mail.outbox), 2)
+            
+            # Now with a custom message.
+            settings.TASTYPIE_CANNED_ERROR = "Oops, you bwoke it."
+            
+            resp = self.resource.wrap_view('get_list')(self.request, pk=1)
+            self.assertEqual(resp.status_code, 500)
+            self.assertEqual(resp.content, '{"error_message": "Oops, you bwoke it."}')
+            self.assertEqual(len(mail.outbox), 3)
+            mail.outbox = []

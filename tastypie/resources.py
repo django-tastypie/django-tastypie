@@ -1,4 +1,6 @@
+import logging
 import warnings
+import django
 from django.conf import settings
 from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, ValidationError
@@ -226,16 +228,20 @@ class Resource(object):
         
         # When DEBUG is False, send an error message to the admins (unless it's
         # a 404, in which case we check the setting).
-        if not isinstance(exception, (NotFound, ObjectDoesNotExist)) or getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False):
-            from django.core.mail import mail_admins
-            subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), request.path)
-            try:
-                request_repr = repr(request)
-            except:
-                request_repr = "Request repr() unavailable"
+        if not isinstance(exception, (NotFound, ObjectDoesNotExist)):
+            log = logging.getLogger('django.request.tastypie')
+            log.error('Internal Server Error: %s' % request.path, exc_info=sys.exc_info(), extra={'status_code': 500, 'request':request})
+
+            if django.VERSION < (1, 3, 0) and getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False):
+                from django.core.mail import mail_admins
+                subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), request.path)
+                try:
+                    request_repr = repr(request)
+                except:
+                    request_repr = "Request repr() unavailable"
             
-            message = "%s\n\n%s" % (the_trace, request_repr)
-            mail_admins(subject, message, fail_silently=True)
+                message = "%s\n\n%s" % (the_trace, request_repr)
+                mail_admins(subject, message, fail_silently=True)
         
         # Prep the data going out.
         data = {
