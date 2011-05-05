@@ -350,7 +350,7 @@ class RelatedField(ApiField):
     self_referential = False
     help_text = 'A related resource. Can be either a URI or set of nested resource data.'
     
-    def __init__(self, to, attribute, related_name=None, null=False, full=False, unique=False, help_text=None):
+    def __init__(self, to, attribute, default=NOT_PROVIDED, related_name=None, null=False, full=False, unique=False, help_text=None):
         """
         Builds the field and prepares it to access to related data.
         
@@ -377,6 +377,7 @@ class RelatedField(ApiField):
         self._resource = None
         self.to = to
         self.attribute = attribute
+        self._default = default
         self.related_name = related_name
         self.null = null
         self.full = full
@@ -401,20 +402,6 @@ class RelatedField(ApiField):
         # here (which I think we should avoid as long as possible).
         if self.self_referential or self.to == 'self':
             self._to_class = cls
-    
-    def has_default(self):
-        """
-        Always returns ``False``, as there is no ``default`` available on
-        related fields.
-        """
-        return False
-    
-    @property
-    def default(self):
-        """
-        Raises an exception because related fields do not have a ``default``.
-        """
-        raise ApiFieldError("%r fields do not have default data." % self)
     
     def get_related_resource(self, related_instance):
         """
@@ -515,6 +502,8 @@ class RelatedField(ApiField):
                     return self.fk_resource.full_hydrate(self.fk_bundle)
             except MultipleObjectsReturned:
                 return self.fk_resource.full_hydrate(self.fk_bundle)
+        elif hasattr(value, 'pk'):
+            return self.fk_resource.full_dehydrate(value)
         else:
             raise ApiFieldError("The '%s' field has was given data that was not a URI and not a dictionary-alike: %s." % (self.instance_name, value))
 
@@ -527,8 +516,8 @@ class ToOneField(RelatedField):
     """
     help_text = 'A single related resource. Can be either a URI or set of nested resource data.'
     
-    def __init__(self, to, attribute, related_name=None, null=False, full=False, unique=False, help_text=None):
-        super(ToOneField, self).__init__(to, attribute, related_name, null=null, full=full, unique=unique, help_text=help_text)
+    def __init__(self, to, attribute, default=NOT_PROVIDED, related_name=None, null=False, full=False, unique=False, help_text=None):
+        super(ToOneField, self).__init__(to, attribute, default, related_name, null=null, full=full, unique=unique, help_text=help_text)
         self.fk_resource = None
     
     def dehydrate(self, bundle):
@@ -547,14 +536,8 @@ class ToOneField(RelatedField):
         return self.dehydrate_related(fk_bundle, self.fk_resource)
     
     def hydrate(self, bundle):
-        if bundle.data.get(self.instance_name) is None:
-            if self.null:
-                return None
-            else:
-                raise ApiFieldError("The '%s' field has no data and doesn't allow a null value." % self.instance_name)
-        
-        return self.build_related_resource(bundle.data.get(self.instance_name))
-
+        value = super(ToOneField, self).hydrate(bundle)
+        return self.build_related_resource(value)
 
 class ForeignKey(ToOneField):
     """
@@ -583,8 +566,8 @@ class ToManyField(RelatedField):
     is_m2m = True
     help_text = 'Many related resources. Can be either a list of URIs or list of individually nested resource data.'
     
-    def __init__(self, to, attribute, related_name=None, null=False, full=False, unique=False, help_text=help_text):
-        super(ToManyField, self).__init__(to, attribute, related_name, null=null, full=full, unique=unique, help_text=help_text)
+    def __init__(self, to, attribute, default=NOT_PROVIDED, related_name=None, null=False, full=False, unique=False, help_text=None):
+        super(ToManyField, self).__init__(to, attribute, default, related_name, null=null, full=full, unique=unique, help_text=help_text)
         self.m2m_bundles = []
     
     def dehydrate(self, bundle):
