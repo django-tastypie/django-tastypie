@@ -417,6 +417,17 @@ class ForeignKeyTestCase(TestCase):
         self.assertEqual(field_2.full, False)
         self.assertEqual(field_2.readonly, False)
         self.assertEqual(field_2.help_text, 'Points to a User.')
+        
+        field_3 = ForeignKey(UserResource, 'author', default=1, null=True, help_text="Points to a User.")
+        self.assertEqual(field_3.instance_name, None)
+        self.assertEqual(issubclass(field_3.to, UserResource), True)
+        self.assertEqual(field_3.attribute, 'author')
+        self.assertEqual(field_3.related_name, None)
+        self.assertEqual(field_3.null, True)
+        self.assertEqual(field_3.default, 1)
+        self.assertEqual(field_3.full, False)
+        self.assertEqual(field_3.readonly, False)
+        self.assertEqual(field_3.help_text, 'Points to a User.')
     
     def test_dehydrated_type(self):
         field_1 = ForeignKey(UserResource, 'author')
@@ -425,16 +436,16 @@ class ForeignKeyTestCase(TestCase):
     def test_has_default(self):
         field_1 = ForeignKey(UserResource, 'author')
         self.assertEqual(field_1.has_default(), False)
+        
+        field_1 = ForeignKey(UserResource, 'author', default=1)
+        self.assertEqual(field_1.has_default(), True)
     
     def test_default(self):
         field_1 = ForeignKey(UserResource, 'author')
+        self.assertTrue(isinstance(field_1.default, NOT_PROVIDED))
         
-        try:
-            # self.assertRaises isn't cooperating here. Do it the hard way.
-            field_1.default
-            self.fail()
-        except ApiFieldError:
-            pass
+        field_2 = ForeignKey(UserResource, 'author', default=1)
+        self.assertEqual(field_2.default, 1)
     
     def test_dehydrate(self):
         note = Note()
@@ -573,6 +584,17 @@ class ManyToManyFieldTestCase(TestCase):
         self.assertEqual(field_2.full, False)
         self.assertEqual(field_2.readonly, False)
         self.assertEqual(field_2.help_text, 'Points to many Subjects.')
+        
+        field_3 = ManyToManyField(SubjectResource, 'subjects', default=1, null=True, help_text='Points to many Subjects.')
+        self.assertEqual(field_3.instance_name, None)
+        self.assertEqual(issubclass(field_3.to, SubjectResource), True)
+        self.assertEqual(field_3.attribute, 'subjects')
+        self.assertEqual(field_3.related_name, None)
+        self.assertEqual(field_3.null, True)
+        self.assertEqual(field_3.default, 1)
+        self.assertEqual(field_3.full, False)
+        self.assertEqual(field_3.readonly, False)
+        self.assertEqual(field_3.help_text, 'Points to many Subjects.')
     
     def test_dehydrated_type(self):
         field_1 = ManyToManyField(SubjectResource, 'subjects')
@@ -581,16 +603,16 @@ class ManyToManyFieldTestCase(TestCase):
     def test_has_default(self):
         field_1 = ManyToManyField(SubjectResource, 'subjects')
         self.assertEqual(field_1.has_default(), False)
+        
+        field_2 = ManyToManyField(SubjectResource, 'subjects', default=1)
+        self.assertEqual(field_2.has_default(), True)
     
     def test_default(self):
         field_1 = ManyToManyField(SubjectResource, 'subjects')
+        self.assertTrue(isinstance(field_1.default, NOT_PROVIDED))
         
-        try:
-            # self.assertRaises isn't cooperating here. Do it the hard way.
-            field_1.default
-            self.fail()
-        except ApiFieldError:
-            pass
+        field_2 = ManyToManyField(SubjectResource, 'subjects', default=1)
+        self.assertEqual(field_2.default, 1)
     
     def test_dehydrate(self):
         note = Note()
