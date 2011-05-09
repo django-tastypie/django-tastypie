@@ -321,7 +321,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 ``detail_allowed_methods``
 --------------------------
 
-  Controls what list REST methods the ``Resource`` should respond to. Default
+  Controls what detail REST methods the ``Resource`` should respond to. Default
   is ``['get', 'post', 'put', 'delete']``.
 
 ``limit``
@@ -1207,8 +1207,7 @@ The field name should be the resource field, **NOT** model field.
 
 A ORM-specific implementation of ``get_object_list``.
 
-Returns a ``QuerySet`` that may have been limited by authorization or other
-overrides.
+Returns a ``QuerySet`` that may have been limited by other overrides.
 
 ``obj_get_list``
 ----------------
