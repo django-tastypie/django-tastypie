@@ -1,4 +1,5 @@
 from dateutil.parser import parse
+import datetime
 import re
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.utils import datetime_safe, importlib
@@ -643,6 +644,35 @@ class OneToManyField(ToManyField):
     A convenience subclass for those who prefer to mirror ``django.db.models``.
     """
     pass
+
+
+class TimeField(ApiField):
+    dehydrated_type = 'time'
+    help_text = 'A time as string. Ex: "20:05:23"'
+
+    def dehydrate(self, obj):
+        return self.convert(super(TimeField, self).dehydrate(obj))
+
+    def conver(self, value):
+        if value is None:
+            return None
+        return self.to_time(value)
+
+    def to_time(self, s):
+        try:
+            dt = parse(s)
+        except ValueError, e:
+            raise ApiFieldError(str(e))
+        else:
+            return datetime.time(dt.hour, dt.minute, dt.second)
+
+    def hydrate(self, bundle):
+        value = super(TimeField, self).hydrate(bundle)
+        if value and not isinstance(value, datetime.time):
+            value = self.to_time(value)
+        return value
+
+
 
 
 # DRL_FIXME: Need more types?
