@@ -161,6 +161,11 @@ Covers ``models.IntegerField``, ``models.PositiveIntegerField``,
 
 A list field.
 
+``TimeField``
+-------------
+
+A time field.
+
 
 Relationship Fields
 ===================

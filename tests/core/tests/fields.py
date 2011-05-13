@@ -347,6 +347,67 @@ class BooleanFieldTestCase(TestCase):
         self.assertEqual(field_2.dehydrate(bundle), True)
 
 
+class TimeFieldTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+
+    def test_init(self):
+        field_1 = TimeField()
+        self.assertEqual(field_1.help_text, 'A time as string. Ex: "20:05:23"')
+        field_2 = TimeField(help_text='Custom.')
+        self.assertEqual(field_2.help_text, 'Custom.')
+
+    def test_dehydrated_type(self):
+        field_1 = TimeField()
+        self.assertEqual(field_1.dehydrated_type, 'time')
+
+    def test_dehydrate(self):
+        note = Note.objects.get(pk=1)
+        bundle = Bundle(obj=note)
+
+        field_1 = TimeField(attribute='created')
+        self.assertEqual(field_1.dehydrate(bundle), datetime.datetime(2010, 3, 30, 20, 5))
+
+        field_2 = TimeField(default=datetime.time(23, 5, 58))
+        self.assertEqual(field_2.dehydrate(bundle), datetime.time(23, 5, 58))
+
+        field_3 = TimeField(attribute='created_string')
+
+        note.created_string = '13:06:00'
+        self.assertEqual(field_3.dehydrate(bundle), datetime.time(13, 6))
+
+        note.created_string = '13:37:44'
+        self.assertEqual(field_3.dehydrate(bundle), datetime.time(13, 37, 44))
+
+        note.created_string = 'hello'
+        self.assertRaises(ApiFieldError, field_3.dehydrate, bundle)
+
+    def test_hydrate(self):
+        bundle_1 = Bundle(data={'time': '03:49'})
+        field_1 = TimeField(attribute='created')
+        field_1.instance_name = 'time'
+        self.assertEqual(field_1.hydrate(bundle_1), datetime.time(3, 49))
+
+        bundle_2 = Bundle()
+        field_2 = TimeField(default=datetime.time(17, 40))
+        field_2.instance_name = 'doesnotmatter'  # Wont find in bundle data
+        self.assertEqual(field_2.hydrate(bundle_2), datetime.time(17, 40))
+
+        bundle_3 = Bundle(data={'time': '22:08:11'})
+        field_3 = TimeField(attribute='created_string')
+        field_3.instance_name = 'time'
+        self.assertEqual(field_3.hydrate(bundle_3), datetime.time(22, 8, 11))
+
+        bundle_4 = Bundle(data={'time': '07:45'})
+        field_4 = TimeField(attribute='created')
+        field_4.instance_name = 'time'
+        self.assertEqual(field_4.hydrate(bundle_4), datetime.time(7, 45))
+
+        bundle_5 = Bundle(data={'time': None})
+        field_5 = TimeField(attribute='created', null=True)
+        field_5.instance_name = 'time'
+        self.assertEqual(field_5.hydrate(bundle_5), None)
+
+
 class DateFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
     
