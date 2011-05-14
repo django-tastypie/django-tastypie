@@ -662,6 +662,14 @@ class ManyToManyFieldTestCase(TestCase):
         bundle_6 = Bundle(obj=self.note_3)
         self.assertEqual(field_6.dehydrate(bundle_6), [])
     
+    def test_dehydrate_with_callable(self):
+        note = Note()
+        bundle_1 = Bundle(obj=self.note_2)
+        field_1 = ManyToManyField(SubjectResource, attribute=lambda bundle: Subject.objects.filter(notes=bundle.obj, name__startswith='Personal'))
+        field_1.instance_name = 'm2m'
+        
+        self.assertEqual(field_1.dehydrate(bundle_1), ['/api/v1/subjects/3/'])
+    
     def test_hydrate(self):
         note = Note.objects.get(pk=1)
         bundle = Bundle(obj=note)

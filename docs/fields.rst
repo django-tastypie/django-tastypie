@@ -224,6 +224,12 @@ Provides access to related data via a join table.
 
 This subclass requires Django's ORM layer to work properly.
 
+This field also has special behavior when dealing with ``attribute`` in that
+it can take a callable. For instance, if you need to filter the reverse
+relation, you can do something like::
+
+    subjects = fields.ToManyField(SubjectResource, ToManyField(SubjectResource, attribute=lambda bundle: Subject.objects.filter(notes=bundle.obj, name__startswith='Personal'))
+
 Note that the ``hydrate`` portions of this field are quite different than
 any other field. ``hydrate_m2m`` actually handles the data and relations.
 This is due to the way Django implements M2M relationships.
