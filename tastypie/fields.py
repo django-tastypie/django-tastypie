@@ -109,12 +109,12 @@ class ApiField(object):
                         raise ApiFieldError("The object '%r' has an empty attribute '%s' and doesn't allow a default or null value." % (previous_object, attr))
             
             if callable(current_object):
-                return current_object()
+                current_object = current_object()
             
-            return current_object
+            return self.convert(current_object)
         
         if self.has_default():
-            return self.default
+            return self.convert(self.default)
         else:
             return None
     
@@ -160,9 +160,6 @@ class CharField(ApiField):
     dehydrated_type = 'string'
     help_text = 'Unicode string data. Ex: "Hello World"'
     
-    def dehydrate(self, obj):
-        return self.convert(super(CharField, self).dehydrate(obj))
-    
     def convert(self, value):
         if value is None:
             return None
@@ -178,9 +175,6 @@ class FileField(ApiField):
     """
     dehydrated_type = 'string'
     help_text = 'A file URL as a string. Ex: "http://media.example.com/media/photos/my_photo.jpg"'
-    
-    def dehydrate(self, obj):
-        return self.convert(super(FileField, self).dehydrate(obj))
     
     def convert(self, value):
         if value is None:
@@ -204,9 +198,6 @@ class IntegerField(ApiField):
     dehydrated_type = 'integer'
     help_text = 'Integer data. Ex: 2673'
     
-    def dehydrate(self, obj):
-        return self.convert(super(IntegerField, self).dehydrate(obj))
-    
     def convert(self, value):
         if value is None:
             return None
@@ -220,9 +211,6 @@ class FloatField(ApiField):
     """
     dehydrated_type = 'float'
     help_text = 'Floating point numeric data. Ex: 26.73'
-    
-    def dehydrate(self, obj):
-        return self.convert(super(FloatField, self).dehydrate(obj))
     
     def convert(self, value):
         if value is None:
@@ -240,9 +228,6 @@ class BooleanField(ApiField):
     dehydrated_type = 'boolean'
     help_text = 'Boolean data. Ex: True'
     
-    def dehydrate(self, obj):
-        return self.convert(super(BooleanField, self).dehydrate(obj))
-    
     def convert(self, value):
         if value is None:
             return None
@@ -256,9 +241,6 @@ class DateField(ApiField):
     """
     dehydrated_type = 'date'
     help_text = 'A date as a string. Ex: "2010-11-10"'
-    
-    def dehydrate(self, obj):
-        return self.convert(super(DateField, self).dehydrate(obj))
     
     def convert(self, value):
         if value is None:
@@ -297,9 +279,6 @@ class DateTimeField(ApiField):
     """
     dehydrated_type = 'datetime'
     help_text = 'A date & time as a string. Ex: "2010-11-10T03:07:43"'
-    
-    def dehydrate(self, obj):
-        return self.convert(super(DateTimeField, self).dehydrate(obj))
     
     def convert(self, value):
         if value is None:
