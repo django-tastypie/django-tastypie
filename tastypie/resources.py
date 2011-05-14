@@ -1458,8 +1458,16 @@ class ModelResource(Resource):
         the instance.
         """
         try:
-            base_object_list = self.get_object_list(request).get(**kwargs)
-            return self.apply_authorization_limits(request, base_object_list)
+            base_object_list = self.get_object_list(request).filter(**kwargs)
+            object_list = self.apply_authorization_limits(request, base_object_list)
+            stringified_kwargs = ', '.join(["%s=%s" % (k, v) for k, v in kwargs.items()])
+            
+            if len(object_list) <= 0:
+                raise self._meta.object_class.DoesNotExist("Couldn't find an instance of '%s' which matched '%s'." % (self._meta.object_class.__name__, stringified_kwargs))
+            elif len(object_list) > 1:
+                raise MultipleObjectsReturned("More than '%s' matched '%s'." % (self._meta.object_class.__name__, stringified_kwargs))
+            
+            return object_list[0]
         except ValueError, e:
             raise NotFound("Invalid resource lookup data provided (mismatched type).")
     
@@ -1502,7 +1510,7 @@ class ModelResource(Resource):
                 # and this will work fine.
                 lookup_kwargs = kwargs
             try:
-                bundle.obj = self.apply_authorization_limits(request, self.get_object_list(request).get(**lookup_kwargs))
+                bundle.obj = self.obj_get(request, **lookup_kwargs)
             except ObjectDoesNotExist:
                 raise NotFound("A model instance matching the provided arguments could not be found.")
         
@@ -1538,7 +1546,7 @@ class ModelResource(Resource):
         the instance.
         """
         try:
-            obj = self.apply_authorization_limits(request, self.get_object_list(request).get(**kwargs))
+            obj = self.obj_get(request, **kwargs)
         except ObjectDoesNotExist:
             raise NotFound("A model instance matching the provided arguments could not be found.")
         

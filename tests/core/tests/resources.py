@@ -3,7 +3,7 @@ import datetime
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.core.exceptions import FieldError
+from django.core.exceptions import FieldError, MultipleObjectsReturned
 from django.core import mail
 from django.core.urlresolvers import reverse
 from django import forms
@@ -1974,6 +1974,30 @@ class ModelResourceTestCase(TestCase):
         # This time, the objects were filtered, so we should only iterate over
         # a (hopefully much smaller) subset.
         self.assertEqual(ponr._post_limits, 4)
+    
+    def regression_test_per_object_detail(self):
+        ponr = PerObjectNoteResource()
+        empty_request = type('MockRequest', (object,), {'GET': {}})
+        
+        self.assertEqual(ponr._meta.queryset.count(), 6)
+        
+        # Regression: Make sure that simple ``get_detail`` requests work.
+        self.assertTrue(isinstance(ponr.obj_get(request=empty_request, pk=1), Note))
+        self.assertEqual(ponr.obj_get(request=empty_request, pk=1).pk, 1)
+        self.assertEqual(ponr._pre_limits, 0)
+        self.assertEqual(ponr._post_limits, 1)
+        
+        try:
+            too_many = ponr.obj_get(request=empty_request, is_active=True, pk__gte=1)
+            self.fail()
+        except MultipleObjectsReturned, e:
+            self.assertEqual(str(e), "More than 'Note' matched 'is_active=True, pk__gte=1'.")
+        
+        try:
+            too_many = ponr.obj_get(request=empty_request, pk=1000000)
+            self.fail()
+        except Note.DoesNotExist, e:
+            self.assertEqual(str(e), "Couldn't find an instance of 'Note' which matched 'pk=1000000'.")
     
     def test_browser_cache(self):
         resource = NoteResource()
