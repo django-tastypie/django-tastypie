@@ -23,6 +23,7 @@ Contributors:
 * Vincent Driessen (nvie) for FileField related patches.
 * Christopher Grebs (EnTeQuAk) for various patches.
 * Roman Bogorodskiy (novel) for documentation fixes.
+* D. Hageman (dhageman) for a patch adding default values to RelatedFields.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
