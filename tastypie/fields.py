@@ -653,10 +653,10 @@ class TimeField(ApiField):
     def dehydrate(self, obj):
         return self.convert(super(TimeField, self).dehydrate(obj))
 
-    def conver(self, value):
-        if value is None:
-            return None
-        return self.to_time(value)
+    def convert(self, value):
+        if isinstance(value, basestring):
+            return self.to_time(value)
+        return value
 
     def to_time(self, s):
         try:
@@ -697,7 +697,7 @@ class TimeField(ApiField):
 #   - SlugField
 #   + SmallIntegerField
 #   - TextField
-#   - TimeField
+#   + TimeField
 #   - URLField
 #   - XMLField
 #   + ForeignKey
