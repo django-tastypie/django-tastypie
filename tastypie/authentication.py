@@ -1,8 +1,18 @@
 import base64
 import hmac
+import python_digest
 import time
+import uuid
+
+from django.conf import settings
 from django.contrib.auth import authenticate
 from tastypie.http import HttpUnauthorized
+
+try:
+    from hashlib import sha1
+except ImportError:
+    import sha
+    sha1 = sha.sha
 
 class Authentication(object):
     """
@@ -178,7 +188,6 @@ class DigestAuthentication(Authentication):
         self.realm = realm
 
     def _unauthorized(self):
-        import python_digest
         response = HttpUnauthorized()
         new_uuid = uuid.uuid4()
         opaque = hmac.new(str(new_uuid), digestmod=sha1).hexdigest()
@@ -206,8 +215,8 @@ class DigestAuthentication(Authentication):
         digest_response = python_digest.parse_digest_credentials(request.META['HTTP_AUTHORIZATION'])
 
         # FIXME: Should the nonce be per-user? Will this even work?
-        if not python_digest.validate_nonce(digest_response.nonce, secret):
-            return self._unauthorized()
+        # if not python_digest.validate_nonce(digest_response.nonce, secret):
+        #     return self._unauthorized()
 
         user = self.get_user(digest_response.username)
         api_key = self.get_key(user)
@@ -215,7 +224,10 @@ class DigestAuthentication(Authentication):
         if user is False or api_key is False:
             return self._unauthorized()
 
-        expected = python_digest.calculate_request_digest(request.method, digest_response, python_digest.calculate_partial_digest(digest_response.username, self.realm, api_key))
+        expected = python_digest.calculate_request_digest(
+            request.method,
+            python_digest.calculate_partial_digest(digest_response.username, self.realm, api_key),
+            digest_response)
 
         if not digest_response.response == expected:
             return self._unauthorized()
@@ -248,7 +260,7 @@ class DigestAuthentication(Authentication):
         except ApiKey.DoesNotExist:
             return False
 
-        return key
+        return key.key
 
     def get_identifier(self, request):
         """
