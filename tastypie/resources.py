@@ -1200,6 +1200,8 @@ class ModelResource(Resource):
             result = IntegerField
         elif f.get_internal_type() in ('FileField', 'ImageField'):
             result = FileField
+        elif f.get_internal_type() == 'TimeField':
+            result = TimeField
         # TODO: Perhaps enable these via introspection. The reason they're not enabled
         #       by default is the very different ``__init__`` they have over
         #       the other fields.
