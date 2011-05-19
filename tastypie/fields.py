@@ -1,4 +1,5 @@
 from dateutil.parser import parse
+from decimal import Decimal
 import re
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.utils import datetime_safe, importlib
@@ -98,12 +99,12 @@ class ApiField(object):
                     if self.has_default():
                         current_object = self._default
                         # Fall out of the loop, given any further attempts at
-                        # accesses will fail misreably.
+                        # accesses will fail miserably.
                         break
                     elif self.null:
                         current_object = None
                         # Fall out of the loop, given any further attempts at
-                        # accesses will fail misreably.
+                        # accesses will fail miserably.
                         break
                     else:
                         raise ApiFieldError("The object '%r' has an empty attribute '%s' and doesn't allow a default or null value." % (previous_object, attr))
@@ -219,6 +220,20 @@ class FloatField(ApiField):
         return float(value)
 
 
+class DecimalField(ApiField):
+    """
+    A decimal field.
+    """
+    dehydrated_type = 'decimal'
+    help_text = 'Fixed precision numeric data. Ex: 26.73'
+    
+    def convert(self, value):
+        if value is None:
+            return None
+        
+        return Decimal(value)
+
+
 class BooleanField(ApiField):
     """
     A boolean field.
@@ -233,6 +248,34 @@ class BooleanField(ApiField):
             return None
         
         return bool(value)
+
+
+class ListField(ApiField):
+    """
+    A list field.
+    """
+    dehydrated_type = 'list'
+    help_text = "A list of data. Ex: ['abc', 26.73, 8]"
+    
+    def convert(self, value):
+        if value is None:
+            return None
+        
+        return list(value)
+
+
+class DictField(ApiField):
+    """
+    A dictionary field.
+    """
+    dehydrated_type = 'dict'
+    help_text = "A dictionary of data. Ex: {'price': 26.73, 'name': 'Daniel'}"
+    
+    def convert(self, value):
+        if value is None:
+            return None
+        
+        return dict(value)
 
 
 class DateField(ApiField):

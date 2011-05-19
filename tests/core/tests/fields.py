@@ -237,6 +237,81 @@ class FloatFieldTestCase(TestCase):
         self.assertEqual(field_2.dehydrate(bundle), 18)
 
 
+class DecimalFieldTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+    
+    def test_init(self):
+        field_1 = DecimalField()
+        self.assertEqual(field_1.help_text, 'Fixed precision numeric data. Ex: 26.73')
+        
+        field_2 = DecimalField(help_text="Custom.")
+        self.assertEqual(field_2.help_text, 'Custom.')
+    
+    def test_dehydrated_type(self):
+        field_1 = DecimalField()
+        self.assertEqual(field_1.dehydrated_type, 'decimal')
+    
+    def test_dehydrate(self):
+        note = Note.objects.get(pk=1)
+        bundle = Bundle(obj=note)
+        
+        field_1 = DecimalField(default=20)
+        self.assertEqual(field_1.dehydrate(bundle), 20.0)
+        
+        field_2 = DecimalField(default=18.5)
+        self.assertEqual(field_2.dehydrate(bundle), Decimal('18.5'))
+
+
+class ListFieldTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+    
+    def test_init(self):
+        field_1 = ListField()
+        self.assertEqual(field_1.help_text, "A list of data. Ex: ['abc', 26.73, 8]")
+        
+        field_2 = ListField(help_text="Custom.")
+        self.assertEqual(field_2.help_text, 'Custom.')
+    
+    def test_dehydrated_type(self):
+        field_1 = ListField()
+        self.assertEqual(field_1.dehydrated_type, 'list')
+    
+    def test_dehydrate(self):
+        note = Note.objects.get(pk=1)
+        bundle = Bundle(obj=note)
+        
+        field_1 = ListField(default=[1, 2, 3])
+        self.assertEqual(field_1.dehydrate(bundle), [1, 2, 3])
+        
+        field_2 = ListField(default=['abc'])
+        self.assertEqual(field_2.dehydrate(bundle), ['abc'])
+
+
+class DictFieldTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+    
+    def test_init(self):
+        field_1 = DictField()
+        self.assertEqual(field_1.help_text, "A dictionary of data. Ex: {'price': 26.73, 'name': 'Daniel'}")
+        
+        field_2 = DictField(help_text="Custom.")
+        self.assertEqual(field_2.help_text, 'Custom.')
+    
+    def test_dehydrated_type(self):
+        field_1 = DictField()
+        self.assertEqual(field_1.dehydrated_type, 'dict')
+    
+    def test_dehydrate(self):
+        note = Note.objects.get(pk=1)
+        bundle = Bundle(obj=note)
+        
+        field_1 = DictField(default={'price': 12.34, 'name': 'Daniel'})
+        self.assertEqual(field_1.dehydrate(bundle), {'price': 12.34, 'name': 'Daniel'})
+        
+        field_2 = DictField(default={'name': 'Daniel'})
+        self.assertEqual(field_2.dehydrate(bundle), {'name': 'Daniel'})
+
+
 class BooleanFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
     

@@ -1,5 +1,6 @@
 import base64
 import datetime
+from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -66,6 +67,9 @@ class AnotherBasicResource(BasicResource):
     view_count = fields.IntegerField(attribute='view_count', default=0)
     date_joined = fields.DateField(attribute='created')
     is_active = fields.BooleanField(attribute='is_active', default=True)
+    aliases = fields.ListField(attribute='aliases', null=True)
+    meta = fields.DictField(attribute='metadata', null=True)
+    owed = fields.DecimalField(attribute='money_owed', null=True)
     
     class Meta:
         object_class = TestObject
@@ -75,6 +79,9 @@ class AnotherBasicResource(BasicResource):
         if hasattr(bundle.obj, 'bar'):
             bundle.data['bar'] = bundle.obj.bar
         
+        bundle.data['aliases'] = ['Mr. Smith', 'John Doe']
+        bundle.data['meta'] = {'threat': 'high'}
+        bundle.data['owed'] = Decimal('102.57')
         return bundle
     
     def hydrate(self, bundle):
@@ -125,7 +132,7 @@ class ResourceTestCase(TestCase):
         self.assertEqual(basic._meta.resource_name, 'basic')
         
         another = AnotherBasicResource()
-        self.assertEqual(len(another.fields), 5)
+        self.assertEqual(len(another.fields), 8)
         self.assert_('name' in another.fields)
         self.assertEqual(isinstance(another.name, fields.CharField), True)
         self.assertEqual(another.fields['name']._resource, another.__class__)
@@ -142,6 +149,18 @@ class ResourceTestCase(TestCase):
         self.assertEqual(isinstance(another.is_active, fields.BooleanField), True)
         self.assertEqual(another.fields['is_active']._resource, another.__class__)
         self.assertEqual(another.fields['is_active'].instance_name, 'is_active')
+        self.assert_('aliases' in another.fields)
+        self.assertEqual(isinstance(another.aliases, fields.ListField), True)
+        self.assertEqual(another.fields['aliases']._resource, another.__class__)
+        self.assertEqual(another.fields['aliases'].instance_name, 'aliases')
+        self.assert_('meta' in another.fields)
+        self.assertEqual(isinstance(another.meta, fields.DictField), True)
+        self.assertEqual(another.fields['meta']._resource, another.__class__)
+        self.assertEqual(another.fields['meta'].instance_name, 'meta')
+        self.assert_('owed' in another.fields)
+        self.assertEqual(isinstance(another.owed, fields.DecimalField), True)
+        self.assertEqual(another.fields['owed']._resource, another.__class__)
+        self.assertEqual(another.fields['owed'].instance_name, 'owed')
         self.assert_('resource_uri' in another.fields)
         self.assertEqual(isinstance(another.resource_uri, fields.CharField), True)
         self.assertEqual(another.fields['resource_uri']._resource, another.__class__)
@@ -211,6 +230,9 @@ class ResourceTestCase(TestCase):
         self.assertEqual(another_bundle_1.data['date_joined'].year, 2010)
         self.assertEqual(another_bundle_1.data['date_joined'].day, 29)
         self.assertEqual(another_bundle_1.data['is_active'], False)
+        self.assertEqual(another_bundle_1.data['aliases'], ['Mr. Smith', 'John Doe'])
+        self.assertEqual(another_bundle_1.data['meta'], {'threat': 'high'})
+        self.assertEqual(another_bundle_1.data['owed'], Decimal('102.57'))
         self.assertEqual(another_bundle_1.data['bar'], "But sometimes I'm not ignored!")
     
     def test_full_hydrate(self):
@@ -236,6 +258,9 @@ class ResourceTestCase(TestCase):
             'name': 'Daniel',
             'view_count': 6,
             'date_joined': datetime.datetime(2010, 2, 15, 12, 0, 0),
+            'aliases': ['test', 'test1'],
+            'meta': {'foo': 'bar'},
+            'owed': '12.53',
         })
         
         # Now load up the data (without the ``bar`` key).
@@ -244,6 +269,9 @@ class ResourceTestCase(TestCase):
         self.assertEqual(hydrated.data['name'], 'Daniel')
         self.assertEqual(hydrated.data['view_count'], 6)
         self.assertEqual(hydrated.data['date_joined'], datetime.datetime(2010, 2, 15, 12, 0, 0))
+        self.assertEqual(hydrated.data['aliases'], ['test', 'test1'])
+        self.assertEqual(hydrated.data['meta'], {'foo': 'bar'})
+        self.assertEqual(hydrated.data['owed'], '12.53')
         self.assertEqual(hydrated.obj.name, 'Daniel')
         self.assertEqual(hydrated.obj.view_count, 6)
         self.assertEqual(hydrated.obj.date_joined, datetime.datetime(2010, 2, 15, 12, 0, 0))

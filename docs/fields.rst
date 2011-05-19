@@ -126,6 +126,16 @@ A date field.
 
 A datetime field.
 
+``DecimalField``
+----------------
+
+A decimal field.
+
+``DictField``
+-------------
+
+A dictionary field.
+
 ``FileField``
 -------------
 
@@ -145,6 +155,11 @@ An integer field.
 
 Covers ``models.IntegerField``, ``models.PositiveIntegerField``,
 ``models.PositiveSmallIntegerField`` and ``models.SmallIntegerField``.
+
+``ListField``
+-------------
+
+A list field.
 
 
 Relationship Fields
