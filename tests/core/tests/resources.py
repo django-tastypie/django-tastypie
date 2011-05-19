@@ -1,4 +1,5 @@
 import base64
+import copy
 import datetime
 from decimal import Decimal
 from django.conf import settings
@@ -107,6 +108,35 @@ class NullableNameResource(Resource):
     class Meta:
         object_class = TestObject
         resource_name = 'nullable_name'
+
+
+class MangledBasicResource(BasicResource):
+    class Meta:
+        object_class = TestObject
+        resource_name = 'mangledbasic'
+    
+    def alter_list_data_to_serialize(self, request, data):
+        if isinstance(data, dict):
+            if 'meta' in data:
+                # Get rid of the "meta".
+                del(data['meta'])
+                # Rename the objects.
+                data['testobjects'] = copy.copy(data['objects'])
+                del(data['objects'])
+        
+        return data
+    
+    def alter_deserialized_detail_data(self, request, data):
+        # Automatically shove in the user.
+        if isinstance(data, dict):
+            # Handle the detail.
+            data['user'] = request.user
+        elif isinstance(data, list):
+            # Handle the list.
+            for obj_data in data:
+                obj_data['user'] = request.user
+        
+        return data
 
 
 class ResourceTestCase(TestCase):
@@ -496,6 +526,21 @@ class ResourceTestCase(TestCase):
         output = basic.create_response(request, data)
         self.assertEqual(output.status_code, 200)
         self.assertEqual(output.content, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><objects type="list"><object type="hash"><abc type="integer">123</abc><hello>world</hello></object></objects><meta type="hash"><page type="integer">1</page></meta></response>')
+    
+    def test_mangled(self):
+        mangled = MangledBasicResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.user = 'mr_authed'
+        
+        data = {'hello': 'world'}
+        output = mangled.alter_deserialized_detail_data(request, data)
+        self.assertEqual(output, {'hello': 'world', 'user': 'mr_authed'})
+        
+        request.GET = {'format': 'xml'}
+        data = {'objects': [{'hello': 'world', 'abc': 123}], 'meta': {'page': 1}}
+        output = mangled.alter_list_data_to_serialize(request, data)
+        self.assertEqual(output, {'testobjects': [{'abc': 123, 'hello': 'world'}]})
 
 
 # ====================

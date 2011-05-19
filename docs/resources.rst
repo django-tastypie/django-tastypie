@@ -564,6 +564,51 @@ falling back to ``application/json`` if not provided.
 
 Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
 
+``alter_list_data_to_serialize``
+--------------------------------
+
+.. method:: Resource.alter_list_data_to_serialize(self, request, data)
+
+A hook to alter list data just before it gets serialized & sent to the user.
+
+Useful for restructuring/renaming aspects of the what's going to be
+sent.
+
+Should accommodate for a list of objects, generally also including
+meta data.
+
+``alter_detail_data_to_serialize``
+----------------------------------
+
+.. method:: Resource.alter_detail_data_to_serialize(self, request, data)
+
+A hook to alter detail data just before it gets serialized & sent to the user.
+
+Useful for restructuring/renaming aspects of the what's going to be
+sent.
+
+Should accommodate for receiving a single bundle of data.
+
+``alter_deserialized_list_data``
+--------------------------------
+
+.. method:: Resource.alter_deserialized_list_data(self, request, data)
+
+A hook to alter list data just after it has been received from the user &
+gets deserialized.
+
+Useful for altering the user data before any hydration is applied.
+
+``alter_deserialized_detail_data``
+----------------------------------
+
+.. method:: Resource.alter_deserialized_detail_data(self, request, data)
+
+A hook to alter detail data just after it has been received from the user &
+gets deserialized.
+
+Useful for altering the user data before any hydration is applied.
+
 ``dispatch_list``
 -----------------
 
