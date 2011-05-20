@@ -11,7 +11,7 @@ allows you to control headers & bodies on requests will do.
 
 .. _cURL: http://curl.haxx.se/
 
-We'll assume that we're interacting with the follow Tastypie code::
+We'll assume that we're interacting with the following Tastypie code::
 
     # myapp/api/resources.py
     from django.contrib.auth.models import User
