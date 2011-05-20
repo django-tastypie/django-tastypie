@@ -123,7 +123,7 @@ class ApiFieldTestCase(TestCase):
         # Make sure it uses attribute when there's no data
         field_7 = ApiField(attribute='title')
         field_7.instance_name = 'notinbundle'
-        self.asserEqual(field_7.hydrate(bundle), u'First Post!')
+        self.assertEqual(field_7.hydrate(bundle), u'First Post!')
 
 
 class CharFieldTestCase(TestCase):
