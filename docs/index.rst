@@ -9,6 +9,7 @@ interfaces.
    :maxdepth: 2
    
    tutorial
+   interacting
    settings
    non_orm_data_sources
    
