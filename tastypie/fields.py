@@ -139,6 +139,8 @@ class ApiField(object):
         if not bundle.data.has_key(self.instance_name):
             if self.attribute and hasattr(bundle.obj, self.attribute):
                 return getattr(bundle.obj, self.attribute)
+            if not self.attribute and self.instance_name and hasattr(bundle.obj, self.instance_name):
+                return getattr(bundle.obj, self.instance_name)
             elif self.has_default():
                 if callable(self._default):
                     return self._default()

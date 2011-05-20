@@ -125,6 +125,11 @@ class ApiFieldTestCase(TestCase):
         field_7.instance_name = 'notinbundle'
         self.assertEqual(field_7.hydrate(bundle), u'First Post!')
 
+        # Make sure it falls back to instance name if there is no attribute
+        field_8 = ApiField()
+        field_8.instance_name = 'title'
+        self.assertEqual(field_7.hydrate(bundle), u'First Post!')
+
 
 class CharFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
