@@ -68,6 +68,16 @@ As an alternative to requiring sensitive data like a password, the
 machine-generated api key. Tastypie ships with a special ``Model`` just for
 this purpose, so you'll need to ensure ``tastypie`` is in ``INSTALLED_APPS``.
 
+``DigestAuthentication``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+This authentication scheme uses HTTP Digest Auth to check a user's
+credentials.  The username is their ``django.contrib.auth.models.User``
+username (assuming it is present) and their password should be their
+machine-generated api key. As with ApiKeyAuthentication, ``tastypie``
+should be included in ``INSTALLED_APPS``. As with BasicAuthentication,
+``WSGIPassAuthorization`` should be enabled under ``mod_wsgi`` if that's
+in use.
 
 Authorization Options
 =====================
