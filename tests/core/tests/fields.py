@@ -120,6 +120,16 @@ class ApiFieldTestCase(TestCase):
         bundle.data['api'] = note.title
         self.assertEqual(field_6.hydrate(bundle), u'First Post!')
 
+        # Make sure it uses attribute when there's no data
+        field_7 = ApiField(attribute='title')
+        field_7.instance_name = 'notinbundle'
+        self.assertEqual(field_7.hydrate(bundle), u'First Post!')
+
+        # Make sure it falls back to instance name if there is no attribute
+        field_8 = ApiField()
+        field_8.instance_name = 'title'
+        self.assertEqual(field_7.hydrate(bundle), u'First Post!')
+
 
 class CharFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -545,12 +555,15 @@ class ForeignKeyTestCase(TestCase):
         self.assertEqual(user_bundle.data['email'], u'john@doe.com')
     
     def test_hydrate(self):
-        note = Note.objects.get(pk=1)
+        note = Note()
         bundle = Bundle(obj=note)
         
         # With no value or nullable, we should get an ``ApiFieldError``.
         field_1 = ForeignKey(UserResource, 'author')
         self.assertRaises(ApiFieldError, field_1.hydrate, bundle)
+        
+        note = Note.objects.get(pk=1)
+        bundle = Bundle(obj=note)
         
         # The nullable case.
         field_2 = ForeignKey(UserResource, 'author', null=True)
