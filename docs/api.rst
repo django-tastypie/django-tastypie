@@ -21,8 +21,8 @@ URLconf)::
     from myapp.api.resources import UserResource, EntryResource
     
     v1_api = Api(api_name='v1')
-    v1_api.register(UserResource)
-    v1_api.register(EntryResource)
+    v1_api.register(UserResource())
+    v1_api.register(EntryResource())
     
     # Standard bits...
     urlpatterns = patterns('',
@@ -48,7 +48,7 @@ be named any string.
 
 .. method:: Api.register(self, resource, canonical=True):
 
-Registers a ``Resource`` subclass with the API.
+Registers an instance of a ``Resource`` subclass with the API.
 
 Optionally accept a ``canonical`` argument, which indicates that the
 resource being registered is the canonical variant. Defaults to
