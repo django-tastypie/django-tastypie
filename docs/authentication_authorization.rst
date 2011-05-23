@@ -55,8 +55,8 @@ it is present) and their password should also correspond to that entry.
 
 .. warning::
 
-  If you're using ``mod_wsgi``, you will need to enable
-  ``WSGIPassAuthorization``. See `this post`_ for details.
+  If you're using Apache & ``mod_wsgi``, you will need to enable
+  ``WSGIPassAuthorization On``. See `this post`_ for details.
 
 .. _`this post`: http://www.nerdydork.com/basic-authentication-on-mod_wsgi.html
 
@@ -68,6 +68,22 @@ As an alternative to requiring sensitive data like a password, the
 machine-generated api key. Tastypie ships with a special ``Model`` just for
 this purpose, so you'll need to ensure ``tastypie`` is in ``INSTALLED_APPS``.
 
+``DigestAuthentication``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+This authentication scheme uses HTTP Digest Auth to check a user's
+credentials.  The username is their ``django.contrib.auth.models.User``
+username (assuming it is present) and their password should be their
+machine-generated api key. As with ApiKeyAuthentication, ``tastypie``
+should be included in ``INSTALLED_APPS``.
+
+.. warning::
+
+  If you're using Apache & ``mod_wsgi``, you will need to enable
+  ``WSGIPassAuthorization On``. See `this post`_ for details (even though it
+  only mentions Basic auth).
+
+.. _`this post`: http://www.nerdydork.com/basic-authentication-on-mod_wsgi.html
 
 Authorization Options
 =====================

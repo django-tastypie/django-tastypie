@@ -1,7 +1,9 @@
 import datetime
+from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
+from tastypie import fields
 from tastypie.serializers import Serializer
 from tastypie.resources import ModelResource
 from core.models import Note
@@ -11,6 +13,22 @@ class NoteResource(ModelResource):
     class Meta:
         resource_name = 'notes'
         queryset = Note.objects.filter(is_active=True)
+
+
+class AnotherNoteResource(ModelResource):
+    aliases = fields.ListField(attribute='aliases', null=True)
+    meta = fields.DictField(attribute='metadata', null=True)
+    owed = fields.DecimalField(attribute='money_owed', null=True)
+    
+    class Meta:
+        resource_name = 'anothernotes'
+        queryset = Note.objects.filter(is_active=True)
+    
+    def dehydrate(self, bundle):
+        bundle.data['aliases'] = ['Mr. Smith', 'John Doe']
+        bundle.data['meta'] = {'threat': 'high'}
+        bundle.data['owed'] = Decimal('102.57')
+        return bundle
 
 
 class SerializerTestCase(TestCase):
@@ -214,6 +232,8 @@ class ResourceSerializationTestCase(TestCase):
         super(ResourceSerializationTestCase, self).setUp()
         self.resource = NoteResource()
         self.obj_list = [self.resource.full_dehydrate(obj=obj) for obj in self.resource.obj_get_list()]
+        self.another_resource = AnotherNoteResource()
+        self.another_obj_list = [self.another_resource.full_dehydrate(obj=obj) for obj in self.another_resource.obj_get_list()]
 
     def test_to_xml_multirepr(self):
         serializer = Serializer()
@@ -243,6 +263,11 @@ class ResourceSerializationTestCase(TestCase):
         serializer = Serializer()
         resource = self.obj_list[0]
         self.assertEqual(serializer.to_json(resource), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
+    
+    def test_to_json_decimal_list_dict(self):
+        serializer = Serializer()
+        resource = self.another_obj_list[0]
+        self.assertEqual(serializer.to_json(resource), '{"aliases": ["Mr. Smith", "John Doe"], "content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "meta": {"threat": "high"}, "owed": "102.57", "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
 
     def test_to_json_nested(self):
         serializer = Serializer()

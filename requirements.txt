@@ -3,3 +3,4 @@ mimeparse>=0.1.3
 python-dateutil==1.5
 lxml
 PyYAML
+python_digest

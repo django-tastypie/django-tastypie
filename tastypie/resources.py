@@ -330,7 +330,49 @@ class Resource(object):
         
         Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
         """
-        return self._meta.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self._meta.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        return deserialized
+    
+    def alter_list_data_to_serialize(self, request, data):
+        """
+        A hook to alter list data just before it gets serialized & sent to the user.
+        
+        Useful for restructuring/renaming aspects of the what's going to be
+        sent.
+        
+        Should accommodate for a list of objects, generally also including
+        meta data.
+        """
+        return data
+    
+    def alter_detail_data_to_serialize(self, request, data):
+        """
+        A hook to alter detail data just before it gets serialized & sent to the user.
+        
+        Useful for restructuring/renaming aspects of the what's going to be
+        sent.
+        
+        Should accommodate for receiving a single bundle of data.
+        """
+        return data
+    
+    def alter_deserialized_list_data(self, request, data):
+        """
+        A hook to alter list data just after it has been received from the user &
+        gets deserialized.
+        
+        Useful for altering the user data before any hydration is applied.
+        """
+        return data
+    
+    def alter_deserialized_detail_data(self, request, data):
+        """
+        A hook to alter detail data just after it has been received from the user &
+        gets deserialized.
+        
+        Useful for altering the user data before any hydration is applied.
+        """
+        return data
     
     def dispatch_list(self, request, **kwargs):
         """
@@ -948,6 +990,7 @@ class Resource(object):
         
         # Dehydrate the bundles in preparation for serialization.
         to_be_serialized['objects'] = [self.full_dehydrate(obj=obj) for obj in to_be_serialized['objects']]
+        to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
         return self.create_response(request, to_be_serialized)
     
     def get_detail(self, request, **kwargs):
@@ -967,6 +1010,7 @@ class Resource(object):
             return HttpMultipleChoices("More than one resource is found at this URI.")
         
         bundle = self.full_dehydrate(obj)
+        bundle = self.alter_detail_data_to_serialize(request, bundle)
         return self.create_response(request, bundle)
     
     def put_list(self, request, **kwargs):
@@ -979,6 +1023,7 @@ class Resource(object):
         Return ``HttpAccepted`` (204 No Content).
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.alter_deserialized_list_data(request, deserialized)
         
         if not 'objects' in deserialized:
             raise BadRequest("Invalid data sent.")
@@ -1014,13 +1059,14 @@ class Resource(object):
         If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized))
         self.is_valid(bundle, request)
         
         try:
             updated_bundle = self.obj_update(bundle, request=request, pk=kwargs.get('pk'))
             return HttpAccepted()
-        except:
+        except (NotFound, MultipleObjectsReturned):
             updated_bundle = self.obj_create(bundle, request=request, pk=kwargs.get('pk'))
             return HttpCreated(location=self.get_resource_uri(updated_bundle))
     
@@ -1034,6 +1080,7 @@ class Resource(object):
         If a new resource is created, return ``HttpCreated`` (201 Created).
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.alter_deserialized_list_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized))
         self.is_valid(bundle, request)
         updated_bundle = self.obj_create(bundle, request=request)
@@ -1463,8 +1510,16 @@ class ModelResource(Resource):
         the instance.
         """
         try:
-            base_object_list = self.get_object_list(request).get(**kwargs)
-            return self.apply_authorization_limits(request, base_object_list)
+            base_object_list = self.get_object_list(request).filter(**kwargs)
+            object_list = self.apply_authorization_limits(request, base_object_list)
+            stringified_kwargs = ', '.join(["%s=%s" % (k, v) for k, v in kwargs.items()])
+            
+            if len(object_list) <= 0:
+                raise self._meta.object_class.DoesNotExist("Couldn't find an instance of '%s' which matched '%s'." % (self._meta.object_class.__name__, stringified_kwargs))
+            elif len(object_list) > 1:
+                raise MultipleObjectsReturned("More than '%s' matched '%s'." % (self._meta.object_class.__name__, stringified_kwargs))
+            
+            return object_list[0]
         except ValueError, e:
             raise NotFound("Invalid resource lookup data provided (mismatched type).")
     
@@ -1507,7 +1562,7 @@ class ModelResource(Resource):
                 # and this will work fine.
                 lookup_kwargs = kwargs
             try:
-                bundle.obj = self.apply_authorization_limits(request, self.get_object_list(request).get(**lookup_kwargs))
+                bundle.obj = self.obj_get(request, **lookup_kwargs)
             except ObjectDoesNotExist:
                 raise NotFound("A model instance matching the provided arguments could not be found.")
         
@@ -1543,7 +1598,7 @@ class ModelResource(Resource):
         the instance.
         """
         try:
-            obj = self.apply_authorization_limits(request, self.get_object_list(request).get(**kwargs))
+            obj = self.obj_get(request, **kwargs)
         except ObjectDoesNotExist:
             raise NotFound("A model instance matching the provided arguments could not be found.")
         

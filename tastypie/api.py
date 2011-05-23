@@ -28,7 +28,7 @@ class Api(object):
     
     def register(self, resource, canonical=True):
         """
-        Registers a ``Resource`` subclass with the API.
+        Registers an instance of a ``Resource`` subclass with the API.
         
         Optionally accept a ``canonical`` argument, which indicates that the
         resource being registered is the canonical variant. Defaults to

@@ -4,23 +4,23 @@ django-tastypie
 
 Creating delicious APIs for Django apps since 2010.
 
-Currently in beta (v0.9.8) but being used actively in production on several
+Currently in beta (v0.9.9) but being used actively in production on several
 sites.
 
 
 Requirements
 ============
 
-* Python 2.4+
-* Django 1.1+
+* Python 2.5+
+* Django 1.2+ (May work on Django 1.1)
 * mimeparse 0.1.3+ (http://code.google.com/p/mimeparse/)
 
   * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
 
 * dateutil (http://labix.org/python-dateutil)
+* python_digest (https://bitbucket.org/akoha/python-digest/)
 * lxml (http://codespeak.net/lxml/) if using the XML serializer
 * pyyaml (http://pyyaml.org/) if using the YAML serializer
-* uuid (present in 2.5+, downloadable from http://pypi.python.org/pypi/uuid/) if using the ``ApiKey`` authentication
 
 
 What's It Look Like?
@@ -90,4 +90,4 @@ Reference Material
 * http://jacobian.org/writing/rest-worst-practices/
 
 :author: Daniel Lindsley
-:date: 2011/04/27
+:date: 2011/05/20

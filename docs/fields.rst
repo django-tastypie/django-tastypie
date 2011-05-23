@@ -126,6 +126,16 @@ A date field.
 
 A datetime field.
 
+``DecimalField``
+----------------
+
+A decimal field.
+
+``DictField``
+-------------
+
+A dictionary field.
+
 ``FileField``
 -------------
 
@@ -145,6 +155,11 @@ An integer field.
 
 Covers ``models.IntegerField``, ``models.PositiveIntegerField``,
 ``models.PositiveSmallIntegerField`` and ``models.SmallIntegerField``.
+
+``ListField``
+-------------
+
+A list field.
 
 
 Relationship Fields
@@ -223,6 +238,12 @@ An alias to ``ToOneField`` for those who prefer to mirror ``django.db.models``.
 Provides access to related data via a join table.
 
 This subclass requires Django's ORM layer to work properly.
+
+This field also has special behavior when dealing with ``attribute`` in that
+it can take a callable. For instance, if you need to filter the reverse
+relation, you can do something like::
+
+    subjects = fields.ToManyField(SubjectResource, ToManyField(SubjectResource, attribute=lambda bundle: Subject.objects.filter(notes=bundle.obj, name__startswith='Personal'))
 
 Note that the ``hydrate`` portions of this field are quite different than
 any other field. ``hydrate_m2m`` actually handles the data and relations.

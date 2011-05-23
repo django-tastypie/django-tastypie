@@ -120,6 +120,16 @@ class ApiFieldTestCase(TestCase):
         bundle.data['api'] = note.title
         self.assertEqual(field_6.hydrate(bundle), u'First Post!')
 
+        # Make sure it uses attribute when there's no data
+        field_7 = ApiField(attribute='title')
+        field_7.instance_name = 'notinbundle'
+        self.assertEqual(field_7.hydrate(bundle), u'First Post!')
+
+        # Make sure it falls back to instance name if there is no attribute
+        field_8 = ApiField()
+        field_8.instance_name = 'title'
+        self.assertEqual(field_7.hydrate(bundle), u'First Post!')
+
 
 class CharFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -235,6 +245,81 @@ class FloatFieldTestCase(TestCase):
         
         field_2 = IntegerField(default=18.5)
         self.assertEqual(field_2.dehydrate(bundle), 18)
+
+
+class DecimalFieldTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+    
+    def test_init(self):
+        field_1 = DecimalField()
+        self.assertEqual(field_1.help_text, 'Fixed precision numeric data. Ex: 26.73')
+        
+        field_2 = DecimalField(help_text="Custom.")
+        self.assertEqual(field_2.help_text, 'Custom.')
+    
+    def test_dehydrated_type(self):
+        field_1 = DecimalField()
+        self.assertEqual(field_1.dehydrated_type, 'decimal')
+    
+    def test_dehydrate(self):
+        note = Note.objects.get(pk=1)
+        bundle = Bundle(obj=note)
+        
+        field_1 = DecimalField(default=20)
+        self.assertEqual(field_1.dehydrate(bundle), 20.0)
+        
+        field_2 = DecimalField(default=18.5)
+        self.assertEqual(field_2.dehydrate(bundle), Decimal('18.5'))
+
+
+class ListFieldTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+    
+    def test_init(self):
+        field_1 = ListField()
+        self.assertEqual(field_1.help_text, "A list of data. Ex: ['abc', 26.73, 8]")
+        
+        field_2 = ListField(help_text="Custom.")
+        self.assertEqual(field_2.help_text, 'Custom.')
+    
+    def test_dehydrated_type(self):
+        field_1 = ListField()
+        self.assertEqual(field_1.dehydrated_type, 'list')
+    
+    def test_dehydrate(self):
+        note = Note.objects.get(pk=1)
+        bundle = Bundle(obj=note)
+        
+        field_1 = ListField(default=[1, 2, 3])
+        self.assertEqual(field_1.dehydrate(bundle), [1, 2, 3])
+        
+        field_2 = ListField(default=['abc'])
+        self.assertEqual(field_2.dehydrate(bundle), ['abc'])
+
+
+class DictFieldTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+    
+    def test_init(self):
+        field_1 = DictField()
+        self.assertEqual(field_1.help_text, "A dictionary of data. Ex: {'price': 26.73, 'name': 'Daniel'}")
+        
+        field_2 = DictField(help_text="Custom.")
+        self.assertEqual(field_2.help_text, 'Custom.')
+    
+    def test_dehydrated_type(self):
+        field_1 = DictField()
+        self.assertEqual(field_1.dehydrated_type, 'dict')
+    
+    def test_dehydrate(self):
+        note = Note.objects.get(pk=1)
+        bundle = Bundle(obj=note)
+        
+        field_1 = DictField(default={'price': 12.34, 'name': 'Daniel'})
+        self.assertEqual(field_1.dehydrate(bundle), {'price': 12.34, 'name': 'Daniel'})
+        
+        field_2 = DictField(default={'name': 'Daniel'})
+        self.assertEqual(field_2.dehydrate(bundle), {'name': 'Daniel'})
 
 
 class BooleanFieldTestCase(TestCase):
@@ -417,6 +502,17 @@ class ForeignKeyTestCase(TestCase):
         self.assertEqual(field_2.full, False)
         self.assertEqual(field_2.readonly, False)
         self.assertEqual(field_2.help_text, 'Points to a User.')
+        
+        field_3 = ForeignKey(UserResource, 'author', default=1, null=True, help_text="Points to a User.")
+        self.assertEqual(field_3.instance_name, None)
+        self.assertEqual(issubclass(field_3.to, UserResource), True)
+        self.assertEqual(field_3.attribute, 'author')
+        self.assertEqual(field_3.related_name, None)
+        self.assertEqual(field_3.null, True)
+        self.assertEqual(field_3.default, 1)
+        self.assertEqual(field_3.full, False)
+        self.assertEqual(field_3.readonly, False)
+        self.assertEqual(field_3.help_text, 'Points to a User.')
     
     def test_dehydrated_type(self):
         field_1 = ForeignKey(UserResource, 'author')
@@ -425,16 +521,16 @@ class ForeignKeyTestCase(TestCase):
     def test_has_default(self):
         field_1 = ForeignKey(UserResource, 'author')
         self.assertEqual(field_1.has_default(), False)
+        
+        field_1 = ForeignKey(UserResource, 'author', default=1)
+        self.assertEqual(field_1.has_default(), True)
     
     def test_default(self):
         field_1 = ForeignKey(UserResource, 'author')
+        self.assertTrue(isinstance(field_1.default, NOT_PROVIDED))
         
-        try:
-            # self.assertRaises isn't cooperating here. Do it the hard way.
-            field_1.default
-            self.fail()
-        except ApiFieldError:
-            pass
+        field_2 = ForeignKey(UserResource, 'author', default=1)
+        self.assertEqual(field_2.default, 1)
     
     def test_dehydrate(self):
         note = Note()
@@ -459,12 +555,15 @@ class ForeignKeyTestCase(TestCase):
         self.assertEqual(user_bundle.data['email'], u'john@doe.com')
     
     def test_hydrate(self):
-        note = Note.objects.get(pk=1)
+        note = Note()
         bundle = Bundle(obj=note)
         
         # With no value or nullable, we should get an ``ApiFieldError``.
         field_1 = ForeignKey(UserResource, 'author')
         self.assertRaises(ApiFieldError, field_1.hydrate, bundle)
+        
+        note = Note.objects.get(pk=1)
+        bundle = Bundle(obj=note)
         
         # The nullable case.
         field_2 = ForeignKey(UserResource, 'author', null=True)
@@ -573,6 +672,17 @@ class ManyToManyFieldTestCase(TestCase):
         self.assertEqual(field_2.full, False)
         self.assertEqual(field_2.readonly, False)
         self.assertEqual(field_2.help_text, 'Points to many Subjects.')
+        
+        field_3 = ManyToManyField(SubjectResource, 'subjects', default=1, null=True, help_text='Points to many Subjects.')
+        self.assertEqual(field_3.instance_name, None)
+        self.assertEqual(issubclass(field_3.to, SubjectResource), True)
+        self.assertEqual(field_3.attribute, 'subjects')
+        self.assertEqual(field_3.related_name, None)
+        self.assertEqual(field_3.null, True)
+        self.assertEqual(field_3.default, 1)
+        self.assertEqual(field_3.full, False)
+        self.assertEqual(field_3.readonly, False)
+        self.assertEqual(field_3.help_text, 'Points to many Subjects.')
     
     def test_dehydrated_type(self):
         field_1 = ManyToManyField(SubjectResource, 'subjects')
@@ -581,16 +691,16 @@ class ManyToManyFieldTestCase(TestCase):
     def test_has_default(self):
         field_1 = ManyToManyField(SubjectResource, 'subjects')
         self.assertEqual(field_1.has_default(), False)
+        
+        field_2 = ManyToManyField(SubjectResource, 'subjects', default=1)
+        self.assertEqual(field_2.has_default(), True)
     
     def test_default(self):
         field_1 = ManyToManyField(SubjectResource, 'subjects')
+        self.assertTrue(isinstance(field_1.default, NOT_PROVIDED))
         
-        try:
-            # self.assertRaises isn't cooperating here. Do it the hard way.
-            field_1.default
-            self.fail()
-        except ApiFieldError:
-            pass
+        field_2 = ManyToManyField(SubjectResource, 'subjects', default=1)
+        self.assertEqual(field_2.default, 1)
     
     def test_dehydrate(self):
         note = Note()
@@ -639,6 +749,14 @@ class ManyToManyFieldTestCase(TestCase):
         field_6.instance_name = 'm2m'
         bundle_6 = Bundle(obj=self.note_3)
         self.assertEqual(field_6.dehydrate(bundle_6), [])
+    
+    def test_dehydrate_with_callable(self):
+        note = Note()
+        bundle_1 = Bundle(obj=self.note_2)
+        field_1 = ManyToManyField(SubjectResource, attribute=lambda bundle: Subject.objects.filter(notes=bundle.obj, name__startswith='Personal'))
+        field_1.instance_name = 'm2m'
+        
+        self.assertEqual(field_1.dehydrate(bundle_1), ['/api/v1/subjects/3/'])
     
     def test_hydrate(self):
         note = Note.objects.get(pk=1)

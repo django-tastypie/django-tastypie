@@ -1,9 +1,11 @@
 import base64
+import copy
 import datetime
+from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.core.exceptions import FieldError
+from django.core.exceptions import FieldError, MultipleObjectsReturned
 from django.core import mail
 from django.core.urlresolvers import reverse
 from django import forms
@@ -66,6 +68,9 @@ class AnotherBasicResource(BasicResource):
     view_count = fields.IntegerField(attribute='view_count', default=0)
     date_joined = fields.DateField(attribute='created')
     is_active = fields.BooleanField(attribute='is_active', default=True)
+    aliases = fields.ListField(attribute='aliases', null=True)
+    meta = fields.DictField(attribute='metadata', null=True)
+    owed = fields.DecimalField(attribute='money_owed', null=True)
     
     class Meta:
         object_class = TestObject
@@ -75,6 +80,9 @@ class AnotherBasicResource(BasicResource):
         if hasattr(bundle.obj, 'bar'):
             bundle.data['bar'] = bundle.obj.bar
         
+        bundle.data['aliases'] = ['Mr. Smith', 'John Doe']
+        bundle.data['meta'] = {'threat': 'high'}
+        bundle.data['owed'] = Decimal('102.57')
         return bundle
     
     def hydrate(self, bundle):
@@ -102,6 +110,35 @@ class NullableNameResource(Resource):
         resource_name = 'nullable_name'
 
 
+class MangledBasicResource(BasicResource):
+    class Meta:
+        object_class = TestObject
+        resource_name = 'mangledbasic'
+    
+    def alter_list_data_to_serialize(self, request, data):
+        if isinstance(data, dict):
+            if 'meta' in data:
+                # Get rid of the "meta".
+                del(data['meta'])
+                # Rename the objects.
+                data['testobjects'] = copy.copy(data['objects'])
+                del(data['objects'])
+        
+        return data
+    
+    def alter_deserialized_detail_data(self, request, data):
+        # Automatically shove in the user.
+        if isinstance(data, dict):
+            # Handle the detail.
+            data['user'] = request.user
+        elif isinstance(data, list):
+            # Handle the list.
+            for obj_data in data:
+                obj_data['user'] = request.user
+        
+        return data
+
+
 class ResourceTestCase(TestCase):
     def test_fields(self):
         basic = BasicResource()
@@ -125,7 +162,7 @@ class ResourceTestCase(TestCase):
         self.assertEqual(basic._meta.resource_name, 'basic')
         
         another = AnotherBasicResource()
-        self.assertEqual(len(another.fields), 5)
+        self.assertEqual(len(another.fields), 8)
         self.assert_('name' in another.fields)
         self.assertEqual(isinstance(another.name, fields.CharField), True)
         self.assertEqual(another.fields['name']._resource, another.__class__)
@@ -142,6 +179,18 @@ class ResourceTestCase(TestCase):
         self.assertEqual(isinstance(another.is_active, fields.BooleanField), True)
         self.assertEqual(another.fields['is_active']._resource, another.__class__)
         self.assertEqual(another.fields['is_active'].instance_name, 'is_active')
+        self.assert_('aliases' in another.fields)
+        self.assertEqual(isinstance(another.aliases, fields.ListField), True)
+        self.assertEqual(another.fields['aliases']._resource, another.__class__)
+        self.assertEqual(another.fields['aliases'].instance_name, 'aliases')
+        self.assert_('meta' in another.fields)
+        self.assertEqual(isinstance(another.meta, fields.DictField), True)
+        self.assertEqual(another.fields['meta']._resource, another.__class__)
+        self.assertEqual(another.fields['meta'].instance_name, 'meta')
+        self.assert_('owed' in another.fields)
+        self.assertEqual(isinstance(another.owed, fields.DecimalField), True)
+        self.assertEqual(another.fields['owed']._resource, another.__class__)
+        self.assertEqual(another.fields['owed'].instance_name, 'owed')
         self.assert_('resource_uri' in another.fields)
         self.assertEqual(isinstance(another.resource_uri, fields.CharField), True)
         self.assertEqual(another.fields['resource_uri']._resource, another.__class__)
@@ -211,6 +260,9 @@ class ResourceTestCase(TestCase):
         self.assertEqual(another_bundle_1.data['date_joined'].year, 2010)
         self.assertEqual(another_bundle_1.data['date_joined'].day, 29)
         self.assertEqual(another_bundle_1.data['is_active'], False)
+        self.assertEqual(another_bundle_1.data['aliases'], ['Mr. Smith', 'John Doe'])
+        self.assertEqual(another_bundle_1.data['meta'], {'threat': 'high'})
+        self.assertEqual(another_bundle_1.data['owed'], Decimal('102.57'))
         self.assertEqual(another_bundle_1.data['bar'], "But sometimes I'm not ignored!")
     
     def test_full_hydrate(self):
@@ -236,6 +288,9 @@ class ResourceTestCase(TestCase):
             'name': 'Daniel',
             'view_count': 6,
             'date_joined': datetime.datetime(2010, 2, 15, 12, 0, 0),
+            'aliases': ['test', 'test1'],
+            'meta': {'foo': 'bar'},
+            'owed': '12.53',
         })
         
         # Now load up the data (without the ``bar`` key).
@@ -244,6 +299,9 @@ class ResourceTestCase(TestCase):
         self.assertEqual(hydrated.data['name'], 'Daniel')
         self.assertEqual(hydrated.data['view_count'], 6)
         self.assertEqual(hydrated.data['date_joined'], datetime.datetime(2010, 2, 15, 12, 0, 0))
+        self.assertEqual(hydrated.data['aliases'], ['test', 'test1'])
+        self.assertEqual(hydrated.data['meta'], {'foo': 'bar'})
+        self.assertEqual(hydrated.data['owed'], '12.53')
         self.assertEqual(hydrated.obj.name, 'Daniel')
         self.assertEqual(hydrated.obj.view_count, 6)
         self.assertEqual(hydrated.obj.date_joined, datetime.datetime(2010, 2, 15, 12, 0, 0))
@@ -468,6 +526,21 @@ class ResourceTestCase(TestCase):
         output = basic.create_response(request, data)
         self.assertEqual(output.status_code, 200)
         self.assertEqual(output.content, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><objects type="list"><object type="hash"><abc type="integer">123</abc><hello>world</hello></object></objects><meta type="hash"><page type="integer">1</page></meta></response>')
+    
+    def test_mangled(self):
+        mangled = MangledBasicResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.user = 'mr_authed'
+        
+        data = {'hello': 'world'}
+        output = mangled.alter_deserialized_detail_data(request, data)
+        self.assertEqual(output, {'hello': 'world', 'user': 'mr_authed'})
+        
+        request.GET = {'format': 'xml'}
+        data = {'objects': [{'hello': 'world', 'abc': 123}], 'meta': {'page': 1}}
+        output = mangled.alter_list_data_to_serialize(request, data)
+        self.assertEqual(output, {'testobjects': [{'abc': 123, 'hello': 'world'}]})
 
 
 # ====================
@@ -1974,6 +2047,30 @@ class ModelResourceTestCase(TestCase):
         # This time, the objects were filtered, so we should only iterate over
         # a (hopefully much smaller) subset.
         self.assertEqual(ponr._post_limits, 4)
+    
+    def regression_test_per_object_detail(self):
+        ponr = PerObjectNoteResource()
+        empty_request = type('MockRequest', (object,), {'GET': {}})
+        
+        self.assertEqual(ponr._meta.queryset.count(), 6)
+        
+        # Regression: Make sure that simple ``get_detail`` requests work.
+        self.assertTrue(isinstance(ponr.obj_get(request=empty_request, pk=1), Note))
+        self.assertEqual(ponr.obj_get(request=empty_request, pk=1).pk, 1)
+        self.assertEqual(ponr._pre_limits, 0)
+        self.assertEqual(ponr._post_limits, 1)
+        
+        try:
+            too_many = ponr.obj_get(request=empty_request, is_active=True, pk__gte=1)
+            self.fail()
+        except MultipleObjectsReturned, e:
+            self.assertEqual(str(e), "More than 'Note' matched 'is_active=True, pk__gte=1'.")
+        
+        try:
+            too_many = ponr.obj_get(request=empty_request, pk=1000000)
+            self.fail()
+        except Note.DoesNotExist, e:
+            self.assertEqual(str(e), "Couldn't find an instance of 'Note' which matched 'pk=1000000'.")
     
     def test_browser_cache(self):
         resource = NoteResource()
