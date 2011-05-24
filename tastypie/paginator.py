@@ -136,7 +136,7 @@ class Paginator(object):
         if self.resource_uri is None:
             return None
         
-        request_params = self.request_data.copy()
+        request_params = dict([k, v.encode('utf-8')] for k, v in self.request_data.items())
         request_params.update({'limit': limit, 'offset': offset})
         return '%s?%s' % (
             self.resource_uri,
