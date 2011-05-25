@@ -703,7 +703,7 @@ class TimeField(ApiField):
 #   - CommaSeparatedIntegerField
 #   + DateField
 #   + DateTimeField
-#   - DecimalField
+#   + DecimalField
 #   - EmailField
 #   + FileField
 #   + FilePathField
