@@ -6,7 +6,7 @@ from django.http import HttpRequest
 from django.test import TestCase
 from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, DigestAuthentication
 from tastypie.http import HttpUnauthorized
-from tastypie.models import ApiKey
+from tastypie.models import ApiKey, create_api_key
 
 
 class AuthenticationTestCase(TestCase):
@@ -68,6 +68,10 @@ class ApiKeyAuthenticationTestCase(TestCase):
         auth = ApiKeyAuthentication()
         request = HttpRequest()
         
+        # Simulate sending the signal.
+        john_doe = User.objects.get(username='johndoe')
+        create_api_key(User, instance=john_doe, created=True)
+        
         # No username/api_key details should fail.
         self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
         
@@ -86,7 +90,6 @@ class ApiKeyAuthenticationTestCase(TestCase):
         
         # Correct user/api_key.
         john_doe = User.objects.get(username='johndoe')
-        john_doe.save()
         request.GET['username'] = 'johndoe'
         request.GET['api_key'] = john_doe.api_key.key
         self.assertEqual(auth.is_authenticated(request), True)
