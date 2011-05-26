@@ -64,6 +64,10 @@ class BasicAuthenticationTestCase(TestCase):
 class ApiKeyAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
     
+    def setUp(self):
+        super(ApiKeyAuthenticationTestCase, self).setUp()
+        ApiKey.objects.all().delete()
+    
     def test_is_authenticated(self):
         auth = ApiKeyAuthentication()
         request = HttpRequest()
@@ -94,12 +98,21 @@ class ApiKeyAuthenticationTestCase(TestCase):
         request.GET['api_key'] = john_doe.api_key.key
         self.assertEqual(auth.is_authenticated(request), True)
 
+
 class DigestAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
+    
+    def setUp(self):
+        super(DigestAuthenticationTestCase, self).setUp()
+        ApiKey.objects.all().delete()
     
     def test_is_authenticated(self):
         auth = DigestAuthentication()
         request = HttpRequest()
+        
+        # Simulate sending the signal.
+        john_doe = User.objects.get(username='johndoe')
+        create_api_key(User, instance=john_doe, created=True)
         
         # No HTTP Basic auth details should fail.
         auth_request = auth.is_authenticated(request)
@@ -128,14 +141,13 @@ class DigestAuthenticationTestCase(TestCase):
         
         # Correct user/password.
         john_doe = User.objects.get(username='johndoe')
-        john_doe.set_password('pass')
-        john_doe.save()
         request.META['HTTP_AUTHORIZATION'] = python_digest.build_authorization_request(
             john_doe.username,
             request.method,
             '/', # uri
             1,   # nonce_count
             digest_challenge=auth_request['WWW-Authenticate'],
-            password=john_doe.api_key.key)
+            password=john_doe.api_key.key
+        )
         auth_request = auth.is_authenticated(request)
         self.assertEqual(auth_request, True)
