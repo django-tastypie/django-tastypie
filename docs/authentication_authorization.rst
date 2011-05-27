@@ -68,8 +68,8 @@ As an alternative to requiring sensitive data like a password, the
 machine-generated api key. Tastypie ships with a special ``Model`` just for
 this purpose, so you'll need to ensure ``tastypie`` is in ``INSTALLED_APPS``.
 
-Tastypie includes a signal function you can use to auto-create ``ApiKey``s.
-Hooking it up looks like::
+Tastypie includes a signal function you can use to auto-create ``ApiKey``
+objects. Hooking it up looks like::
 
     from django.contrib.auth.models import User
     from django.db import models
@@ -78,7 +78,7 @@ Hooking it up looks like::
     models.signals.post_save.connect(create_api_key, sender=User)
 
 ``DigestAuthentication``
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This authentication scheme uses HTTP Digest Auth to check a user's
 credentials.  The username is their ``django.contrib.auth.models.User``
