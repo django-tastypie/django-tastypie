@@ -1,10 +1,12 @@
+import datetime
 from dateutil.parser import parse
+from decimal import Decimal
 import re
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.utils import datetime_safe, importlib
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
+from tastypie.utils import dict_strip_unicode_keys
 
 
 class NOT_PROVIDED:
@@ -98,23 +100,23 @@ class ApiField(object):
                     if self.has_default():
                         current_object = self._default
                         # Fall out of the loop, given any further attempts at
-                        # accesses will fail misreably.
+                        # accesses will fail miserably.
                         break
                     elif self.null:
                         current_object = None
                         # Fall out of the loop, given any further attempts at
-                        # accesses will fail misreably.
+                        # accesses will fail miserably.
                         break
                     else:
                         raise ApiFieldError("The object '%r' has an empty attribute '%s' and doesn't allow a default or null value." % (previous_object, attr))
             
             if callable(current_object):
-                return current_object()
+                current_object = current_object()
             
-            return current_object
+            return self.convert(current_object)
         
         if self.has_default():
-            return self.default
+            return self.convert(self.default)
         else:
             return None
     
@@ -136,7 +138,9 @@ class ApiField(object):
             return None
         
         if not bundle.data.has_key(self.instance_name):
-            if hasattr(bundle.obj, self.instance_name):
+            if self.attribute and getattr(bundle.obj, self.attribute, None):
+                return getattr(bundle.obj, self.attribute)
+            elif self.instance_name and hasattr(bundle.obj, self.instance_name):
                 return getattr(bundle.obj, self.instance_name)
             elif self.has_default():
                 if callable(self._default):
@@ -160,9 +164,6 @@ class CharField(ApiField):
     dehydrated_type = 'string'
     help_text = 'Unicode string data. Ex: "Hello World"'
     
-    def dehydrate(self, obj):
-        return self.convert(super(CharField, self).dehydrate(obj))
-    
     def convert(self, value):
         if value is None:
             return None
@@ -177,24 +178,18 @@ class FileField(ApiField):
     Covers both ``models.FileField`` and ``models.ImageField``.
     """
     dehydrated_type = 'string'
-    help_text = 'A file path as a string. Ex: "/tmp/photos/my_photo.jpg"'
-    
-    def dehydrate(self, obj):
-        media_url = settings.MEDIA_URL
-        path = self.convert(super(FileField, self).dehydrate(obj))
-        
-        if path:
-            media_url = media_url.rstrip('/')
-            path = path.lstrip('/')
-            return u"%s/%s" % (media_url, path)
-        
-        return path
+    help_text = 'A file URL as a string. Ex: "http://media.example.com/media/photos/my_photo.jpg"'
     
     def convert(self, value):
         if value is None:
             return None
         
-        return unicode(value)
+        try:
+            # Try to return the URL if it's a ``File``, falling back to the string
+            # itself if it's been overridden or is a default.
+            return getattr(value, 'url', value)
+        except ValueError:
+            return None
 
 
 class IntegerField(ApiField):
@@ -206,9 +201,6 @@ class IntegerField(ApiField):
     """
     dehydrated_type = 'integer'
     help_text = 'Integer data. Ex: 2673'
-    
-    def dehydrate(self, obj):
-        return self.convert(super(IntegerField, self).dehydrate(obj))
     
     def convert(self, value):
         if value is None:
@@ -224,14 +216,25 @@ class FloatField(ApiField):
     dehydrated_type = 'float'
     help_text = 'Floating point numeric data. Ex: 26.73'
     
-    def dehydrate(self, obj):
-        return self.convert(super(FloatField, self).dehydrate(obj))
-    
     def convert(self, value):
         if value is None:
             return None
         
         return float(value)
+
+
+class DecimalField(ApiField):
+    """
+    A decimal field.
+    """
+    dehydrated_type = 'decimal'
+    help_text = 'Fixed precision numeric data. Ex: 26.73'
+    
+    def convert(self, value):
+        if value is None:
+            return None
+        
+        return Decimal(value)
 
 
 class BooleanField(ApiField):
@@ -243,14 +246,39 @@ class BooleanField(ApiField):
     dehydrated_type = 'boolean'
     help_text = 'Boolean data. Ex: True'
     
-    def dehydrate(self, obj):
-        return self.convert(super(BooleanField, self).dehydrate(obj))
-    
     def convert(self, value):
         if value is None:
             return None
         
         return bool(value)
+
+
+class ListField(ApiField):
+    """
+    A list field.
+    """
+    dehydrated_type = 'list'
+    help_text = "A list of data. Ex: ['abc', 26.73, 8]"
+    
+    def convert(self, value):
+        if value is None:
+            return None
+        
+        return list(value)
+
+
+class DictField(ApiField):
+    """
+    A dictionary field.
+    """
+    dehydrated_type = 'dict'
+    help_text = "A dictionary of data. Ex: {'price': 26.73, 'name': 'Daniel'}"
+    
+    def convert(self, value):
+        if value is None:
+            return None
+        
+        return dict(value)
 
 
 class DateField(ApiField):
@@ -259,9 +287,6 @@ class DateField(ApiField):
     """
     dehydrated_type = 'date'
     help_text = 'A date as a string. Ex: "2010-11-10"'
-    
-    def dehydrate(self, obj):
-        return self.convert(super(DateField, self).dehydrate(obj))
     
     def convert(self, value):
         if value is None:
@@ -301,9 +326,6 @@ class DateTimeField(ApiField):
     dehydrated_type = 'datetime'
     help_text = 'A date & time as a string. Ex: "2010-11-10T03:07:43"'
     
-    def dehydrate(self, obj):
-        return self.convert(super(DateTimeField, self).dehydrate(obj))
-    
     def convert(self, value):
         if value is None:
             return None
@@ -336,8 +358,8 @@ class RelatedField(ApiField):
     """
     Provides access to data that is related within the database.
     
-    A base class not intended for direct use but provides functionality that
-    ``ForeignKey`` and ``ManyToManyField`` build upon.
+    The ``RelatedField`` base class is not intended for direct use but provides
+    functionality that ``ToOneField`` and ``ToManyField`` build upon.
     
     The contents of this field actually point to another ``Resource``,
     rather than the related object. This allows the field to represent its data
@@ -353,7 +375,7 @@ class RelatedField(ApiField):
     self_referential = False
     help_text = 'A related resource. Can be either a URI or set of nested resource data.'
     
-    def __init__(self, to, attribute, related_name=None, null=False, full=False, unique=False, help_text=None):
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, full=False, unique=False, help_text=None):
         """
         Builds the field and prepares it to access to related data.
         
@@ -381,6 +403,7 @@ class RelatedField(ApiField):
         self.to = to
         self.attribute = attribute
         self.related_name = related_name
+        self._default = default
         self.null = null
         self.full = full
         self.readonly = False
@@ -404,20 +427,6 @@ class RelatedField(ApiField):
         # here (which I think we should avoid as long as possible).
         if self.self_referential or self.to == 'self':
             self._to_class = cls
-    
-    def has_default(self):
-        """
-        Always returns ``False``, as there is no ``default`` available on
-        related fields.
-        """
-        return False
-    
-    @property
-    def default(self):
-        """
-        Raises an exception because related fields do not have a ``default``.
-        """
-        raise ApiFieldError("%r fields do not have default data." % self)
     
     def get_related_resource(self, related_instance):
         """
@@ -494,20 +503,32 @@ class RelatedField(ApiField):
                 raise ApiFieldError("Could not find the provided object via resource URI '%s'." % value)
         elif hasattr(value, 'items'):
             # Try to hydrate the data provided.
+            value = dict_strip_unicode_keys(value)
             self.fk_bundle = Bundle(data=value)
+            
+            # We need to check to see if updates are allowed on the FK
+            # resource. If not, we'll just return a populated bundle instead
+            # of mistakenly updating something that should be read-only.
+            if not self.fk_resource.can_update():
+                return self.fk_resource.full_hydrate(self.fk_bundle)
+            
             try:
                 return self.fk_resource.obj_update(self.fk_bundle, **value)
             except NotFound:
                 try:
                     # Attempt lookup by primary key
                     lookup_kwargs = dict((k, v) for k, v in value.iteritems() if getattr(self.fk_resource, k).unique)
+                    
                     if not lookup_kwargs:
-                        raise NotFound
+                        raise NotFound()
+                    
                     return self.fk_resource.obj_update(self.fk_bundle, **lookup_kwargs)
                 except NotFound:
                     return self.fk_resource.full_hydrate(self.fk_bundle)
             except MultipleObjectsReturned:
                 return self.fk_resource.full_hydrate(self.fk_bundle)
+        elif hasattr(value, 'pk'):
+            return self.fk_resource.full_dehydrate(value)
         else:
             raise ApiFieldError("The '%s' field has was given data that was not a URI and not a dictionary-alike: %s." % (self.instance_name, value))
 
@@ -520,8 +541,8 @@ class ToOneField(RelatedField):
     """
     help_text = 'A single related resource. Can be either a URI or set of nested resource data.'
     
-    def __init__(self, to, attribute, related_name=None, null=False, full=False, unique=False, help_text=None):
-        super(ToOneField, self).__init__(to, attribute, related_name, null=null, full=full, unique=unique, help_text=help_text)
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, full=False, unique=False, help_text=None):
+        super(ToOneField, self).__init__(to, attribute, related_name=related_name, default=default, null=null, full=full, unique=unique, help_text=help_text)
         self.fk_resource = None
     
     def dehydrate(self, bundle):
@@ -529,6 +550,7 @@ class ToOneField(RelatedField):
             foreign_obj = getattr(bundle.obj, self.attribute)
         except ObjectDoesNotExist:
             foreign_obj = None
+        
         if not foreign_obj:
             if not self.null:
                 raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (bundle.obj, self.attribute))
@@ -540,14 +562,12 @@ class ToOneField(RelatedField):
         return self.dehydrate_related(fk_bundle, self.fk_resource)
     
     def hydrate(self, bundle):
-        if bundle.data.get(self.instance_name) is None:
-            if self.null:
-                return None
-            else:
-                raise ApiFieldError("The '%s' field has no data and doesn't allow a null value." % self.instance_name)
+        value = super(ToOneField, self).hydrate(bundle)
         
-        return self.build_related_resource(bundle.data.get(self.instance_name))
-
+        if value is None:
+            return value
+        
+        return self.build_related_resource(value)
 
 class ForeignKey(ToOneField):
     """
@@ -576,8 +596,8 @@ class ToManyField(RelatedField):
     is_m2m = True
     help_text = 'Many related resources. Can be either a list of URIs or list of individually nested resource data.'
     
-    def __init__(self, to, attribute, related_name=None, null=False, full=False, unique=False, help_text=help_text):
-        super(ToManyField, self).__init__(to, attribute, related_name, null=null, full=full, unique=unique, help_text=help_text)
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, full=False, unique=False, help_text=None):
+        super(ToManyField, self).__init__(to, attribute, related_name=related_name, default=default, null=null, full=full, unique=unique, help_text=help_text)
         self.m2m_bundles = []
     
     def dehydrate(self, bundle):
@@ -587,7 +607,12 @@ class ToManyField(RelatedField):
             
             return []
         
-        if not getattr(bundle.obj, self.attribute):
+        if isinstance(self.attribute, basestring):
+            the_m2ms = getattr(bundle.obj, self.attribute)
+        elif callable(self.attribute):
+            the_m2ms = self.attribute(bundle)
+        
+        if not the_m2ms:
             if not self.null:
                 raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (bundle.obj, self.attribute))
             
@@ -598,7 +623,7 @@ class ToManyField(RelatedField):
         
         # TODO: Also model-specific and leaky. Relies on there being a
         #       ``Manager`` there.
-        for m2m in getattr(bundle.obj, self.attribute).all():
+        for m2m in the_m2ms.all():
             m2m_resource = self.get_related_resource(m2m)
             m2m_bundle = Bundle(obj=m2m)
             self.m2m_resources.append(m2m_resource)
@@ -619,6 +644,9 @@ class ToManyField(RelatedField):
         m2m_hydrated = []
         
         for value in bundle.data.get(self.instance_name):
+            if value is None:
+                continue
+            
             m2m_hydrated.append(self.build_related_resource(value))
         
         return m2m_hydrated
@@ -638,6 +666,35 @@ class OneToManyField(ToManyField):
     pass
 
 
+class TimeField(ApiField):
+    dehydrated_type = 'time'
+    help_text = 'A time as string. Ex: "20:05:23"'
+
+    def dehydrate(self, obj):
+        return self.convert(super(TimeField, self).dehydrate(obj))
+
+    def convert(self, value):
+        if isinstance(value, basestring):
+            return self.to_time(value)
+        return value
+
+    def to_time(self, s):
+        try:
+            dt = parse(s)
+        except ValueError, e:
+            raise ApiFieldError(str(e))
+        else:
+            return datetime.time(dt.hour, dt.minute, dt.second)
+
+    def hydrate(self, bundle):
+        value = super(TimeField, self).hydrate(bundle)
+        if value and not isinstance(value, datetime.time):
+            value = self.to_time(value)
+        return value
+
+
+
+
 # DRL_FIXME: Need more types?
 #
 #   + AutoField
@@ -646,7 +703,7 @@ class OneToManyField(ToManyField):
 #   - CommaSeparatedIntegerField
 #   + DateField
 #   + DateTimeField
-#   - DecimalField
+#   + DecimalField
 #   - EmailField
 #   + FileField
 #   + FilePathField
@@ -660,7 +717,7 @@ class OneToManyField(ToManyField):
 #   - SlugField
 #   + SmallIntegerField
 #   - TextField
-#   - TimeField
+#   + TimeField
 #   - URLField
 #   - XMLField
 #   + ForeignKey

@@ -53,7 +53,7 @@ class BlueberryFillingFound(TastypieError):
     pass
 
 
-class InvalidFilterError(TastypieError):
+class InvalidFilterError(BadRequest):
     """
     Raised when the end user attempts to use a filter that has not be
     explicitly allowed.

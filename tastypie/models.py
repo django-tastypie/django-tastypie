@@ -52,7 +52,8 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
     
     
     def create_api_key(sender, **kwargs):
+        """
+        A signal for hooking up automatic ``ApiKey`` creation.
+        """
         if kwargs.get('created') is True:
             ApiKey.objects.create(user=kwargs.get('instance'))
-    
-    models.signals.post_save.connect(create_api_key, sender=User)

@@ -71,15 +71,11 @@ your project or ``PYTHONPATH``.
     * **OPTIONAL** - ``uuid`` (present in 2.5+, downloadable from
       http://pypi.python.org/pypi/uuid/) if using the ``ApiKey`` authentication
   
-  2. Check out tastypie from GitHub_.
+  2. Either check out tastypie from GitHub_ or to pull a release off PyPI_.
+     Doing ``sudo pip install django-tastypie`` or
+     ``sudo easy_install django-tastypie`` is all that should be required.
   3. Either symlink the ``tastypie`` directory into your project or copy the
      directory in. What ever works best for you.
-
-.. note::
-
-    Once tastypie reaches version 1.0, it will become officially available on
-    PyPI_. Once that is the case, a ``sudo pip install tastypie`` or ``sudo
-    easy_install tastypie`` should be available.
 
 .. _GitHub: http://github.com/toastdriven/django-tastypie
 .. _PyPI: http://pypi.python.org/

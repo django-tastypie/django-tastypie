@@ -1,9 +1,12 @@
 import base64
+import copy
 import datetime
+from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.core.exceptions import FieldError
+from django.core.exceptions import FieldError, MultipleObjectsReturned
+from django.core import mail
 from django.core.urlresolvers import reverse
 from django import forms
 from django.http import HttpRequest
@@ -12,13 +15,15 @@ from django.utils import dateformat
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
 from tastypie.bundle import Bundle
-from tastypie.exceptions import InvalidFilterError, InvalidSortError, ImmediateHttpResponse, BadRequest
+from tastypie.exceptions import InvalidFilterError, InvalidSortError, ImmediateHttpResponse, BadRequest, NotFound
 from tastypie import fields
+from tastypie.paginator import Paginator
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
 from tastypie.validation import Validation, FormValidation
 from core.models import Note, Subject
+from core.tests.mocks import MockRequest
 try:
     import json
 except ImportError:
@@ -63,6 +68,9 @@ class AnotherBasicResource(BasicResource):
     view_count = fields.IntegerField(attribute='view_count', default=0)
     date_joined = fields.DateField(attribute='created')
     is_active = fields.BooleanField(attribute='is_active', default=True)
+    aliases = fields.ListField(attribute='aliases', null=True)
+    meta = fields.DictField(attribute='metadata', null=True)
+    owed = fields.DecimalField(attribute='money_owed', null=True)
     
     class Meta:
         object_class = TestObject
@@ -72,6 +80,9 @@ class AnotherBasicResource(BasicResource):
         if hasattr(bundle.obj, 'bar'):
             bundle.data['bar'] = bundle.obj.bar
         
+        bundle.data['aliases'] = ['Mr. Smith', 'John Doe']
+        bundle.data['meta'] = {'threat': 'high'}
+        bundle.data['owed'] = Decimal('102.57')
         return bundle
     
     def hydrate(self, bundle):
@@ -89,6 +100,43 @@ class NoUriBasicResource(BasicResource):
     class Meta:
         object_class = TestObject
         include_resource_uri = False
+
+
+class NullableNameResource(Resource):
+    name = fields.CharField(attribute='name', null=True)
+
+    class Meta:
+        object_class = TestObject
+        resource_name = 'nullable_name'
+
+
+class MangledBasicResource(BasicResource):
+    class Meta:
+        object_class = TestObject
+        resource_name = 'mangledbasic'
+    
+    def alter_list_data_to_serialize(self, request, data_dict):
+        if isinstance(data_dict, dict):
+            if 'meta' in data_dict:
+                # Get rid of the "meta".
+                del(data_dict['meta'])
+                # Rename the objects.
+                data_dict['testobjects'] = copy.copy(data_dict['objects'])
+                del(data_dict['objects'])
+        
+        return data_dict
+    
+    def alter_deserialized_detail_data(self, request, bundle_or_list):
+        # Automatically shove in the user.
+        if isinstance(bundle_or_list, Bundle):
+            # Handle the detail.
+            bundle_or_list.data['user'] = request.user
+        elif isinstance(bundle_or_list, list):
+            # Handle the list.
+            for obj_data in bundle_or_list:
+                obj_data['user'] = request.user
+        
+        return bundle_or_list
 
 
 class ResourceTestCase(TestCase):
@@ -114,7 +162,7 @@ class ResourceTestCase(TestCase):
         self.assertEqual(basic._meta.resource_name, 'basic')
         
         another = AnotherBasicResource()
-        self.assertEqual(len(another.fields), 5)
+        self.assertEqual(len(another.fields), 8)
         self.assert_('name' in another.fields)
         self.assertEqual(isinstance(another.name, fields.CharField), True)
         self.assertEqual(another.fields['name']._resource, another.__class__)
@@ -131,6 +179,18 @@ class ResourceTestCase(TestCase):
         self.assertEqual(isinstance(another.is_active, fields.BooleanField), True)
         self.assertEqual(another.fields['is_active']._resource, another.__class__)
         self.assertEqual(another.fields['is_active'].instance_name, 'is_active')
+        self.assert_('aliases' in another.fields)
+        self.assertEqual(isinstance(another.aliases, fields.ListField), True)
+        self.assertEqual(another.fields['aliases']._resource, another.__class__)
+        self.assertEqual(another.fields['aliases'].instance_name, 'aliases')
+        self.assert_('meta' in another.fields)
+        self.assertEqual(isinstance(another.meta, fields.DictField), True)
+        self.assertEqual(another.fields['meta']._resource, another.__class__)
+        self.assertEqual(another.fields['meta'].instance_name, 'meta')
+        self.assert_('owed' in another.fields)
+        self.assertEqual(isinstance(another.owed, fields.DecimalField), True)
+        self.assertEqual(another.fields['owed']._resource, another.__class__)
+        self.assertEqual(another.fields['owed'].instance_name, 'owed')
         self.assert_('resource_uri' in another.fields)
         self.assertEqual(isinstance(another.resource_uri, fields.CharField), True)
         self.assertEqual(another.fields['resource_uri']._resource, another.__class__)
@@ -200,6 +260,9 @@ class ResourceTestCase(TestCase):
         self.assertEqual(another_bundle_1.data['date_joined'].year, 2010)
         self.assertEqual(another_bundle_1.data['date_joined'].day, 29)
         self.assertEqual(another_bundle_1.data['is_active'], False)
+        self.assertEqual(another_bundle_1.data['aliases'], ['Mr. Smith', 'John Doe'])
+        self.assertEqual(another_bundle_1.data['meta'], {'threat': 'high'})
+        self.assertEqual(another_bundle_1.data['owed'], Decimal('102.57'))
         self.assertEqual(another_bundle_1.data['bar'], "But sometimes I'm not ignored!")
     
     def test_full_hydrate(self):
@@ -225,6 +288,9 @@ class ResourceTestCase(TestCase):
             'name': 'Daniel',
             'view_count': 6,
             'date_joined': datetime.datetime(2010, 2, 15, 12, 0, 0),
+            'aliases': ['test', 'test1'],
+            'meta': {'foo': 'bar'},
+            'owed': '12.53',
         })
         
         # Now load up the data (without the ``bar`` key).
@@ -233,6 +299,9 @@ class ResourceTestCase(TestCase):
         self.assertEqual(hydrated.data['name'], 'Daniel')
         self.assertEqual(hydrated.data['view_count'], 6)
         self.assertEqual(hydrated.data['date_joined'], datetime.datetime(2010, 2, 15, 12, 0, 0))
+        self.assertEqual(hydrated.data['aliases'], ['test', 'test1'])
+        self.assertEqual(hydrated.data['meta'], {'foo': 'bar'})
+        self.assertEqual(hydrated.data['owed'], '12.53')
         self.assertEqual(hydrated.obj.name, 'Daniel')
         self.assertEqual(hydrated.obj.view_count, 6)
         self.assertEqual(hydrated.obj.date_joined, datetime.datetime(2010, 2, 15, 12, 0, 0))
@@ -255,6 +324,25 @@ class ResourceTestCase(TestCase):
         self.assertEqual(hydrated.obj.view_count, 6)
         self.assertEqual(hydrated.obj.date_joined, datetime.datetime(2010, 2, 15, 12, 0, 0))
         self.assertEqual(hydrated.obj.bar, 'O HAI BAR!')
+        
+        # Test that a nullable value with a previous non-null value
+        # can be set to None.
+        nullable = NullableNameResource()
+        obj = nullable._meta.object_class()
+        obj.name = "Daniel"
+        null_bundle = Bundle(obj=obj, data={'name': None})
+        hydrated = nullable.full_hydrate(null_bundle)
+        
+        self.assertTrue(hydrated.obj.name is None)
+        
+        # Test that a nullable value with a previous non-null value
+        # is not overridden if no value was given
+        obj = nullable._meta.object_class()
+        obj.name = "Daniel"
+        empty_null_bundle = Bundle(obj=obj, data={})
+        hydrated = nullable.full_hydrate(empty_null_bundle)
+        
+        self.assertEquals(hydrated.obj.name, "Daniel")
     
     def test_obj_get_list(self):
         basic = BasicResource()
@@ -438,6 +526,21 @@ class ResourceTestCase(TestCase):
         output = basic.create_response(request, data)
         self.assertEqual(output.status_code, 200)
         self.assertEqual(output.content, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><objects type="list"><object type="hash"><abc type="integer">123</abc><hello>world</hello></object></objects><meta type="hash"><page type="integer">1</page></meta></response>')
+    
+    def test_mangled(self):
+        mangled = MangledBasicResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.user = 'mr_authed'
+        
+        data = Bundle(data={'hello': 'world'})
+        output = mangled.alter_deserialized_detail_data(request, data)
+        self.assertEqual(output.data, {'hello': 'world', 'user': 'mr_authed'})
+        
+        request.GET = {'format': 'xml'}
+        data = {'objects': [{'hello': 'world', 'abc': 123}], 'meta': {'page': 1}}
+        output = mangled.alter_list_data_to_serialize(request, data)
+        self.assertEqual(output, {'testobjects': [{'abc': 123, 'hello': 'world'}]})
 
 
 # ====================
@@ -487,6 +590,21 @@ class VeryCustomNoteResource(NoteResource):
         detail_allowed_methods = ['get', 'post', 'put']
         queryset = Note.objects.all()
         fields = ['title', 'content', 'created', 'is_active']
+
+
+class CustomPaginator(Paginator):
+    def page(self):
+        data = super(CustomPaginator, self).page()
+        data['extra'] = 'Some extra stuff here.'
+        return data
+
+
+class CustomPageNoteResource(NoteResource):
+    class Meta:
+        limit = 10
+        resource_name = 'pagey'
+        paginator_class = CustomPaginator
+        queryset = Note.objects.all()
 
 
 class UserResource(ModelResource):
@@ -557,6 +675,9 @@ class SubjectResource(ModelResource):
     class Meta:
         queryset = Subject.objects.all()
         resource_name = 'subjects'
+        filtering = {
+            'name': ALL,
+        }
 
 
 class RelatedNoteResource(ModelResource):
@@ -571,6 +692,18 @@ class RelatedNoteResource(ModelResource):
             'subjects': ALL_WITH_RELATIONS,
         }
         fields = ['title', 'slug', 'content', 'created', 'is_active']
+
+
+class AnotherSubjectResource(ModelResource):
+    notes = fields.ToManyField(DetailedNoteResource, 'notes')
+    
+    class Meta:
+        queryset = Subject.objects.all()
+        resource_name = 'anothersubjects'
+        excludes = ['notes']
+        filtering = {
+            'notes': ALL_WITH_RELATIONS,
+        }
 
 
 class AnotherRelatedNoteResource(ModelResource):
@@ -588,8 +721,15 @@ class AnotherRelatedNoteResource(ModelResource):
 
 
 class NullableRelatedNoteResource(AnotherRelatedNoteResource):
-    author = fields.ForeignKey(UserResource, 'author')
+    author = fields.ForeignKey(UserResource, 'author', null=True)
     subjects = fields.ManyToManyField(SubjectResource, 'subjects', null=True)
+
+
+class TestOptionsResource(ModelResource):
+    class Meta:
+        queryset = Note.objects.all()
+        allowed_methods = ['post']
+        list_allowed_methods = ['post', 'put']
 
 
 # Per user authorization bits.
@@ -611,10 +751,55 @@ class PerUserNoteResource(NoteResource):
         authorization = PerUserAuthorization()
     
     def apply_authorization_limits(self, request, object_list):
+        if object_list._result_cache is not None:
+            self._pre_limits = len(object_list._result_cache)
+        else:
+            self._pre_limits = 0
         # Just to demonstrate the per-resource hooks.
-        object_list = super(PerUserNoteResource, self).apply_authorization_limits(request, object_list)
-        return object_list.filter(is_active=True)
+        new_object_list = super(PerUserNoteResource, self).apply_authorization_limits(request, object_list)
+        if object_list._result_cache is not None:
+            self._post_limits = len(object_list._result_cache)
+        else:
+            self._post_limits = 0
+        return new_object_list.filter(is_active=True)
 # End per user authorization bits.
+
+
+# Per object authorization bits.
+class PerObjectAuthorization(Authorization):
+    def apply_limits(self, request, object_list):
+        # Does a per-object check that "can't" be expressed as part of a
+        # ``QuerySet``. This helps test that all objects in the ``QuerySet``
+        # aren't loaded & evaluated, only results that match the request.
+        final_list = []
+        
+        for obj in object_list:
+            # Only match ``Note`` objects with 'post' in the title.
+            if 'post' in obj.title.lower():
+                final_list.append(obj)
+        
+        return final_list
+
+
+class PerObjectNoteResource(NoteResource):
+    class Meta:
+        resource_name = 'perobjectnotes'
+        queryset = Note.objects.all()
+        authorization = PerObjectAuthorization()
+        filtering = {
+            'is_active': ALL,
+        }
+    
+    def apply_authorization_limits(self, request, object_list):
+        if object_list._result_cache is not None:
+            self._pre_limits = len(object_list._result_cache)
+        else:
+            self._pre_limits = 0
+        # Check the QuerySet cache to make sure we haven't populated everything.
+        new_object_list = super(PerObjectNoteResource, self).apply_authorization_limits(request, object_list)
+        self._post_limits = len(object_list._result_cache)
+        return new_object_list
+# End per object authorization bits.
 
 
 class ModelResourceTestCase(TestCase):
@@ -672,18 +857,39 @@ class ModelResourceTestCase(TestCase):
         
         # Test to make sure that, even with a mix of basic & advanced
         # configuration, options are set right.
-        class TestOptionsResource(ModelResource):
-            class Meta:
-                queryset = Note.objects.all()
-                allowed_methods = ['post']
-                list_allowed_methods = ['post', 'put']
-        
         resource_5 = TestOptionsResource()
         self.assertEqual(resource_5._meta.allowed_methods, ['post'])
         # Should be the overridden values.
         self.assertEqual(resource_5._meta.list_allowed_methods, ['post', 'put'])
         # Should inherit from the basic configuration.
         self.assertEqual(resource_5._meta.detail_allowed_methods, ['post'])
+        
+        resource_6 = CustomPageNoteResource()
+        self.assertEqual(resource_6._meta.paginator_class, CustomPaginator)
+    
+    def test_can_create(self):
+        resource_1 = NoteResource()
+        self.assertEqual(resource_1.can_create(), True)
+        
+        resource_2 = LightlyCustomNoteResource()
+        self.assertEqual(resource_2.can_create(), False)
+    
+    def test_can_update(self):
+        resource_1 = NoteResource()
+        self.assertEqual(resource_1.can_update(), True)
+        
+        resource_2 = LightlyCustomNoteResource()
+        self.assertEqual(resource_2.can_update(), False)
+        
+        resource_3 = TestOptionsResource()
+        self.assertEqual(resource_3.can_update(), True)
+    
+    def test_can_delete(self):
+        resource_1 = NoteResource()
+        self.assertEqual(resource_1.can_delete(), True)
+        
+        resource_2 = LightlyCustomNoteResource()
+        self.assertEqual(resource_2.can_delete(), False)
     
     def test_fields(self):
         # Different from the ``ResourceTestCase.test_fields``, we're checking
@@ -795,6 +1001,11 @@ class ModelResourceTestCase(TestCase):
         # Valid simple (explicit ``__exact``).
         self.assertEqual(resource.build_filters(filters={'title__exact': 'Hello world.'}), {'title__exact': 'Hello world.'})
         
+        # Valid in.
+        self.assertEqual(resource.build_filters(filters={'title__in': ''}), {'title__in': ''})
+        self.assertEqual(resource.build_filters(filters={'title__in': 'foo'}), {'title__in': ['foo']})
+        self.assertEqual(resource.build_filters(filters={'title__in': 'foo,bar'}), {'title__in': ['foo', 'bar']})
+        
         # Valid simple (non-``__exact``).
         self.assertEqual(resource.build_filters(filters={'content__startswith': 'Hello'}), {'content__startswith': 'Hello'})
         
@@ -833,6 +1044,19 @@ class ModelResourceTestCase(TestCase):
         
         # Allow relationship traversal.
         self.assertEqual(resource_3.build_filters(filters={'subjects__name__startswith': 'News'}), {'subjects__name__startswith': 'News'})
+        
+        # Ensure related fields that do not have filtering throw an exception.
+        self.assertRaises(InvalidFilterError, resource_3.build_filters, filters={'subjects__url__startswith': 'News'})
+        
+        # Ensure related fields that do not exist throw an exception.
+        self.assertRaises(InvalidFilterError, resource_3.build_filters, filters={'subjects__foo__startswith': 'News'})
+        
+        # Check where the field name doesn't match the database relation.
+        resource_4 = AnotherSubjectResource()
+        self.assertEqual(resource_4.build_filters(filters={'notes__user__startswith': 'Daniel'}), {'notes__author__startswith': 'Daniel'})
+        
+        # Make sure that fields that don't have attributes can't be filtered on.
+        self.assertRaises(InvalidFilterError, resource_4.build_filters, filters={'notes__hello_world': 'News'})
     
     def test_apply_sorting(self):
         resource = NoteResource()
@@ -848,49 +1072,54 @@ class ModelResourceTestCase(TestCase):
         
         # Not a valid field.
         object_list = resource.obj_get_list()
-        self.assertRaises(InvalidSortError, resource.apply_sorting, object_list, options={'sort_by': 'foobar'})
+        self.assertRaises(InvalidSortError, resource.apply_sorting, object_list, options={'order_by': 'foobar'})
         
         # Not in the ordering dict.
         object_list = resource.obj_get_list()
-        self.assertRaises(InvalidSortError, resource.apply_sorting, object_list, options={'sort_by': 'content'})
+        self.assertRaises(InvalidSortError, resource.apply_sorting, object_list, options={'order_by': 'content'})
         
         # No attribute to sort by.
         object_list = resource.obj_get_list()
-        self.assertRaises(InvalidSortError, resource.apply_sorting, object_list, options={'sort_by': 'resource_uri'})
+        self.assertRaises(InvalidSortError, resource.apply_sorting, object_list, options={'order_by': 'resource_uri'})
         
         # Valid ascending.
         object_list = resource.obj_get_list()
-        ordered_list = resource.apply_sorting(object_list, options={'sort_by': 'title'})
+        ordered_list = resource.apply_sorting(object_list, options={'order_by': 'title'})
         self.assertEqual([obj.id for obj in ordered_list], [2, 1, 6, 4])
         
         object_list = resource.obj_get_list()
-        ordered_list = resource.apply_sorting(object_list, options={'sort_by': 'slug'})
+        ordered_list = resource.apply_sorting(object_list, options={'order_by': 'slug'})
         self.assertEqual([obj.id for obj in ordered_list], [2, 1, 6, 4])
         
         # Valid descending.
         object_list = resource.obj_get_list()
-        ordered_list = resource.apply_sorting(object_list, options={'sort_by': '-title'})
+        ordered_list = resource.apply_sorting(object_list, options={'order_by': '-title'})
         self.assertEqual([obj.id for obj in ordered_list], [4, 6, 1, 2])
         
         object_list = resource.obj_get_list()
-        ordered_list = resource.apply_sorting(object_list, options={'sort_by': '-slug'})
+        ordered_list = resource.apply_sorting(object_list, options={'order_by': '-slug'})
+        self.assertEqual([obj.id for obj in ordered_list], [4, 6, 1, 2])
+        
+        # Ensure the deprecated parameter still works.
+        object_list = resource.obj_get_list()
+        ordered_list = resource.apply_sorting(object_list, options={'sort_by': '-title'})
         self.assertEqual([obj.id for obj in ordered_list], [4, 6, 1, 2])
         
         # Valid combination.
         object_list = resource.obj_get_list()
-        ordered_list = resource.apply_sorting(object_list, options={'sort_by': ['title', '-slug']})
+        ordered_list = resource.apply_sorting(object_list, options={'order_by': ['title', '-slug']})
         self.assertEqual([obj.id for obj in ordered_list], [2, 1, 6, 4])
         
         # Valid (model attribute differs from field name).
         resource_2 = DetailedNoteResource()
         object_list = resource_2.obj_get_list()
-        ordered_list = resource_2.apply_sorting(object_list, options={'sort_by': '-user'})
+        ordered_list = resource_2.apply_sorting(object_list, options={'order_by': '-user'})
         self.assertEqual([obj.id for obj in ordered_list], [6, 4, 2, 1])
         
         # Invalid relation.
         resource_2 = DetailedNoteResource()
         object_list = resource_2.obj_get_list()
-        ordered_list = resource_2.apply_sorting(object_list, options={'sort_by': '-user__baz'})
+        ordered_list = resource_2.apply_sorting(object_list, options={'order_by': '-user__baz'})
         
         try:
             [obj.id for obj in ordered_list]
@@ -901,18 +1130,18 @@ class ModelResourceTestCase(TestCase):
         # Valid relation.
         resource_2 = DetailedNoteResource()
         object_list = resource_2.obj_get_list()
-        ordered_list = resource_2.apply_sorting(object_list, options={'sort_by': 'user__username'})
-        self.assertEqual([obj.id for obj in ordered_list], [4, 6, 1, 2])
+        ordered_list = resource_2.apply_sorting(object_list, options={'order_by': 'user__id'})
+        self.assertEqual([obj.id for obj in ordered_list], [1, 2, 4, 6])
         
         resource_2 = DetailedNoteResource()
         object_list = resource_2.obj_get_list()
-        ordered_list = resource_2.apply_sorting(object_list, options={'sort_by': '-user__username'})
-        self.assertEqual([obj.id for obj in ordered_list], [1, 2, 4, 6])
+        ordered_list = resource_2.apply_sorting(object_list, options={'order_by': '-user__id'})
+        self.assertEqual([obj.id for obj in ordered_list], [6, 4, 2, 1])
         
         # Valid relational combination.
         resource_2 = DetailedNoteResource()
         object_list = resource_2.obj_get_list()
-        ordered_list = resource_2.apply_sorting(object_list, options={'sort_by': ['-user__username', 'title']})
+        ordered_list = resource_2.apply_sorting(object_list, options={'order_by': ['-user__username', 'title']})
         self.assertEqual([obj.id for obj in ordered_list], [2, 1, 6, 4])
     
     def test_get_list(self):
@@ -977,13 +1206,19 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"meta": {"limit": 2, "next": null, "offset": 100, "previous": null, "total_count": 4}, "objects": []}')
         
+        # Valid slice, fetch all results.
+        request.GET = {'format': 'json', 'offset': 0, 'limit': 0}
+        resp = resource.get_list(request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"meta": {"limit": 0, "offset": 0, "total_count": 4}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": "2", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": "4", "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": "6", "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]}')
+        
         # Valid sorting.
-        request.GET = {'format': 'json', 'sort_by': 'title'}
+        request.GET = {'format': 'json', 'order_by': 'title'}
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": "2", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": "6", "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": "4", "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}]}')
         
-        request.GET = {'format': 'json', 'sort_by': '-title'}
+        request.GET = {'format': 'json', 'order_by': '-title'}
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": "4", "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": "6", "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}, {"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": "2", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}]}')
@@ -1032,7 +1267,7 @@ class ModelResourceTestCase(TestCase):
     
     def test_put_list(self):
         resource = NoteResource()
-        request = HttpRequest()
+        request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
         
@@ -1049,7 +1284,7 @@ class ModelResourceTestCase(TestCase):
     def test_put_detail(self):
         self.assertEqual(Note.objects.count(), 6)
         resource = NoteResource()
-        request = HttpRequest()
+        request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
         request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
@@ -1071,7 +1306,7 @@ class ModelResourceTestCase(TestCase):
     def test_post_list(self):
         self.assertEqual(Note.objects.count(), 6)
         resource = NoteResource()
-        request = HttpRequest()
+        request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
         request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
@@ -1197,6 +1432,20 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(customs[5].is_active, True)
         self.assertEqual(customs[5].title, u"Granny's Gone")
         self.assertEqual(customs[5].author.username, u'janedoe')
+        
+        # Ensure filtering by request params works.
+        mock_request = MockRequest()
+        mock_request.GET['title'] = u"Granny's Gone"
+        notes = NoteResource().obj_get_list(request=mock_request)
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes[0].title, u"Granny's Gone")
+        
+        # Ensure kwargs override request params.
+        mock_request = MockRequest()
+        mock_request.GET['title'] = u"Granny's Gone"
+        notes = NoteResource().obj_get_list(request=mock_request, title='Recent Volcanic Activity.')
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes[0].title, u'Recent Volcanic Activity.')
     
     def test_obj_get(self):
         resource = NoteResource()
@@ -1694,6 +1943,20 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(len(yetanother._meta.queryset.all()), 6)
         self.assertEqual(yetanother._meta.resource_name, 'yetanothermini')
     
+    def test_nullable_toone_full_hydrate(self):
+        nrrnr = NullableRelatedNoteResource()
+        
+        # Regression: not specifying the ToOneField should still work if
+        # it is nullable.
+        bundle_1 = Bundle(data={
+            'subjects': [],
+        })
+        
+        hydrated1 = nrrnr.full_hydrate(bundle_1)
+        
+        self.assertEqual(hydrated1.data.get('author'), None)
+        self.assertEqual(hydrated1.data['subjects'], [])
+    
     def test_nullable_tomany_full_hydrate(self):
         nrrnr = NullableRelatedNoteResource()
         bundle_1 = Bundle(data={
@@ -1740,23 +2003,102 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(punr._meta.queryset.count(), 6)
         
         # Requests without a user get all active objects, regardless of author.
-        self.assertEqual(punr.get_object_list(empty_request).count(), 4)
+        self.assertEqual(punr.apply_authorization_limits(empty_request, punr.get_object_list(empty_request)).count(), 4)
+        self.assertEqual(punr._pre_limits, 0)
+        # Shouldn't hit the DB yet.
+        self.assertEqual(punr._post_limits, 0)
         self.assertEqual(punr.obj_get_list(request=empty_request).count(), 4)
         
         # Requests with an Anonymous user get no objects.
-        self.assertEqual(punr.get_object_list(anony_request).count(), 0)
+        self.assertEqual(punr.apply_authorization_limits(anony_request, punr.get_object_list(anony_request)).count(), 0)
         self.assertEqual(punr.obj_get_list(request=anony_request).count(), 0)
         
         # Requests with an authenticated user get all objects for that user
         # that are active.
-        self.assertEqual(punr.get_object_list(authed_request).count(), 2)
+        self.assertEqual(punr.apply_authorization_limits(authed_request, punr.get_object_list(authed_request)).count(), 2)
         self.assertEqual(punr.obj_get_list(request=authed_request).count(), 2)
         
         # Demonstrate that a different user gets different objects.
-        self.assertEqual(punr.get_object_list(authed_request2).count(), 2)
+        self.assertEqual(punr.apply_authorization_limits(authed_request2, punr.get_object_list(authed_request2)).count(), 2)
         self.assertEqual(punr.obj_get_list(request=authed_request2).count(), 2)
-        self.assertEqual(list(punr.get_object_list(authed_request).values_list('id', flat=True)), [1, 2])
-        self.assertEqual(list(punr.get_object_list(authed_request2).values_list('id', flat=True)), [4, 6])
+        self.assertEqual(list(punr.apply_authorization_limits(authed_request, punr.get_object_list(authed_request)).values_list('id', flat=True)), [1, 2])
+        self.assertEqual(list(punr.apply_authorization_limits(authed_request2, punr.get_object_list(authed_request2)).values_list('id', flat=True)), [4, 6])
+    
+    def test_per_object_authorization(self):
+        ponr = PerObjectNoteResource()
+        empty_request = type('MockRequest', (object,), {'GET': {}})
+        
+        self.assertEqual(ponr._meta.queryset.count(), 6)
+        
+        # Should return only two objects with 'post' in the ``title``.
+        self.assertEqual(len(ponr.get_object_list(empty_request)), 6)
+        self.assertEqual(len(ponr.apply_authorization_limits(empty_request, ponr.get_object_list(empty_request))), 2)
+        self.assertEqual(ponr._pre_limits, 0)
+        # Since the objects weren't filtered, we hit everything.
+        self.assertEqual(ponr._post_limits, 6)
+        
+        self.assertEqual(len(ponr.obj_get_list(request=empty_request)), 2)
+        self.assertEqual(ponr._pre_limits, 0)
+        # Since the objects weren't filtered, we again hit everything.
+        self.assertEqual(ponr._post_limits, 6)
+        
+        self.assertEqual(len(ponr.obj_get_list(request=empty_request, is_active=True)), 2)
+        self.assertEqual(ponr._pre_limits, 0)
+        # This time, the objects were filtered, so we should only iterate over
+        # a (hopefully much smaller) subset.
+        self.assertEqual(ponr._post_limits, 4)
+    
+    def regression_test_per_object_detail(self):
+        ponr = PerObjectNoteResource()
+        empty_request = type('MockRequest', (object,), {'GET': {}})
+        
+        self.assertEqual(ponr._meta.queryset.count(), 6)
+        
+        # Regression: Make sure that simple ``get_detail`` requests work.
+        self.assertTrue(isinstance(ponr.obj_get(request=empty_request, pk=1), Note))
+        self.assertEqual(ponr.obj_get(request=empty_request, pk=1).pk, 1)
+        self.assertEqual(ponr._pre_limits, 0)
+        self.assertEqual(ponr._post_limits, 1)
+        
+        try:
+            too_many = ponr.obj_get(request=empty_request, is_active=True, pk__gte=1)
+            self.fail()
+        except MultipleObjectsReturned, e:
+            self.assertEqual(str(e), "More than 'Note' matched 'is_active=True, pk__gte=1'.")
+        
+        try:
+            too_many = ponr.obj_get(request=empty_request, pk=1000000)
+            self.fail()
+        except Note.DoesNotExist, e:
+            self.assertEqual(str(e), "Couldn't find an instance of 'Note' which matched 'pk=1000000'.")
+    
+    def test_browser_cache(self):
+        resource = NoteResource()
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        
+        # First as a normal request.
+        resp = resource.wrap_view('dispatch_detail')(request, pk=1)
+        # resp = resource.get_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
+        self.assertFalse(resp.has_header('Cache-Control'))
+        
+        # Now as Ajax.
+        request.META = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        resp = resource.wrap_view('dispatch_detail')(request, pk=1)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
+        self.assertTrue(resp.has_header('cache-control'))
+        self.assertEqual(resp._headers['cache-control'], ('Cache-Control', 'no-cache'))
+    
+    def test_custom_paginator(self):
+        mock_request = MockRequest()
+        customs = CustomPageNoteResource().get_list(mock_request)
+        data = json.loads(customs.content)
+        self.assertEqual(len(data), 3)
+        self.assertEqual(len(data['objects']), 6)
+        self.assertEqual(data['extra'], 'Some extra stuff here.')
 
 
 class BasicAuthResourceTestCase(TestCase):
@@ -1817,8 +2159,11 @@ class YouFail(Exception):
 
 
 class BustedResource(BasicResource):
-    def get_detail(self, request, **kwargs):
+    def get_list(self, request, **kwargs):
         raise YouFail("Something blew up.")
+    
+    def get_detail(self, request, **kwargs):
+        raise NotFound("It's just not there.")
 
 
 class BustedResourceTestCase(TestCase):
@@ -1828,6 +2173,7 @@ class BustedResourceTestCase(TestCase):
         self.old_debug = settings.DEBUG
         self.old_full_debug = getattr(settings, 'TASTYPIE_FULL_DEBUG', False)
         self.old_canned_error = getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later.")
+        self.old_broken_links = getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False)
         
         self.resource = BustedResource()
         self.request = HttpRequest()
@@ -1838,6 +2184,7 @@ class BustedResourceTestCase(TestCase):
         settings.DEBUG = self.old_debug
         settings.TASTYPIE_FULL_DEBUG = self.old_full_debug 
         settings.TASTYPIE_CANNED_ERROR = self.old_canned_error
+        settings.SEND_BROKEN_LINK_EMAILS = self.old_broken_links
         super(BustedResourceTestCase, self).setUp()
     
     def test_debug_on_with_full(self):
@@ -1845,7 +2192,7 @@ class BustedResourceTestCase(TestCase):
         settings.TASTYPIE_FULL_DEBUG = True
         
         try:
-            resp = self.resource.wrap_view('get_detail')(self.request, pk=1)
+            resp = self.resource.wrap_view('get_list')(self.request, pk=1)
             self.fail()
         except YouFail:
             pass
@@ -1853,25 +2200,43 @@ class BustedResourceTestCase(TestCase):
     def test_debug_on_without_full(self):
         settings.DEBUG = True
         settings.TASTYPIE_FULL_DEBUG = False
+        mail.outbox = []
         
-        resp = self.resource.wrap_view('get_detail')(self.request, pk=1)
+        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 500)
         content = json.loads(resp.content)
         self.assertEqual(content['error_message'], 'Something blew up.')
         self.assertTrue(len(content['traceback']) > 0)
+        self.assertEqual(len(mail.outbox), 0)
     
     def test_debug_off(self):
         settings.DEBUG = False
         settings.TASTYPIE_FULL_DEBUG = False
+        mail.outbox = []
         
-        resp = self.resource.wrap_view('get_detail')(self.request, pk=1)
+        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 500)
         self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+        self.assertEqual(len(mail.outbox), 1)
+        
+        # Ensure that 404s don't send email.
+        resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+        self.assertEqual(len(mail.outbox), 1)
+        
+        # Ensure that 404s (with broken link emails enabled) DO send email.
+        settings.SEND_BROKEN_LINK_EMAILS = True
+        resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+        self.assertEqual(len(mail.outbox), 2)
         
         # Now with a custom message.
         settings.TASTYPIE_CANNED_ERROR = "Oops, you bwoke it."
         
-        resp = self.resource.wrap_view('get_detail')(self.request, pk=1)
+        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 500)
         self.assertEqual(resp.content, '{"error_message": "Oops, you bwoke it."}')
-    
+        self.assertEqual(len(mail.outbox), 3)
+        mail.outbox = []

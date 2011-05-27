@@ -67,15 +67,72 @@ Why ``Resource`` vs. ``ModelResource``?
 
 Make no mistake that Django models are far and away the most popular source of
 data. However, in practice, there are many times where the ORM isn't the data
-source. Hooking up things like a NoSQL store, a search solution like Haystack
-or even managed filesystem data are all good use cases for ``Resource`` knowing
-nothing about the ORM.
+source. Hooking up things like a NoSQL store (see :doc:`non_orm_data_sources`),
+a search solution like Haystack or even managed filesystem data are all good
+use cases for ``Resource`` knowing nothing about the ORM.
 
 
 Flow Through The Request/Response Cycle
 =======================================
 
-TBD
+Tastypie can be thought of as a set of class-based views that provide the API
+functionality. As such, many part of the request/response cycle are standard
+Django behaviors. For instance, all routing/middleware/response-handling aspects
+are the same as a typical Django app. Where it differs is in the view itself.
+
+As an example, we'll walk through what a GET request to a list endpoint (say
+``/api/v1/user/?format=json``) looks like:
+
+* The ``Resource.urls`` are checked by Django's url resolvers.
+* On a match for the list view, ``Resource.wrap_view('dispatch_list')`` is
+  called. ``wrap_view`` provides basic error handling & allows for returning
+  serialized errors.
+* Because ``dispatch_list`` was passed to ``wrap_view``,
+  ``Resource.dispatch_list`` is called next. This is a thin wrapper around
+  ``Resource.dispatch``.
+* ``dispatch`` does a bunch of heavy lifting. It ensures:
+
+  * the requested HTTP method is in ``allowed_methods`` (``method_check``),
+  * the class has a method that can handle the request (``get_list``),
+  * the user is authenticated (``is_authenticated``),
+  * the user is authorized (``is_authorized``),
+  * & the user has not exceeded their throttle (``throttle_check``).
+  
+  At this point, ``dispatch`` actually calls the requested method (``get_list``).
+
+* ``get_list`` does the actual work of the API. It does:
+
+  * A fetch of the available objects via ``Resource.obj_get_list``. In the case
+    of ``ModelResource``, this builds the ORM filters to apply
+    (``ModelResource.build_filters``). It then gets the ``QuerySet`` via
+    ``ModelResource.get_object_list`` (which performs
+    ``Resource.apply_authorization_limits`` to possibly limit the set the user
+    can work with) and applies the built filters to it.
+  * It then sorts the objects based on user input
+    (``ModelResource.apply_sorting``).
+  * Then it paginates the results using the supplied ``Paginator`` & pulls out
+    the data to be serialized.
+  * The objects in the page have ``full_dehydrate`` applied to each of them,
+    causing Tastypie to translate the raw object data into the fields the
+    endpoint supports.
+  * Finally, it calls ``Resource.create_response``.
+
+* ``create_response`` is a shortcut method that:
+
+  * Determines the desired response format (``Resource.determine_format``),
+  * Serializes the data given to it in the proper format,
+  * And returns a Django ``HttpResponse`` (200 OK) with the serialized data.
+
+* We bubble back up the call stack to ``dispatch``. The last thing ``dispatch``
+  does is potentially store that a request occurred for future throttling
+  (``Resource.log_throttled_access``) then either returns the ``HttpResponse``
+  or wraps whatever data came back in a response (so Django doesn't freak out).
+
+Processing on other endpoints or using the other HTTP methods results in a
+similar cycle, usually differing only in what "actual work" method gets called
+(which follows the format of "``<http_method>_<list_or_detail>"). In the case
+of POST/PUT, the ``hydrate`` cycle additionally takes place and is used to take
+the user data & convert it to raw data for storage.
 
 
 What Are Bundles?
@@ -221,6 +278,18 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Controls which validation class the ``Resource`` should use. Default is
   ``tastypie.validation.Validation()``.
 
+``paginator_class``
+-------------------
+
+  Controls which paginator class the ``Resource`` should use. Default is
+  ``tastypie.paginator.Paginator()``.
+
+.. note::
+
+  This is different than the other options in that you supply a class rather
+  than an instance. This is done because the Paginator has some per-request
+  initialization options.
+
 ``cache``
 ---------
 
@@ -252,7 +321,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 ``detail_allowed_methods``
 --------------------------
 
-  Controls what list REST methods the ``Resource`` should respond to. Default
+  Controls what detail REST methods the ``Resource`` should respond to. Default
   is ``['get', 'post', 'put', 'delete']``.
 
 ``limit``
@@ -494,6 +563,51 @@ It relies on the request properly sending a ``CONTENT_TYPE`` header,
 falling back to ``application/json`` if not provided.
 
 Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
+
+``alter_list_data_to_serialize``
+--------------------------------
+
+.. method:: Resource.alter_list_data_to_serialize(self, request, data)
+
+A hook to alter list data just before it gets serialized & sent to the user.
+
+Useful for restructuring/renaming aspects of the what's going to be
+sent.
+
+Should accommodate for a list of objects, generally also including
+meta data.
+
+``alter_detail_data_to_serialize``
+----------------------------------
+
+.. method:: Resource.alter_detail_data_to_serialize(self, request, data)
+
+A hook to alter detail data just before it gets serialized & sent to the user.
+
+Useful for restructuring/renaming aspects of the what's going to be
+sent.
+
+Should accommodate for receiving a single bundle of data.
+
+``alter_deserialized_list_data``
+--------------------------------
+
+.. method:: Resource.alter_deserialized_list_data(self, request, data)
+
+A hook to alter list data just after it has been received from the user &
+gets deserialized.
+
+Useful for altering the user data before any hydration is applied.
+
+``alter_deserialized_detail_data``
+----------------------------------
+
+.. method:: Resource.alter_deserialized_detail_data(self, request, data)
+
+A hook to alter detail data just after it has been received from the user &
+gets deserialized.
+
+Useful for altering the user data before any hydration is applied.
 
 ``dispatch_list``
 -----------------
@@ -765,6 +879,29 @@ Allows the ``Authorization`` class to further limit the object list.
 Also a hook to customize per ``Resource``.
 
 Calls ``Authorization.apply_limits`` if available.
+
+``can_create``
+--------------
+
+.. method:: Resource.can_create(self)
+
+Checks to ensure ``post`` is within ``allowed_methods``.
+
+``can_update``
+--------------
+
+.. method:: Resource.can_update(self)
+
+Checks to ensure ``put`` is within ``allowed_methods``.
+
+Used when hydrating related data.
+
+``can_delete``
+--------------
+
+.. method:: Resource.can_delete(self)
+
+Checks to ensure ``delete`` is within ``allowed_methods``.
 
 ``obj_get_list``
 ----------------
@@ -1056,6 +1193,20 @@ Django type.
 Given any explicit fields to include and fields to exclude, add
 additional fields based on the associated model.
 
+``check_filtering``
+-------------------
+
+.. method:: ModelResource.check_filtering(self, field_name, filter_type='exact', filter_bits=None)
+
+Given a field name, a optional filter type and an optional list of
+additional relations, determine if a field can be filtered on.
+
+If a filter does not meet the needed conditions, it should raise an
+``InvalidFilterError``.
+
+If the filter meets the conditions, a list of attribute names (not
+field names) will be returned.
+
 ``build_filters``
 -----------------
 
@@ -1089,7 +1240,7 @@ Accepts the filters as a dict. ``None`` by default, meaning no filters.
 Given a dictionary of options, apply some ORM-level sorting to the
 provided ``QuerySet``.
 
-Looks for the ``sort_by`` key and handles either ascending (just the
+Looks for the ``order_by`` key and handles either ascending (just the
 field name) or descending (the field name with a ``-`` in front).
 
 The field name should be the resource field, **NOT** model field.
@@ -1101,8 +1252,7 @@ The field name should be the resource field, **NOT** model field.
 
 A ORM-specific implementation of ``get_object_list``.
 
-Returns a ``QuerySet`` that may have been limited by authorization or other
-overrides.
+Returns a ``QuerySet`` that may have been limited by other overrides.
 
 ``obj_get_list``
 ----------------

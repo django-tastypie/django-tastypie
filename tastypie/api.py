@@ -5,7 +5,7 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from tastypie.exceptions import NotRegistered
 from tastypie.serializers import Serializer
-from tastypie.utils import trailing_slash
+from tastypie.utils import trailing_slash, is_valid_jsonp_callback_value
 from tastypie.utils.mime import determine_format, build_content_type
 
 
@@ -28,7 +28,7 @@ class Api(object):
     
     def register(self, resource, canonical=True):
         """
-        Registers a ``Resource`` subclass with the API.
+        Registers an instance of a ``Resource`` subclass with the API.
         
         Optionally accept a ``canonical`` argument, which indicates that the
         resource being registered is the canonical variant. Defaults to
@@ -124,7 +124,17 @@ class Api(object):
             }
         
         desired_format = determine_format(request, serializer)
-        serialized = serializer.serialize(available_resources, desired_format)
+        options = {}
+        
+        if 'text/javascript' in desired_format:
+            callback = request.GET.get('callback', 'callback')
+            
+            if not is_valid_jsonp_callback_value(callback):
+                raise BadRequest('JSONP callback name is invalid.')
+            
+            options['callback'] = callback
+        
+        serialized = serializer.serialize(available_resources, desired_format, options)
         return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
     
     def _build_reverse_url(self, name, args=None, kwargs=None):
