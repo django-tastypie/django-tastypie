@@ -115,28 +115,28 @@ class MangledBasicResource(BasicResource):
         object_class = TestObject
         resource_name = 'mangledbasic'
     
-    def alter_list_data_to_serialize(self, request, data):
-        if isinstance(data, dict):
-            if 'meta' in data:
+    def alter_list_data_to_serialize(self, request, data_dict):
+        if isinstance(data_dict, dict):
+            if 'meta' in data_dict:
                 # Get rid of the "meta".
-                del(data['meta'])
+                del(data_dict['meta'])
                 # Rename the objects.
-                data['testobjects'] = copy.copy(data['objects'])
-                del(data['objects'])
+                data_dict['testobjects'] = copy.copy(data_dict['objects'])
+                del(data_dict['objects'])
         
-        return data
+        return data_dict
     
-    def alter_deserialized_detail_data(self, request, data):
+    def alter_deserialized_detail_data(self, request, bundle_or_list):
         # Automatically shove in the user.
-        if isinstance(data, dict):
+        if isinstance(bundle_or_list, Bundle):
             # Handle the detail.
-            data['user'] = request.user
-        elif isinstance(data, list):
+            bundle_or_list.data['user'] = request.user
+        elif isinstance(bundle_or_list, list):
             # Handle the list.
-            for obj_data in data:
+            for obj_data in bundle_or_list:
                 obj_data['user'] = request.user
         
-        return data
+        return bundle_or_list
 
 
 class ResourceTestCase(TestCase):
@@ -533,9 +533,9 @@ class ResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         request.user = 'mr_authed'
         
-        data = {'hello': 'world'}
+        data = Bundle(data={'hello': 'world'})
         output = mangled.alter_deserialized_detail_data(request, data)
-        self.assertEqual(output, {'hello': 'world', 'user': 'mr_authed'})
+        self.assertEqual(output.data, {'hello': 'world', 'user': 'mr_authed'})
         
         request.GET = {'format': 'xml'}
         data = {'objects': [{'hello': 'world', 'abc': 123}], 'meta': {'page': 1}}
