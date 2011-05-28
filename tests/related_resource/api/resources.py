@@ -3,6 +3,7 @@ from tastypie import fields
 from tastypie.resources import ModelResource
 from tastypie.authorization import Authorization
 from core.models import Note
+from related_resource.models import Category
 
 
 class UserResource(ModelResource):
@@ -18,5 +19,14 @@ class NoteResource(ModelResource):
     class Meta:
         resource_name = 'notes'
         queryset = Note.objects.all()
+        authorization = Authorization()
+
+
+class CategoryResource(ModelResource):
+    parent = fields.ToOneField('self', 'parent', null=True)
+    
+    class Meta:
+        resource_name = 'category'
+        queryset = Category.objects.all()
         authorization = Authorization()
 
