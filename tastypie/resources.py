@@ -1405,7 +1405,10 @@ class ModelResource(Resource):
             
             # Split on ',' if not empty string and either an in or range filter.
             if filter_type in ('in', 'range') and len(value):
-                value = value.split(',')
+                if hasattr(filters, 'getlist'):
+                    value = filters.getlist(filter_expr)
+                else:
+                    value = value.split(',')
             
             db_field_name = LOOKUP_SEP.join(lookup_bits)
             qs_filter = "%s%s%s" % (db_field_name, LOOKUP_SEP, filter_type)

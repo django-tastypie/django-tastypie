@@ -9,7 +9,7 @@ from django.core.exceptions import FieldError, MultipleObjectsReturned
 from django.core import mail
 from django.core.urlresolvers import reverse
 from django import forms
-from django.http import HttpRequest
+from django.http import HttpRequest, QueryDict
 from django.test import TestCase
 from django.utils import dateformat
 from tastypie.authentication import BasicAuthentication
@@ -1001,10 +1001,13 @@ class ModelResourceTestCase(TestCase):
         # Valid simple (explicit ``__exact``).
         self.assertEqual(resource.build_filters(filters={'title__exact': 'Hello world.'}), {'title__exact': 'Hello world.'})
         
-        # Valid in.
+        # Valid in (using ``,``).
         self.assertEqual(resource.build_filters(filters={'title__in': ''}), {'title__in': ''})
         self.assertEqual(resource.build_filters(filters={'title__in': 'foo'}), {'title__in': ['foo']})
         self.assertEqual(resource.build_filters(filters={'title__in': 'foo,bar'}), {'title__in': ['foo', 'bar']})
+        
+        # Valid in (using multiple params).
+        self.assertEqual(resource.build_filters(filters=QueryDict('title__in=foo&title__in=bar')), {'title__in': ['foo', 'bar']})
         
         # Valid simple (non-``__exact``).
         self.assertEqual(resource.build_filters(filters={'content__startswith': 'Hello'}), {'content__startswith': 'Hello'})
