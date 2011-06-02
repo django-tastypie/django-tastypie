@@ -1682,7 +1682,19 @@ class NamespacedModelResource(ModelResource):
 
 
 class BackboneResource(Resource):
+    """
+    A subclass of ``Resource`` designed to work with Backbone.js.
+    """
+
     def post_list(self, request, **kwargs):
+        """
+        Creates a new resource/object with the provided data.
+        
+        Calls ``obj_create`` with the provided data and returns a response
+        with the new resource's location and resource/object data.
+        
+        If a new resource is created, return ``HttpCreated`` (201 Created).
+        """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized))
         self.is_valid(bundle, request)
@@ -1690,6 +1702,16 @@ class BackboneResource(Resource):
         return self.create_response(request, self.full_dehydrate(bundle.obj), HttpCreated, location=self.get_resource_uri(bundle))
 
     def put_detail(self, request, **kwargs):
+        """
+        Either updates an existing resource or creates a new one with the
+        provided data and return resource/object data.
+        
+        Calls ``obj_update`` with the provided data first, but falls back to
+        ``obj_create`` if the object does not already exist.
+        
+        If a new resource is created, return ``HttpCreated`` (201 Created).
+        If an existing resource is modified, return ``HttpAccepted`` (202 Accepted).
+        """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized))
         self.is_valid(bundle, request)
