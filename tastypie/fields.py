@@ -24,7 +24,7 @@ class ApiField(object):
     dehydrated_type = 'string'
     help_text = ''
     
-    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, readonly=False, unique=False, help_text=None):
+    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, unique=False, help_text=None):
         """
         Sets up the field. This is generally called when the containing
         ``Resource`` is initialized.
@@ -40,6 +40,9 @@ class ApiField(object):
         
         Optionally accepts a ``null``, which indicated whether or not a
         ``None`` is allowable data on the field. Defaults to ``False``.
+        
+        Optionally accepts a ``blank``, which indicated whether or not
+        data may be omitted on the field. Defaults to ``False``.
         
         Optionally accepts a ``readonly``, which indicates whether the field
         is used during the ``hydrate`` or not. Defaults to ``False``.
@@ -57,6 +60,7 @@ class ApiField(object):
         self.attribute = attribute
         self._default = default
         self.null = null
+        self.blank = blank
         self.readonly = readonly
         self.value = None
         self.unique = unique
@@ -138,7 +142,9 @@ class ApiField(object):
             return None
         
         if not bundle.data.has_key(self.instance_name):
-            if self.attribute and getattr(bundle.obj, self.attribute, None):
+            if self.blank:
+                return None
+            elif self.attribute and getattr(bundle.obj, self.attribute, None):
                 return getattr(bundle.obj, self.attribute)
             elif self.instance_name and hasattr(bundle.obj, self.instance_name):
                 return getattr(bundle.obj, self.instance_name)
@@ -375,7 +381,7 @@ class RelatedField(ApiField):
     self_referential = False
     help_text = 'A related resource. Can be either a URI or set of nested resource data.'
     
-    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, full=False, unique=False, help_text=None):
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, full=False, unique=False, help_text=None):
         """
         Builds the field and prepares it to access to related data.
         
@@ -392,6 +398,9 @@ class RelatedField(ApiField):
         Optionally accepts a ``null``, which indicated whether or not a
         ``None`` is allowable data on the field. Defaults to ``False``.
         
+        Optionally accepts a ``blank``, which indicated whether or not
+        data may be omitted on the field. Defaults to ``False``.
+        
         Optionally accepts a ``full``, which indicates how the related
         ``Resource`` will appear post-``dehydrate``. If ``False``, the
         related ``Resource`` will appear as a URL to the endpoint of that
@@ -405,6 +414,7 @@ class RelatedField(ApiField):
         self.related_name = related_name
         self._default = default
         self.null = null
+        self.blank = blank
         self.full = full
         self.readonly = False
         self.api_name = None
@@ -541,8 +551,8 @@ class ToOneField(RelatedField):
     """
     help_text = 'A single related resource. Can be either a URI or set of nested resource data.'
     
-    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, full=False, unique=False, help_text=None):
-        super(ToOneField, self).__init__(to, attribute, related_name=related_name, default=default, null=null, full=full, unique=unique, help_text=help_text)
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, full=False, unique=False, help_text=None):
+        super(ToOneField, self).__init__(to, attribute, related_name=related_name, default=default, null=null, blank=blank, full=full, unique=unique, help_text=help_text)
         self.fk_resource = None
     
     def dehydrate(self, bundle):
@@ -596,8 +606,8 @@ class ToManyField(RelatedField):
     is_m2m = True
     help_text = 'Many related resources. Can be either a list of URIs or list of individually nested resource data.'
     
-    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, full=False, unique=False, help_text=None):
-        super(ToManyField, self).__init__(to, attribute, related_name=related_name, default=default, null=null, full=full, unique=unique, help_text=help_text)
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, full=False, unique=False, help_text=None):
+        super(ToManyField, self).__init__(to, attribute, related_name=related_name, default=default, null=null, blank=blank, full=full, unique=unique, help_text=help_text)
         self.m2m_bundles = []
     
     def dehydrate(self, bundle):
@@ -636,7 +646,9 @@ class ToManyField(RelatedField):
     
     def hydrate_m2m(self, bundle):
         if bundle.data.get(self.instance_name) is None:
-            if self.null:
+            if self.blank:
+                return []
+            elif self.null:
                 return []
             else:
                 raise ApiFieldError("The '%s' field has no data and doesn't allow a null value." % self.instance_name)

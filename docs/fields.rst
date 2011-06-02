@@ -74,6 +74,16 @@ Defaults to ``tastypie.fields.NOT_PROVIDED``.
 Indicates whether or not a ``None`` is allowable data on the field. Defaults to
 ``False``.
 
+``blank``
+~~~~~~~~~
+
+.. attribute:: ApiField.blank
+
+Indicates whether or not data may be omitted on the field. Defaults to ``False``.
+
+This is useful for allowing the user to omit data that you can populate based
+on the request, such as the ``user`` or ``site`` to associate a record with.
+
 ``readonly``
 ~~~~~~~~~~~~
 

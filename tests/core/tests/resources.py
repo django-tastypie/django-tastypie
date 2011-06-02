@@ -22,7 +22,7 @@ from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
 from tastypie.validation import Validation, FormValidation
-from core.models import Note, Subject
+from core.models import Note, Subject, MediaBit
 from core.tests.mocks import MockRequest
 try:
     import json
@@ -723,6 +723,34 @@ class AnotherRelatedNoteResource(ModelResource):
 class NullableRelatedNoteResource(AnotherRelatedNoteResource):
     author = fields.ForeignKey(UserResource, 'author', null=True)
     subjects = fields.ManyToManyField(SubjectResource, 'subjects', null=True)
+
+
+class NullableMediaBitResource(ModelResource):
+    # The old (broke) way to allow ``note`` to be omitted, even though it's a required field.
+    note = fields.ToOneField(NoteResource, 'note', null=True)
+
+    class Meta:
+        queryset = MediaBit.objects.all()
+        resource_name = 'nullablemediabit'
+
+
+class BlankMediaBitResource(ModelResource):
+    # Allow ``note`` to be omitted, even though it's a required field.
+    note = fields.ToOneField(NoteResource, 'note', blank=True)
+
+    class Meta:
+        queryset = MediaBit.objects.all()
+        resource_name = 'blankmediabit'
+
+     # We'll custom populate the note here if it's not present.
+    # Doesn't make a ton of sense in this context, but for things
+    # like ``user`` or ``site`` that you can autopopulate based
+    # on the request.
+    def hydrate_note(self, bundle):
+        if not bundle.data.get('note'):
+            bundle.obj.note = Note.objects.get(pk=1)
+
+        return bundle
 
 
 class TestOptionsResource(ModelResource):
@@ -1959,6 +1987,31 @@ class ModelResourceTestCase(TestCase):
         
         self.assertEqual(hydrated1.data.get('author'), None)
         self.assertEqual(hydrated1.data['subjects'], [])
+
+    def test_optional_required_data(self):
+        # Regression: You have a FK field that's required on the model
+        # but you want to optionally allow the user to omit it and use
+        # custom ``hydrate_*`` method to populate it if it's not
+        # present.
+        nmbr = NullableMediaBitResource()
+
+        bundle_1 = Bundle(data={
+            'title': "Foo",
+        })
+        
+        try:
+            # This is where things blow up, because you can't assign
+            # ``None`` to a required FK.
+            hydrated1 = nmbr.full_hydrate(bundle_1)
+            self.fail()
+        except Note.DoesNotExist:
+            pass
+
+        # So we introduced ``blank=True``.
+        bmbr = BlankMediaBitResource()
+        hydrated1 = bmbr.full_hydrate(bundle_1)
+        self.assertEqual(hydrated1.obj.title, "Foo")
+        self.assertEqual(hydrated1.obj.note.pk, 1)
     
     def test_nullable_tomany_full_hydrate(self):
         nrrnr = NullableRelatedNoteResource()
