@@ -17,6 +17,10 @@ class HttpCreated(HttpResponse):
 
 
 class HttpAccepted(HttpResponse):
+    status_code = 202
+
+
+class HttpNoContent(HttpResponse):
     status_code = 204
 
 

@@ -923,7 +923,7 @@ class Resource(object):
         """
         raise NotImplementedError()
     
-    def create_response(self, request, data):
+    def create_response(self, request, data, response_class=HttpResponse):
         """
         Extracts the common "which-format/serialize/return-response" cycle.
         
@@ -931,7 +931,7 @@ class Resource(object):
         """
         desired_format = self.determine_format(request)
         serialized = self.serialize(request, data, desired_format)
-        return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
+        return response_class(content=serialized, content_type=build_content_type(desired_format))
     
     def is_valid(self, bundle, request=None):
         """
@@ -1019,7 +1019,7 @@ class Resource(object):
         Calls ``delete_list`` to clear out the collection then ``obj_create``
         with the provided the data to create the new collection.
         
-        Return ``HttpAccepted`` (204 No Content).
+        Return ``HttpNoContent`` (204 No Content).
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_list_data(request, deserialized)
@@ -1044,7 +1044,7 @@ class Resource(object):
             self.obj_create(bundle, request=request)
             bundles_seen.append(bundle)
         
-        return HttpAccepted()
+        return HttpNoContent()
     
     def put_detail(self, request, **kwargs):
         """
@@ -1055,7 +1055,7 @@ class Resource(object):
         ``obj_create`` if the object does not already exist.
         
         If a new resource is created, return ``HttpCreated`` (201 Created).
-        If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
+        If an existing resource is modified, return ``HttpNoContent`` (204 No Content).
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
@@ -1064,7 +1064,7 @@ class Resource(object):
         
         try:
             updated_bundle = self.obj_update(bundle, request=request, pk=kwargs.get('pk'))
-            return HttpAccepted()
+            return HttpNoContent()
         except (NotFound, MultipleObjectsReturned):
             updated_bundle = self.obj_create(bundle, request=request, pk=kwargs.get('pk'))
             return HttpCreated(location=self.get_resource_uri(updated_bundle))
@@ -1102,10 +1102,10 @@ class Resource(object):
         
         Calls ``obj_delete_list``.
         
-        If the resources are deleted, return ``HttpAccepted`` (204 No Content).
+        If the resources are deleted, return ``HttpNoContent`` (204 No Content).
         """
         self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
-        return HttpAccepted()
+        return HttpNoContent()
     
     def delete_detail(self, request, **kwargs):
         """
@@ -1113,12 +1113,12 @@ class Resource(object):
         
         Calls ``obj_delete``.
         
-        If the resource is deleted, return ``HttpAccepted`` (204 No Content).
+        If the resource is deleted, return ``HttpNoContent`` (204 No Content).
         If the resource did not exist, return ``HttpGone`` (410 Gone).
         """
         try:
             self.obj_delete(request=request, **self.remove_api_resource_names(kwargs))
-            return HttpAccepted()
+            return HttpNoContent()
         except NotFound:
             return HttpGone()
     
@@ -1679,6 +1679,26 @@ class NamespacedModelResource(ModelResource):
     def _build_reverse_url(self, name, args=None, kwargs=None):
         namespaced = "%s:%s" % (self._meta.urlconf_namespace, name)
         return reverse(namespaced, args=args, kwargs=kwargs)
+
+
+class BackboneResource(Resource):
+    def post_list(self, request, **kwargs):
+        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized))
+        self.is_valid(bundle, request)
+        bundle = self.obj_create(bundle, request, **self.remove_api_resource_names(kwargs))
+        return self.create_response(request, self.full_dehydrate(bundle.obj), HttpCreated, location=self.get_resource_uri(bundle))
+
+    def put_detail(self, request, **kwargs):
+        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized))
+        self.is_valid(bundle, request)
+        try:
+            bundle = self.obj_update(bundle, request=request, **self.remove_api_resource_names(kwargs))
+            return self.create_response(request, self.full_dehydrate(bundle.obj), HttpAccepted)
+        except (NotFound, MultipleObjectsReturned):
+            bundle = self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
+            return self.create_response(request, self.full_dehydrate(bundle.obj), HttpCreated, location=self.get_resource_uri(bundle))
 
 
 # Based off of ``piston.utils.coerce_put_post``. Similarly BSD-licensed.
