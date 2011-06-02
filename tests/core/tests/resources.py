@@ -720,6 +720,20 @@ class AnotherRelatedNoteResource(ModelResource):
         fields = ['title', 'slug', 'content', 'created', 'is_active']
 
 
+class YetAnotherRelatedNoteResource(ModelResource):
+    author = fields.ForeignKey(UserResource, 'author', full=True)
+    subjects = fields.ManyToManyField(SubjectResource, 'subjects')
+    
+    class Meta:
+        queryset = Note.objects.all()
+        resource_name = 'relatednotes'
+        filtering = {
+            'author': ALL,
+            'subjects': ALL_WITH_RELATIONS,
+        }
+        fields = ['title', 'slug', 'content', 'created', 'is_active']
+
+
 class NullableRelatedNoteResource(AnotherRelatedNoteResource):
     author = fields.ForeignKey(UserResource, 'author', null=True)
     subjects = fields.ManyToManyField(SubjectResource, 'subjects', null=True)
@@ -1736,6 +1750,30 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(latest.subjects.all().count(), 1)
         self.assertEqual([sub.id for sub in latest.subjects.all()], [3])
     
+        self.assertEqual(Note.objects.all().count(), 9)
+        self.assertEqual(User.objects.filter(username='snerble').count(), 0)
+        note = YetAnotherRelatedNoteResource()
+        related_bundle = Bundle(data={
+            'title': "Yet yet another another new post!",
+            'slug': "yet-yet-another-another-new-post",
+            'content': "WHOA!!!",
+            'is_active': True,
+            'author': {
+                'username': 'snerble',
+                'password': 'hunter42',
+            },
+            'subjects': [],
+        })
+        note.obj_create(related_bundle)
+        self.assertEqual(Note.objects.all().count(), 10)
+        latest = Note.objects.get(slug='yet-yet-another-another-new-post')
+        self.assertEqual(latest.title, u"Yet yet another another new post!")
+        self.assertEqual(latest.slug, u'yet-yet-another-another-new-post')
+        self.assertEqual(latest.content, u'WHOA!!!')
+        self.assertEqual(latest.is_active, True)
+        self.assertEqual(latest.author.username, u'snerble')
+        self.assertEqual(latest.subjects.all().count(), 0)
+
     def test_obj_update(self):
         self.assertEqual(Note.objects.all().count(), 6)
         note = NoteResource()
