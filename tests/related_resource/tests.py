@@ -138,15 +138,14 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         request.method = 'POST'
         request.raw_post_data = '{"name": "school", "taggabletags": [ ]}'
 
-        # The following POST fails since commit 1988c7, and OKs in earlier commits.
-        # Simple remedy is reverse the changes from that post (2 lines), but the
-        # trouble is that I don't know what other bugs that commit fixes
+        # Prior to the addition of ``blank=True``, this would
+        # fail badly.
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp.status_code, 201)
 
         # GET the created object (through its headers.location)
         self.assertTrue(resp.has_header('location'))
-        location = dict(resp.items())['Location']  # other way to get headers?
+        location = resp['Location']
 
         resp = self.client.get(location, data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)

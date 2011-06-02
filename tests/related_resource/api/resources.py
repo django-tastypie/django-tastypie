@@ -38,7 +38,7 @@ class TagResource(ModelResource):
 
     extradata = fields.ToOneField(
             'related_resource.api.resources.ExtraDataResource', 'extradata',
-            null=True, full=True)
+            null=True, blank=True, full=True)
 
     class Meta:
         resource_name = 'tag'
