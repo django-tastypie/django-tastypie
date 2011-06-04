@@ -606,7 +606,7 @@ class Resource(object):
         """
         prefix = get_script_prefix()
         chomped_uri = uri
-        if chomped_uri.startswith(prefix):
+        if prefix and chomped_uri.startswith(prefix):
             chomped_uri = chomped_uri[len(prefix)-1:]
         try:
             view, args, kwargs = resolve(chomped_uri)
