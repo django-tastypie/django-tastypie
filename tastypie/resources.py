@@ -2,7 +2,7 @@ import warnings
 from django.conf import settings
 from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, ValidationError
-from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404
+from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404, get_script_prefix
 from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
 from django.http import HttpResponse, HttpResponseNotFound
 from django.utils.cache import patch_cache_control
@@ -604,8 +604,14 @@ class Resource(object):
         If you need custom behavior based on other portions of the URI,
         simply override this method.
         """
+        prefix = get_script_prefix()
+        chomped_uri = uri
+        
+        if prefix and chomped_uri.startswith(prefix):
+            chomped_uri = chomped_uri[len(prefix)-1:]
+        
         try:
-            view, args, kwargs = resolve(uri)
+            view, args, kwargs = resolve(chomped_uri)
         except Resolver404:
             raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
         
