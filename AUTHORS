@@ -28,6 +28,7 @@ Contributors:
 * jesperp for a patch adding TimeField.
 * Marcel van den Elst (MacMaru) for testing regarding ``blank=True``.
 * ulmus for a cookbook example.
+* Jason Kraus (zbyte64) for a patch related to script prefix.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
