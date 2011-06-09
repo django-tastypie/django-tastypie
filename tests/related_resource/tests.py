@@ -37,7 +37,7 @@ class RelatedResourceTest(TestCase):
 
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(User.objects.get(id=self.user.id).username, self.user.username)
+        self.assertEqual(User.objects.get(id=self.user.id).username, 'foobar')
 
 
 class CategoryResourceTest(TestCase):

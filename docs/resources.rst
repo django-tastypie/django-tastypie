@@ -1317,6 +1317,21 @@ A ORM-specific implementation of ``rollback``.
 Given the list of bundles, delete all models pertaining to those
 bundles.
 
+``save_related``
+----------------
+
+.. method:: ModelResource.save_related(self, bundle)
+
+Handles the saving of related non-M2M data.
+
+Calling assigning ``child.parent = parent`` & then calling
+``Child.save`` isn't good enough to make sure the ``parent``
+is saved.
+
+To get around this, we go through all our related fields &
+call ``save`` on them if they have related, non-M2M data.
+M2M data is handled by the ``ModelResource.save_m2m`` method.
+
 ``save_m2m``
 ------------
 
