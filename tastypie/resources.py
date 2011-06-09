@@ -240,7 +240,8 @@ class Resource(object):
             else:
                 import logging
                 logger = logging.getLogger('tastypie')
-                logger.exception("Request could not be processed")
+                logger.exception('Internal Server Error: %s' % request.path,
+                    extra={'status_code': 500, 'request':request})
         
         # Prep the data going out.
         data = {
