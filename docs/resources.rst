@@ -715,7 +715,7 @@ Mostly a hook, this uses class assigned to ``throttle`` from
 ``build_bundle``
 ----------------
 
-.. method:: Resource.build_bundle(self, obj=None, data=None)
+.. method:: Resource.build_bundle(self, obj=None, data=None, request=None)
 
 Given either an object, a data dictionary or both, builds a ``Bundle``
 for use throughout the ``dehydrate/hydrate`` cycle.

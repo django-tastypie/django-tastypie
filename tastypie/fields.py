@@ -495,7 +495,7 @@ class RelatedField(ApiField):
             # ZOMG extra data and big payloads.
             return related_resource.full_dehydrate(related_resource.instance)
     
-    def build_related_resource(self, value):
+    def build_related_resource(self, value, request=None):
         """
         Used to ``hydrate`` the data provided. If just a URL is provided,
         the related resource is attempted to be loaded. If a
@@ -514,7 +514,7 @@ class RelatedField(ApiField):
         elif hasattr(value, 'items'):
             # Try to hydrate the data provided.
             value = dict_strip_unicode_keys(value)
-            self.fk_bundle = Bundle(data=value)
+            self.fk_bundle = Bundle(data=value, request=request)
             
             # We need to check to see if updates are allowed on the FK
             # resource. If not, we'll just return a populated bundle instead
@@ -568,7 +568,7 @@ class ToOneField(RelatedField):
             return None
         
         self.fk_resource = self.get_related_resource(foreign_obj)
-        fk_bundle = Bundle(obj=foreign_obj)
+        fk_bundle = Bundle(obj=foreign_obj, request=bundle.request)
         return self.dehydrate_related(fk_bundle, self.fk_resource)
     
     def hydrate(self, bundle):
@@ -577,7 +577,7 @@ class ToOneField(RelatedField):
         if value is None:
             return value
         
-        return self.build_related_resource(value)
+        return self.build_related_resource(value, request=bundle.request)
 
 class ForeignKey(ToOneField):
     """
@@ -635,7 +635,7 @@ class ToManyField(RelatedField):
         #       ``Manager`` there.
         for m2m in the_m2ms.all():
             m2m_resource = self.get_related_resource(m2m)
-            m2m_bundle = Bundle(obj=m2m)
+            m2m_bundle = Bundle(obj=m2m, request=bundle.request)
             self.m2m_resources.append(m2m_resource)
             m2m_dehydrated.append(self.dehydrate_related(m2m_bundle, m2m_resource))
         
@@ -659,7 +659,7 @@ class ToManyField(RelatedField):
             if value is None:
                 continue
             
-            m2m_hydrated.append(self.build_related_resource(value))
+            m2m_hydrated.append(self.build_related_resource(value, request=bundle.request))
         
         return m2m_hydrated
 

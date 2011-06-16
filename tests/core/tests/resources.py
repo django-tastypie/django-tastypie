@@ -1438,6 +1438,13 @@ class ModelResourceTestCase(TestCase):
         populated_bundle = resource.build_bundle(data={'title': 'Foo'})
         self.assertTrue(isinstance(populated_bundle, Bundle))
         self.assertEqual(populated_bundle.data, {'title': 'Foo'})
+        
+        req = HttpRequest()
+        req.GET = {'foo': 'bar'}
+        populated_bundle_with_request = resource.build_bundle(data={'title': 'Foo'}, request=req)
+        self.assertTrue(isinstance(populated_bundle_with_request, Bundle))
+        self.assertEqual(populated_bundle_with_request.data, {'title': 'Foo'})
+        self.assertEqual(populated_bundle_with_request.request.GET['foo'], 'bar')
     
     def test_obj_get_list(self):
         resource = NoteResource()
