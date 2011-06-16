@@ -128,7 +128,27 @@ class ApiFieldTestCase(TestCase):
         # Make sure it falls back to instance name if there is no attribute
         field_8 = ApiField()
         field_8.instance_name = 'title'
-        self.assertEqual(field_7.hydrate(bundle), u'First Post!')
+        self.assertEqual(field_8.hydrate(bundle), u'First Post!')
+        
+        # Attribute & null regression test.
+        # First, simulate data missing from the bundle & ``null=True``.
+        field_9 = ApiField(attribute='notinbundle', null=True)
+        field_9.instance_name = 'notinbundle'
+        self.assertEqual(field_9.hydrate(bundle), None)
+        # The do something in the bundle also with ``null=True``.
+        field_10 = ApiField(attribute='title', null=True)
+        field_10.instance_name = 'title'
+        self.assertEqual(field_10.hydrate(bundle), u'First Post!')
+        
+        # The blank case.
+        field_11 = ApiField(attribute='notinbundle', blank=True)
+        field_11.instance_name = 'notinbundle'
+        self.assertEqual(field_11.hydrate(bundle), None)
+        
+        bundle.data['title'] = note.title
+        field_12 = ApiField(attribute='title', blank=True)
+        field_12.instance_name = 'title'
+        self.assertEqual(field_12.hydrate(bundle), u'First Post!')
 
 
 class CharFieldTestCase(TestCase):
@@ -540,11 +560,11 @@ class UserResource(ModelResource):
         return '/api/v1/users/%s/' % bundle.obj.id
 
 
-class ForeignKeyTestCase(TestCase):
+class ToOneFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
-    
+   
     def test_init(self):
-        field_1 = ForeignKey(UserResource, 'author')
+        field_1 = ToOneField(UserResource, 'author')
         self.assertEqual(field_1.instance_name, None)
         self.assertEqual(issubclass(field_1.to, UserResource), True)
         self.assertEqual(field_1.attribute, 'author')
@@ -554,7 +574,7 @@ class ForeignKeyTestCase(TestCase):
         self.assertEqual(field_1.readonly, False)
         self.assertEqual(field_1.help_text, 'A single related resource. Can be either a URI or set of nested resource data.')
         
-        field_2 = ForeignKey(UserResource, 'author', null=True, help_text="Points to a User.")
+        field_2 = ToOneField(UserResource, 'author', null=True, help_text="Points to a User.")
         self.assertEqual(field_2.instance_name, None)
         self.assertEqual(issubclass(field_2.to, UserResource), True)
         self.assertEqual(field_2.attribute, 'author')
@@ -564,7 +584,7 @@ class ForeignKeyTestCase(TestCase):
         self.assertEqual(field_2.readonly, False)
         self.assertEqual(field_2.help_text, 'Points to a User.')
         
-        field_3 = ForeignKey(UserResource, 'author', default=1, null=True, help_text="Points to a User.")
+        field_3 = ToOneField(UserResource, 'author', default=1, null=True, help_text="Points to a User.")
         self.assertEqual(field_3.instance_name, None)
         self.assertEqual(issubclass(field_3.to, UserResource), True)
         self.assertEqual(field_3.attribute, 'author')
@@ -576,40 +596,40 @@ class ForeignKeyTestCase(TestCase):
         self.assertEqual(field_3.help_text, 'Points to a User.')
     
     def test_dehydrated_type(self):
-        field_1 = ForeignKey(UserResource, 'author')
+        field_1 = ToOneField(UserResource, 'author')
         self.assertEqual(field_1.dehydrated_type, 'related')
     
     def test_has_default(self):
-        field_1 = ForeignKey(UserResource, 'author')
+        field_1 = ToOneField(UserResource, 'author')
         self.assertEqual(field_1.has_default(), False)
         
-        field_1 = ForeignKey(UserResource, 'author', default=1)
+        field_1 = ToOneField(UserResource, 'author', default=1)
         self.assertEqual(field_1.has_default(), True)
     
     def test_default(self):
-        field_1 = ForeignKey(UserResource, 'author')
+        field_1 = ToOneField(UserResource, 'author')
         self.assertTrue(isinstance(field_1.default, NOT_PROVIDED))
         
-        field_2 = ForeignKey(UserResource, 'author', default=1)
+        field_2 = ToOneField(UserResource, 'author', default=1)
         self.assertEqual(field_2.default, 1)
     
     def test_dehydrate(self):
         note = Note()
         bundle = Bundle(obj=note)
         
-        field_1 = ForeignKey(UserResource, 'author')
+        field_1 = ToOneField(UserResource, 'author')
         self.assertRaises(ApiFieldError, field_1.dehydrate, bundle)
         
-        field_2 = ForeignKey(UserResource, 'author', null=True)
+        field_2 = ToOneField(UserResource, 'author', null=True)
         self.assertEqual(field_2.dehydrate(bundle), None)
         
         note = Note.objects.get(pk=1)
         bundle = Bundle(obj=note)
         
-        field_3 = ForeignKey(UserResource, 'author')
+        field_3 = ToOneField(UserResource, 'author')
         self.assertEqual(field_3.dehydrate(bundle), '/api/v1/users/1/')
         
-        field_4 = ForeignKey(UserResource, 'author', full=True)
+        field_4 = ToOneField(UserResource, 'author', full=True)
         user_bundle = field_4.dehydrate(bundle)
         self.assertEqual(isinstance(user_bundle, Bundle), True)
         self.assertEqual(user_bundle.data['username'], u'johndoe')
@@ -620,26 +640,26 @@ class ForeignKeyTestCase(TestCase):
         bundle = Bundle(obj=note)
         
         # With no value or nullable, we should get an ``ApiFieldError``.
-        field_1 = ForeignKey(UserResource, 'author')
+        field_1 = ToOneField(UserResource, 'author')
         self.assertRaises(ApiFieldError, field_1.hydrate, bundle)
         
         note = Note.objects.get(pk=1)
         bundle = Bundle(obj=note)
         
         # The nullable case.
-        field_2 = ForeignKey(UserResource, 'author', null=True)
+        field_2 = ToOneField(UserResource, 'author', null=True)
         field_2.instance_name = 'fk'
         bundle.data['fk'] = None
         self.assertEqual(field_2.hydrate(bundle), None)
         
         # Wrong resource URI.
-        field_3 = ForeignKey(UserResource, 'author')
+        field_3 = ToOneField(UserResource, 'author')
         field_3.instance_name = 'fk'
         bundle.data['fk'] = '/api/v1/users/abc/'
         self.assertRaises(NotFound, field_3.hydrate, bundle)
         
         # A real, live attribute!
-        field_4 = ForeignKey(UserResource, 'author')
+        field_4 = ToOneField(UserResource, 'author')
         field_4.instance_name = 'fk'
         bundle.data['fk'] = '/api/v1/users/1/'
         fk_bundle = field_4.hydrate(bundle)
@@ -648,7 +668,7 @@ class ForeignKeyTestCase(TestCase):
         self.assertEqual(fk_bundle.obj.username, u'johndoe')
         self.assertEqual(fk_bundle.obj.email, u'john@doe.com')
         
-        field_5 = ForeignKey(UserResource, 'author')
+        field_5 = ToOneField(UserResource, 'author')
         field_5.instance_name = 'fk'
         bundle.data['fk'] = {
             'username': u'mistersmith',
@@ -663,7 +683,7 @@ class ForeignKeyTestCase(TestCase):
         
         # Regression - Make sure Unicode keys get converted to regular strings
         #              so that we can **kwargs them.
-        field_6 = ForeignKey(UserResource, 'author')
+        field_6 = ToOneField(UserResource, 'author')
         field_6.instance_name = 'fk'
         bundle.data['fk'] = {
             u'username': u'mistersmith',
@@ -676,6 +696,46 @@ class ForeignKeyTestCase(TestCase):
         self.assertEqual(fk_bundle.obj.username, u'mistersmith')
         self.assertEqual(fk_bundle.obj.email, u'smith@example.com')
 
+        # Attribute & null regression test.
+        # First, simulate data missing from the bundle & ``null=True``.
+        # Use a Note with NO author, so that the lookup for the related
+        # author fails.
+        note = Note.objects.create(
+            title='Biplanes for all!',
+            slug='biplanes-for-all',
+            content='Somewhere, east of Manhattan, will lie the mythical land of planes with more one wing...'
+        )
+        bundle = Bundle(obj=note)
+        field_7 = ToOneField(UserResource, 'notinbundle', null=True)
+        field_7.instance_name = 'notinbundle'
+        self.assertEqual(field_7.hydrate(bundle), None)
+        # Then do something in the bundle also with ``null=True``.
+        field_8 = ToOneField(UserResource, 'author', null=True)
+        field_8.instance_name = 'author'
+        fk_bundle = field_8.hydrate(bundle)
+        self.assertEqual(field_8.hydrate(bundle), None)
+        # Then use an unsaved object in the bundle also with ``null=True``.
+        new_note = Note(
+            title='Biplanes for all!',
+            slug='biplanes-for-all',
+            content='Somewhere, east of Manhattan, will lie the mythical land of planes with more one wing...'
+        )
+        new_bundle = Bundle(obj=new_note)
+        field_9 = ToOneField(UserResource, 'author', null=True)
+        field_9.instance_name = 'author'
+        self.assertEqual(field_9.hydrate(bundle), None)
+        
+        # The blank case.
+        field_10 = ToOneField(UserResource, 'fk', blank=True)
+        field_10.instance_name = 'fk'
+        self.assertEqual(field_10.hydrate(bundle), None)
+        
+        bundle.data['author'] = '/api/v1/users/1/'
+        field_11 = ToOneField(UserResource, 'author', blank=True)
+        field_11.instance_name = 'author'
+        fk_bundle = field_11.hydrate(bundle)
+        self.assertEqual(fk_bundle.obj.username, 'johndoe')
+
 
 class SubjectResource(ModelResource):
     class Meta:
@@ -686,7 +746,7 @@ class SubjectResource(ModelResource):
         return '/api/v1/subjects/%s/' % bundle.obj.id
 
 
-class ManyToManyFieldTestCase(TestCase):
+class ToManyFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
     urls = 'core.tests.field_urls'
     
@@ -714,7 +774,7 @@ class ManyToManyFieldTestCase(TestCase):
         self.note_2.subjects.add(self.subject_3)
     
     def test_init(self):
-        field_1 = ManyToManyField(SubjectResource, 'subjects')
+        field_1 = ToManyField(SubjectResource, 'subjects')
         self.assertEqual(field_1.instance_name, None)
         self.assertEqual(issubclass(field_1.to, SubjectResource), True)
         self.assertEqual(field_1.attribute, 'subjects')
@@ -724,7 +784,7 @@ class ManyToManyFieldTestCase(TestCase):
         self.assertEqual(field_1.readonly, False)
         self.assertEqual(field_1.help_text, 'Many related resources. Can be either a list of URIs or list of individually nested resource data.')
         
-        field_2 = ManyToManyField(SubjectResource, 'subjects', null=True, help_text='Points to many Subjects.')
+        field_2 = ToManyField(SubjectResource, 'subjects', null=True, help_text='Points to many Subjects.')
         self.assertEqual(field_2.instance_name, None)
         self.assertEqual(issubclass(field_2.to, SubjectResource), True)
         self.assertEqual(field_2.attribute, 'subjects')
@@ -734,7 +794,7 @@ class ManyToManyFieldTestCase(TestCase):
         self.assertEqual(field_2.readonly, False)
         self.assertEqual(field_2.help_text, 'Points to many Subjects.')
         
-        field_3 = ManyToManyField(SubjectResource, 'subjects', default=1, null=True, help_text='Points to many Subjects.')
+        field_3 = ToManyField(SubjectResource, 'subjects', default=1, null=True, help_text='Points to many Subjects.')
         self.assertEqual(field_3.instance_name, None)
         self.assertEqual(issubclass(field_3.to, SubjectResource), True)
         self.assertEqual(field_3.attribute, 'subjects')
@@ -746,27 +806,27 @@ class ManyToManyFieldTestCase(TestCase):
         self.assertEqual(field_3.help_text, 'Points to many Subjects.')
     
     def test_dehydrated_type(self):
-        field_1 = ManyToManyField(SubjectResource, 'subjects')
+        field_1 = ToManyField(SubjectResource, 'subjects')
         self.assertEqual(field_1.dehydrated_type, 'related')
     
     def test_has_default(self):
-        field_1 = ManyToManyField(SubjectResource, 'subjects')
+        field_1 = ToManyField(SubjectResource, 'subjects')
         self.assertEqual(field_1.has_default(), False)
         
-        field_2 = ManyToManyField(SubjectResource, 'subjects', default=1)
+        field_2 = ToManyField(SubjectResource, 'subjects', default=1)
         self.assertEqual(field_2.has_default(), True)
     
     def test_default(self):
-        field_1 = ManyToManyField(SubjectResource, 'subjects')
+        field_1 = ToManyField(SubjectResource, 'subjects')
         self.assertTrue(isinstance(field_1.default, NOT_PROVIDED))
         
-        field_2 = ManyToManyField(SubjectResource, 'subjects', default=1)
+        field_2 = ToManyField(SubjectResource, 'subjects', default=1)
         self.assertEqual(field_2.default, 1)
     
     def test_dehydrate(self):
         note = Note()
         bundle_1 = Bundle(obj=note)
-        field_1 = ManyToManyField(SubjectResource, 'subjects')
+        field_1 = ToManyField(SubjectResource, 'subjects')
         field_1.instance_name = 'm2m'
         
         try:
@@ -776,16 +836,16 @@ class ManyToManyFieldTestCase(TestCase):
         except ApiFieldError:
             pass
         
-        field_2 = ManyToManyField(SubjectResource, 'subjects', null=True)
+        field_2 = ToManyField(SubjectResource, 'subjects', null=True)
         field_2.instance_name = 'm2m'
         self.assertEqual(field_2.dehydrate(bundle_1), [])
         
-        field_3 = ManyToManyField(SubjectResource, 'subjects')
+        field_3 = ToManyField(SubjectResource, 'subjects')
         field_3.instance_name = 'm2m'
         bundle_3 = Bundle(obj=self.note_1)
         self.assertEqual(field_3.dehydrate(bundle_3), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
         
-        field_4 = ManyToManyField(SubjectResource, 'subjects', full=True)
+        field_4 = ToManyField(SubjectResource, 'subjects', full=True)
         field_4.instance_name = 'm2m'
         bundle_4 = Bundle(obj=self.note_1)
         subject_bundle_list = field_4.dehydrate(bundle_4)
@@ -801,12 +861,12 @@ class ManyToManyFieldTestCase(TestCase):
         self.assertEqual(subject_bundle_list[1].obj.name, u'Photos')
         self.assertEqual(subject_bundle_list[1].obj.url, u'/photos/')
         
-        field_5 = ManyToManyField(SubjectResource, 'subjects')
+        field_5 = ToManyField(SubjectResource, 'subjects')
         field_5.instance_name = 'm2m'
         bundle_5 = Bundle(obj=self.note_2)
         self.assertEqual(field_5.dehydrate(bundle_5), ['/api/v1/subjects/1/', '/api/v1/subjects/3/'])
         
-        field_6 = ManyToManyField(SubjectResource, 'subjects')
+        field_6 = ToManyField(SubjectResource, 'subjects')
         field_6.instance_name = 'm2m'
         bundle_6 = Bundle(obj=self.note_3)
         self.assertEqual(field_6.dehydrate(bundle_6), [])
@@ -814,7 +874,7 @@ class ManyToManyFieldTestCase(TestCase):
     def test_dehydrate_with_callable(self):
         note = Note()
         bundle_1 = Bundle(obj=self.note_2)
-        field_1 = ManyToManyField(SubjectResource, attribute=lambda bundle: Subject.objects.filter(notes=bundle.obj, name__startswith='Personal'))
+        field_1 = ToManyField(SubjectResource, attribute=lambda bundle: Subject.objects.filter(notes=bundle.obj, name__startswith='Personal'))
         field_1.instance_name = 'm2m'
         
         self.assertEqual(field_1.dehydrate(bundle_1), ['/api/v1/subjects/3/'])
@@ -824,29 +884,29 @@ class ManyToManyFieldTestCase(TestCase):
         bundle = Bundle(obj=note)
         
         # With no value or nullable, we should get an ``ApiFieldError``.
-        field_1 = ManyToManyField(SubjectResource, 'subjects')
+        field_1 = ToManyField(SubjectResource, 'subjects')
         field_1.instance_name = 'm2m'
         self.assertRaises(ApiFieldError, field_1.hydrate_m2m, bundle)
         
         # The nullable case.
-        field_2 = ManyToManyField(SubjectResource, 'subjects', null=True)
+        field_2 = ToManyField(SubjectResource, 'subjects', null=True)
         field_2.instance_name = 'm2m'
         empty_bundle = Bundle()
         self.assertEqual(field_2.hydrate_m2m(empty_bundle), [])
         
-        field_3 = ManyToManyField(SubjectResource, 'subjects', null=True)
+        field_3 = ToManyField(SubjectResource, 'subjects', null=True)
         field_3.instance_name = 'm2m'
         bundle_3 = Bundle(data={'m2m': []})
         self.assertEqual(field_3.hydrate_m2m(bundle_3), [])
         
         # Wrong resource URI.
-        field_4 = ManyToManyField(SubjectResource, 'subjects')
+        field_4 = ToManyField(SubjectResource, 'subjects')
         field_4.instance_name = 'm2m'
         bundle_4 = Bundle(data={'m2m': ['/api/v1/subjects/abc/']})
         self.assertRaises(NotFound, field_4.hydrate_m2m, bundle_4)
         
         # A real, live attribute!
-        field_5 = ManyToManyField(SubjectResource, 'subjects')
+        field_5 = ToManyField(SubjectResource, 'subjects')
         field_5.instance_name = 'm2m'
         bundle_5 = Bundle(data={'m2m': ['/api/v1/subjects/1/']})
         subject_bundle_list = field_5.hydrate_m2m(bundle_5)
@@ -856,7 +916,7 @@ class ManyToManyFieldTestCase(TestCase):
         self.assertEqual(subject_bundle_list[0].obj.name, u'News')
         self.assertEqual(subject_bundle_list[0].obj.url, u'/news/')
         
-        field_6 = ManyToManyField(SubjectResource, 'subjects')
+        field_6 = ToManyField(SubjectResource, 'subjects')
         field_6.instance_name = 'm2m'
         bundle_6 = Bundle(data={'m2m': [
             {
@@ -878,3 +938,21 @@ class ManyToManyFieldTestCase(TestCase):
         self.assertEqual(subject_bundle_list[1].data['url'], u'/bar/')
         self.assertEqual(subject_bundle_list[1].obj.name, u'Bar')
         self.assertEqual(subject_bundle_list[1].obj.url, u'/bar/')
+        
+        # The blank case.
+        field_7 = ToManyField(SubjectResource, 'fk', blank=True)
+        field_7.instance_name = 'fk'
+        self.assertEqual(field_7.hydrate(bundle_6), None)
+        
+        field_8 = ToManyField(SubjectResource, 'm2m', blank=True)
+        field_8.instance_name = 'm2m'
+        subject_bundle_list_2 = field_8.hydrate_m2m(bundle_6)
+        self.assertEqual(len(subject_bundle_list_2), 2)
+        self.assertEqual(subject_bundle_list_2[0].data['name'], u'Foo')
+        self.assertEqual(subject_bundle_list_2[0].data['url'], u'/foo/')
+        self.assertEqual(subject_bundle_list_2[0].obj.name, u'Foo')
+        self.assertEqual(subject_bundle_list_2[0].obj.url, u'/foo/')
+        self.assertEqual(subject_bundle_list_2[1].data['name'], u'Bar')
+        self.assertEqual(subject_bundle_list_2[1].data['url'], u'/bar/')
+        self.assertEqual(subject_bundle_list_2[1].obj.name, u'Bar')
+        self.assertEqual(subject_bundle_list_2[1].obj.url, u'/bar/')

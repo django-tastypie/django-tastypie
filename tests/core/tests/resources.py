@@ -2,6 +2,7 @@ import base64
 import copy
 import datetime
 from decimal import Decimal
+import django
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -22,8 +23,9 @@ from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
 from tastypie.validation import Validation, FormValidation
-from core.models import Note, Subject
+from core.models import Note, Subject, MediaBit
 from core.tests.mocks import MockRequest
+from core.utils import SimpleHandler
 try:
     import json
 except ImportError:
@@ -720,9 +722,51 @@ class AnotherRelatedNoteResource(ModelResource):
         fields = ['title', 'slug', 'content', 'created', 'is_active']
 
 
+class YetAnotherRelatedNoteResource(ModelResource):
+    author = fields.ForeignKey(UserResource, 'author', full=True)
+    subjects = fields.ManyToManyField(SubjectResource, 'subjects')
+    
+    class Meta:
+        queryset = Note.objects.all()
+        resource_name = 'relatednotes'
+        filtering = {
+            'author': ALL,
+            'subjects': ALL_WITH_RELATIONS,
+        }
+        fields = ['title', 'slug', 'content', 'created', 'is_active']
+
+
 class NullableRelatedNoteResource(AnotherRelatedNoteResource):
     author = fields.ForeignKey(UserResource, 'author', null=True)
     subjects = fields.ManyToManyField(SubjectResource, 'subjects', null=True)
+
+
+class NullableMediaBitResource(ModelResource):
+    # The old (broke) way to allow ``note`` to be omitted, even though it's a required field.
+    note = fields.ToOneField(NoteResource, 'note', null=True)
+
+    class Meta:
+        queryset = MediaBit.objects.all()
+        resource_name = 'nullablemediabit'
+
+
+class BlankMediaBitResource(ModelResource):
+    # Allow ``note`` to be omitted, even though it's a required field.
+    note = fields.ToOneField(NoteResource, 'note', blank=True)
+
+    class Meta:
+        queryset = MediaBit.objects.all()
+        resource_name = 'blankmediabit'
+
+     # We'll custom populate the note here if it's not present.
+    # Doesn't make a ton of sense in this context, but for things
+    # like ``user`` or ``site`` that you can autopopulate based
+    # on the request.
+    def hydrate_note(self, bundle):
+        if not bundle.data.get('note'):
+            bundle.obj.note = Note.objects.get(pk=1)
+
+        return bundle
 
 
 class TestOptionsResource(ModelResource):
@@ -1266,7 +1310,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.content, '{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": "2", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}')
         
         resp = resource.get_detail(request, pk=300)
-        self.assertEqual(resp.status_code, 410)
+        self.assertEqual(resp.status_code, 404)
     
     def test_put_list(self):
         resource = NoteResource()
@@ -1396,6 +1440,13 @@ class ModelResourceTestCase(TestCase):
         populated_bundle = resource.build_bundle(data={'title': 'Foo'})
         self.assertTrue(isinstance(populated_bundle, Bundle))
         self.assertEqual(populated_bundle.data, {'title': 'Foo'})
+        
+        req = HttpRequest()
+        req.GET = {'foo': 'bar'}
+        populated_bundle_with_request = resource.build_bundle(data={'title': 'Foo'}, request=req)
+        self.assertTrue(isinstance(populated_bundle_with_request, Bundle))
+        self.assertEqual(populated_bundle_with_request.data, {'title': 'Foo'})
+        self.assertEqual(populated_bundle_with_request.request.GET['foo'], 'bar')
     
     def test_obj_get_list(self):
         resource = NoteResource()
@@ -1708,6 +1759,30 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(latest.subjects.all().count(), 1)
         self.assertEqual([sub.id for sub in latest.subjects.all()], [3])
     
+        self.assertEqual(Note.objects.all().count(), 9)
+        self.assertEqual(User.objects.filter(username='snerble').count(), 0)
+        note = YetAnotherRelatedNoteResource()
+        related_bundle = Bundle(data={
+            'title': "Yet yet another another new post!",
+            'slug': "yet-yet-another-another-new-post",
+            'content': "WHOA!!!",
+            'is_active': True,
+            'author': {
+                'username': 'snerble',
+                'password': 'hunter42',
+            },
+            'subjects': [],
+        })
+        note.obj_create(related_bundle)
+        self.assertEqual(Note.objects.all().count(), 10)
+        latest = Note.objects.get(slug='yet-yet-another-another-new-post')
+        self.assertEqual(latest.title, u"Yet yet another another new post!")
+        self.assertEqual(latest.slug, u'yet-yet-another-another-new-post')
+        self.assertEqual(latest.content, u'WHOA!!!')
+        self.assertEqual(latest.is_active, True)
+        self.assertEqual(latest.author.username, u'snerble')
+        self.assertEqual(latest.subjects.all().count(), 0)
+
     def test_obj_update(self):
         self.assertEqual(Note.objects.all().count(), 6)
         note = NoteResource()
@@ -1959,6 +2034,31 @@ class ModelResourceTestCase(TestCase):
         
         self.assertEqual(hydrated1.data.get('author'), None)
         self.assertEqual(hydrated1.data['subjects'], [])
+
+    def test_optional_required_data(self):
+        # Regression: You have a FK field that's required on the model
+        # but you want to optionally allow the user to omit it and use
+        # custom ``hydrate_*`` method to populate it if it's not
+        # present.
+        nmbr = NullableMediaBitResource()
+
+        bundle_1 = Bundle(data={
+            'title': "Foo",
+        })
+        
+        try:
+            # This is where things blow up, because you can't assign
+            # ``None`` to a required FK.
+            hydrated1 = nmbr.full_hydrate(bundle_1)
+            self.fail()
+        except Note.DoesNotExist:
+            pass
+
+        # So we introduced ``blank=True``.
+        bmbr = BlankMediaBitResource()
+        hydrated1 = bmbr.full_hydrate(bundle_1)
+        self.assertEqual(hydrated1.obj.title, "Foo")
+        self.assertEqual(hydrated1.obj.note.pk, 1)
     
     def test_nullable_tomany_full_hydrate(self):
         nrrnr = NullableRelatedNoteResource()
@@ -2215,31 +2315,55 @@ class BustedResourceTestCase(TestCase):
     def test_debug_off(self):
         settings.DEBUG = False
         settings.TASTYPIE_FULL_DEBUG = False
-        mail.outbox = []
         
-        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
-        self.assertEqual(resp.status_code, 500)
-        self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
-        self.assertEqual(len(mail.outbox), 1)
-        
-        # Ensure that 404s don't send email.
-        resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
-        self.assertEqual(resp.status_code, 404)
-        self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
-        self.assertEqual(len(mail.outbox), 1)
-        
-        # Ensure that 404s (with broken link emails enabled) DO send email.
-        settings.SEND_BROKEN_LINK_EMAILS = True
-        resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
-        self.assertEqual(resp.status_code, 404)
-        self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
-        self.assertEqual(len(mail.outbox), 2)
-        
-        # Now with a custom message.
-        settings.TASTYPIE_CANNED_ERROR = "Oops, you bwoke it."
-        
-        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
-        self.assertEqual(resp.status_code, 500)
-        self.assertEqual(resp.content, '{"error_message": "Oops, you bwoke it."}')
-        self.assertEqual(len(mail.outbox), 3)
-        mail.outbox = []
+        if django.VERSION >= (1, 3, 0):
+            SimpleHandler.logged = []
+
+            resp = self.resource.wrap_view('get_list')(self.request, pk=1)
+            self.assertEqual(resp.status_code, 500)
+            self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+            self.assertEqual(len(SimpleHandler.logged), 1)
+            
+            # Ensure that 404s don't send email.
+            resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
+            self.assertEqual(resp.status_code, 404)
+            self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+            self.assertEqual(len(SimpleHandler.logged), 1)
+            
+            # Now with a custom message.
+            settings.TASTYPIE_CANNED_ERROR = "Oops, you bwoke it."
+            
+            resp = self.resource.wrap_view('get_list')(self.request, pk=1)
+            self.assertEqual(resp.status_code, 500)
+            self.assertEqual(resp.content, '{"error_message": "Oops, you bwoke it."}')
+            self.assertEqual(len(SimpleHandler.logged), 2)
+            SimpleHandler.logged = []
+        else:
+            mail.outbox = []
+            
+            resp = self.resource.wrap_view('get_list')(self.request, pk=1)
+            self.assertEqual(resp.status_code, 500)
+            self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+            self.assertEqual(len(mail.outbox), 1)
+            
+            # Ensure that 404s don't send email.
+            resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
+            self.assertEqual(resp.status_code, 404)
+            self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+            self.assertEqual(len(mail.outbox), 1)
+            
+            # Ensure that 404s (with broken link emails enabled) DO send email.
+            settings.SEND_BROKEN_LINK_EMAILS = True
+            resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
+            self.assertEqual(resp.status_code, 404)
+            self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+            self.assertEqual(len(mail.outbox), 2)
+            
+            # Now with a custom message.
+            settings.TASTYPIE_CANNED_ERROR = "Oops, you bwoke it."
+            
+            resp = self.resource.wrap_view('get_list')(self.request, pk=1)
+            self.assertEqual(resp.status_code, 500)
+            self.assertEqual(resp.content, '{"error_message": "Oops, you bwoke it."}')
+            self.assertEqual(len(mail.outbox), 3)
+            mail.outbox = []

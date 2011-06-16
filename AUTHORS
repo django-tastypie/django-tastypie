@@ -26,6 +26,10 @@ Contributors:
 * D. Hageman (dhageman) for a patch adding default values to RelatedFields.
 * James Hsiao (thepeopleseason) for finishing the DigestAuthentication bits.
 * jesperp for a patch adding TimeField.
+* Marcel van den Elst (MacMaru) for testing regarding ``blank=True``.
+* ulmus for a cookbook example.
+* Jason Kraus (zbyte64) for a patch related to script prefix.
+* Timothée Peignier (cyberdelia) for various patches.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.

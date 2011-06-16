@@ -715,7 +715,7 @@ Mostly a hook, this uses class assigned to ``throttle`` from
 ``build_bundle``
 ----------------
 
-.. method:: Resource.build_bundle(self, obj=None, data=None)
+.. method:: Resource.build_bundle(self, obj=None, data=None, request=None)
 
 Given either an object, a data dictionary or both, builds a ``Bundle``
 for use throughout the ``dehydrate/hydrate`` cycle.
@@ -1063,7 +1063,7 @@ Replaces a collection of resources with another collection.
 Calls ``delete_list`` to clear out the collection then ``obj_create``
 with the provided the data to create the new collection.
 
-Return ``HttpAccepted`` (204 No Content).
+Return ``HttpNoContent`` (204 No Content).
 
 ``put_detail``
 --------------
@@ -1077,7 +1077,7 @@ Calls ``obj_update`` with the provided data first, but falls back to
 ``obj_create`` if the object does not already exist.
 
 If a new resource is created, return ``HttpCreated`` (201 Created).
-If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
+If an existing resource is modified, return ``HttpNoContent`` (204 No Content).
 
 ``post_list``
 -------------
@@ -1112,7 +1112,7 @@ Destroys a collection of resources/objects.
 
 Calls ``obj_delete_list``.
 
-If the resources are deleted, return ``HttpAccepted`` (204 No Content).
+If the resources are deleted, return ``HttpNoContent`` (204 No Content).
 
 ``delete_detail``
 -----------------
@@ -1123,8 +1123,8 @@ Destroys a single resource/object.
 
 Calls ``obj_delete``.
 
-If the resource is deleted, return ``HttpAccepted`` (204 No Content).
-If the resource did not exist, return ``HttpGone`` (410 Gone).
+If the resource is deleted, return ``HttpNoContent`` (204 No Content).
+If the resource did not exist, return ``HttpNotFound`` (404 Not Found).
 
 ``get_schema``
 --------------
@@ -1316,6 +1316,21 @@ A ORM-specific implementation of ``rollback``.
 
 Given the list of bundles, delete all models pertaining to those
 bundles.
+
+``save_related``
+----------------
+
+.. method:: ModelResource.save_related(self, bundle)
+
+Handles the saving of related non-M2M data.
+
+Calling assigning ``child.parent = parent`` & then calling
+``Child.save`` isn't good enough to make sure the ``parent``
+is saved.
+
+To get around this, we go through all our related fields &
+call ``save`` on them if they have related, non-M2M data.
+M2M data is handled by the ``ModelResource.save_m2m`` method.
 
 ``save_m2m``
 ------------

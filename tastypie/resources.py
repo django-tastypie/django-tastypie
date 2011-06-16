@@ -1,8 +1,10 @@
+import logging
 import warnings
+import django
 from django.conf import settings
 from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, ValidationError
-from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404
+from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404, get_script_prefix
 from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
 from django.http import HttpResponse, HttpResponseNotFound
 from django.utils.cache import patch_cache_control
@@ -226,16 +228,20 @@ class Resource(object):
         
         # When DEBUG is False, send an error message to the admins (unless it's
         # a 404, in which case we check the setting).
-        if not isinstance(exception, (NotFound, ObjectDoesNotExist)) or getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False):
-            from django.core.mail import mail_admins
-            subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), request.path)
-            try:
-                request_repr = repr(request)
-            except:
-                request_repr = "Request repr() unavailable"
+        if not isinstance(exception, (NotFound, ObjectDoesNotExist)):
+            log = logging.getLogger('django.request.tastypie')
+            log.error('Internal Server Error: %s' % request.path, exc_info=sys.exc_info(), extra={'status_code': 500, 'request':request})
+
+            if django.VERSION < (1, 3, 0) and getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False):
+                from django.core.mail import mail_admins
+                subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), request.path)
+                try:
+                    request_repr = repr(request)
+                except:
+                    request_repr = "Request repr() unavailable"
             
-            message = "%s\n\n%s" % (the_trace, request_repr)
-            mail_admins(subject, message, fail_silently=True)
+                message = "%s\n\n%s" % (the_trace, request_repr)
+                mail_admins(subject, message, fail_silently=True)
         
         # Prep the data going out.
         data = {
@@ -415,7 +421,7 @@ class Resource(object):
         # request was accepted and that some action occurred. This also
         # prevents Django from freaking out.
         if not isinstance(response, HttpResponse):
-            return HttpAccepted()
+            return HttpNoContent()
         
         return response
     
@@ -529,7 +535,7 @@ class Resource(object):
         request_method = request.method.lower()
         self._meta.throttle.accessed(self._meta.authentication.get_identifier(request), url=request.get_full_path(), request_method=request_method)
     
-    def build_bundle(self, obj=None, data=None):
+    def build_bundle(self, obj=None, data=None, request=None):
         """
         Given either an object, a data dictionary or both, builds a ``Bundle``
         for use throughout the ``dehydrate/hydrate`` cycle.
@@ -541,7 +547,7 @@ class Resource(object):
         if obj is None:
             obj = self._meta.object_class()
         
-        return Bundle(obj, data)
+        return Bundle(obj=obj, data=data, request=request)
     
     def build_filters(self, filters=None):
         """
@@ -604,8 +610,14 @@ class Resource(object):
         If you need custom behavior based on other portions of the URI,
         simply override this method.
         """
+        prefix = get_script_prefix()
+        chomped_uri = uri
+        
+        if prefix and chomped_uri.startswith(prefix):
+            chomped_uri = chomped_uri[len(prefix)-1:]
+        
         try:
-            view, args, kwargs = resolve(uri)
+            view, args, kwargs = resolve(chomped_uri)
         except Resolver404:
             raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
         
@@ -670,6 +682,8 @@ class Resource(object):
                     elif not getattr(field_object, 'is_m2m', False):
                         if value is not None:
                             setattr(bundle.obj, field_object.attribute, value.obj)
+                        elif field_object.blank:
+                            continue
                         elif field_object.null:
                             setattr(bundle.obj, field_object.attribute, value)
             
@@ -1002,7 +1016,7 @@ class Resource(object):
         try:
             obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
         except ObjectDoesNotExist:
-            return HttpGone()
+            return HttpNotFound()
         except MultipleObjectsReturned:
             return HttpMultipleChoices("More than one resource is found at this URI.")
         
@@ -1017,7 +1031,7 @@ class Resource(object):
         Calls ``delete_list`` to clear out the collection then ``obj_create``
         with the provided the data to create the new collection.
         
-        Return ``HttpAccepted`` (204 No Content).
+        Return ``HttpNoContent`` (204 No Content).
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_list_data(request, deserialized)
@@ -1029,7 +1043,7 @@ class Resource(object):
         bundles_seen = []
         
         for object_data in deserialized['objects']:
-            bundle = self.build_bundle(data=dict_strip_unicode_keys(object_data))
+            bundle = self.build_bundle(data=dict_strip_unicode_keys(object_data), request=request)
             
             # Attempt to be transactional, deleting any previously created
             # objects if validation fails.
@@ -1042,7 +1056,7 @@ class Resource(object):
             self.obj_create(bundle, request=request)
             bundles_seen.append(bundle)
         
-        return HttpAccepted()
+        return HttpNoContent()
     
     def put_detail(self, request, **kwargs):
         """
@@ -1053,16 +1067,16 @@ class Resource(object):
         ``obj_create`` if the object does not already exist.
         
         If a new resource is created, return ``HttpCreated`` (201 Created).
-        If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
+        If an existing resource is modified, return ``HttpNoContent`` (204 No Content).
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
-        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized))
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
         self.is_valid(bundle, request)
         
         try:
             updated_bundle = self.obj_update(bundle, request=request, pk=kwargs.get('pk'))
-            return HttpAccepted()
+            return HttpNoContent()
         except (NotFound, MultipleObjectsReturned):
             updated_bundle = self.obj_create(bundle, request=request, pk=kwargs.get('pk'))
             return HttpCreated(location=self.get_resource_uri(updated_bundle))
@@ -1077,8 +1091,8 @@ class Resource(object):
         If a new resource is created, return ``HttpCreated`` (201 Created).
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
-        deserialized = self.alter_deserialized_list_data(request, deserialized)
-        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized))
+        deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
         self.is_valid(bundle, request)
         updated_bundle = self.obj_create(bundle, request=request)
         return HttpCreated(location=self.get_resource_uri(updated_bundle))
@@ -1100,10 +1114,10 @@ class Resource(object):
         
         Calls ``obj_delete_list``.
         
-        If the resources are deleted, return ``HttpAccepted`` (204 No Content).
+        If the resources are deleted, return ``HttpNoContent`` (204 No Content).
         """
         self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
-        return HttpAccepted()
+        return HttpNoContent()
     
     def delete_detail(self, request, **kwargs):
         """
@@ -1111,14 +1125,14 @@ class Resource(object):
         
         Calls ``obj_delete``.
         
-        If the resource is deleted, return ``HttpAccepted`` (204 No Content).
-        If the resource did not exist, return ``HttpGone`` (410 Gone).
+        If the resource is deleted, return ``HttpNoContent`` (204 No Content).
+        If the resource did not exist, return ``Http404`` (404 Not Found).
         """
         try:
             self.obj_delete(request=request, **self.remove_api_resource_names(kwargs))
-            return HttpAccepted()
+            return HttpNoContent()
         except NotFound:
-            return HttpGone()
+            return HttpNotFound()
     
     def get_schema(self, request, **kwargs):
         """
@@ -1535,6 +1549,11 @@ class ModelResource(Resource):
             setattr(bundle.obj, key, value)
         
         bundle = self.full_hydrate(bundle)
+
+        # Save FKs just in case.
+        self.save_related(bundle)
+
+        # Save the main object.
         bundle.obj.save()
         
         # Now pick up the M2M bits.
@@ -1569,6 +1588,11 @@ class ModelResource(Resource):
                 raise NotFound("A model instance matching the provided arguments could not be found.")
         
         bundle = self.full_hydrate(bundle)
+
+        # Save FKs just in case.
+        self.save_related(bundle)
+
+        # Save the main object.
         bundle.obj.save()
         
         # Now pick up the M2M bits.
@@ -1617,6 +1641,39 @@ class ModelResource(Resource):
             if bundle.obj and getattr(bundle.obj, 'pk', None):
                 bundle.obj.delete()
     
+    def save_related(self, bundle):
+        """
+        Handles the saving of related non-M2M data.
+
+        Calling assigning ``child.parent = parent`` & then calling
+        ``Child.save`` isn't good enough to make sure the ``parent``
+        is saved.
+
+        To get around this, we go through all our related fields &
+        call ``save`` on them if they have related, non-M2M data.
+        M2M data is handled by the ``ModelResource.save_m2m`` method.
+        """
+        for field_name, field_object in self.fields.items():
+            if not getattr(field_object, 'is_related', False):
+                continue
+
+            if getattr(field_object, 'is_m2m', False):
+                continue
+
+            if not field_object.attribute:
+                continue
+
+            # Get the object.
+            try:
+                related_obj = getattr(bundle.obj, field_object.attribute)
+            except ObjectDoesNotExist:
+                related_obj = None
+
+            # Because sometimes it's ``None`` & that's OK.
+            if related_obj:
+                related_obj.save()
+                setattr(bundle.obj, field_object.attribute, related_obj)
+
     def save_m2m(self, bundle):
         """
         Handles the saving of related M2M data.
