@@ -1063,7 +1063,7 @@ Replaces a collection of resources with another collection.
 Calls ``delete_list`` to clear out the collection then ``obj_create``
 with the provided the data to create the new collection.
 
-Return ``HttpAccepted`` (204 No Content).
+Return ``HttpNoContent`` (204 No Content).
 
 ``put_detail``
 --------------
@@ -1077,7 +1077,7 @@ Calls ``obj_update`` with the provided data first, but falls back to
 ``obj_create`` if the object does not already exist.
 
 If a new resource is created, return ``HttpCreated`` (201 Created).
-If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
+If an existing resource is modified, return ``HttpNoContent`` (204 No Content).
 
 ``post_list``
 -------------
@@ -1112,7 +1112,7 @@ Destroys a collection of resources/objects.
 
 Calls ``obj_delete_list``.
 
-If the resources are deleted, return ``HttpAccepted`` (204 No Content).
+If the resources are deleted, return ``HttpNoContent`` (204 No Content).
 
 ``delete_detail``
 -----------------
@@ -1123,8 +1123,8 @@ Destroys a single resource/object.
 
 Calls ``obj_delete``.
 
-If the resource is deleted, return ``HttpAccepted`` (204 No Content).
-If the resource did not exist, return ``HttpGone`` (410 Gone).
+If the resource is deleted, return ``HttpNoContent`` (204 No Content).
+If the resource did not exist, return ``HttpNotFound`` (404 Not Found).
 
 ``get_schema``
 --------------

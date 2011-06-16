@@ -1308,7 +1308,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.content, '{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": "2", "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}')
         
         resp = resource.get_detail(request, pk=300)
-        self.assertEqual(resp.status_code, 410)
+        self.assertEqual(resp.status_code, 404)
     
     def test_put_list(self):
         resource = NoteResource()
