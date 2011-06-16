@@ -21,6 +21,10 @@ try:
     from django.core.serializers import pyyaml
 except ImportError:
     yaml = None
+try:
+    import biplist
+except ImportError:
+    biplist = None
 
 
 class Serializer(object):
@@ -34,18 +38,20 @@ class Serializer(object):
         * xml
         * yaml
         * html
+        * plist
     
     It was designed to make changing behavior easy, either by overridding the
     various format methods (i.e. ``to_json``), by changing the
     ``formats/content_types`` options or by altering the other hook methods.
     """
-    formats = ['json', 'jsonp', 'xml', 'yaml', 'html']
+    formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'plist']
     content_types = {
         'json': 'application/json',
         'jsonp': 'text/javascript',
         'xml': 'application/xml',
         'yaml': 'text/yaml',
         'html': 'text/html',
+        'plist': 'application/x-plist',
     }
     
     def __init__(self, formats=None, content_types=None, datetime_formatting=None):
@@ -351,6 +357,26 @@ class Serializer(object):
             raise ImproperlyConfigured("Usage of the YAML aspects requires yaml.")
         
         return yaml.load(content)
+    
+    def to_plist(self, data, options=None):
+        """
+        Given some Python data, produces binary plist output.
+        """
+        options = options or {}
+        
+        if biplist is None:
+            raise ImproperlyConfigured("Usage of the plist aspects requires biplist.")
+        
+        return biplist.writePlistToString(self.to_simple(data, options))
+    
+    def from_plist(self, content):
+        """
+        Given some binary plist data, returns a Python dictionary of the decoded data.
+        """
+        if biplist is None:
+            raise ImproperlyConfigured("Usage of the plist aspects requires biplist.")
+        
+        return biplist.readPlistFromString(content)
     
     def to_html(self, data, options=None):
         """
