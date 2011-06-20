@@ -1,5 +1,6 @@
 import datetime
 from dateutil.tz import *
+from django.db import models
 from django.contrib.auth.models import User
 from django.test import TestCase
 from tastypie.bundle import Bundle
@@ -290,6 +291,10 @@ class DecimalFieldTestCase(TestCase):
         
         field_2 = DecimalField(default='18.5')
         self.assertEqual(field_2.dehydrate(bundle), Decimal('18.5'))
+
+    def test_model_resource_correct_association(self):
+        api_field = ModelResource.api_field_from_django_field(models.DecimalField())
+        self.assertEqual(api_field, DecimalField)
 
 
 class ListFieldTestCase(TestCase):
