@@ -618,7 +618,13 @@ class ToManyField(RelatedField):
             return []
         
         if isinstance(self.attribute, basestring):
-            the_m2ms = getattr(bundle.obj, self.attribute)
+            try:
+                the_m2ms = getattr(bundle.obj, self.attribute)
+                if not hasattr(the_m2ms, 'all'):
+                    related_resource = self.get_related_resource(the_m2ms)
+                    the_m2ms = related_resource._meta.queryset
+            except ObjectDoesNotExist:
+                the_m2ms = None
         elif callable(self.attribute):
             the_m2ms = self.attribute(bundle)
         
@@ -630,9 +636,7 @@ class ToManyField(RelatedField):
         
         self.m2m_resources = []
         m2m_dehydrated = []
-        
-        # TODO: Also model-specific and leaky. Relies on there being a
-        #       ``Manager`` there.
+
         for m2m in the_m2ms.all():
             m2m_resource = self.get_related_resource(m2m)
             m2m_bundle = Bundle(obj=m2m, request=bundle.request)
