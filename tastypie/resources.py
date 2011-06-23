@@ -1604,7 +1604,7 @@ class ModelResource(Resource):
             
             return object_list[0]
         except ValueError, e:
-            raise NotFound("Invalid resource lookup data provided (mismatched type).")
+            raise BadRequest("Invalid resource lookup data provided (mismatched type).")
     
     def obj_create(self, bundle, request=None, **kwargs):
         """
