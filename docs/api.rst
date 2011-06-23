@@ -48,7 +48,7 @@ be named any string.
 
 .. method:: Api.register(self, resource, canonical=True):
 
-Registers an instance of a ``Resource`` subclass with the API.
+Registers a subclass or instance of ``Resource`` with the API.
 
 Optionally accept a ``canonical`` argument, which indicates that the
 resource being registered is the canonical variant. Defaults to

@@ -26,6 +26,10 @@ class ApiTestCase(TestCase):
         api = Api()
         self.assertEqual(len(api._registry), 0)
         
+        api.register(NoteResource)
+        self.assertEqual(len(api._registry), 1)
+        self.assertEqual(sorted(api._registry.keys()), ['notes'])
+        
         api.register(NoteResource())
         self.assertEqual(len(api._registry), 1)
         self.assertEqual(sorted(api._registry.keys()), ['notes'])
@@ -35,6 +39,10 @@ class ApiTestCase(TestCase):
         self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
         
         api.register(UserResource())
+        self.assertEqual(len(api._registry), 2)
+        self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
+        
+        api.register(UserResource)
         self.assertEqual(len(api._registry), 2)
         self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
         
@@ -48,6 +56,10 @@ class ApiTestCase(TestCase):
         api = Api()
         self.assertEqual(len(api._registry), 0)
         
+        api.register(NoteResource)
+        self.assertEqual(len(api._registry), 1)
+        self.assertEqual(sorted(api._registry.keys()), ['notes'])
+        
         api.register(NoteResource())
         self.assertEqual(len(api._registry), 1)
         self.assertEqual(sorted(api._registry.keys()), ['notes'])
@@ -57,6 +69,10 @@ class ApiTestCase(TestCase):
         self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
         
         api.register(UserResource())
+        self.assertEqual(len(api._registry), 2)
+        self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
+        
+        api.register(UserResource)
         self.assertEqual(len(api._registry), 2)
         self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
         
