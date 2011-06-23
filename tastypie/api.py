@@ -1,9 +1,9 @@
+import inspect
 import warnings
 from django.conf.urls.defaults import *
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
-import inspect
 from tastypie.exceptions import NotRegistered
 from tastypie.serializers import Serializer
 from tastypie.utils import trailing_slash, is_valid_jsonp_callback_value
