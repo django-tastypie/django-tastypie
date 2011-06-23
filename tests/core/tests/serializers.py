@@ -261,7 +261,7 @@ class ResourceSerializationTestCase(TestCase):
             "CONTENT_TYPE": "application/x-www-form-urlencoded"
         }
         request.POST = {"age": 27, "name": "Daniel"}
-        data = self.resource.deserialize(request, None)
+        data = self.resource.deserialize(request)
         self.assertEqual(data, request.POST)
 
     def test_from_multipart_form(self):
@@ -273,7 +273,7 @@ class ResourceSerializationTestCase(TestCase):
         # Not valid files, testing purposes only
         request.FILES = {"date_joined": "2010-03-27"}
         
-        data = self.resource.deserialize(request, None)
+        data = self.resource.deserialize(request)
         merged = request.POST.copy()
         merged.update(request.FILES)
         self.assertEqual(data, merged)
