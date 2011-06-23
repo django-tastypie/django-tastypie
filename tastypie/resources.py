@@ -336,7 +336,7 @@ class Resource(object):
         
         if format == 'application/x-www-form-urlencoded':
             deserialized = request.POST
-        elif format == 'multipart/form-data':
+        elif format.startswith('multipart'):
             deserialized = request.POST.copy()
             deserialized.update(request.FILES)
         else:
