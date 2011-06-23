@@ -2,6 +2,7 @@ import datetime
 from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.http import HttpRequest
 from django.test import TestCase
 from tastypie import fields
 from tastypie.serializers import Serializer
@@ -253,6 +254,29 @@ class ResourceSerializationTestCase(TestCase):
         self.obj_list = [self.resource.full_dehydrate(obj=obj) for obj in self.resource.obj_get_list()]
         self.another_resource = AnotherNoteResource()
         self.another_obj_list = [self.another_resource.full_dehydrate(obj=obj) for obj in self.another_resource.obj_get_list()]
+    
+    def test_from_form(self):
+        request = HttpRequest()
+        request.META = {
+            "CONTENT_TYPE": "application/x-www-form-urlencoded"
+        }
+        request.POST = {"age": 27, "name": "Daniel"}
+        data = self.resource.deserialize(request, None)
+        self.assertEqual(data, request.POST)
+
+    def test_from_multipart_form(self):
+        request = HttpRequest()
+        request.META = {
+            "CONTENT_TYPE": "multipart/form-data"
+        }
+        request.POST = {"age": 27, "name": "Daniel"}
+        # Not valid files, testing purposes only
+        request.FILES = {"date_joined": "2010-03-27"}
+        
+        data = self.resource.deserialize(request, None)
+        merged = request.POST.copy()
+        merged.update(request.FILES)
+        self.assertEqual(data, merged)
 
     def test_to_xml_multirepr(self):
         serializer = Serializer()

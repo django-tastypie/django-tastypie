@@ -331,7 +331,16 @@ class Resource(object):
         
         Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
         """
-        deserialized = self._meta.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        format = request.META.get('CONTENT_TYPE', 'application/json')
+        
+        if format == "application/x-www-form-urlencoded":
+            deserialized = request.POST
+        elif format == "multipart/form-data":
+            deserialized = request.POST.copy()
+            deserialized.update(request.FILES)
+        else:
+            deserialized = self._meta.serializer.deserialize(data, format=format)
+        
         return deserialized
     
     def alter_list_data_to_serialize(self, request, data):
