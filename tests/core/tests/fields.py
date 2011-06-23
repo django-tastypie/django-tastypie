@@ -4,7 +4,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.test import TestCase
 from tastypie.bundle import Bundle
-from tastypie.exceptions import ApiFieldError, NotFound
+from tastypie.exceptions import ApiFieldError, NotFound, BadRequest
 from tastypie.fields import *
 from tastypie.resources import ModelResource
 from core.models import Note, Subject, MediaBit
@@ -672,7 +672,7 @@ class ToOneFieldTestCase(TestCase):
         field_3 = ToOneField(UserResource, 'author')
         field_3.instance_name = 'fk'
         bundle.data['fk'] = '/api/v1/users/abc/'
-        self.assertRaises(NotFound, field_3.hydrate, bundle)
+        self.assertRaises(BadRequest, field_3.hydrate, bundle)
         
         # A real, live attribute!
         field_4 = ToOneField(UserResource, 'author')
@@ -935,7 +935,7 @@ class ToManyFieldTestCase(TestCase):
         field_4 = ToManyField(SubjectResource, 'subjects')
         field_4.instance_name = 'm2m'
         bundle_4 = Bundle(data={'m2m': ['/api/v1/subjects/abc/']})
-        self.assertRaises(NotFound, field_4.hydrate_m2m, bundle_4)
+        self.assertRaises(BadRequest, field_4.hydrate_m2m, bundle_4)
         
         # A real, live attribute!
         field_5 = ToManyField(SubjectResource, 'subjects')
