@@ -357,8 +357,8 @@ class Resource(object):
             options['callback'] = callback
 
         return self._meta.serializer.serialize(data, format, options)
-
-    def deserialize(self, request, data, format='application/json'):
+    
+    def deserialize(self, request, format=None):
         """
         Given a request, data and a format, deserializes the given data.
 
@@ -367,7 +367,17 @@ class Resource(object):
 
         Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
         """
-        deserialized = self._meta.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        if format is None:
+            format = request.META.get('CONTENT_TYPE', 'application/json')
+        
+        if format == 'application/x-www-form-urlencoded':
+            deserialized = request.POST
+        elif format.startswith('multipart'):
+            deserialized = request.POST.copy()
+            deserialized.update(request.FILES)
+        else:
+            deserialized = self._meta.serializer.deserialize(request.raw_post_data, format=format)
+        
         return deserialized
 
     def alter_list_data_to_serialize(self, request, data):
@@ -1146,7 +1156,7 @@ class Resource(object):
         Return ``HttpAccepted`` (202 Accepted) if
         ``Meta.always_return_data = True``.
         """
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_list_data(request, deserialized)
 
         if not 'objects' in deserialized:
@@ -1193,7 +1203,7 @@ class Resource(object):
         ``Meta.always_return_data = True``, return ``HttpAccepted`` (202
         Accepted).
         """
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
 
@@ -1228,7 +1238,7 @@ class Resource(object):
         If ``Meta.always_return_data = True``, there will be a populated body
         of serialized data.
         """
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
         updated_bundle = self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
