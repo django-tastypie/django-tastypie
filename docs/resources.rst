@@ -174,23 +174,234 @@ consequences of each approach.
 Advanced Data Preparation
 =========================
 
-Tastypie uses a "dehydrate" cycle to prepare data for serialization & a
-"hydrate" cycle to take data sent to it & turn that back into useful Python
-objects.
+Not all data can be easily pull off an object/model attribute. And sometimes,
+you (or the client) may need to send data that doesn't neatly fit back into the
+data model on the server side. For this, Tastypie has the "dehydrate/hydrate"
+cycle.
 
-Within these cycles, there are several points of customization if you need them.
+The Dehydrate Cycle
+-------------------
 
-``dehydrate``
--------------
+Tastypie uses a "dehydrate" cycle to prepare data for serialization, which is
+to say that it takes the raw, potentially complicated data model & turns it
+into a (generally simpler) processed data structure for client consumption.
+This usually means taking a complex data object & turning it into a dictionary
+of simple data types.
+
+Broadly speaking, this takes the ``bundle.obj`` instance & builds
+``bundle.data``, which is what is actually serialized.
+
+The cycle looks like:
+
+* Put the data model into a ``Bundle`` instance, which is then passed through
+  the various methods.
+* Run through all fields on the ``Resource``, letting each field
+  perform its own ``dehydrate`` method on the ``bundle``.
+* While processing each field, look for a ``dehydrate_<fieldname>`` method on
+  the ``Resource``. If it's present, call it with the ``bundle``.
+* Finally, after all fields are processed, if the ``dehydrate`` method is
+  present on the ``Resource``, it is called & given the entire ``bundle``.
+
+The goal of this cycle is to populate the ``bundle.data`` dictionary with data
+suitable for serialization. With the exception of the ``alter_*`` methods (as
+hooks to manipulate the overall structure), this cycle controls what is
+actually handed off to be serialized & sent to the client.
+
+Per-field ``dehydrate``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Each field (even custom ``ApiField`` subclasses) has its own ``dehydrate``
+method. If it knows how to access data (say, given the ``attribute`` kwarg), it
+will attempt to populate values itself.
+
+The return value is put in the ``bundle.data`` dictionary (by the ``Resource``)
+with the fieldname as the key.
 
 ``dehydrate_FOO``
------------------
+~~~~~~~~~~~~~~~~~
 
-``hydrate``
------------
+Since not all data may be ready for consumption based on just attribute access
+(or may require an advanced lookup/calculation), this hook enables you to fill
+in data or massage whatever the field generated.
+
+.. note::
+
+  The ``FOO`` here is not literal. Instead, it is a placeholder that should be
+  replaced with the fieldname in question.
+
+Defining these methods is especially common when denormalizing related data,
+providing statistics or filling in unrelated data.
+
+A simple example::
+
+    class MyResource(ModelResource):
+        # The ``title`` field is already added to the class by ``ModelResource``
+        # and populated off ``Note.title``. But we want allcaps titles...
+        
+        class Meta:
+            queryset = Note.objects.all()
+        
+        def dehydrate_title(self, bundle):
+            return bundle.data['title'].upper()
+
+A complex example::
+
+    class MyResource(ModelResource):
+        # As is, this is just an empty field. Without the ``dehydrate_rating``
+        # method, no data would be populated for it.
+        rating = fields.FloatField(readonly=True)
+        
+        class Meta:
+            queryset = Note.objects.all()
+        
+        def dehydrate_rating(self, bundle):
+            total_score = 0.0
+            
+            # Make sure we don't have to worry about "divide by zero" errors.
+            if not bundle.obj.rating_set.count():
+                return rating
+            
+            # We'll run over all the ``Rating`` objects & calculate an average.
+            for rating in bundle.obj.rating_set.all():
+                total_score += rating.rating
+            
+            return total_score /  bundle.obj.rating_set.count()
+
+The return value is updated in the ``bundle.data``. You should avoid altering
+``bundle.data`` here if you can help it.
+
+``dehydrate``
+~~~~~~~~~~~~~
+
+The ``dehydrate`` method takes a now fully-populated ``bundle.data`` & make
+any last alterations to it. This is useful for when a piece of data might
+depend on more than one field, if you want to shove in extra data that isn't
+worth having its own field or if you want to dynamically remove things from
+the data to be returned.
+
+A simple example::
+
+    class MyResource(ModelResource):
+        class Meta:
+            queryset = Note.objects.all()
+        
+        def dehydrate(self, bundle):
+            # Include the request IP in the bundle.
+            bundle.data['request_ip'] = bundle.request.META.get('REMOTE_ADDR')
+            return bundle
+
+A complex example::
+
+    class MyResource(ModelResource):
+        class Meta:
+            queryset = User.objects.all()
+            excludes = ['email', 'password', 'is_staff', 'is_superuser']
+        
+        def dehydrate(self, bundle):
+            # If they're requesting their own record, add in their email address.
+            if bundle.request.user.pk == bundle.obj.pk:
+                # Note that there isn't an ``email`` field on the ``Resource``.
+                # By this time, it doesn't matter, as the built data will no
+                # longer be checked against the fields on the ``Resource``.
+                bundle.data['email'] = bundle.obj.email
+            
+            return bundle
+
+This method should return a ``bundle``, whether it modifies the existing one or creates a whole new one. You can even remove any/all data from the
+``bundle.data`` if you wish.
+
+The Hydrate Cycle
+-------------------
+
+Tastypie uses a "hydrate" cycle to take serializated data from the client
+and turn it into something the data model can use. This is the reverse process
+from the ``dehydrate`` cycle. If fact, by default, Tastypie's serialized data
+should be "round-trip-able", meaning the data that comes out should be able to
+be fed back in & result in the same original data model. This usually means
+taking a dictionary of simple data types & turning it into a complex data
+object.
+
+Broadly speaking, this takes the recently-deserialized ``bundle.data``
+dictionary & builds ``bundle.obj`` (but does **NOT** save it).
+
+The cycle looks like:
+
+* Put the data from the client into a ``Bundle`` instance, which is then passed
+  through the various methods.
+* Run through all fields on the ``Resource``, letting each field
+  perform its own ``hydrate`` method on the ``bundle``.
+* While processing each field, look for a ``hydrate_<fieldname>`` method on
+  the ``Resource``. If it's present, call it with the ``bundle``.
+* Finally, after all fields are processed, if the ``hydrate`` method is
+  present on the ``Resource``, it is called & given the entire ``bundle``.
+
+The goal of this cycle is to populate the ``bundle.obj`` data model with data
+suitable for saving/persistence. Again, with the exception of the ``alter_*``
+methods (as hooks to manipulate the overall structure), this cycle controls what
+how the data from the client is interpreted & placed on the data model.
+
+Per-field ``hydrate``
+~~~~~~~~~~~~~~~~~~~~~
+
+Each field (even custom ``ApiField`` subclasses) has its own ``hydrate``
+method. If it knows how to access data (say, given the ``attribute`` kwarg), it
+will attempt to take data from the ``bundle.data`` & assign it on the data
+model.
+
+The return value is put in the ``bundle.obj`` attribute for that fieldname.
 
 ``hydrate_FOO``
----------------
+~~~~~~~~~~~~~~~
+
+Data from the client may not map directly onto the data model or might need
+augmentation. This hook lets you take that data & convert it.
+
+.. note::
+
+  The ``FOO`` here is not literal. Instead, it is a placeholder that should be
+  replaced with the fieldname in question.
+
+A simple example::
+
+    class MyResource(ModelResource):
+        # The ``title`` field is already added to the class by ``ModelResource``
+        # and populated off ``Note.title``. But we want lowercase titles...
+        
+        class Meta:
+            queryset = Note.objects.all()
+        
+        def hydrate_title(self, bundle):
+            return bundle.data['title'].lower()
+
+The return value is updated in the ``bundle.obj``.
+
+``hydrate``
+~~~~~~~~~~~
+
+The ``hydrate`` method allows you to make final changes to the ``bundle.obj``. This includes things like prepopulating fields you don't expose over the API,
+recalculating related data or mangling data.
+
+Example::
+
+    class MyResource(ModelResource):
+        # The ``title`` field is already added to the class by ``ModelResource``
+        # and populated off ``Note.title``. We'll use that title to build a
+        # ``Note.slug`` as well.
+        
+        class Meta:
+            queryset = Note.objects.all()
+        
+        def hydrate(self, bundle):
+            # Don't change existing slugs.
+            # In reality, this would be better implemented at the ``Note.save``
+            # level, but is for demonstration.
+            if not bundle.obj.pk:
+                bundle.obj.slug = slugify(bundle.data['title'])
+            
+            return bundle
+
+This method should return a ``bundle``, whether it modifies the existing one or creates a whole new one. You can even remove any/all data from the
+``bundle.obj`` if you wish.
 
 
 Reverse "Relationships"
