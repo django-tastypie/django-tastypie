@@ -627,6 +627,19 @@ The inner ``Meta`` class allows for class-level configuration of how the
   the ``get_absolute_url`` for that object (on the site proper). Default is
   ``False``.
 
+``always_return_data``
+------------------------
+
+  Specifies all HTTP methods (except ``DELETE``) should return a serialized form
+  of the data. Default is ``False``.
+  
+  If ``False``, ``HttpNoContent`` (204) is returned on ``POST/PUT``
+  with an empty body & a ``Location`` header of where to request the full
+  resource.
+  
+  If ``True``, ``HttpAccepted`` (202) is returned on ``POST/PUT``
+  with a body containing all the data in a serialized form.
+
 
 Basic Filtering
 ===============
@@ -1207,7 +1220,7 @@ Deletes a single object.
 ``create_response``
 -------------------
 
-.. method:: Resource.create_response(self, request, data)
+.. method:: Resource.create_response(self, request, data, response_class=HttpResponse, **response_kwargs)
 
 Extracts the common "which-format/serialize/return-response" cycle.
 
@@ -1274,7 +1287,11 @@ Replaces a collection of resources with another collection.
 Calls ``delete_list`` to clear out the collection then ``obj_create``
 with the provided the data to create the new collection.
 
-Return ``HttpNoContent`` (204 No Content).
+Return ``HttpNoContent`` (204 No Content) if
+``Meta.always_return_data = False`` (default).
+
+Return ``HttpAccepted`` (202 Accepted) if
+``Meta.always_return_data = True``.
 
 ``put_detail``
 --------------
@@ -1288,7 +1305,15 @@ Calls ``obj_update`` with the provided data first, but falls back to
 ``obj_create`` if the object does not already exist.
 
 If a new resource is created, return ``HttpCreated`` (201 Created).
-If an existing resource is modified, return ``HttpNoContent`` (204 No Content).
+If ``Meta.always_return_data = True``, there will be a populated body
+of serialized data.
+
+If an existing resource is modified and
+``Meta.always_return_data = False`` (default), return ``HttpNoContent``
+(204 No Content).
+If an existing resource is modified and
+``Meta.always_return_data = True``, return ``HttpAccepted`` (202
+Accepted).
 
 ``post_list``
 -------------
@@ -1301,6 +1326,8 @@ Calls ``obj_create`` with the provided data and returns a response
 with the new resource's location.
 
 If a new resource is created, return ``HttpCreated`` (201 Created).
+If ``Meta.always_return_data = True``, there will be a populated body
+of serialized data.
 
 ``post_detail``
 ---------------

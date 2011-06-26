@@ -70,6 +70,7 @@ class ResourceOptions(object):
     excludes = []
     include_resource_uri = True
     include_absolute_url = False
+    always_return_data = False
     
     def __new__(cls, meta=None):
         overrides = {}
@@ -938,7 +939,7 @@ class Resource(object):
         """
         raise NotImplementedError()
     
-    def create_response(self, request, data):
+    def create_response(self, request, data, response_class=HttpResponse, **response_kwargs):
         """
         Extracts the common "which-format/serialize/return-response" cycle.
         
@@ -946,7 +947,7 @@ class Resource(object):
         """
         desired_format = self.determine_format(request)
         serialized = self.serialize(request, data, desired_format)
-        return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
+        return response_class(content=serialized, content_type=build_content_type(desired_format), **response_kwargs)
     
     def is_valid(self, bundle, request=None):
         """
@@ -1034,7 +1035,11 @@ class Resource(object):
         Calls ``delete_list`` to clear out the collection then ``obj_create``
         with the provided the data to create the new collection.
         
-        Return ``HttpNoContent`` (204 No Content).
+        Return ``HttpNoContent`` (204 No Content) if
+        ``Meta.always_return_data = False`` (default).
+        
+        Return ``HttpAccepted`` (202 Accepted) if
+        ``Meta.always_return_data = True``.
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_list_data(request, deserialized)
@@ -1059,7 +1064,13 @@ class Resource(object):
             self.obj_create(bundle, request=request)
             bundles_seen.append(bundle)
         
-        return HttpNoContent()
+        if not self._meta.always_return_data:
+            return HttpNoContent()
+        else:
+            to_be_serialized = {}
+            to_be_serialized['objects'] = [self.full_dehydrate(obj=bundle.obj) for bundle in bundles_seen]
+            to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
+            return self.create_response(request, to_be_serialized, response_class=HttpAccepted)
     
     def put_detail(self, request, **kwargs):
         """
@@ -1070,7 +1081,15 @@ class Resource(object):
         ``obj_create`` if the object does not already exist.
         
         If a new resource is created, return ``HttpCreated`` (201 Created).
-        If an existing resource is modified, return ``HttpNoContent`` (204 No Content).
+        If ``Meta.always_return_data = True``, there will be a populated body
+        of serialized data.
+        
+        If an existing resource is modified and
+        ``Meta.always_return_data = False`` (default), return ``HttpNoContent``
+        (204 No Content).
+        If an existing resource is modified and
+        ``Meta.always_return_data = True``, return ``HttpAccepted`` (202
+        Accepted).
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
@@ -1079,10 +1098,19 @@ class Resource(object):
         
         try:
             updated_bundle = self.obj_update(bundle, request=request, pk=kwargs.get('pk'))
-            return HttpNoContent()
+            
+            if not self._meta.always_return_data:
+                return HttpNoContent()
+            else:
+                return self.create_response(request, updated_bundle, response_class=HttpAccepted)
         except (NotFound, MultipleObjectsReturned):
             updated_bundle = self.obj_create(bundle, request=request, pk=kwargs.get('pk'))
-            return HttpCreated(location=self.get_resource_uri(updated_bundle))
+            location = self.get_resource_uri(updated_bundle)
+            
+            if not self._meta.always_return_data:
+                return HttpCreated(location=location)
+            else:
+                return self.create_response(request, updated_bundle, response_class=HttpCreated, location=location)
     
     def post_list(self, request, **kwargs):
         """
@@ -1092,13 +1120,20 @@ class Resource(object):
         with the new resource's location.
         
         If a new resource is created, return ``HttpCreated`` (201 Created).
+        If ``Meta.always_return_data = True``, there will be a populated body
+        of serialized data.
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
         self.is_valid(bundle, request)
         updated_bundle = self.obj_create(bundle, request=request)
-        return HttpCreated(location=self.get_resource_uri(updated_bundle))
+        location = self.get_resource_uri(updated_bundle)
+        
+        if not self._meta.always_return_data:
+            return HttpCreated(location=location)
+        else:
+            return self.create_response(request, updated_bundle, response_class=HttpCreated, location=location)
     
     def post_detail(self, request, **kwargs):
         """

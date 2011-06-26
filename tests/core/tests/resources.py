@@ -580,6 +580,13 @@ class TinyLimitNoteResource(NoteResource):
         queryset = Note.objects.filter(is_active=True)
 
 
+class AlwaysDataNoteResource(NoteResource):
+    class Meta:
+        resource_name = 'alwaysdatanote'
+        queryset = Note.objects.filter(is_active=True)
+        always_return_data = True
+
+
 class VeryCustomNoteResource(NoteResource):
     author = fields.CharField(attribute='author__username')
     constant = fields.IntegerField(default=20)
@@ -1323,10 +1330,16 @@ class ModelResourceTestCase(TestCase):
         
         resp = resource.put_list(request)
         self.assertEqual(resp.status_code, 204)
+        self.assertEqual(resp.content, '')
         self.assertEqual(Note.objects.count(), 3)
         self.assertEqual(Note.objects.filter(is_active=True).count(), 1)
         new_note = Note.objects.get(slug='cat-is-back-again')
         self.assertEqual(new_note.content, "The cat is back. The dog coughed him up out back.")
+        
+        always_resource = AlwaysDataNoteResource()
+        resp = always_resource.put_list(request)
+        self.assertEqual(resp.status_code, 202)
+        self.assertTrue(resp.content.startswith('{"objects": ['))
     
     def test_put_detail(self):
         self.assertEqual(Note.objects.count(), 6)
@@ -1349,6 +1362,11 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(Note.objects.count(), 7)
         new_note = Note.objects.get(slug='cat-is-back')
         self.assertEqual(new_note.content, u'The cat is gone again. I think it was the rabbits that ate him this time.')
+        
+        always_resource = AlwaysDataNoteResource()
+        resp = always_resource.put_detail(request, pk=10)
+        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(resp.content, '{"content": "The cat is gone again. I think it was the rabbits that ate him this time.", "created": "2010-04-03 20:05:00", "is_active": true, "pk": 10, "slug": "cat-is-back", "title": "The Cat Is Gone", "updated": "2010-04-03 20:05:00"}')
     
     def test_post_list(self):
         self.assertEqual(Note.objects.count(), 6)
@@ -1363,6 +1381,11 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(Note.objects.count(), 7)
         new_note = Note.objects.get(slug='cat-is-back')
         self.assertEqual(new_note.content, "The cat is back. The dog coughed him up out back.")
+        
+        always_resource = AlwaysDataNoteResource()
+        resp = always_resource.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.content, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}')
     
     def test_post_detail(self):
         resource = NoteResource()
