@@ -110,7 +110,10 @@ class DeclarativeMetaclass(type):
             pass
         
         for field_name, obj in attrs.items():
-            if isinstance(obj, ApiField):
+            # Look for ``dehydrated_type`` instead of doing ``isinstance``,
+            # which can break down if Tastypie is re-namespaced as something
+            # else.
+            if hasattr(obj, 'dehydrated_type'):
                 field = attrs.pop(field_name)
                 declared_fields[field_name] = field
         

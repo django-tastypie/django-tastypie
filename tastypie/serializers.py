@@ -3,13 +3,11 @@ from StringIO import StringIO
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.serializers import json
-from django.template import loader, Context
 from django.utils import simplejson
 from django.utils.encoding import force_unicode
 from tastypie.bundle import Bundle
 from tastypie.exceptions import UnsupportedFormat
 from tastypie.utils import format_datetime, format_date, format_time
-from tastypie.fields import ApiField, ToOneField, ToManyField
 try:
     import lxml
     from lxml.etree import parse as parse_xml
@@ -38,7 +36,7 @@ class Serializer(object):
         * xml
         * yaml
         * html
-        * plist
+        * plist (see http://explorapp.com/biplist/)
     
     It was designed to make changing behavior easy, either by overridding the
     various format methods (i.e. ``to_json``), by changing the
@@ -181,13 +179,13 @@ class Serializer(object):
             return dict((key, self.to_simple(val, options)) for (key, val) in data.iteritems())
         elif isinstance(data, Bundle):
             return dict((key, self.to_simple(val, options)) for (key, val) in data.data.iteritems())
-        elif isinstance(data, ApiField):
-            if isinstance(data, ToOneField):
+        elif hasattr(data, 'dehydrated_type'):
+            if getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == False:
                 if data.full:
                     return self.to_simple(data.fk_resource, options)
                 else:
                     return self.to_simple(data.value, options)
-            elif isinstance(data, ToManyField):
+            elif getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == True:
                 if data.full:
                     return [self.to_simple(bundle, options) for bundle in data.m2m_bundles]
                 else:
@@ -235,13 +233,13 @@ class Serializer(object):
             element = Element(name or 'object')
             for field_name, field_object in data.data.items():
                 element.append(self.to_etree(field_object, options, name=field_name, depth=depth+1))
-        elif isinstance(data, ApiField):
-            if isinstance(data, ToOneField):
+        elif hasattr(data, 'dehydrated_type'):
+            if getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == False:
                 if data.full:
                     return self.to_etree(data.fk_resource, options, name, depth+1)
                 else:
                     return self.to_etree(data.value, options, name, depth+1)
-            elif isinstance(data, ToManyField):
+            elif getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == True:
                 if data.full:
                     element = Element(name or 'objects')
                     for bundle in data.m2m_bundles:
