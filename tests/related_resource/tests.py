@@ -30,11 +30,21 @@ class RelatedResourceTest(TestCase):
 
     def test_related_resource_authorization(self):
         resource = api.canonical_resource_for('notes')
+        
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": null}'
+        
+        resp = resource.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(User.objects.get(id=self.user.id).username, 'testy_mctesterson')
+        
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
         request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": {"id": %s, "username": "foobar"}}' % self.user.id
-
+        
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(User.objects.get(id=self.user.id).username, 'foobar')

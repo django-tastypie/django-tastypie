@@ -1649,11 +1649,11 @@ class ModelResource(Resource):
     def save_related(self, bundle):
         """
         Handles the saving of related non-M2M data.
-
+        
         Calling assigning ``child.parent = parent`` & then calling
         ``Child.save`` isn't good enough to make sure the ``parent``
         is saved.
-
+        
         To get around this, we go through all our related fields &
         call ``save`` on them if they have related, non-M2M data.
         M2M data is handled by the ``ModelResource.save_m2m`` method.
@@ -1661,24 +1661,27 @@ class ModelResource(Resource):
         for field_name, field_object in self.fields.items():
             if not getattr(field_object, 'is_related', False):
                 continue
-
+            
             if getattr(field_object, 'is_m2m', False):
                 continue
-
+            
             if not field_object.attribute:
                 continue
-
+            
+            if field_object.blank:
+                continue
+            
             # Get the object.
             try:
                 related_obj = getattr(bundle.obj, field_object.attribute)
             except ObjectDoesNotExist:
                 related_obj = None
-
+            
             # Because sometimes it's ``None`` & that's OK.
             if related_obj:
                 related_obj.save()
                 setattr(bundle.obj, field_object.attribute, related_obj)
-
+    
     def save_m2m(self, bundle):
         """
         Handles the saving of related M2M data.
