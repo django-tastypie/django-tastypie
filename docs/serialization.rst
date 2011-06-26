@@ -19,7 +19,7 @@ The default ``Serializer`` supports the following formats:
 * xml
 * yaml
 * html
-* plist
+* plist (see http://explorapp.com/biplist/)
 
 Usage
 =====
