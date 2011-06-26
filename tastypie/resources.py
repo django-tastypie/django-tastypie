@@ -638,7 +638,7 @@ class Resource(object):
         # Dehydrate each field.
         for field_name, field_object in self.fields.items():
             # A touch leaky but it makes URI resolution work.
-            if isinstance(field_object, RelatedField):
+            if getattr(field_object, 'dehydrated_type', None) == 'related':
                 field_object.api_name = self._meta.api_name
                 field_object.resource_name = self._meta.resource_name
                 
