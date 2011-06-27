@@ -1740,6 +1740,9 @@ class ModelResource(Resource):
             
             if not field_object.attribute:
                 continue
+              
+            if field_object.readonly:
+                continue
             
             # Get the manager.
             related_mngr = getattr(bundle.obj, field_object.attribute)
