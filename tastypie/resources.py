@@ -1061,7 +1061,7 @@ class Resource(object):
                 self.rollback(bundles_seen)
                 raise
             
-            self.obj_create(bundle, request=request)
+            self.obj_create(bundle, request=request, **kwargs)
             bundles_seen.append(bundle)
         
         if not self._meta.always_return_data:
@@ -1097,14 +1097,14 @@ class Resource(object):
         self.is_valid(bundle, request)
         
         try:
-            updated_bundle = self.obj_update(bundle, request=request, pk=kwargs.get('pk'))
+            updated_bundle = self.obj_update(bundle, request=request, **kwargs)
             
             if not self._meta.always_return_data:
                 return HttpNoContent()
             else:
                 return self.create_response(request, updated_bundle, response_class=HttpAccepted)
         except (NotFound, MultipleObjectsReturned):
-            updated_bundle = self.obj_create(bundle, request=request, pk=kwargs.get('pk'))
+            updated_bundle = self.obj_create(bundle, request=request, **kwargs)
             location = self.get_resource_uri(updated_bundle)
             
             if not self._meta.always_return_data:
@@ -1127,7 +1127,7 @@ class Resource(object):
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
         self.is_valid(bundle, request)
-        updated_bundle = self.obj_create(bundle, request=request)
+        updated_bundle = self.obj_create(bundle, request=request, **kwargs)
         location = self.get_resource_uri(updated_bundle)
         
         if not self._meta.always_return_data:
