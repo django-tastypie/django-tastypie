@@ -1366,8 +1366,15 @@ class ModelResourceTestCase(TestCase):
         always_resource = AlwaysDataNoteResource()
         resp = always_resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 202)
-        self.assertEqual(resp.content, '{"content": "The cat is gone again. I think it was the rabbits that ate him this time.", "created": "2010-04-03 20:05:00", "is_active": true, "pk": 10, "slug": "cat-is-back", "title": "The Cat Is Gone", "updated": "2010-04-03 20:05:00"}')
-    
+        data = json.loads(resp.content)
+        self.assertTrue("id" in data)
+        self.assertEqual(data["id"], "10")
+        self.assertTrue("content" in data)
+        self.assertEqual(data["content"], "The cat is gone again. I think it was the rabbits that ate him this time.")
+        self.assertTrue("resource_uri" in data)
+        self.assertTrue("title" in data)
+        self.assertTrue("is_active" in data)
+
     def test_post_list(self):
         self.assertEqual(Note.objects.count(), 6)
         resource = NoteResource()
@@ -1385,8 +1392,15 @@ class ModelResourceTestCase(TestCase):
         always_resource = AlwaysDataNoteResource()
         resp = always_resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp.content, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}')
-    
+        data = json.loads(resp.content)
+        self.assertTrue("id" in data)
+        self.assertEqual(data["id"], "8")
+        self.assertTrue("content" in data)
+        self.assertEqual(data["content"], "The cat is back. The dog coughed him up out back.")
+        self.assertTrue("resource_uri" in data)
+        self.assertTrue("title" in data)
+        self.assertTrue("is_active" in data)
+
     def test_post_detail(self):
         resource = NoteResource()
         request = HttpRequest()
