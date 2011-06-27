@@ -1102,6 +1102,8 @@ class Resource(object):
             if not self._meta.always_return_data:
                 return HttpNoContent()
             else:
+                updated_bundle = self.full_dehydrate(updated_bundle.obj)
+                updated_bundle = self.alter_detail_data_to_serialize(request, updated_bundle)
                 return self.create_response(request, updated_bundle, response_class=HttpAccepted)
         except (NotFound, MultipleObjectsReturned):
             updated_bundle = self.obj_create(bundle, request=request, pk=kwargs.get('pk'))
@@ -1110,6 +1112,8 @@ class Resource(object):
             if not self._meta.always_return_data:
                 return HttpCreated(location=location)
             else:
+                updated_bundle = self.full_dehydrate(updated_bundle.obj)
+                updated_bundle = self.alter_detail_data_to_serialize(request, updated_bundle)
                 return self.create_response(request, updated_bundle, response_class=HttpCreated, location=location)
     
     def post_list(self, request, **kwargs):
@@ -1133,6 +1137,8 @@ class Resource(object):
         if not self._meta.always_return_data:
             return HttpCreated(location=location)
         else:
+            updated_bundle = self.full_dehydrate(updated_bundle.obj)
+            updated_bundle = self.alter_detail_data_to_serialize(request, updated_bundle)
             return self.create_response(request, updated_bundle, response_class=HttpCreated, location=location)
     
     def post_detail(self, request, **kwargs):
