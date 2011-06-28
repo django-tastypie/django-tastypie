@@ -503,7 +503,8 @@ class RelatedField(ApiField):
             return related_resource.get_resource_uri(bundle)
         else:
             # ZOMG extra data and big payloads.
-            return related_resource.full_dehydrate(related_resource.instance)
+            bundle = related_resource.build_bundle(obj=related_resource.instance, request=bundle.request)
+            return related_resource.full_dehydrate(bundle)
     
     def build_related_resource(self, value, request=None):
         """
@@ -518,13 +519,14 @@ class RelatedField(ApiField):
             # We got a URI. Load the object and assign it.
             try:
                 obj = self.fk_resource.get_via_uri(value)
-                return self.fk_resource.full_dehydrate(obj)
+                bundle = self.fk_resource.build_bundle(obj=obj, request=request)
+                return self.fk_resource.full_dehydrate(bundle)
             except ObjectDoesNotExist:
                 raise ApiFieldError("Could not find the provided object via resource URI '%s'." % value)
         elif hasattr(value, 'items'):
             # Try to hydrate the data provided.
             value = dict_strip_unicode_keys(value)
-            self.fk_bundle = Bundle(data=value, request=request)
+            self.fk_bundle = self.fk_resource.build_bundle(data=value, request=request)
             
             # We need to check to see if updates are allowed on the FK
             # resource. If not, we'll just return a populated bundle instead
@@ -548,7 +550,8 @@ class RelatedField(ApiField):
             except MultipleObjectsReturned:
                 return self.fk_resource.full_hydrate(self.fk_bundle)
         elif hasattr(value, 'pk'):
-            return self.fk_resource.full_dehydrate(value)
+            bundle = self.fk_resource.build_bundle(obj=value, request=request)
+            return self.fk_resource.full_dehydrate(bundle)
         else:
             raise ApiFieldError("The '%s' field has was given data that was not a URI and not a dictionary-alike: %s." % (self.instance_name, value))
 

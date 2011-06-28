@@ -41,9 +41,10 @@ Javascript's use, you could do the following::
         
         # Other things get prepped to go into the context then...
         
+        ur_bundle = ur.build_bundle(obj=user, request=request)
         return render_to_response('myapp/user_detail.html', {
             # Other things here.
-            "user_json": ur.serialize(None, ur.full_dehydrate(obj=user), 'application/json'),
+            "user_json": ur.serialize(None, ur.full_dehydrate(ur_bundle), 'application/json'),
         })
 
 
@@ -169,7 +170,8 @@ at ``/api/v1/notes/search/``::
             objects = []
             
             for result in page.object_list:
-                bundle = self.full_dehydrate(result.object)
+                bundle = self.build_bundle(obj=result.object, request=request)
+                bundle = self.full_dehydrate(bundle)
                 objects.append(bundle)
             
             object_list = {

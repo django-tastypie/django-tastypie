@@ -629,13 +629,11 @@ class Resource(object):
     
     # Data preparation.
     
-    def full_dehydrate(self, obj):
+    def full_dehydrate(self, bundle):
         """
-        Given an object instance, extract the information from it to populate
-        the resource.
+        Given a bundle with an object instance, extract the information from it
+        to populate the resource.
         """
-        bundle = Bundle(obj=obj)
-        
         # Dehydrate each field.
         for field_name, field_object in self.fields.items():
             # A touch leaky but it makes URI resolution work.
@@ -1004,7 +1002,8 @@ class Resource(object):
         to_be_serialized = paginator.page()
         
         # Dehydrate the bundles in preparation for serialization.
-        to_be_serialized['objects'] = [self.full_dehydrate(obj=obj) for obj in to_be_serialized['objects']]
+        bundles = [self.build_bundle(obj=obj, request=request) for obj in to_be_serialized['objects']]
+        to_be_serialized['objects'] = [self.full_dehydrate(bundle) for bundle in bundles]
         to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
         return self.create_response(request, to_be_serialized)
     
@@ -1024,7 +1023,8 @@ class Resource(object):
         except MultipleObjectsReturned:
             return HttpMultipleChoices("More than one resource is found at this URI.")
         
-        bundle = self.full_dehydrate(obj)
+        bundle = self.build_bundle(obj=obj, request=request)
+        bundle = self.full_dehydrate(bundle)
         bundle = self.alter_detail_data_to_serialize(request, bundle)
         return self.create_response(request, bundle)
     
@@ -1068,7 +1068,7 @@ class Resource(object):
             return HttpNoContent()
         else:
             to_be_serialized = {}
-            to_be_serialized['objects'] = [self.full_dehydrate(obj=bundle.obj) for bundle in bundles_seen]
+            to_be_serialized['objects'] = [self.full_dehydrate(bundle) for bundle in bundles_seen]
             to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
             return self.create_response(request, to_be_serialized, response_class=HttpAccepted)
     
@@ -1102,7 +1102,7 @@ class Resource(object):
             if not self._meta.always_return_data:
                 return HttpNoContent()
             else:
-                updated_bundle = self.full_dehydrate(updated_bundle.obj)
+                updated_bundle = self.full_dehydrate(updated_bundle)
                 updated_bundle = self.alter_detail_data_to_serialize(request, updated_bundle)
                 return self.create_response(request, updated_bundle, response_class=HttpAccepted)
         except (NotFound, MultipleObjectsReturned):
@@ -1112,7 +1112,7 @@ class Resource(object):
             if not self._meta.always_return_data:
                 return HttpCreated(location=location)
             else:
-                updated_bundle = self.full_dehydrate(updated_bundle.obj)
+                updated_bundle = self.full_dehydrate(updated_bundle)
                 updated_bundle = self.alter_detail_data_to_serialize(request, updated_bundle)
                 return self.create_response(request, updated_bundle, response_class=HttpCreated, location=location)
     
@@ -1137,7 +1137,7 @@ class Resource(object):
         if not self._meta.always_return_data:
             return HttpCreated(location=location)
         else:
-            updated_bundle = self.full_dehydrate(updated_bundle.obj)
+            updated_bundle = self.full_dehydrate(updated_bundle)
             updated_bundle = self.alter_detail_data_to_serialize(request, updated_bundle)
             return self.create_response(request, updated_bundle, response_class=HttpCreated, location=location)
     
@@ -1215,7 +1215,8 @@ class Resource(object):
         for pk in obj_pks:
             try:
                 obj = self.obj_get(request, pk=pk)
-                bundle = self.full_dehydrate(obj)
+                bundle = self.build_bundle(obj=obj, request=request)
+                bundle = self.full_dehydrate(bundle)
                 objects.append(bundle)
             except ObjectDoesNotExist:
                 not_found.append(pk)

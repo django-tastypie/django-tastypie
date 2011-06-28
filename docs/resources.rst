@@ -1007,10 +1007,10 @@ simply override this method.
 ``full_dehydrate``
 ------------------
 
-.. method:: Resource.full_dehydrate(self, obj)
+.. method:: Resource.full_dehydrate(self, bundle)
 
-Given an object instance, extract the information from it to populate
-the resource.
+Given a bundle with an object instance, extract the information from it to
+populate the resource.
 
 ``dehydrate``
 -------------

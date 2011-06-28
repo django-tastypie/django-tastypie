@@ -224,13 +224,14 @@ class ResourceTestCase(TestCase):
         test_object_1.foo = "Hi, I'm ignored."
         
         basic = BasicResource()
+        test_bundle_1 = basic.build_bundle(obj=test_object_1)
         
         # Sanity check.
         self.assertEqual(basic.name.value, None)
         self.assertEqual(basic.view_count.value, None)
         self.assertEqual(basic.date_joined.value, None)
         
-        bundle_1 = basic.full_dehydrate(test_object_1)
+        bundle_1 = basic.full_dehydrate(test_bundle_1)
         self.assertEqual(bundle_1.data['name'], 'Daniel')
         self.assertEqual(bundle_1.data['view_count'], 12)
         self.assertEqual(bundle_1.data['date_joined'].year, 2010)
@@ -241,8 +242,9 @@ class ResourceTestCase(TestCase):
         test_object_2 = TestObject()
         test_object_2.name = 'Daniel'
         basic_2 = BasicResource()
+        test_bundle_2 = basic_2.build_bundle(obj=test_object_2)
         
-        bundle_2 = basic_2.full_dehydrate(test_object_2)
+        bundle_2 = basic_2.full_dehydrate(test_bundle_2)
         self.assertEqual(bundle_2.data['name'], 'Daniel')
         self.assertEqual(bundle_2.data['view_count'], 0)
         self.assertEqual(bundle_2.data['date_joined'].year, 2010)
@@ -255,8 +257,9 @@ class ResourceTestCase(TestCase):
         test_object_3.is_active = False
         test_object_3.bar = "But sometimes I'm not ignored!"
         another_1 = AnotherBasicResource()
+        test_bundle_3 = another_1.build_bundle(obj=test_object_3)
         
-        another_bundle_1 = another_1.full_dehydrate(test_object_3)
+        another_bundle_1 = another_1.full_dehydrate(test_bundle_3)
         self.assertEqual(another_bundle_1.data['name'], 'Joe')
         self.assertEqual(another_bundle_1.data['view_count'], 5)
         self.assertEqual(another_bundle_1.data['date_joined'].year, 2010)
@@ -1579,7 +1582,8 @@ class ModelResourceTestCase(TestCase):
     def test_uri_fields(self):
         with_abs_url = WithAbsoluteURLNoteResource()
         with_abs_url_obj = with_abs_url.obj_get(pk=1)
-        abs_bundle = with_abs_url.full_dehydrate(with_abs_url_obj)
+        with_abs_url_bundle = with_abs_url.build_bundle(obj=with_abs_url_obj)
+        abs_bundle = with_abs_url.full_dehydrate(with_abs_url_bundle)
         self.assertEqual(abs_bundle.data['resource_uri'], '/api/v1/withabsoluteurlnote/1/')
         self.assertEqual(abs_bundle.data['absolute_url'], u'/some/fake/path/1/')
 
@@ -1824,7 +1828,8 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(Note.objects.all().count(), 6)
         note = NoteResource()
         note_obj = note.obj_get(pk=1)
-        note_bundle = note.full_dehydrate(note_obj)
+        note_bundle = note.build_bundle(obj=note_obj)
+        note_bundle = note.full_dehydrate(note_bundle)
         note_bundle.data['title'] = 'Whee!'
         note.obj_update(note_bundle, pk=1)
         self.assertEqual(Note.objects.all().count(), 6)
