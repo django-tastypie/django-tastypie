@@ -1127,6 +1127,18 @@ Used when hydrating related data.
 
 Checks to ensure ``delete`` is within ``allowed_methods``.
 
+``apply_filters``
+-----------------
+
+.. method:: Resource.apply_filters(self, request, applicable_filters)
+
+A hook to alter how the filters are applied to the object list.
+
+This needs to be implemented at the user level.
+
+``ModelResource`` includes a full working version specific to Django's
+``Models``.
+
 ``obj_get_list``
 ----------------
 
@@ -1482,6 +1494,16 @@ Looks for the ``order_by`` key and handles either ascending (just the
 field name) or descending (the field name with a ``-`` in front).
 
 The field name should be the resource field, **NOT** model field.
+
+``apply_filters``
+-----------------
+
+.. method:: ModelResource.apply_filters(self, request, applicable_filters)
+
+An ORM-specific implementation of ``apply_filters``.
+
+The default simply applies the ``applicable_filters`` as ``**kwargs``,
+but should make it possible to do more advanced things.
 
 ``get_object_list``
 -------------------

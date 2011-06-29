@@ -841,6 +841,17 @@ class Resource(object):
         allowed = set(self._meta.list_allowed_methods + self._meta.detail_allowed_methods)
         return 'delete' in allowed
     
+    def apply_filters(self, request, applicable_filters):
+        """
+        A hook to alter how the filters are applied to the object list.
+        
+        This needs to be implemented at the user level.
+        
+        ``ModelResource`` includes a full working version specific to Django's
+        ``Models``.
+        """
+        raise NotImplementedError()
+    
     def obj_get_list(self, request=None, **kwargs):
         """
         Fetches the list of objects available on the resource.
@@ -1534,6 +1545,15 @@ class ModelResource(Resource):
         
         return obj_list.order_by(*order_by_args)
     
+    def apply_filters(self, request, applicable_filters):
+        """
+        An ORM-specific implementation of ``apply_filters``.
+        
+        The default simply applies the ``applicable_filters`` as ``**kwargs``,
+        but should make it possible to do more advanced things.
+        """
+        return self.get_object_list(request).filter(**applicable_filters)
+        
     def get_object_list(self, request):
         """
         An ORM-specific implementation of ``get_object_list``.
@@ -1560,7 +1580,7 @@ class ModelResource(Resource):
         applicable_filters = self.build_filters(filters=filters)
         
         try:
-            base_object_list = self.get_object_list(request).filter(**applicable_filters)
+            base_object_list = self.apply_filters(request, applicable_filters)
             return self.apply_authorization_limits(request, base_object_list)
         except ValueError, e:
             raise BadRequest("Invalid resource lookup data provided (mismatched type).")

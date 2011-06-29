@@ -1541,6 +1541,30 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(len(notes), 1)
         self.assertEqual(notes[0].title, u'Recent Volcanic Activity.')
     
+    def test_apply_filters(self):
+        nr = NoteResource()
+        mock_request = MockRequest()
+        
+        # No filters.
+        notes = nr.apply_filters(mock_request, {})
+        self.assertEqual(len(notes), 4)
+        
+        filters = {
+            'title': u"Granny's Gone"
+        }
+        notes = nr.apply_filters(mock_request, filters)
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes[0].title, u"Granny's Gone")
+        
+        filters = {
+            'title__icontains': u"post",
+            'created__lte': datetime.date(2010, 6, 30),
+        }
+        notes = nr.apply_filters(mock_request, filters)
+        self.assertEqual(len(notes), 2)
+        self.assertEqual(notes[0].title, u'First Post!')
+        self.assertEqual(notes[1].title, u'Another Post')
+    
     def test_obj_get(self):
         resource = NoteResource()
         
