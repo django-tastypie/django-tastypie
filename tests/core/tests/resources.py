@@ -677,12 +677,6 @@ class WithAbsoluteURLNoteResource(ModelResource):
         return '/api/v1/withabsoluteurlnote/%s/' % bundle_or_obj.obj.id
 
 
-class UserResource(ModelResource):
-    class Meta:
-        queryset = User.objects.all()
-        resource_name = 'users'
-
-
 class SubjectResource(ModelResource):
     class Meta:
         queryset = Subject.objects.all()
@@ -760,6 +754,13 @@ class NullableMediaBitResource(ModelResource):
         resource_name = 'nullablemediabit'
 
 
+class ReadOnlyRelatedNoteResource(ModelResource):
+    author = fields.ToOneField(UserResource, 'author', readonly=True)
+    
+    class Meta:
+        queryset = Note.objects.all()
+
+
 class BlankMediaBitResource(ModelResource):
     # Allow ``note`` to be omitted, even though it's a required field.
     note = fields.ToOneField(NoteResource, 'note', blank=True)
@@ -768,7 +769,7 @@ class BlankMediaBitResource(ModelResource):
         queryset = MediaBit.objects.all()
         resource_name = 'blankmediabit'
 
-     # We'll custom populate the note here if it's not present.
+    # We'll custom populate the note here if it's not present.
     # Doesn't make a ton of sense in this context, but for things
     # like ``user`` or ``site`` that you can autopopulate based
     # on the request.
@@ -2268,6 +2269,34 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(len(data), 3)
         self.assertEqual(len(data['objects']), 6)
         self.assertEqual(data['extra'], 'Some extra stuff here.')
+    
+    def test_readonly_full_hydrate(self):
+        rornr = ReadOnlyRelatedNoteResource()
+        note = Note.objects.get(pk=1)
+        dbundle = Bundle(obj=note)
+        
+        # Make sure the field is there on read.
+        dehydrated = rornr.full_dehydrate(dbundle)
+        self.assertTrue('author' in dehydrated.data)
+        
+        # Now check that it can be omitted in ``full_hydrate``
+        hbundle = Bundle(obj=note, data={
+            'name': 'Daniel',
+            'view_count': 6,
+            'date_joined': datetime.datetime(2010, 2, 15, 12, 0, 0),
+        })
+        hydrated = rornr.full_hydrate(hbundle)
+        self.assertEqual(hydrated.obj.author.username, 'johndoe')
+        
+        # It also shouldn't accept a new value & should silently ignore it.
+        hbundle_2 = Bundle(obj=note, data={
+            'name': 'Daniel',
+            'view_count': 6,
+            'date_joined': datetime.datetime(2010, 2, 15, 12, 0, 0),
+            'author': '/api/v1/users/2/',
+        })
+        hydrated_2 = rornr.full_hydrate(hbundle_2)
+        self.assertEqual(hydrated_2.obj.author.username, 'johndoe')
 
 
 class BasicAuthResourceTestCase(TestCase):
