@@ -52,6 +52,22 @@ class ViewsTestCase(TestCase):
         self.assertEqual(obj['is_active'], True)
         self.assertEqual(obj['user'], '/api/v1/users/1/')
     
+    def test_puts(self):
+        request = HttpRequest()
+        post_data = '{"content": "Another new post.", "is_active": true, "title": "Another New Title", "slug": "new-title", "user": "/api/v1/users/1/"}'
+        request._raw_post_data = post_data
+        
+        resp = self.client.put('/api/v1/notes/1/', data=post_data, content_type='application/json')
+        self.assertEqual(resp.status_code, 204)
+
+        # make sure posted object exists
+        resp = self.client.get('/api/v1/notes/1/', data={'format': 'json'})
+        self.assertEqual(resp.status_code, 200)
+        obj = json.loads(resp.content)
+        self.assertEqual(obj['content'], 'Another new post.')
+        self.assertEqual(obj['is_active'], True)
+        self.assertEqual(obj['user'], '/api/v1/users/1/')
+    
     def test_api_field_error(self):
         # When a field error is encountered, we should be presenting the message
         # back to the user.
