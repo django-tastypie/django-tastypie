@@ -380,7 +380,7 @@ class RelatedField(ApiField):
     self_referential = False
     help_text = 'A related resource. Can be either a URI or set of nested resource data.'
     
-    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, contenttype_attribute=None):
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, contenttype_field=None):
         """
         Builds the field and prepares it to access to related data.
         
@@ -416,8 +416,8 @@ class RelatedField(ApiField):
         human-readable description of the field exposed at the schema level.
         Defaults to the per-Field definition.
         
-        Optionally accepts ``contenttype_attribute`` which points to the model 
-        attribute which points to the appropriate contenttype for the relation.
+        Optionally accepts ``contenttype_field`` which is the
+        field which points to the appropriate contenttype for the relation.
         Dictionary must be provided for ``to`` to provide ``Resource`` mappings
         for possible content types or a ``ValueError`` will be raised.
         """
@@ -435,13 +435,13 @@ class RelatedField(ApiField):
         self.resource_name = None
         self.unique = unique
         self._to_class = None
-        self.contenttype_attribute = contenttype_attribute
+        self.contenttype_field = contenttype_field
         
-        if self.contenttype_attribute and not isinstance(self.to, dict):
+        if self.contenttype_field and not isinstance(self.to, dict):
             raise ValueError(
-                "to argument must be a dictionary" + 
+                "to argument must be a dictionary " + 
                 "when used with contenttype_attribute")
-                
+
         if self.to == 'self':
             self.self_referential = True
             self._to_class = self.__class__
@@ -464,7 +464,7 @@ class RelatedField(ApiField):
         """
         related_resource = self.to_class()
         
-        if self.contenttype_attribute:
+        if isinstance(self.to, dict):
             # we're using a dict for self.to. we also finally know the 
             # actual type of the related object
             self._to_class = type(related_instance)    
@@ -531,15 +531,19 @@ class RelatedField(ApiField):
             bundle = related_resource.build_bundle(obj=related_resource.instance, request=bundle.request)
             return related_resource.full_dehydrate(bundle)
     
-    def build_related_resource(self, value, request=None):
+    def build_related_resource(self, value, request=None, resource_type=None):
         """
         Used to ``hydrate`` the data provided. If just a URL is provided,
         the related resource is attempted to be loaded. If a
         dictionary-like structure is provided, a fresh resource is
         created.
         """
-        self.fk_resource = self.to_class()
         
+        if resource_type:
+            self._to_class = resource_type
+            
+        self.fk_resource = self.to_class()
+    
         if isinstance(value, basestring):
             # We got a URI. Load the object and assign it.
             try:
@@ -549,9 +553,9 @@ class RelatedField(ApiField):
             except ObjectDoesNotExist:
                 raise ApiFieldError("Could not find the provided object via resource URI '%s'." % value)
         elif hasattr(value, 'items'):
-            # TODO this likely still does not work
             # Try to hydrate the data provided.
             value = dict_strip_unicode_keys(value)
+                
             self.fk_bundle = self.fk_resource.build_bundle(data=value, request=request)
             
             # We need to check to see if updates are allowed on the FK
@@ -616,7 +620,15 @@ class ToOneField(RelatedField):
         if value is None:
             return value
         
-        return self.build_related_resource(value, request=bundle.request)
+        related_type = None
+        # see if we have a contenttype_field
+        if self.contenttype_field:
+            # find out the class of model we're looking at from this field
+            related_type = self.to[
+                        self.contenttype_field.hydrate(bundle).model_class()]
+            
+        return self.build_related_resource(value, request=bundle.request,
+                                           resource_type=related_type)
 
 class ForeignKey(ToOneField):
     """
