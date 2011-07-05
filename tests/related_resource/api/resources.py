@@ -3,7 +3,7 @@ from tastypie import fields
 from tastypie.resources import ModelResource
 from tastypie.authorization import Authorization
 from core.models import Note
-from related_resource.models import Category, Tag, ExtraData, Taggable, TaggableTag
+from related_resource.models import Category, Tag, ExtraData, Taggable, TaggableTag, GenericTag
 
 
 class UserResource(ModelResource):
@@ -81,3 +81,11 @@ class ExtraDataResource(ModelResource):
         queryset = ExtraData.objects.all()
         authorization = Authorization()
 
+class GenericTagResource(ModelResource):
+    content_object = fields.ToOneField(
+        {Category : CategoryResource, Taggable : TaggableResource}, attribute="content_object")
+    
+    class Meta:
+        resource_name = 'generictag'
+        queryset = GenericTag.objects.all()
+        authorization = Authorization()

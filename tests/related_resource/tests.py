@@ -5,9 +5,9 @@ from core.tests.mocks import MockRequest
 from django.conf import settings
 from related_resource.api.resources import UserResource, \
         CategoryResource, TagResource, TaggableResource, TaggableTagResource, \
-        ExtraDataResource
+        ExtraDataResource, GenericTagResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData
+from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, GenericTag
 
 settings.DEBUG = True
 
@@ -162,3 +162,70 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         deserialized = json.loads(resp.content)
         self.assertEqual(len(deserialized), 5)
         self.assertEqual(deserialized['name'], 'school')
+
+class GenericForeignKeyTest(TestCase):
+    urls = 'related_resource.api.urls'
+    
+    def setUp(self):
+        super(GenericForeignKeyTest, self).setUp()
+        # create some test objects to point generic relations to
+        self.category_1 = Category.objects.create(name="Programming")
+        self.taggable_1 = Taggable.objects.create(name="Programming Post")
+        # create a tag resources
+        self.tag_1 = GenericTag.objects.create(name='Python', 
+                                content_object=self.category_1)
+        self.tag_2 = GenericTag.objects.create(name='Django',
+                                content_object=self.taggable_1)
+    
+    def test_read_tag_content_object(self):
+
+        # access tag_1 through the database and assert that the content_object
+        # points to category_1
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+        
+        resource = api.canonical_resource_for('generictag')
+        # should get us self.tag_1
+        resp = resource.wrap_view('dispatch_detail')(request, pk=self.tag_1.pk)
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        # test that the uri for content_object pointed to self.category_1
+        self.assertEqual(data['content_object'], 
+                        CategoryResource().get_resource_uri(self.category_1))
+        
+        # should get us self.tag_2
+        resp = resource.wrap_view('dispatch_detail')(request, pk=self.tag_2.pk)
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        self.assertEqual(data['content_object'], 
+                    TaggableResource().get_resource_uri(self.taggable_1))
+    
+    def test_read_tag_content_object_full(self):
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+        
+        # set the content_object field to full mode
+        resource = api.canonical_resource_for('generictag')
+        resource.fields['content_object'].full = True
+        
+        # check for self.tag_1 and self.category_1
+        resp = resource.wrap_view('dispatch_detail')(request, pk=self.tag_1.pk)
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        self.assertEqual(data['content_object'], 
+            CategoryResource().full_dehydrate(
+                    CategoryResource().build_bundle(obj=self.category_1, 
+                        request=request)).data)
+        
+        # now for self.tag_2 and self.taggable_1
+        resp = resource.wrap_view('dispatch_detail')(request, pk=self.tag_2.pk)
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        self.assertEqual(data['content_object'], 
+            TaggableResource().full_dehydrate(
+                    TaggableResource().build_bundle(obj=self.taggable_1, 
+                        request=request)).data)
+    
+                        

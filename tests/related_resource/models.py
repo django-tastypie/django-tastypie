@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.contrib.contenttypes import generic
 
 # A self-referrential model to test regressions.
 class Category(models.Model):
@@ -54,4 +54,13 @@ class ExtraData(models.Model):
     def __unicode__(self):
         return u"%s" % (self.name)
 
-
+# Tag which can be applied to any other model (will be tested on Categories and
+# Taggable)
+class GenericTag(models.Model):
+    name = models.CharField(max_length = 30)
+    object_id = models.PositiveIntegerField()
+    content_type = models.ForeignKey(generic.ContentType)
+    content_object = generic.GenericForeignKey()
+    
+    def __unicode__(self):
+        return u"%s" % (self.name)
