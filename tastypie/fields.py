@@ -7,7 +7,7 @@ from django.utils import datetime_safe, importlib
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.utils import dict_strip_unicode_keys
-from tastypie.resource import ModelResource
+from tastypie.resources import ModelResource
 
 class NOT_PROVIDED:
     pass
