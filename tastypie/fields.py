@@ -7,7 +7,7 @@ from django.utils import datetime_safe, importlib
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.utils import dict_strip_unicode_keys
-
+from tastypie.resource import ModelResource
 
 class NOT_PROVIDED:
     pass
@@ -381,12 +381,12 @@ class RelatedField(ApiField):
     self_referential = False
     help_text = 'A related resource. Can be either a URI or set of nested resource data.'
     
-    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None):
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, contenttype_attribute=None):
         """
         Builds the field and prepares it to access to related data.
         
         The ``to`` argument should point to a ``Resource`` class, NOT
-        to a ``Model``. Required.
+        to a ``Model`` or be a dictionary matching ``Model`` classes to ``Resource`` classes. Required.
         
         The ``attribute`` argument should specify what field/callable points to
         the related data on the instance object. Required.
@@ -416,6 +416,11 @@ class RelatedField(ApiField):
         Optionally accepts ``help_text``, which lets you provide a
         human-readable description of the field exposed at the schema level.
         Defaults to the per-Field definition.
+        
+        Optionally accepts ``contenttype_attribute`` which points to the model 
+        attribute which points to the appropriate contenttype for the relation.
+        Dictionary must be provided for ``to`` to provide ``Resource`` mappings
+        for possible content types or a ``ValueError`` will be raised.
         """
         self.instance_name = None
         self._resource = None
@@ -431,7 +436,13 @@ class RelatedField(ApiField):
         self.resource_name = None
         self.unique = unique
         self._to_class = None
+        self.contenttype_attribute = contenttype_attribute
         
+        if self.contenttype_attribute and not isinstance(self.to, dict):
+            raise ValueError(
+                "to argument must be a dictionary" + 
+                "when used with contenttype_attribute")
+                
         if self.to == 'self':
             self.self_referential = True
             self._to_class = self.__class__
@@ -454,6 +465,14 @@ class RelatedField(ApiField):
         """
         related_resource = self.to_class()
         
+        if contenttype_attribute:
+            # we're using a dict for self.to. we also finally know the 
+            # actual type of the related object
+            self._to_class = type(related_instance)    
+            # TODO make so if key is not in dictionary we check if we have default or set to null
+            related_resource = self.to[type(related_instance)]()
+                
+        
         # Fix the ``api_name`` if it's not present.
         if related_resource._meta.api_name is None:
             if self._resource and not self._resource._meta.api_name is None:
@@ -471,8 +490,12 @@ class RelatedField(ApiField):
         if self._to_class:
             return self._to_class
         
-        if not isinstance(self.to, basestring):
-            self._to_class = self.to
+        if not isinstance(self.to, basestring):\
+            if isinstance(self.to, dict):
+                # we're expected to return a functioning resource class
+                self._to_class = ModelResource
+            else:
+                self._to_class = self.to
             return self._to_class
         
         # It's a string. Let's figure it out.

@@ -625,7 +625,10 @@ class Resource(object):
         except Resolver404:
             raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
         
-        return self.obj_get(**self.remove_api_resource_names(kwargs))
+        # view's im_class will be us (self) unless this isn't the 
+        # correct Resource for uri in which case the correct one will be used
+        # TODO maybe this should be a class method now
+        return view.im_class.obj_get(**self.remove_api_resource_names(kwargs))
     
     # Data preparation.
     
