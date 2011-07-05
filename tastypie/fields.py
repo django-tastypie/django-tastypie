@@ -464,7 +464,7 @@ class RelatedField(ApiField):
         """
         related_resource = self.to_class()
         
-        if contenttype_attribute:
+        if self.contenttype_attribute:
             # we're using a dict for self.to. we also finally know the 
             # actual type of the related object
             self._to_class = type(related_instance)    
