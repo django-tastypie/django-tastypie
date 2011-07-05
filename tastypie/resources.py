@@ -210,6 +210,8 @@ class Resource(object):
                 # error message.
                 return self._handle_500(request, e)
         
+        # make it easier to find out what resource the view belongs to
+        wrapper.parent_resource = self
         return wrapper
     
     def _handle_500(self, request, exception):
@@ -625,10 +627,10 @@ class Resource(object):
         except Resolver404:
             raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
         
-        # view's im_class will be us (self) unless this isn't the 
-        # correct Resource for uri in which case the correct one will be used
+        # view's parent_resource will always give us the correct resource for
+        # that view
         # TODO maybe this should be a class method now
-        return view.im_class.obj_get(**self.remove_api_resource_names(kwargs))
+        return view.parent_resource.obj_get(**self.remove_api_resource_names(kwargs))
     
     # Data preparation.
     
