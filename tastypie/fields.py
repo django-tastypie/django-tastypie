@@ -549,6 +549,7 @@ class RelatedField(ApiField):
             except ObjectDoesNotExist:
                 raise ApiFieldError("Could not find the provided object via resource URI '%s'." % value)
         elif hasattr(value, 'items'):
+            # TODO this likely still does not work
             # Try to hydrate the data provided.
             value = dict_strip_unicode_keys(value)
             self.fk_bundle = self.fk_resource.build_bundle(data=value, request=request)
