@@ -490,7 +490,7 @@ class RelatedField(ApiField):
         if self._to_class:
             return self._to_class
         
-        if not isinstance(self.to, basestring):\
+        if not isinstance(self.to, basestring):
             if isinstance(self.to, dict):
                 # we're expected to return a functioning resource class
                 self._to_class = ModelResource
