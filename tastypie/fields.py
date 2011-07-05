@@ -7,7 +7,6 @@ from django.utils import datetime_safe, importlib
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.utils import dict_strip_unicode_keys
-from tastypie.resources import ModelResource
 
 class NOT_PROVIDED:
     pass
@@ -493,6 +492,9 @@ class RelatedField(ApiField):
         if not isinstance(self.to, basestring):
             if isinstance(self.to, dict):
                 # we're expected to return a functioning resource class
+                # import is here because at top it creates a circular import to 
+                # resources
+                from tastypie.resources import ModelResource
                 self._to_class = ModelResource
             else:
                 self._to_class = self.to
