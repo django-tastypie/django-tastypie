@@ -646,7 +646,18 @@ class ToOneField(RelatedField):
             related_content_type = self.contenttype_field.hydrate(bundle)
             if related_content_type:
                 resource_type = self.to[related_content_type.obj.model_class()]
-            
+            else:
+                # check to see if the obj know's it's content type
+                try:
+                    if hasattr(bundle.obj, self.contenttype_field.attribute):
+                        resource_type = getattr(bundle.obj, self.contenttype_field.attribute)
+                        if resource_type:
+                            resource_type = self.to[resource_type.model_class()]
+                except ObjectDoesNotExist:
+                    resource_type = None
+        if 'content_type' in bundle.data and not 'content_object' in bundle.data:
+            raise BadRequest("You must supply a content_object when setting content_type")
+        
         return self.build_related_resource(value, request=bundle.request,
                                            resource_type=resource_type)
 

@@ -309,7 +309,6 @@ class GenericForeignKeyTest(TestCase):
         resource = api.canonical_resource_for('generictag')
         
         resp = resource.wrap_view('dispatch_list')(request)
-        print resp
         self.assertEqual(resp.status_code, 201)
         
         # get newly created object via headers.locaion
@@ -325,5 +324,71 @@ class GenericForeignKeyTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
         self.assertEqual(data['name'], new_category.name)
+        # make sure this represents a category
+        self.assertEqual(type(resource.get_via_uri(data['resource_uri'])), 
+                         Category)
         
-        # make a 
+        # test posting taggable data instead of category this time
+        request.raw_post_data = (
+            '{"name": "Photoshop", "content_type": "%s", "content_object": {"name": "Design Post"}}' 
+                % (ContentTypeResource().get_resource_uri(
+                        ContentType.objects.get_for_model(Taggable))))
+        
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp.status_code, 201)
+        
+        # get newly created object via headers.locaion
+        self.assertTrue(resp.has_header('location'))
+        location = resp['location']
+        
+        resp = self.client.get(location, data={"format": "json"})
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        self.assertEqual(data['name'], 'Photoshop')
+        self.assertTrue(data['content_object'])
+        resp = self.client.get(data['content_object'], data={'format': 'json'})
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        self.assertEqual(data['name'], "Design Post")
+        # make sure this represents a category
+        self.assertEqual(type(resource.get_via_uri(data['resource_uri'])), 
+                         Taggable)
+                         
+    def test_put(self):
+        new_category = Category.objects.create(name="Design")
+        self.assertEqual(new_category.name, "Design")
+        
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.raw_post_data = '{"name": "Photoshop", "content_object": "%s"}' % CategoryResource().get_resource_uri(new_category)
+        
+        resource = api.canonical_resource_for('generictag')
+        
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp.status_code, 201)
+
+        # get newly created object via headers.locaion
+        self.assertTrue(resp.has_header('location'))
+        location = resp['location']
+        
+        # put to this location and replace the name of content_object with "Web Design"
+        resp = self.client.get(location, data={"format": "json"})
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        self.assertEqual(data['name'], 'Photoshop')
+        self.assertEqual(data['content_object'], 
+                CategoryResource().get_resource_uri(new_category))
+        # now put the new data
+        request.raw_post_data = '{"content_object": {"name": "Web Design"}}'
+        request.method = 'PUT'
+        resp = resource.put_detail(request, pk=data['id'])
+        self.assertEqual(resp.status_code, 204)
+        
+        # test putting a different content type
+        request.raw_post_data = ('{"content_type": "%s", "content_object": {"name": "Web Design"}}' 
+            % (ContentTypeResource().get_resource_uri(
+                    ContentType.objects.get_for_model(Taggable))))
+        resp = resource.put_detail(request, pk=data['id'])
+        self.assertEqual(resp.status_code, 204)
+        self.assertEqual(GenericTag.objects.get(pk=data['id']).content_type, ContentType.objects.get_for_model(Taggable))
