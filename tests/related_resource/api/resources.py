@@ -24,7 +24,7 @@ class NoteResource(ModelResource):
 
 class CategoryResource(ModelResource):
     parent = fields.ToOneField('self', 'parent', null=True)
-
+    tags = fields.ToManyField('related_resource.api.resources.GenericTagResource', attribute="tags", null=True, blank=True)
     class Meta:
         resource_name = 'category'
         queryset = Category.objects.all()

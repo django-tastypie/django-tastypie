@@ -697,6 +697,10 @@ class ToManyField(RelatedField):
     Note that the ``hydrate`` portions of this field are quite different than
     any other field. ``hydrate_m2m`` actually handles the data and relations.
     This is due to the way Django implements M2M relationships.
+    
+    Can be used to represent a ``GenericRelation`` 
+    (reverse of ``GenericForeignKey``).  Simply set ``to`` to the resource 
+    which represents the other end of the relation.
     """
     is_m2m = True
     help_text = 'Many related resources. Can be either a list of URIs or list of individually nested resource data.'

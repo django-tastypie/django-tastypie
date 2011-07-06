@@ -392,3 +392,42 @@ class GenericForeignKeyTest(TestCase):
         resp = resource.put_detail(request, pk=data['id'])
         self.assertEqual(resp.status_code, 204)
         self.assertEqual(GenericTag.objects.get(pk=data['id']).content_type, ContentType.objects.get_for_model(Taggable))
+    
+    def test_reverse(self):
+        tags = self.category_1.tags.all()
+        
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+        
+        resource = api.canonical_resource_for('generictag')
+        resource.fields['content_object'].full = False
+        # should get us self.tag_1
+        resp = resource.wrap_view('dispatch_detail')(request, pk=self.tag_1.pk)
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        # test that the uri for content_object pointed to self.category_1
+        self.assertEqual(data['content_object'], 
+                        CategoryResource().get_resource_uri(self.category_1))
+        
+        resp = self.client.get(data['content_object'], data={"format": "json"})
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        tags_urls = list()
+        for tag in tags:
+            tags_urls.append(GenericTagResource().get_resource_uri(tag))
+        self.assertEqual(data['tags'], tags_urls)
+        
+        # add some more tags to this category
+        GenericTag.objects.create(name="Object Orientated", content_object=self.category_1)
+        GenericTag.objects.create(name="Interpreted", content_object=self.category_1)
+        
+        tags = self.category_1.tags.all()
+        tags_urls = list()
+        for tag in tags:
+            tags_urls.append(GenericTagResource().get_resource_uri(tag))
+        
+        resp = self.client.get(data['resource_uri'], data={"format": "json"})
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        self.assertEqual(data['tags'], tags_urls)
