@@ -5,7 +5,7 @@ import re
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.utils import datetime_safe, importlib
 from tastypie.bundle import Bundle
-from tastypie.exceptions import ApiFieldError, NotFound
+from tastypie.exceptions import ApiFieldError, NotFound, BadRequest
 from tastypie.utils import dict_strip_unicode_keys
 
 class NOT_PROVIDED:
@@ -568,7 +568,7 @@ class RelatedField(ApiField):
             # if the api is used in this way.
             if not resource_type and isinstance(self.to, dict):
                 if self.contenttype_field:
-                    raise ApiFieldError("You must set the %s field when setting a GenericForeignKey in this way" % (self.contenttype_field.instance_name))
+                    raise BadRequest("You must set the %s field when setting a GenericForeignKey in this way" % (self.contenttype_field.instance_name))
             # Try to hydrate the data provided.
             value = dict_strip_unicode_keys(value)
                 
@@ -645,7 +645,7 @@ class ToOneField(RelatedField):
             # find out the class of model we're looking at from this field
             related_content_type = self.contenttype_field.hydrate(bundle)
             if related_content_type:
-                resource_type = self.to[related_content_type.model_class()]
+                resource_type = self.to[related_content_type.obj.model_class()]
             
         return self.build_related_resource(value, request=bundle.request,
                                            resource_type=resource_type)

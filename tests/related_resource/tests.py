@@ -8,6 +8,8 @@ from related_resource.api.resources import UserResource, \
         ExtraDataResource, GenericTagResource
 from related_resource.api.urls import api
 from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, GenericTag
+from django.contrib.contenttypes.models import ContentType
+from tastypie.resources import ContentTypeResource
 
 settings.DEBUG = True
 
@@ -273,10 +275,55 @@ class GenericForeignKeyTest(TestCase):
         self.assertEqual(data['content_object'],
             TaggableResource().get_resource_uri(new_taggable))
     
+    def test_post_by_data_requires_content_type(self):
+        """Make sure 400 (BadRequest) is the response if an attempt is made to post with data
+        for the GenericForeignKey without providing a content_type
+        """
+        
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.raw_post_data = '{"name": "Photoshop", "content_object": %s}' % '{"name": "Design"}'
+        
+        resource = api.canonical_resource_for('generictag')
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertTrue(resp.status_code, 400)
+        
     def test_post_by_data(self):
         """Create a new GenericTag item using a POST request.
         content_type must be set on the new object and the serialized 
         data for the GenericForeignKey will be included in the POST 
         """
         
-                        
+        new_category = Category(name="Design")
+        self.assertEqual(new_category.name, "Design")
+        
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.raw_post_data = (
+            '{"name": "Photoshop", "content_type": "%s", "content_object": {"name": "Design"}}' 
+                % (ContentTypeResource().get_resource_uri(
+                        ContentType.objects.get_for_model(Category))))
+        
+        resource = api.canonical_resource_for('generictag')
+        
+        resp = resource.wrap_view('dispatch_list')(request)
+        print resp
+        self.assertEqual(resp.status_code, 201)
+        
+        # get newly created object via headers.locaion
+        self.assertTrue(resp.has_header('location'))
+        location = resp['location']
+        
+        resp = self.client.get(location, data={"format": "json"})
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        self.assertEqual(data['name'], 'Photoshop')
+        self.assertTrue(data['content_object'])
+        resp = self.client.get(data['content_object'], data={'format': 'json'})
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        self.assertEqual(data['name'], new_category.name)
+        
+        # make a 

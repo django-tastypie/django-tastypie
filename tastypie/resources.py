@@ -1815,6 +1815,8 @@ class ContentTypeResource(ModelResource):
         from django.contrib.contenttypes.models import ContentType
         self.Meta.queryset = ContentType.objects.all()
         self.Meta.object_class = self.Meta.queryset.model
+        self._meta.queryset = ContentType.objects.all()
+        self._meta.object_class = self.Meta.queryset.model
         super(ContentTypeResource,self).__init__(*args, **kwargs)
         
     class Meta:
