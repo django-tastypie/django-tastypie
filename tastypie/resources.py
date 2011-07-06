@@ -1805,6 +1805,23 @@ class ModelResource(Resource):
         return self._build_reverse_url("api_dispatch_detail", kwargs=kwargs)
 
 
+class ContentTypeResource(ModelResource):
+    """
+    Convenience model to represent ContentType model
+    """
+    # import here since otherwise importing TastyPie.resources will cause an
+    # error unless django.contrib.contenttypes is enabled
+    def __init__(self, *args, **kwargs):
+        from django.contrib.contenttypes.models import ContentType
+        self.Meta.queryset = ContentType.objects.all()
+        self.Meta.object_class = self.Meta.queryset.model
+        super(ContentTypeResource,self).__init__(*args, **kwargs)
+        
+    class Meta:
+        fields = ['model']
+        detail_allowed_methods = ['get',]
+        list_allowed_methods = ['get',]
+    
 class NamespacedModelResource(ModelResource):
     """
     A ModelResource subclass that respects Django namespaces.

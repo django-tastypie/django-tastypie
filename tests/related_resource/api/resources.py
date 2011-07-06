@@ -82,8 +82,9 @@ class ExtraDataResource(ModelResource):
         authorization = Authorization()
 
 class GenericTagResource(ModelResource):
+    content_type = fields.ContentTypeField()
     content_object = fields.ToOneField(
-        {Category : CategoryResource, Taggable : TaggableResource}, attribute="content_object")
+        {Category : CategoryResource, Taggable : TaggableResource}, attribute="content_object", contenttype_field=content_type)
     
     class Meta:
         resource_name = 'generictag'

@@ -228,4 +228,55 @@ class GenericForeignKeyTest(TestCase):
                     TaggableResource().build_bundle(obj=self.taggable_1, 
                         request=request)).data)
     
+    def test_post_by_uri(self):
+        """Create a new GenericTag item using POST request. 
+        Point content_object to a category by it's uri"""
+        new_category = Category.objects.create(name="Design")
+        self.assertEqual(new_category.name, "Design")
+        
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.raw_post_data = '{"name": "Photoshop", "content_object": "%s"}' % CategoryResource().get_resource_uri(new_category)
+        
+        resource = api.canonical_resource_for('generictag')
+        
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp.status_code, 201)
+        
+        # get newly created object via headers.locaion
+        self.assertTrue(resp.has_header('location'))
+        location = resp['location']
+        
+        resp = self.client.get(location, data={"format": "json"})
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        self.assertEqual(data['name'], 'Photoshop')
+        self.assertEqual(data['content_object'], 
+                CategoryResource().get_resource_uri(new_category))
+        
+        # now try doing this with a TaggableObject instead
+        
+        new_taggable = Taggable.objects.create(name="Design Post")
+        
+        request.raw_post_data = '{"name": "UX", "content_object": "%s"}' % TaggableResource().get_resource_uri(new_taggable)
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp.status_code, 201)
+        
+        self.assertTrue(resp.has_header('location'))
+        location = resp['location']
+        
+        resp = self.client.get(location, data={"format" : "json"})
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        self.assertEqual(data['name'], 'UX')
+        self.assertEqual(data['content_object'],
+            TaggableResource().get_resource_uri(new_taggable))
+    
+    def test_post_by_data(self):
+        """Create a new GenericTag item using a POST request.
+        content_type must be set on the new object and the serialized 
+        data for the GenericForeignKey will be included in the POST 
+        """
+        
                         

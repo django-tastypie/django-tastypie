@@ -442,6 +442,13 @@ class RelatedField(ApiField):
                 "to argument must be a dictionary " + 
                 "when used with contenttype_attribute")
 
+        if self.contenttype_field and not issubclass(type(self.contenttype_field), ToOneField):
+            raise ValueError(
+                "contenttype_field must be a ToOneField which provides access"+
+                " to the Resource's content_type ForeignKey")
+            from tastypie.resources import ContentTypeResource
+            if not issubclass(type(self.contentype_field.to), ContentTypeResource):
+                raise ValueError("contenttype_field.to must be a ContentTypeResource or subclass")
         if self.to == 'self':
             self.self_referential = True
             self._to_class = self.__class__
@@ -467,9 +474,9 @@ class RelatedField(ApiField):
         if isinstance(self.to, dict):
             # we're using a dict for self.to. we also finally know the 
             # actual type of the related object
-            self._to_class = type(related_instance)    
+            self._to_class = self.to[type(related_instance)]    
             # TODO make so if key is not in dictionary we check if we have default or set to null
-            related_resource = self.to[type(related_instance)]()
+            related_resource = self.to_class()
                 
         
         # Fix the ``api_name`` if it's not present.
@@ -540,7 +547,7 @@ class RelatedField(ApiField):
         """
         
         if resource_type:
-            self._to_class = resource_type
+            self._to_class = resource_type  
             
         self.fk_resource = self.to_class()
     
@@ -548,11 +555,20 @@ class RelatedField(ApiField):
             # We got a URI. Load the object and assign it.
             try:
                 obj = self.fk_resource.get_via_uri(value)
+                # at this point even though our obj is the right type, 
+                # fk_resource may be the wrong type. set it to the right type
+                if isinstance(self.to, dict):
+                    self.fk_resource = self.get_related_resource(obj)
                 bundle = self.fk_resource.build_bundle(obj=obj, request=request)
                 return self.fk_resource.full_dehydrate(bundle)
             except ObjectDoesNotExist:
                 raise ApiFieldError("Could not find the provided object via resource URI '%s'." % value)
         elif hasattr(value, 'items'):
+            # Make sure they included the contenttype_field which is required 
+            # if the api is used in this way.
+            if not resource_type and isinstance(self.to, dict):
+                if self.contenttype_field:
+                    raise ApiFieldError("You must set the %s field when setting a GenericForeignKey in this way" % (self.contenttype_field.instance_name))
             # Try to hydrate the data provided.
             value = dict_strip_unicode_keys(value)
                 
@@ -595,6 +611,9 @@ class ToOneField(RelatedField):
     help_text = 'A single related resource. Can be either a URI or set of nested resource data.'
     
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, contenttype_field=None):
+        if isinstance(to, dict):
+            if contenttype_field:
+                help_text = 'A single related resource. Can be either a URI or set of nested resource data.  If nested resource data is provided, the resource\'s %s must be set.' % contenttype_field.instance_name
         super(ToOneField, self).__init__(to, attribute, related_name=related_name, default=default, null=null, blank=blank, readonly=readonly, full=full, unique=unique, help_text=help_text, contenttype_field=contenttype_field)
         self.fk_resource = None
     
@@ -620,15 +639,16 @@ class ToOneField(RelatedField):
         if value is None:
             return value
         
-        related_type = None
+        resource_type = None
         # see if we have a contenttype_field
         if self.contenttype_field:
             # find out the class of model we're looking at from this field
-            related_type = self.to[
-                        self.contenttype_field.hydrate(bundle).model_class()]
+            related_content_type = self.contenttype_field.hydrate(bundle)
+            if related_content_type:
+                resource_type = self.to[related_content_type.model_class()]
             
         return self.build_related_resource(value, request=bundle.request,
-                                           resource_type=related_type)
+                                           resource_type=resource_type)
 
 class ForeignKey(ToOneField):
     """
@@ -643,7 +663,20 @@ class OneToOneField(ToOneField):
     """
     pass
 
-
+class ContentTypeField(ToOneField):
+    """
+    A convenience subclass to easily create a ContentTypeField for a 
+    ``ContentType`` ForeignKey.  Assumes ``django.contrib.contentypes`` is an 
+    installed app.  Ensure you register ``ContentTypeResource`` with your
+    ``Api`` or include ContentTypeResource URLs in another manner.
+    """
+    def __init__(self, to=None, attribute="content_type", related_name=None, default=NOT_PROVIDED, null=False, blank=True, readonly=False, full=False, unique=False, help_text=None, contenttype_field=None):
+        from tastypie.resources import ContentTypeResource
+        if not to:
+            to = ContentTypeResource
+        super(ToOneField, self).__init__(to, attribute, related_name=related_name, default=default, null=null, blank=blank, readonly=readonly, full=full, unique=unique, help_text=help_text, contenttype_field=contenttype_field)
+        self.fk_resource = None
+        
 class ToManyField(RelatedField):
     """
     Provides access to related data via a join table.
