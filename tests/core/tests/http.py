@@ -8,6 +8,10 @@ class HttpTestCase(TestCase):
         created = HttpCreated(location='http://example.com/thingy/1/')
         self.assertEqual(created.status_code, 201)
         self.assertEqual(created['Location'], 'http://example.com/thingy/1/')
+        # Regression.
+        created_2 = HttpCreated()
+        self.assertEqual(created_2.status_code, 201)
+        self.assertEqual(created_2['Location'], '')
         accepted = HttpAccepted()
         self.assertEqual(accepted.status_code, 202)
         no_content = HttpNoContent()
