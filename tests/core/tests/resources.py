@@ -756,6 +756,7 @@ class NullableMediaBitResource(ModelResource):
 
 class ReadOnlyRelatedNoteResource(ModelResource):
     author = fields.ToOneField(UserResource, 'author', readonly=True)
+    my_property = fields.CharField(attribute='my_property', null=True, readonly=True)
     
     class Meta:
         queryset = Note.objects.all()

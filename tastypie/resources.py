@@ -673,6 +673,9 @@ class Resource(object):
             bundle.obj = self._meta.object_class()
         
         for field_name, field_object in self.fields.items():
+            if field_object.readonly is True:
+                continue
+
             if field_object.attribute:
                 value = field_object.hydrate(bundle)
                 
