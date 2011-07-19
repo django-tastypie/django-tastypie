@@ -518,7 +518,7 @@ class RelatedField(ApiField):
         if isinstance(value, basestring):
             # We got a URI. Load the object and assign it.
             try:
-                obj = self.fk_resource.get_via_uri(value)
+                obj = self.fk_resource.get_via_uri(value, request=request)
                 bundle = self.fk_resource.build_bundle(obj=obj, request=request)
                 return self.fk_resource.full_dehydrate(bundle)
             except ObjectDoesNotExist:
