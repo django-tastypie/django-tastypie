@@ -22,18 +22,18 @@ A sample resource definition might look something like::
     from tastypie.authorization import DjangoAuthorization
     from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
     from myapp.models import Entry
-    
-    
+
+
     class UserResource(ModelResource):
         class Meta:
             queryset = User.objects.all()
             resource_name = 'auth/user'
             excludes = ['email', 'password', 'is_superuser']
-    
-    
+
+
     class EntryResource(ModelResource):
         user = fields.ForeignKey(UserResource, 'user')
-        
+
         class Meta:
             queryset = Entry.objects.all()
             list_allowed_methods = ['get', 'post']
@@ -97,7 +97,7 @@ As an example, we'll walk through what a GET request to a list endpoint (say
   * the user is authenticated (``is_authenticated``),
   * the user is authorized (``is_authorized``),
   * & the user has not exceeded their throttle (``throttle_check``).
-  
+
   At this point, ``dispatch`` actually calls the requested method (``get_list``).
 
 * ``get_list`` does the actual work of the API. It does:
@@ -237,10 +237,10 @@ A simple example::
     class MyResource(ModelResource):
         # The ``title`` field is already added to the class by ``ModelResource``
         # and populated off ``Note.title``. But we want allcaps titles...
-        
+
         class Meta:
             queryset = Note.objects.all()
-        
+
         def dehydrate_title(self, bundle):
             return bundle.data['title'].upper()
 
@@ -250,21 +250,21 @@ A complex example::
         # As is, this is just an empty field. Without the ``dehydrate_rating``
         # method, no data would be populated for it.
         rating = fields.FloatField(readonly=True)
-        
+
         class Meta:
             queryset = Note.objects.all()
-        
+
         def dehydrate_rating(self, bundle):
             total_score = 0.0
-            
+
             # Make sure we don't have to worry about "divide by zero" errors.
             if not bundle.obj.rating_set.count():
                 return rating
-            
+
             # We'll run over all the ``Rating`` objects & calculate an average.
             for rating in bundle.obj.rating_set.all():
                 total_score += rating.rating
-            
+
             return total_score /  bundle.obj.rating_set.count()
 
 The return value is updated in the ``bundle.data``. You should avoid altering
@@ -284,7 +284,7 @@ A simple example::
     class MyResource(ModelResource):
         class Meta:
             queryset = Note.objects.all()
-        
+
         def dehydrate(self, bundle):
             # Include the request IP in the bundle.
             bundle.data['request_ip'] = bundle.request.META.get('REMOTE_ADDR')
@@ -296,7 +296,7 @@ A complex example::
         class Meta:
             queryset = User.objects.all()
             excludes = ['email', 'password', 'is_staff', 'is_superuser']
-        
+
         def dehydrate(self, bundle):
             # If they're requesting their own record, add in their email address.
             if bundle.request.user.pk == bundle.obj.pk:
@@ -304,7 +304,7 @@ A complex example::
                 # By this time, it doesn't matter, as the built data will no
                 # longer be checked against the fields on the ``Resource``.
                 bundle.data['email'] = bundle.obj.email
-            
+
             return bundle
 
 This method should return a ``bundle``, whether it modifies the existing one or creates a whole new one. You can even remove any/all data from the
@@ -366,10 +366,10 @@ A simple example::
     class MyResource(ModelResource):
         # The ``title`` field is already added to the class by ``ModelResource``
         # and populated off ``Note.title``. But we want lowercase titles...
-        
+
         class Meta:
             queryset = Note.objects.all()
-        
+
         def hydrate_title(self, bundle):
             return bundle.data['title'].lower()
 
@@ -387,17 +387,17 @@ Example::
         # The ``title`` field is already added to the class by ``ModelResource``
         # and populated off ``Note.title``. We'll use that title to build a
         # ``Note.slug`` as well.
-        
+
         class Meta:
             queryset = Note.objects.all()
-        
+
         def hydrate(self, bundle):
             # Don't change existing slugs.
             # In reality, this would be better implemented at the ``Note.save``
             # level, but is for demonstration.
             if not bundle.obj.pk:
                 bundle.obj.slug = slugify(bundle.data['title'])
-            
+
             return bundle
 
 This method should return a ``bundle``, whether it modifies the existing one or creates a whole new one. You can even remove any/all data from the
@@ -421,18 +421,18 @@ relationship looks like so::
   from tastypie import fields
   from tastypie.resources import ModelResource
   from myapp.models import Note, Comment
-  
-  
+
+
   class NoteResource(ModelResource):
       comments = fields.ToManyField('myapp.api.resources.CommentResource', 'comments')
-      
+
       class Meta:
           queryset = Note.objects.all()
-  
-  
+
+
   class CommentResource(ModelResource):
       note = fields.ToOneField(NoteResource, 'notes')
-      
+
       class Meta:
           queryset = Comment.objects.all()
 
@@ -450,11 +450,11 @@ a similar relation in Tastypie would look like::
   from tastypie import fields
   from tastypie.resources import ModelResource
   from myapp.models import Note
-  
-  
+
+
   class NoteResource(ModelResource):
       sub_notes = fields.ToManyField('self', 'notes')
-      
+
       class Meta:
           queryset = Note.objects.all()
 
@@ -519,7 +519,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Controls what list & detail REST methods the ``Resource`` should respond to.
   Default is ``None``, which means delegate to the more specific
   ``list_allowed_methods`` & ``detail_allowed_methods`` options.
-  
+
   You may specify a list like ``['get', 'post', 'put', 'delete']`` as a shortcut
   to prevent having to specify the other options.
 
@@ -553,7 +553,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   An override for the ``Resource`` to use when generating resource URLs.
   Default is ``None``.
-  
+
   If not provided, the ``Resource`` or ``ModelResource`` will attempt to name
   itself. This means a lowercase version of the classname preceding the word
   ``Resource`` if present (i.e. ``SampleContentResource`` would become
@@ -571,7 +571,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   Provides a list of fields that the ``Resource`` will accept client
   filtering on. Default is ``{}``.
-  
+
   Keys should be the fieldnames as strings while values should be a list of
   accepted filter types.
 
@@ -580,7 +580,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   Specifies the what fields the ``Resource`` should should allow ordering on.
   Default is ``[]``.
-  
+
   Values should be the fieldnames as strings. When provided to the ``Resource``
   by the ``order_by`` GET parameter, you can specify either the ``fieldname``
   (ascending order) or ``-fieldname`` (descending order).
@@ -590,7 +590,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   Provides the ``Resource`` with the object that serves as the data source.
   Default is ``None``.
-  
+
   In the case of ``ModelResource``, this is automatically populated by the
   ``queryset`` option and is the model class.
 
@@ -599,7 +599,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   Provides the ``Resource`` with the set of Django models to respond with.
   Default is ``None``.
-  
+
   Unused by ``Resource`` but present for consistency.
 
 ``fields``
@@ -632,11 +632,11 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   Specifies all HTTP methods (except ``DELETE``) should return a serialized form
   of the data. Default is ``False``.
-  
+
   If ``False``, ``HttpNoContent`` (204) is returned on ``POST/PUT``
   with an empty body & a ``Location`` header of where to request the full
   resource.
-  
+
   If ``True``, ``HttpAccepted`` (202) is returned on ``POST/PUT``
   with a body containing all the data in a serialized form.
 
@@ -680,19 +680,19 @@ additional constraints (e.g. text filtering using `django-haystack
 filter the queryset before processing a request::
 
     from haystack.query import SearchQuerySet
-    
+
     class MyResource(Resource):
         def build_filters(self, filters=None):
             if filters is None:
                 filters = {}
-            
+
             orm_filters = super(MyResource, self).build_filters(filters)
-            
+
             if "q" in filters:
                 sqs = SearchQuerySet().auto_query(filters['q'])
-                
+
                 orm_filters = {"pk__in": [ i.pk for i in sqs ]}
-            
+
             return orm_filters
 
 
@@ -887,10 +887,10 @@ HTTP methods to check against. Usually, this looks like::
 
     # The most generic lookup.
     self.method_check(request, self._meta.allowed_methods)
-    
+
     # A lookup against what's allowed for list-type methods.
     self.method_check(request, self._meta.list_allowed_methods)
-    
+
     # A useful check when creating a new endpoint that only handles
     # GET.
     self.method_check(request, ['get'])
@@ -996,10 +996,12 @@ Returns a URL specific to this resource's list endpoint.
 ``get_via_uri``
 ---------------
 
-.. method:: Resource.get_via_uri(self, uri)
+.. method:: Resource.get_via_uri(self, uri, request=None)
 
 This pulls apart the salient bits of the URI and populates the
 resource via a ``obj_get``.
+
+Optionally accepts a ``request``.
 
 If you need custom behavior based on other portions of the URI,
 simply override this method.
