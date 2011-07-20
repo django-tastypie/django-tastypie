@@ -12,6 +12,18 @@ DATABASE_ENGINE = 'sqlite3'
 DATABASE_NAME = 'tastypie.db'
 TEST_DATABASE_NAME = 'tastypie-test.db'
 
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'db_curquma.test',
+        'USER': '',
+        'PASSWORD': '',
+        'HOST': '',
+        'PORT': '',
+    }
+}
+
 INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
