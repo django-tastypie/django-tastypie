@@ -8,6 +8,8 @@ from django.utils.encoding import force_unicode
 from tastypie.bundle import Bundle
 from tastypie.exceptions import UnsupportedFormat
 from tastypie.utils import format_datetime, format_date, format_time
+import urlparse
+
 try:
     import lxml
     from lxml.etree import parse as parse_xml
@@ -50,6 +52,7 @@ class Serializer(object):
         'yaml': 'text/yaml',
         'html': 'text/html',
         'plist': 'application/x-plist',
+        'urlencoded': 'application/x-www-form-urlencoded',
     }
     
     def __init__(self, formats=None, content_types=None, datetime_formatting=None):
@@ -396,6 +399,13 @@ class Serializer(object):
         implemented.
         """
         pass
+
+    def from_urlencoded(self, data):
+        """ handles basic formencoded url posts """
+        qs = dict((k, v if len(v)>1 else v[0] )
+            for k, v in urlparse.parse_qs(data).iteritems())
+
+        return qs
 
 def get_type_string(data):
     """
