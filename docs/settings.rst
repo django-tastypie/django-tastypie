@@ -22,6 +22,10 @@ An example::
 
     API_LIMIT_PER_PAGE = 50
 
+If you don't want to limit the number of records by default, you can set this setting to 0::
+
+    API_LIMIT_PER_PAGE = 0
+
 Defaults to 20.
 
 
