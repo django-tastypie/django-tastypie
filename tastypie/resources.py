@@ -210,6 +210,8 @@ class Resource(object):
                 # error message.
                 return self._handle_500(request, e)
         
+        # make it easier to find out what resource the view belongs to
+        wrapper.parent_resource = self
         return wrapper
     
     def _handle_500(self, request, exception):
@@ -625,7 +627,10 @@ class Resource(object):
         except Resolver404:
             raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
         
-        return self.obj_get(**self.remove_api_resource_names(kwargs))
+        # view's parent_resource will always give us the correct resource for
+        # that view
+        # TODO maybe this should be a class method now
+        return view.parent_resource.obj_get(**self.remove_api_resource_names(kwargs))
     
     # Data preparation.
     
@@ -1803,6 +1808,25 @@ class ModelResource(Resource):
         return self._build_reverse_url("api_dispatch_detail", kwargs=kwargs)
 
 
+class ContentTypeResource(ModelResource):
+    """
+    Convenience model to represent ContentType model
+    """
+    # import here since otherwise importing TastyPie.resources will cause an
+    # error unless django.contrib.contenttypes is enabled
+    def __init__(self, *args, **kwargs):
+        from django.contrib.contenttypes.models import ContentType
+        self.Meta.queryset = ContentType.objects.all()
+        self.Meta.object_class = self.Meta.queryset.model
+        self._meta.queryset = ContentType.objects.all()
+        self._meta.object_class = self.Meta.queryset.model
+        super(ContentTypeResource,self).__init__(*args, **kwargs)
+        
+    class Meta:
+        fields = ['model']
+        detail_allowed_methods = ['get',]
+        list_allowed_methods = ['get',]
+    
 class NamespacedModelResource(ModelResource):
     """
     A ModelResource subclass that respects Django namespaces.
