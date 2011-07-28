@@ -757,6 +757,38 @@ class ToOneFieldTestCase(TestCase):
         field_12.instance_name = 'author'
         self.assertEqual(field_12.hydrate(bundle), None)
 
+    def test_resource_from_uri(self):
+        ur = UserResource()
+        field_1 = ToOneField(UserResource, 'author')
+        fk_bundle = field_1.resource_from_uri(ur, '/api/v1/users/1/')
+        self.assertEqual(fk_bundle.data['username'], u'johndoe')
+        self.assertEqual(fk_bundle.data['email'], u'john@doe.com')
+        self.assertEqual(fk_bundle.obj.username, u'johndoe')
+        self.assertEqual(fk_bundle.obj.email, u'john@doe.com')
+
+    def test_resource_from_data(self):
+        ur = UserResource()
+        field_1 = ToOneField(UserResource, 'author')
+        fk_bundle = field_1.resource_from_data(ur, {
+            'username': u'mistersmith',
+            'email': u'smith@example.com',
+            'password': u'foobar',
+        })
+        self.assertEqual(fk_bundle.data['username'], u'mistersmith')
+        self.assertEqual(fk_bundle.data['email'], u'smith@example.com')
+        self.assertEqual(fk_bundle.obj.username, u'mistersmith')
+        self.assertEqual(fk_bundle.obj.email, u'smith@example.com')
+
+    def test_resource_from_pk(self):
+        user = User.objects.get(pk=1)
+        ur = UserResource()
+        field_1 = ToOneField(UserResource, 'author')
+        fk_bundle = field_1.resource_from_pk(ur, user)
+        self.assertEqual(fk_bundle.data['username'], u'johndoe')
+        self.assertEqual(fk_bundle.data['email'], u'john@doe.com')
+        self.assertEqual(fk_bundle.obj.username, u'johndoe')
+        self.assertEqual(fk_bundle.obj.email, u'john@doe.com')
+
 
 class SubjectResource(ModelResource):
     class Meta:

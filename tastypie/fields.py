@@ -506,54 +506,78 @@ class RelatedField(ApiField):
             bundle = related_resource.build_bundle(obj=related_resource.instance, request=bundle.request)
             return related_resource.full_dehydrate(bundle)
     
+    def resource_from_uri(self, fk_resource, uri, request=None):
+        """
+        Given a URI is provided, the related resource is attempted to be
+        loaded based on the identifiers in the URI.
+        """
+        try:
+            obj = fk_resource.get_via_uri(uri)
+            bundle = fk_resource.build_bundle(obj=obj, request=request)
+            return fk_resource.full_dehydrate(bundle)
+        except ObjectDoesNotExist:
+            raise ApiFieldError("Could not find the provided object via resource URI '%s'." % uri)
+    
+    def resource_from_data(self, fk_resource, data, request=None):
+        """
+        Given a dictionary-like structure is provided, a fresh related
+        resource is created using that data.
+        """
+        # Try to hydrate the data provided.
+        data = dict_strip_unicode_keys(data)
+        fk_bundle = fk_resource.build_bundle(data=data, request=request)
+        
+        # We need to check to see if updates are allowed on the FK
+        # resource. If not, we'll just return a populated bundle instead
+        # of mistakenly updating something that should be read-only.
+        if not fk_resource.can_update():
+            return fk_resource.full_hydrate(fk_bundle)
+        
+        try:
+            return fk_resource.obj_update(fk_bundle, **data)
+        except NotFound:
+            try:
+                # Attempt lookup by primary key
+                lookup_kwargs = dict((k, v) for k, v in data.iteritems() if getattr(fk_resource, k).unique)
+                
+                if not lookup_kwargs:
+                    raise NotFound()
+                
+                return fk_resource.obj_update(fk_bundle, **lookup_kwargs)
+            except NotFound:
+                return fk_resource.full_hydrate(fk_bundle)
+        except MultipleObjectsReturned:
+            return fk_resource.full_hydrate(fk_bundle)
+    
+    def resource_from_pk(self, fk_resource, obj, request=None):
+        """
+        Given an object with a ``pk`` attribute, the related resource
+        is attempted to be loaded via that PK.
+        """
+        bundle = fk_resource.build_bundle(obj=obj, request=request)
+        return fk_resource.full_dehydrate(bundle)
+    
     def build_related_resource(self, value, request=None):
         """
-        Used to ``hydrate`` the data provided. If just a URL is provided,
-        the related resource is attempted to be loaded. If a
-        dictionary-like structure is provided, a fresh resource is
-        created.
+        Returns a bundle of data built by the related resource, usually via
+        ``hydrate`` with the data provided.
+
+        Accepts either a URI, a data dictionary (or dictionary-like structure)
+        or an object with a ``pk``.
         """
         self.fk_resource = self.to_class()
         
         if isinstance(value, basestring):
             # We got a URI. Load the object and assign it.
-            try:
-                obj = self.fk_resource.get_via_uri(value)
-                bundle = self.fk_resource.build_bundle(obj=obj, request=request)
-                return self.fk_resource.full_dehydrate(bundle)
-            except ObjectDoesNotExist:
-                raise ApiFieldError("Could not find the provided object via resource URI '%s'." % value)
+            return self.resource_from_uri(self.fk_resource, value, request=request)
         elif hasattr(value, 'items'):
-            # Try to hydrate the data provided.
-            value = dict_strip_unicode_keys(value)
-            self.fk_bundle = self.fk_resource.build_bundle(data=value, request=request)
-            
-            # We need to check to see if updates are allowed on the FK
-            # resource. If not, we'll just return a populated bundle instead
-            # of mistakenly updating something that should be read-only.
-            if not self.fk_resource.can_update():
-                return self.fk_resource.full_hydrate(self.fk_bundle)
-            
-            try:
-                return self.fk_resource.obj_update(self.fk_bundle, **value)
-            except NotFound:
-                try:
-                    # Attempt lookup by primary key
-                    lookup_kwargs = dict((k, v) for k, v in value.iteritems() if getattr(self.fk_resource, k).unique)
-                    
-                    if not lookup_kwargs:
-                        raise NotFound()
-                    
-                    return self.fk_resource.obj_update(self.fk_bundle, **lookup_kwargs)
-                except NotFound:
-                    return self.fk_resource.full_hydrate(self.fk_bundle)
-            except MultipleObjectsReturned:
-                return self.fk_resource.full_hydrate(self.fk_bundle)
+            # We've got a data dictionary.
+            return self.resource_from_data(self.fk_resource, value, request=request)
         elif hasattr(value, 'pk'):
-            bundle = self.fk_resource.build_bundle(obj=value, request=request)
-            return self.fk_resource.full_dehydrate(bundle)
+            # We've got an object with a primary key.
+            return self.resource_from_pk(self.fk_resource, value, request=request)
         else:
-            raise ApiFieldError("The '%s' field has was given data that was not a URI and not a dictionary-alike: %s." % (self.instance_name, value))
+            raise ApiFieldError("The '%s' field has was given data that was not a URI, not a dictionary-alike and does not have a 'pk' attribute: %s." % (self.instance_name, value))
 
 
 class ToOneField(RelatedField):
