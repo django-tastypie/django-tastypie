@@ -440,7 +440,7 @@ class RelatedField(ApiField):
         if self.contenttype_field and not isinstance(self.to, dict):
             raise ValueError(
                 "to argument must be a dictionary " + 
-                "when used with contenttype_attribute")
+                "when used with contenttype_field")
 
         if self.contenttype_field and not issubclass(type(self.contenttype_field), ToOneField):
             raise ValueError(
@@ -647,7 +647,7 @@ class ToOneField(RelatedField):
             if related_content_type:
                 resource_type = self.to[related_content_type.obj.model_class()]
             else:
-                # check to see if the obj know's it's content type
+                # check to see if the obj knows its content type
                 try:
                     if hasattr(bundle.obj, self.contenttype_field.attribute):
                         resource_type = getattr(bundle.obj, self.contenttype_field.attribute)
