@@ -724,12 +724,28 @@ class Resource(object):
             if not getattr(field_object, 'is_m2m', False):
                 continue
             
-            if field_object.attribute:
-                # Note that we only hydrate the data, leaving the instance
-                # unmodified. It's up to the user's code to handle this.
-                # The ``ModelResource`` provides a working baseline
-                # in this regard.
-                bundle.data[field_name] = field_object.hydrate_m2m(bundle)
+            if field_object.readonly:
+                continue
+
+            if not field_object.attribute:
+                continue
+
+            if not field_name in bundle.data:
+                continue
+
+            for m2m_bundle in bundle.data[field_name]:
+                if not hasattr(m2m_bundle, 'items'):
+                    continue
+
+                if not self._meta.resource_name in m2m_bundle:
+                    # A related object that points here through foreign key,
+                    # but was posted without reference to this object's id/URI.
+                    # This happens when posting a new resource with relations
+                    # nested into it. Since the object has been saved now, 
+                    # it has a resource_uri, so insert it in the related bundle
+                    m2m_bundle[self.Meta.resource_name] = self.get_resource_uri(bundle.obj)
+
+            bundle.data[field_name] = field_object.hydrate_m2m(bundle)
         
         for field_name, field_object in self.fields.items():
             if not getattr(field_object, 'is_m2m', False):
