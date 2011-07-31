@@ -527,11 +527,11 @@ class RelatedField(ApiField):
         # Try to hydrate the data provided.
         data = dict_strip_unicode_keys(data)
         fk_bundle = fk_resource.build_bundle(data=data, request=request)
-
+    
         # Prevent the fresh bundles from being saved by obj_update: this is
         # done later in save_m2m
         fk_bundle.needs_save = False
-
+    
         # We need to check to see if updates are allowed on the FK
         # resource. If not, we'll just return a populated bundle instead
         # of mistakenly updating something that should be read-only.
@@ -547,17 +547,17 @@ class RelatedField(ApiField):
                 
                 if not lookup_kwargs:
                     raise NotFound()
-
+    
                 fk_bundle = fk_resource.obj_update(fk_bundle, **lookup_kwargs)
             except NotFound:
                 fk_bundle = fk_resource.full_hydrate(fk_bundle)
         except MultipleObjectsReturned:
             fk_bundle = fk_resource.full_hydrate(fk_bundle)
-
+    
         # This bundle needs saving
         fk_bundle.needs_save = True
         return fk_bundle
-
+    
     def resource_from_pk(self, fk_resource, obj, request=None):
         """
         Given an object with a ``pk`` attribute, the related resource

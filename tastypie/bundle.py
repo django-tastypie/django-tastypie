@@ -6,7 +6,7 @@ class Bundle(object):
     """
     A small container for instances and converted data for the
     ``dehydrate/hydrate`` cycle.
-     
+
     Necessary because the ``dehydrate/hydrate`` cycle needs to access data at
     different points.
     """
@@ -15,6 +15,6 @@ class Bundle(object):
         self.data = data or {}
         self.needs_save = True
         self.request = request or HttpRequest()
-     
+
     def __repr__(self):
         return "<Bundle %sfor obj: '%s' and with data: '%s'>" % ('(NEEDS_SAVE) ' if self.needs_save else '', self.obj, self.data)
