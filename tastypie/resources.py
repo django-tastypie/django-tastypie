@@ -71,6 +71,7 @@ class ResourceOptions(object):
     include_resource_uri = True
     include_absolute_url = False
     always_return_data = False
+    pass_request_user_to_django = False
     
     def __new__(cls, meta=None):
         overrides = {}
@@ -1624,7 +1625,10 @@ class ModelResource(Resource):
         self.save_related(bundle)
 
         # Save the main object.
-        bundle.obj.save()
+        if self._meta.pass_request_user_to_django:
+            bundle.obj.save(user=bundle.request.user)
+        else:
+            bundle.obj.save()
         
         # Now pick up the M2M bits.
         m2m_bundle = self.hydrate_m2m(bundle)
@@ -1663,7 +1667,10 @@ class ModelResource(Resource):
         self.save_related(bundle)
 
         # Save the main object.
-        bundle.obj.save()
+        if self._meta.pass_request_user_to_django:
+            bundle.obj.save(user=bundle.request.user)
+        else:
+            bundle.obj.save()
         
         # Now pick up the M2M bits.
         m2m_bundle = self.hydrate_m2m(bundle)
@@ -1681,10 +1688,16 @@ class ModelResource(Resource):
         
         if hasattr(authed_object_list, 'delete'):
             # It's likely a ``QuerySet``. Call ``.delete()`` for efficiency.
-            authed_object_list.delete()
+            if self._meta.pass_request_user_to_django:
+                authed_object_list.delete(user=request.user)
+            else:
+                authed_object_list.delete()
         else:
             for authed_obj in authed_object_list:
-                authed_object_list.delete()
+                if self._meta.pass_request_user_to_django:
+                    authed_obj.delete(user=request.user)
+                else:
+                    authed_obj.delete()
     
     def obj_delete(self, request=None, **kwargs):
         """
@@ -1698,7 +1711,10 @@ class ModelResource(Resource):
         except ObjectDoesNotExist:
             raise NotFound("A model instance matching the provided arguments could not be found.")
         
-        obj.delete()
+        if self._meta.pass_request_user_to_django:
+            obj.delete(user=request.user)
+        else:
+            obj.delete()
     
     def rollback(self, bundles):
         """
@@ -1709,7 +1725,10 @@ class ModelResource(Resource):
         """
         for bundle in bundles:
             if bundle.obj and getattr(bundle.obj, 'pk', None):
-                bundle.obj.delete()
+                if self._meta.pass_request_user_to_django:
+                    bundle.obj.delete(user=request.user)
+                else:
+                    bundle.obj.delete()
     
     def save_related(self, bundle):
         """
@@ -1744,7 +1763,11 @@ class ModelResource(Resource):
             
             # Because sometimes it's ``None`` & that's OK.
             if related_obj:
-                related_obj.save()
+                if self._meta.pass_request_user_to_django:
+                    related_obj.save(user=bundle.request.user)
+                else:
+                    related_obj.save()
+
                 setattr(bundle.obj, field_object.attribute, related_obj)
     
     def save_m2m(self, bundle):
@@ -1777,7 +1800,11 @@ class ModelResource(Resource):
             related_objs = []
             
             for related_bundle in bundle.data[field_name]:
-                related_bundle.obj.save()
+                if self._meta.pass_request_user_to_django:
+                    related_bundle.obj.save(user=bundle.request.user)
+                else:
+                    related_bundle.obj.save()
+
                 related_objs.append(related_bundle.obj)
             
             related_mngr.add(*related_objs)
