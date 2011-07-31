@@ -1769,10 +1769,17 @@ class ModelResource(Resource):
             
             # Get the manager.
             related_mngr = getattr(bundle.obj, field_object.attribute)
+            related_bundles = bundle.data[field_name]
+            posted_pks = [b.obj.pk for b in related_bundles if b.obj.pk]
+            to_remove = related_mngr.for_user(
+                    user=bundle.request.user).exclude(pk__in=posted_pks)
             
+            # Remove any relations that were not POSTed
             if hasattr(related_mngr, 'clear'):
-                # Clear it out, just to be safe.
                 related_mngr.clear()
+            else:
+                for obj in to_remove:
+                    obj.delete()
             
             related_objs = []
             
