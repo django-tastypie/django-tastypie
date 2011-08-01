@@ -141,7 +141,7 @@ class ApiField(object):
         if self.readonly:
             return None
         
-        if not bundle.data.has_key(self.instance_name):
+        if not self.instance_name in bundle.data:
             if self.blank:
                 return None
             elif self.attribute and getattr(bundle.obj, self.attribute, None):
