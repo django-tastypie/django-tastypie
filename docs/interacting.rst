@@ -469,7 +469,7 @@ Updating An Existing Resource (PUT)
 
 You might have noticed that we made some typos when we submitted the POST
 request. We can fix this using a ``PUT`` request to the detail endpoint (modify
-this instance of a resource).
+this instance of a resource).::
 
     curl --dump-header - -H "Content-Type: application/json" -X PUT --data '{"body": "This will probably be my last post.", "pub_date": "2011-05-22T00:46:38", "slug": "another-post", "title": "Another Post", "user": "/api/v1/user/1/"}' http://localhost:8000/api/v1/entry/4/
 
