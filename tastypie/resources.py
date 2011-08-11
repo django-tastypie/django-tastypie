@@ -1547,10 +1547,10 @@ class ModelResource(Resource):
             if self.fields[field_name].attribute is None:
                 raise InvalidSortError("The '%s' field has no 'attribute' for ordering with." % field_name)
             
-            if not self.fields[field_name].attribute.endswith('_set') and getattr(self.fields[field_name], 'is_related', False):
-                order_by_args.append("%s%s" % (order, LOOKUP_SEP.join([self.fields[field_name].attribute] + order_by_bits[1:])))
-            else:
+            if self.fields[field_name].attribute.endswith('_set') and getattr(self.fields[field_name], 'is_related', False):
                 order_by_args.append("%s%s" % (order, LOOKUP_SEP.join([self.fields[field_name].attribute.rpartition('_set')[0]] + order_by_bits[1:])))
+            else:
+                order_by_args.append("%s%s" % (order, LOOKUP_SEP.join([self.fields[field_name].attribute] + order_by_bits[1:])))
         
         return obj_list.order_by(*order_by_args)
     
