@@ -1,0 +1,65 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  color: #333333;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+section, article, aside, header, footer, nav, dialog, figure {
+  display:block
+}
+
+a {
+  color: #0000FF;
+}
+
+/* API Browser specific styles */
+
+#page_header {
+  background-color: #444444;
+  color: #EEEEEE;
+  padding: 10px;
+}
+
+#page_header h1 {
+  display: inline;
+}
+
+#page_header p {
+  display: inline;
+}
+
+#page_header a {
+  color: #EEEEEE;
+}
+
+navigation {
+  background-color: #EFEFEF;
+  border-right: solid 1px #CCCCCC;
+  display: block;
+  float: left;
+  min-height: 400px;
+  padding: 10px;
+  width: 200px;
+}
+
+navigation #top_level_nav .schema_link {
+  font-size: 12px;
+}
+
+#api_content {
+  float: left;
+  margin: 10px;
+}
+
+
+#todo_list {
+  background-color: #CCCCCC;
+  clear: both;
+  color: #888888;
+  font-size: 12px;
+  padding: 10px;
+}

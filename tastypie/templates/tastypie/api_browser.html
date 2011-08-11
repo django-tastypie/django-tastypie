@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>API Browser</title>
+    <!--[if lt IE 9]>
+      <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link rel="stylesheet" type="text/css" href="{{ MEDIA_URL }}css/default.css" media="screen">
+
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js"></script>
+    <script type="text/javascript" src="{{ MEDIA_URL }}js/underscore-min.js"></script>
+    <script type="text/javascript" src="{{ MEDIA_URL }}js/backbone-min.js"></script>
+    <script type="text/javascript" src="{{ MEDIA_URL }}js/json2.js"></script>
+
+    <script type="text/javascript" src="{{ MEDIA_URL }}js/api_browser.js"></script>
+  </head>
+
+  <body>
+    <header id="page_header">
+      <h1>API Browser</h1>
+      <p>(<a href="{{ api_top_level }}" id="api_top_level_uri">v1</a>)</p>
+    </header>
+
+    <navigation>
+      <ul id="top_level_nav">
+        <li><a href="/api/v1/tweets/">Tweets</a> <span class="schema_link">(<a href="/api/v1/tweets/schema/">schema</a>)</span></li>
+        <li><a href="/api/v1/users/">Users</a> <span class="schema_link">(<a href="/api/v1/users/schema/">schema</a>)</span></li>
+      </ul>
+    </navigation>
+
+    <section id="api_content">
+      <p>Please wait while the API loads. This should only take a minute...</p>
+    </section>
+
+    <section id="todo_list">
+      <h3>TODO</h3>
+
+      <ul>
+        <li><strike>Set up sample API to test against.</strike></li>
+        <li><strike>Create some basic styling.</strike></a></li>
+        <li>Fetch the top-level data.</li>
+        <li>Build a navigation tree out of the top-level data.</li>
+        <li>Build schema views for each endpoint.</li>
+        <li>Create (dynamically) Backbone models.</li>
+        <li>Display JSON.</li>
+        <li>Display human-readable field data.</li>
+        <li>Include filtering/ordering options on list views.</li>
+        <li>Make sure links are clickable (to other resources or to absolute urls).</li>
+        <li>Add breadcrumbs for navigating back &amp; forth.</li>
+        <li>Build editable forms for the API data.</li>
+        <li>Add nice transitions.</li>
+      </ul>
+    </section>
+  </body>
+</html>
