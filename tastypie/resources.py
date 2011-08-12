@@ -1429,7 +1429,10 @@ class ModelResource(Resource):
             # if any. We should ensure that all along the way, we're allowed
             # to filter on that field by the related resource.
             related_resource = self.fields[field_name].get_related_resource(None)
-            return [self.fields[field_name].attribute] + related_resource.check_filtering(filter_bits[0], filter_type, filter_bits[1:])
+            if not self.fields[field_name].attribute.endswith('_set'):
+                return [self.fields[field_name].attribute] + related_resource.check_filtering(filter_bits[0], filter_type, filter_bits[1:])
+            else:
+                return [self.fields[field_name].attribute.rpartition('_set')[0]] + related_resource.check_filtering(filter_bits[0], filter_type, filter_bits[1:])
         
         return [self.fields[field_name].attribute]
     
@@ -1544,7 +1547,10 @@ class ModelResource(Resource):
             if self.fields[field_name].attribute is None:
                 raise InvalidSortError("The '%s' field has no 'attribute' for ordering with." % field_name)
             
-            order_by_args.append("%s%s" % (order, LOOKUP_SEP.join([self.fields[field_name].attribute] + order_by_bits[1:])))
+            if self.fields[field_name].attribute.endswith('_set') and getattr(self.fields[field_name], 'is_related', False):
+                order_by_args.append("%s%s" % (order, LOOKUP_SEP.join([self.fields[field_name].attribute.rpartition('_set')[0]] + order_by_bits[1:])))
+            else:
+                order_by_args.append("%s%s" % (order, LOOKUP_SEP.join([self.fields[field_name].attribute] + order_by_bits[1:])))
         
         return obj_list.order_by(*order_by_args)
     
