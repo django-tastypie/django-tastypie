@@ -35,6 +35,12 @@ echo
 echo "** Related Resource **"
 django-admin.py test related_resource --settings=settings_related
 
+
+echo
+echo
+echo "** Inherited Models **"
+django-admin.py test inherited_models --settings=settings_inherited
+
 echo
 echo
 echo "** Validation **"
