@@ -141,7 +141,7 @@ class ApiField(object):
         if self.readonly:
             return None
         
-        if not bundle.data.has_key(self.instance_name):
+        if not self.instance_name in bundle.data:
             if self.blank:
                 return None
             elif self.attribute and getattr(bundle.obj, self.attribute, None):
@@ -609,12 +609,21 @@ class ToOneField(RelatedField):
         return self.dehydrate_related(fk_bundle, self.fk_resource)
     
     def hydrate(self, bundle):
-        value = super(ToOneField, self).hydrate(bundle)
+        if self.readonly:
+            return None
         
+        value = bundle.data.get(self.instance_name)
+
         if value is None:
-            return value
-        
+            if self.blank:
+                return None 
+            elif self.null:
+                return None 
+            else:
+                raise ApiFieldError("The '%s' field has no data and doesn't allow a null value." % self.instance_name)
+
         return self.build_related_resource(value, request=bundle.request)
+
 
 class ForeignKey(ToOneField):
     """
