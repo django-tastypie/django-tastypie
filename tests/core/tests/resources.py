@@ -43,7 +43,7 @@ class TestObject(object):
 
 
 class BasicResource(Resource):
-    name = fields.CharField(attribute='name')
+    name = fields.CharField(attribute='name', verbose_name="Basic name")
     view_count = fields.IntegerField(attribute='view_count', default=0)
     date_joined = fields.DateTimeField(null=True)
     
@@ -386,24 +386,28 @@ class ResourceTestCase(TestCase):
             'fields': {
                 'view_count': {
                     'help_text': 'Integer data. Ex: 2673',
+                    'verbose_name': "view count",
                     'readonly': False,
                     'type': 'integer',
                     'nullable': False
                 },
                 'date_joined': {
                     'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
+                    'verbose_name': "date joined",
                     'readonly': False,
                     'type': 'datetime',
                     'nullable': True
                 },
                 'name': {
                     'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'verbose_name': "Basic name",
                     'readonly': False,
                     'type': 'string',
                     'nullable': False
                 },
                 'resource_uri': {
                     'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'verbose_name': "resource uri",
                     'readonly': True,
                     'type': 'string',
                     'nullable': False
@@ -419,24 +423,28 @@ class ResourceTestCase(TestCase):
             'fields': {
                 'view_count': {
                     'help_text': 'Integer data. Ex: 2673',
+                    'verbose_name': "view count",
                     'readonly': False,
                     'type': 'integer',
                     'nullable': False
                 },
                 'date_joined': {
                     'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
+                    'verbose_name': "date joined",
                     'readonly': False,
                     'type': 'datetime',
                     'nullable': True
                 },
                 'name': {
                     'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'verbose_name': "Basic name",
                     'readonly': False,
                     'type': 'string',
                     'nullable': False
                 },
                 'resource_uri': {
                     'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'verbose_name': "resource uri",
                     'readonly': True,
                     'type': 'string',
                     'nullable': False
@@ -1646,7 +1654,7 @@ class ModelResourceTestCase(TestCase):
         
         resp = resource.get_schema(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"default_format": "application/json", "fields": {"content": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string"}, "created": {"help_text": "A date & time as a string. Ex: \\"2010-11-10T03:07:43\\"", "nullable": false, "readonly": false, "type": "datetime"}, "id": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string"}, "is_active": {"help_text": "Boolean data. Ex: True", "nullable": false, "readonly": false, "type": "boolean"}, "resource_uri": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": true, "type": "string"}, "slug": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string"}, "title": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string"}, "updated": {"help_text": "A date & time as a string. Ex: \\"2010-11-10T03:07:43\\"", "nullable": false, "readonly": false, "type": "datetime"}}, "filtering": {"content": ["startswith", "exact"], "slug": ["exact"], "title": 1}, "ordering": ["title", "slug", "resource_uri"]}')
+        self.assertEqual(resp.content, '{"default_format": "application/json", "fields": {"content": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string", "verbose_name": "content"}, "created": {"help_text": "A date & time as a string. Ex: \\"2010-11-10T03:07:43\\"", "nullable": false, "readonly": false, "type": "datetime", "verbose_name": "created"}, "id": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string", "verbose_name": "ID"}, "is_active": {"help_text": "Boolean data. Ex: True", "nullable": false, "readonly": false, "type": "boolean", "verbose_name": "is active"}, "resource_uri": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": true, "type": "string", "verbose_name": "resource uri"}, "slug": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string", "verbose_name": "slug"}, "title": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string", "verbose_name": "The Title"}, "updated": {"help_text": "A date & time as a string. Ex: \\"2010-11-10T03:07:43\\"", "nullable": false, "readonly": false, "type": "datetime", "verbose_name": "updated"}}, "filtering": {"content": ["startswith", "exact"], "slug": ["exact"], "title": 1}, "ordering": ["title", "slug", "resource_uri"]}')
     
     def test_get_multiple(self):
         resource = NoteResource()

@@ -24,7 +24,7 @@ class ApiField(object):
     dehydrated_type = 'string'
     help_text = ''
     
-    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, unique=False, help_text=None):
+    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, unique=False, help_text=None, verbose_name=None):
         """
         Sets up the field. This is generally called when the containing
         ``Resource`` is initialized.
@@ -53,6 +53,9 @@ class ApiField(object):
         Optionally accepts ``help_text``, which lets you provide a
         human-readable description of the field exposed at the schema level.
         Defaults to the per-Field definition.
+        
+        Optionally accepts ``verbose_name``, which lets you provide a
+        more verbose name of the field exposed at the schema level.
         """
         # Track what the index thinks this field is called.
         self.instance_name = None
@@ -64,6 +67,7 @@ class ApiField(object):
         self.readonly = readonly
         self.value = None
         self.unique = unique
+        self.verbose_name = verbose_name
         
         if help_text:
             self.help_text = help_text
