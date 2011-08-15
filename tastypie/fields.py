@@ -512,7 +512,7 @@ class RelatedField(ApiField):
         loaded based on the identifiers in the URI.
         """
         try:
-            obj = fk_resource.get_via_uri(uri)
+            obj = fk_resource.get_via_uri(uri, request=request)
             bundle = fk_resource.build_bundle(obj=obj, request=request)
             return fk_resource.full_dehydrate(bundle)
         except ObjectDoesNotExist:
