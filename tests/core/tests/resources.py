@@ -457,6 +457,7 @@ class ResourceTestCase(TestCase):
                 'name': ALL,
             }
         })
+
     
     def test_subclassing(self):
         class CommonMeta:
@@ -1656,6 +1657,72 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"default_format": "application/json", "fields": {"content": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string", "verbose_name": "content"}, "created": {"help_text": "A date & time as a string. Ex: \\"2010-11-10T03:07:43\\"", "nullable": false, "readonly": false, "type": "datetime", "verbose_name": "created"}, "id": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string", "verbose_name": "ID"}, "is_active": {"help_text": "Boolean data. Ex: True", "nullable": false, "readonly": false, "type": "boolean", "verbose_name": "is active"}, "resource_uri": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": true, "type": "string", "verbose_name": "resource uri"}, "slug": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string", "verbose_name": "slug"}, "title": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string", "verbose_name": "The Title"}, "updated": {"help_text": "A date & time as a string. Ex: \\"2010-11-10T03:07:43\\"", "nullable": false, "readonly": false, "type": "datetime", "verbose_name": "updated"}}, "filtering": {"content": ["startswith", "exact"], "slug": ["exact"], "title": 1}, "ordering": ["title", "slug", "resource_uri"]}')
     
+        related = RelatedNoteResource()
+        self.assertEqual(related.build_schema(), {
+            "fields": {
+                "content": {
+                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'nullable': False,
+                    'readonly': False,
+                    'type': 'string',
+                    'verbose_name': 'content',
+                },
+                'created': {
+                    'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
+                    'nullable': False,
+                    'readonly': False,
+                    'type': 'datetime',
+                    'verbose_name': 'created'
+                },
+                'is_active': {
+                    'help_text': 'Boolean data. Ex: True',
+                    'nullable': False,
+                    'readonly': False,
+                    'type': 'boolean',
+                    'verbose_name': 'is active'
+                },
+                'resource_uri': {
+                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'nullable': False,
+                    'readonly': True,
+                    'type': 'string',
+                    'verbose_name': 'resource uri'
+                },
+                'slug': {
+                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'nullable': False,
+                    'readonly': False,
+                    'type': 'string',
+                    'verbose_name': 'slug'
+                },
+                'title': {
+                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'nullable': False,
+                    'readonly': False,
+                    'type': 'string',
+                    'verbose_name': 'The Title'
+                },
+                'author': {
+                    'help_text': 'A single related resource. Can be either a URI or set of nested resource data.',
+                    'verbose_name': 'author',
+                    'readonly': False,
+                    'type': 'related',
+                    'nullable': False
+                },
+                'subjects': {
+                    'help_text': 'Many related resources. Can be either a list of URIs or list of individually nested resource data.',
+                    'verbose_name': 'subjects',
+                    'readonly': False,
+                    'type': 'related',
+                    'nullable': False
+                }
+            },
+            'default_format': 'application/json',
+            'filtering': {
+                'author': ALL,
+                'subjects': ALL_WITH_RELATIONS,
+            },
+        })
     def test_get_multiple(self):
         resource = NoteResource()
         request = HttpRequest()
