@@ -1663,7 +1663,8 @@ class ModelResource(Resource):
         self.save_related(bundle)
 
         # Save the main object.
-        bundle.obj.save()
+        if bundle.needs_save:
+            bundle.obj.save()
         
         # Now pick up the M2M bits.
         m2m_bundle = self.hydrate_m2m(bundle)
@@ -1738,14 +1739,18 @@ class ModelResource(Resource):
             
             # Get the object.
             try:
-                related_obj = getattr(bundle.obj, field_object.attribute)
-            except ObjectDoesNotExist:
-                related_obj = None
+                related_bundle = field_object.hydrate(bundle)
+            except ApiFieldError:
+                related_bundle = None
             
             # Because sometimes it's ``None`` & that's OK.
-            if related_obj:
-                related_obj.save()
-                setattr(bundle.obj, field_object.attribute, related_obj)
+            if not related_bundle:
+                continue
+
+            if related_bundle.needs_save:
+                related_bundle.obj.save()
+
+            setattr(bundle.obj, field_object.attribute, related_bundle.obj)
     
     def save_m2m(self, bundle):
         """
@@ -1777,10 +1782,12 @@ class ModelResource(Resource):
             related_objs = []
             
             for related_bundle in bundle.data[field_name]:
-                related_bundle.obj.save()
+                if related_bundle.needs_save:
+                    related_bundle.obj.save()
                 related_objs.append(related_bundle.obj)
             
-            related_mngr.add(*related_objs)
+            if hasattr(related_mngr, 'add'):
+                related_mngr.add(*related_objs)
     
     def get_resource_uri(self, bundle_or_obj):
         """

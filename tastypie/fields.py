@@ -514,6 +514,7 @@ class RelatedField(ApiField):
         try:
             obj = fk_resource.get_via_uri(uri)
             bundle = fk_resource.build_bundle(obj=obj, request=request)
+            bundle.needs_save = False  # No new data here
             return fk_resource.full_dehydrate(bundle)
         except ObjectDoesNotExist:
             raise ApiFieldError("Could not find the provided object via resource URI '%s'." % uri)
@@ -526,7 +527,11 @@ class RelatedField(ApiField):
         # Try to hydrate the data provided.
         data = dict_strip_unicode_keys(data)
         fk_bundle = fk_resource.build_bundle(data=data, request=request)
-        
+    
+        # Prevent the fresh bundles from being saved by obj_update: this is
+        # done later in save_m2m
+        fk_bundle.needs_save = False
+    
         # We need to check to see if updates are allowed on the FK
         # resource. If not, we'll just return a populated bundle instead
         # of mistakenly updating something that should be read-only.
@@ -534,7 +539,7 @@ class RelatedField(ApiField):
             return fk_resource.full_hydrate(fk_bundle)
         
         try:
-            return fk_resource.obj_update(fk_bundle, **data)
+            fk_bundle = fk_resource.obj_update(fk_bundle, **data)
         except NotFound:
             try:
                 # Attempt lookup by primary key
@@ -542,12 +547,16 @@ class RelatedField(ApiField):
                 
                 if not lookup_kwargs:
                     raise NotFound()
-                
-                return fk_resource.obj_update(fk_bundle, **lookup_kwargs)
+    
+                fk_bundle = fk_resource.obj_update(fk_bundle, **lookup_kwargs)
             except NotFound:
-                return fk_resource.full_hydrate(fk_bundle)
+                fk_bundle = fk_resource.full_hydrate(fk_bundle)
         except MultipleObjectsReturned:
-            return fk_resource.full_hydrate(fk_bundle)
+            fk_bundle = fk_resource.full_hydrate(fk_bundle)
+    
+        # This bundle needs saving
+        fk_bundle.needs_save = True
+        return fk_bundle
     
     def resource_from_pk(self, fk_resource, obj, request=None):
         """
@@ -555,6 +564,7 @@ class RelatedField(ApiField):
         is attempted to be loaded via that PK.
         """
         bundle = fk_resource.build_bundle(obj=obj, request=request)
+        bundle.needs_save = False  # No new data here
         return fk_resource.full_dehydrate(bundle)
     
     def build_related_resource(self, value, request=None):
@@ -615,6 +625,7 @@ class ToOneField(RelatedField):
             return value
         
         return self.build_related_resource(value, request=bundle.request)
+
 
 class ForeignKey(ToOneField):
     """
