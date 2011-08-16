@@ -606,7 +606,7 @@ class Resource(object):
         except NoReverseMatch:
             return None
     
-    def get_via_uri(self, uri):
+    def get_via_uri(self, uri, request=None):
         """
         This pulls apart the salient bits of the URI and populates the
         resource via a ``obj_get``.
@@ -625,7 +625,7 @@ class Resource(object):
         except Resolver404:
             raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
         
-        return self.obj_get(**self.remove_api_resource_names(kwargs))
+        return self.obj_get(request=request, **self.remove_api_resource_names(kwargs))
     
     # Data preparation.
     
