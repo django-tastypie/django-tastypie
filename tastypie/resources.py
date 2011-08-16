@@ -1786,7 +1786,7 @@ class ModelResource(Resource):
                     related_bundle.obj.save()
                 related_objs.append(related_bundle.obj)
             
-            if hasattr(related_mngr, 'through'):
+            if hasattr(related_mngr, 'add'):
                 related_mngr.add(*related_objs)
     
     def get_resource_uri(self, bundle_or_obj):
