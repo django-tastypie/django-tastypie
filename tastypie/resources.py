@@ -1769,16 +1769,26 @@ class ModelResource(Resource):
             
             # Get the manager.
             related_mngr = getattr(bundle.obj, field_object.attribute)
-            related_bundles = bundle.data[field_name]
-            posted_pks = [b.obj.pk for b in related_bundles if b.obj.pk]
-            to_remove = related_mngr.for_user(
-                    user=bundle.request.user).exclude(pk__in=posted_pks)
+            through_class = getattr(related_mngr, 'through', None)
             
+            if through_class and not through_class._meta.auto_created:
+                # ManyToMany with an explicit intermediary table.
+                # This should be handled by with specific code, so continue
+                # without modifying anything. 
+                continue
+
+            related_bundles = bundle.data[field_name]
+
             # Remove any relations that were not POSTed
-            if hasattr(related_mngr, 'clear'):
+            if through_class:
+                # ManyToMany with hidden intermediary table. 
+                # Use the manager to clear out the relations.
                 related_mngr.clear()
             else:
-                for obj in to_remove:
+                # OneToMany with foreign keys to this object. 
+                # Explicitly delete objects to pass in the user.
+                posted_pks = [b.obj.pk for b in related_bundles if b.obj.pk]
+                for obj in related_mngr.exclude(pk__in=posted_pks):
                     obj.delete()
             
             related_objs = []
@@ -1787,7 +1797,11 @@ class ModelResource(Resource):
                 related_bundle.obj.save()
                 related_objs.append(related_bundle.obj)
             
-            related_mngr.add(*related_objs)
+            if through_class:
+                # ManyToMany with hidden intermediary table. Since the save
+                # method on a hidden table can not be overridden we can use the
+                # related_mngr to add.
+                related_mngr.add(*related_objs)
     
     def get_resource_uri(self, bundle_or_obj):
         """
