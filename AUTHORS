@@ -35,6 +35,7 @@ Contributors:
 * Madis V (madisvain) for a README patch.
 * Ed Summers (edsu) for a setup.py patch.
 * Sébastien Fievet (zyegfryed) for the initial OAuth implementation.
+* Jacob Kaplan-Moss (jacobkm) for the PATCH patch.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.

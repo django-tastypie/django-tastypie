@@ -508,20 +508,20 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Default is ``None``, which means delegate to the more specific
   ``list_allowed_methods`` & ``detail_allowed_methods`` options.
 
-  You may specify a list like ``['get', 'post', 'put', 'delete']`` as a shortcut
+  You may specify a list like ``['get', 'post', 'put', 'delete', 'patch']`` as a shortcut
   to prevent having to specify the other options.
 
 ``list_allowed_methods``
 ------------------------
 
   Controls what list REST methods the ``Resource`` should respond to. Default
-  is ``['get', 'post', 'put', 'delete']``.
+  is ``['get', 'post', 'put', 'delete', 'patch']``.
 
 ``detail_allowed_methods``
 --------------------------
 
   Controls what detail REST methods the ``Resource`` should respond to. Default
-  is ``['get', 'post', 'put', 'delete']``.
+  is ``['get', 'post', 'put', 'delete', 'patch']``.
 
 ``limit``
 ---------
@@ -1370,6 +1370,63 @@ Destroys a single resource/object.
 Calls ``obj_delete``.
 
 If the resource is deleted, return ``HttpNoContent`` (204 No Content).
+If the resource did not exist, return ``HttpNotFound`` (404 Not Found).
+
+``patch_list``
+--------------
+
+.. method:: Resource.patch_list(self, request, **kwargs)
+
+Updates a collection in-place.
+
+The exact behavior of ``PATCH`` to a list resource is still the matter of
+some debate in REST circles, and the ``PATCH`` RFC isn't standard. So the
+behavior this method implements (described below) is something of a
+stab in the dark. It's mostly cribbed from GData, with a smattering
+of ActiveResource-isms and maybe even an original idea or two.
+
+The ``PATCH`` format is one that's similar to the response returned from
+a ``GET`` on a list resource::
+
+    {
+      "objects": [{object}, {object}, ...],
+      "deleted_objects": ["URI", "URI", "URI", ...],
+    }
+
+For each object in ``objects``:
+
+  * If the dict does not have a ``resource_uri`` key then the item is
+    considered "new" and is handled like a ``POST`` to the resource list.
+
+  * If the dict has a ``resource_uri`` key and the ``resource_uri`` refers
+    to an existing resource then the item is a update; it's treated
+    like a ``PATCH`` to the corresponding resource detail.
+
+  * If the dict has a ``resource_uri`` but the resource *doesn't* exist,
+    then this is considered to be a create-via-``PUT``.
+
+Each entry in ``deleted_objects`` referes to a resource URI of an existing
+resource to be deleted; each is handled like a ``DELETE`` to the relevent
+resource.
+
+In any case:
+
+  * If there's a resource URI it *must* refer to a resource of this
+    type. It's an error to include a URI of a different resource.
+
+  * ``PATCH`` is all or nothing. If a single sub-operation fails, the
+    entire request will fail and all resources will be rolled back.
+
+``patch_detail``
+----------------
+
+.. method:: Resource.patch_detail(self, request, **kwargs)
+
+Updates a resource in-place.
+
+Calls ``obj_update``.
+
+If the resource is updated, return ``HttpAccepted`` (202 Accepted).
 If the resource did not exist, return ``HttpNotFound`` (404 Not Found).
 
 ``get_schema``

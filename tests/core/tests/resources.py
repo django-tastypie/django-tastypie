@@ -19,7 +19,7 @@ from tastypie.bundle import Bundle
 from tastypie.exceptions import InvalidFilterError, InvalidSortError, ImmediateHttpResponse, BadRequest, NotFound
 from tastypie import fields
 from tastypie.paginator import Paginator
-from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
+from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS, convert_post_to_put, convert_post_to_patch
 from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
 from tastypie.validation import Validation, FormValidation
@@ -152,6 +152,50 @@ class MROBaseFieldResourceB(Resource):
 
 class MROFieldResource(MROBaseFieldResourceA, MROBaseFieldResourceB):
     pass
+
+
+class ConvertTestCase(TestCase):
+    def test_to_put(self):
+        request = HttpRequest()
+        request.method = 'PUT'
+        # Obviously not the right data, but we just need to make sure it gets
+        # removed.
+        request._post = 'foo'
+        request._files = 'bar'
+        request.POST = {
+            'test': 'thing'
+        }
+        # Make Django happy.
+        request._read_started = False
+        request._raw_post_data = ''
+
+        modified = convert_post_to_put(request)
+        self.assertEqual(modified.method, 'PUT')
+        self.assertEqual(len(modified._post), 0)
+        self.assertEqual(len(modified._files), 0)
+        self.assertEqual(modified.POST, {'test': 'thing'})
+        self.assertEqual(modified.PUT, {'test': 'thing'})
+
+    def test_to_patch(self):
+        request = HttpRequest()
+        request.method = 'PATCH'
+        # Obviously not the right data, but we just need to make sure it gets
+        # removed.
+        request._post = 'foo'
+        request._files = 'bar'
+        request.POST = {
+            'test': 'thing'
+        }
+        # Make Django happy.
+        request._read_started = False
+        request._raw_post_data = ''
+
+        modified = convert_post_to_patch(request)
+        self.assertEqual(modified.method, 'PATCH')
+        self.assertEqual(len(modified._post), 0)
+        self.assertEqual(len(modified._files), 0)
+        self.assertEqual(modified.POST, {'test': 'thing'})
+        self.assertEqual(modified.PATCH, {'test': 'thing'})
 
 
 class ResourceTestCase(TestCase):
@@ -902,8 +946,8 @@ class ModelResourceTestCase(TestCase):
         self.assertNotEqual(resource_1._meta.queryset, None)
         self.assertEqual(resource_1._meta.resource_name, 'notes')
         self.assertEqual(resource_1._meta.limit, 20)
-        self.assertEqual(resource_1._meta.list_allowed_methods, ['get', 'post', 'put', 'delete'])
-        self.assertEqual(resource_1._meta.detail_allowed_methods, ['get', 'post', 'put', 'delete'])
+        self.assertEqual(resource_1._meta.list_allowed_methods, ['get', 'post', 'put', 'delete', 'patch'])
+        self.assertEqual(resource_1._meta.detail_allowed_methods, ['get', 'post', 'put', 'delete', 'patch'])
         self.assertEqual(isinstance(resource_1._meta.serializer, Serializer), True)
 
         # Lightly custom.
@@ -1478,6 +1522,51 @@ class ModelResourceTestCase(TestCase):
         resp = resource.delete_detail(request, pk=2)
         self.assertEqual(resp.status_code, 204)
         self.assertEqual(Note.objects.count(), 5)
+
+    def test_patch_list(self):
+        resource = NoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PATCH'
+        request._read_started = False
+
+        self.assertEqual(Note.objects.count(), 6)
+        request._raw_post_data = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}], "deleted_objects": ["/api/v1/notes/1/"]}'
+
+        resp = resource.patch_list(request)
+        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(resp.content, '')
+        self.assertEqual(Note.objects.count(), 6)
+        self.assertEqual(Note.objects.filter(is_active=True).count(), 4)
+        new_note = Note.objects.get(slug='cat-is-back-again')
+        self.assertEqual(new_note.content, "The cat is back. The dog coughed him up out back.")
+
+    def test_patch_detail(self):
+        self.assertEqual(Note.objects.count(), 6)
+        resource = NoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PATCH'
+        request._read_started = False
+        request._raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00"}'
+
+        resp = resource.patch_detail(request, pk=10)
+        self.assertEqual(resp.status_code, 404)
+
+        resp = resource.patch_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(Note.objects.count(), 6)
+        note = Note.objects.get(pk=1)
+        self.assertEqual(note.content, "The cat is back. The dog coughed him up out back.")
+        self.assertEqual(note.created, datetime.datetime(2010, 4, 3, 20, 5))
+
+        request._raw_post_data = '{"content": "The cat is gone again. I think it was the rabbits that ate him this time."}'
+
+        resp = resource.patch_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(Note.objects.count(), 6)
+        new_note = Note.objects.get(pk=1)
+        self.assertEqual(new_note.content, u'The cat is gone again. I think it was the rabbits that ate him this time.')
 
     def test_dispatch_list(self):
         resource = NoteResource()
