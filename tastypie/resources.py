@@ -1784,6 +1784,7 @@ class ModelResource(Resource):
             for related_bundle in bundle.data[field_name]:
                 if related_bundle.needs_save:
                     related_bundle.obj.save()
+                    related_bundle.needs_save = False
                 related_objs.append(related_bundle.obj)
             
             if hasattr(related_mngr, 'add'):
