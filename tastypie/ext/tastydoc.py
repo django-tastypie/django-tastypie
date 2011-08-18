@@ -28,12 +28,12 @@ class TastyDirective(Directive):
         parser = Parser()
         publisher = Publisher()
         request = HttpRequest()
-        top_level_response = firehose.v1_api.top_level( request, None ) 
+        top_level_response = api.top_level( request, None ) 
         top_level_doc = simplejson.loads( top_level_response.content )
 
-        for name in sorted(firehose.v1_api._registry.keys()):        
+        for name in sorted(api._registry.keys()):        
             resource_dict = top_level_doc[name]
-            resource = firehose.v1_api._registry[name]
+            resource = api._registry[name]
             schema = resource.build_schema()
             resource_dict['schema'] = schema
         path = os.path.dirname(__file__)
