@@ -654,6 +654,8 @@ class ToManyField(RelatedField):
 
             return []
 
+        the_m2ms = None
+
         if isinstance(self.attribute, basestring):
             the_m2ms = getattr(bundle.obj, self.attribute)
         elif callable(self.attribute):
