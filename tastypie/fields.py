@@ -670,9 +670,14 @@ class ToManyField(RelatedField):
         
         # TODO: Also model-specific and leaky. Relies on there being a
         #       ``Manager`` there.
-        for m2m in the_m2ms.all():
-            m2m_resource = self.get_related_resource(m2m)
-            m2m_bundle = Bundle(obj=m2m, request=bundle.request)
+        if self.to_class.Meta.pass_request_user_to_django:
+            m2m_objs = the_m2ms.for_user(user=bundle.request.user)
+        else:
+            m2m_objs = the_m2ms.all()
+
+        for m2m_obj in m2m_objs:
+            m2m_resource = self.get_related_resource(m2m_obj)
+            m2m_bundle = Bundle(obj=m2m_obj, request=bundle.request)
             self.m2m_resources.append(m2m_resource)
             m2m_dehydrated.append(self.dehydrate_related(m2m_bundle, m2m_resource))
         
