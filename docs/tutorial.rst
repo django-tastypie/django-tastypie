@@ -71,7 +71,9 @@ your project or ``PYTHONPATH``.
     * **OPTIONAL** - ``uuid`` (present in 2.5+, downloadable from
       http://pypi.python.org/pypi/uuid/) if using the ``ApiKey`` authentication
   
-  2. Check out tastypie from GitHub_.
+  2. Either check out tastypie from GitHub_ or to pull a release off PyPI_.
+     Doing ``sudo pip install django-tastypie`` or
+     ``sudo easy_install django-tastypie`` is all that should be required.
   3. Either symlink the ``tastypie`` directory into your project or copy the
      directory in. What ever works best for you.
 
@@ -89,8 +91,8 @@ Configuration
 =============
 
 The only mandatory configuration is adding ``'tastypie'`` to your
-``INSTALLED_APPS``. This isn't strictly necessary, as Tastypie has only one
-non-required model, but may ease usage.
+``INSTALLED_APPS``. This isn't strictly necessary, as Tastypie has only two
+non-required models, but may ease usage.
 
 You have the option to set up a number of settings (see :doc:`settings`) but
 they all have sane defaults and are not required unless you need to tweak their
@@ -124,8 +126,8 @@ much like the way Django's ``ModelForm`` class introspects.
 
     The ``resource_name`` within the ``Meta`` class is optional. If not
     provided, it is automatically generated off the classname, removing any
-    instances of :class:`~tastypie.resources.Resource` and lowercasing the string. So
-    ``EntryResource`` would become just ``entry``.
+    instances of :class:`~tastypie.resources.Resource` and lowercasing the
+    string. So ``EntryResource`` would become just ``entry``.
     
     We've included the ``resource_name`` attribute in this example for clarity,
     especially when looking at the URLs, but you should feel free to omit it if
@@ -175,7 +177,32 @@ the following (assuming you have at least three records in the database):
   * http://127.0.0.1:8000/api/entry/schema/?format=json
   * http://127.0.0.1:8000/api/entry/set/1;3/?format=json
 
-With just seven lines of code, we have a full working REST interface to our
+However, if you try sending a POST/PUT/DELETE to the resource, you find yourself
+getting "401 Unauthorized" errors. For safety, Tastypie ships with the
+``authorization`` class ("what are you allowed to do") set to
+``ReadOnlyAuthorization``. This makes it safe to expose on the web, but prevents
+us from doing POST/PUT/DELETE. Let's enable those::
+
+    # myapp/api.py
+    from tastypie.authorization import Authorization
+    from tastypie.resources import ModelResource
+    from myapp.models import Entry
+    
+    
+    class EntryResource(ModelResource):
+        class Meta:
+            queryset = Entry.objects.all()
+            resource_name = 'entry'
+            authorization= Authorization()
+
+.. warning::
+
+  This is now great for testing in development but **VERY INSECURE**. You
+  should never put a ``Resource`` like this out on the internet. Please spend
+  some time looking at the authentication/authorization classes available in
+  Tastypie.
+
+With just nine lines of code, we have a full working REST interface to our
 ``Entry`` model. In addition, full GET/POST/PUT/DELETE support is already
 there, so it's possible to really work with all of the data. Well, *almost*.
 

@@ -30,6 +30,9 @@ class MimeTestCase(TestCase):
         request.GET = {'format': 'yaml'}
         self.assertEqual(determine_format(request, serializer), 'text/yaml')
         
+        request.GET = {'format': 'plist'}
+        self.assertEqual(determine_format(request, serializer), 'application/x-plist')
+        
         request.GET = {'format': 'foo'}
         self.assertEqual(determine_format(request, serializer), 'application/json')
         
@@ -45,6 +48,9 @@ class MimeTestCase(TestCase):
         
         request.META = {'HTTP_ACCEPT': 'text/yaml'}
         self.assertEqual(determine_format(request, serializer), 'text/yaml')
+        
+        request.META = {'HTTP_ACCEPT': 'application/x-plist'}
+        self.assertEqual(determine_format(request, serializer), 'application/x-plist')
         
         request.META = {'HTTP_ACCEPT': 'text/html'}
         self.assertEqual(determine_format(request, serializer), 'text/html')

@@ -29,3 +29,13 @@ echo
 echo
 echo "** Namespaced **"
 django-admin.py test namespaced --settings=settings_namespaced
+
+echo
+echo
+echo "** Related Resource **"
+django-admin.py test related_resource --settings=settings_related
+
+echo
+echo
+echo "** Validation **"
+django-admin.py test validation --settings=settings_validation

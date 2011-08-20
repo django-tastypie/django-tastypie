@@ -9,10 +9,13 @@ interfaces.
    :maxdepth: 2
    
    tutorial
+   interacting
    settings
+   non_orm_data_sources
    
    resources
    api
+   fields
    caching
    validation
    authentication_authorization

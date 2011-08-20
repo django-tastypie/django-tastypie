@@ -20,6 +20,16 @@ Contributors:
 * Travis Cline (traviscline) for patches regarding URLconf namespacing & pagination.
 * Jannis Leidel (jezdez) for patches regarding the ApiKey model & an admin inline.
 * Malcolm Tredinnick (malcolmt) for documentation corrections.
+* Vincent Driessen (nvie) for FileField related patches.
+* Christopher Grebs (EnTeQuAk) for various patches.
+* Roman Bogorodskiy (novel) for documentation fixes.
+* D. Hageman (dhageman) for a patch adding default values to RelatedFields.
+* James Hsiao (thepeopleseason) for finishing the DigestAuthentication bits.
+* jesperp for a patch adding TimeField.
+* Marcel van den Elst (MacMaru) for testing regarding ``blank=True``.
+* ulmus for a cookbook example.
+* Jason Kraus (zbyte64) for a patch related to script prefix.
+* Timothée Peignier (cyberdelia) for various patches.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.

@@ -25,6 +25,10 @@ class Note(models.Model):
     def get_absolute_url(self):
         return '/some/fake/path/%s/' % self.pk
 
+    @property
+    def my_property(self):
+        return 'my_property'
+
 
 class Subject(models.Model):
     notes = models.ManyToManyField(Note, related_name='subjects')
@@ -34,3 +38,12 @@ class Subject(models.Model):
     
     def __unicode__(self):
         return self.name
+
+
+class MediaBit(models.Model):
+    note = models.ForeignKey(Note, related_name='media_bits')
+    title = models.CharField(max_length=32)
+    image = models.FileField(blank=True, null=True, upload_to='bits/')
+    
+    def __unicode__(self):
+        return self.title

@@ -19,6 +19,7 @@ The default ``Serializer`` supports the following formats:
 * xml
 * yaml
 * html
+* plist (see http://explorapp.com/biplist/)
 
 Usage
 =====
@@ -58,10 +59,11 @@ methods. So adding the server time to all output might look like so::
         def to_json(self, data, options=None):
             options = options or {}
             
+            data = self.to_simple(data, options)
+
             # Add in the current time.
             data['requested_time'] = time.time()
-            
-            data = self.to_simple(data, options)
+
             return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True)
         
         def from_json(self, content):
@@ -83,13 +85,14 @@ like::
     
     
     class CSVSerializer(Serializer):
-        formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'csv']
+        formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'plist', 'csv']
         content_types = {
             'json': 'application/json',
             'jsonp': 'text/javascript',
             'xml': 'application/xml',
             'yaml': 'text/yaml',
             'html': 'text/html',
+            'plist': 'application/x-plist',
             'csv': 'text/csv',
         }
         
@@ -111,6 +114,7 @@ like::
                 data.append(item)
             return data
 
+
 ``Serializer`` Methods
 ======================
 
@@ -123,6 +127,7 @@ This handles most types of data as well as the following output formats::
     * xml
     * yaml
     * html
+    * plist
 
 It was designed to make changing behavior easy, either by overridding the
 various format methods (i.e. ``to_json``), by changing the
@@ -268,6 +273,20 @@ Given some Python data, produces YAML output.
 .. method:: Serializer.from_yaml(self, content):
 
 Given some YAML data, returns a Python dictionary of the decoded data.
+
+``to_plist``
+~~~~~~~~~~~~
+
+.. method:: Serializer.to_plist(self, data, options=None):
+
+Given some Python data, produces binary plist output.
+
+``from_plist``
+~~~~~~~~~~~~~~
+
+.. method:: Serializer.from_plist(self, content):
+
+Given some binary plist data, returns a Python dictionary of the decoded data.
 
 ``to_html``
 ~~~~~~~~~~~

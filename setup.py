@@ -1,10 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from distutils.core import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from ez_setup import use_setuptools
+    use_setuptools()
+    from setuptools import setup
 
 setup(
     name='django-tastypie',
-    version='0.9.5',
+    version='1.0.0-beta',
     description='A flexible & capable API layer for Django.',
     author='Daniel Lindsley',
     author_email='daniel@toastdriven.com',
@@ -18,7 +23,13 @@ setup(
     },
     requires=[
         'mimeparse',
-        'python_dateutil',
+        'python_dateutil(>=1.5, < 2.0)',
+        'python_digest',
+    ],
+    install_requires=[
+        'mimeparse',
+        'python_dateutil >= 1.5, < 2.0',
+        'python_digest',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

@@ -10,16 +10,17 @@
   <body>
     <div id="page_wrapper">
       <h1>API for example.com</h1>
-      
+
       <section class="resources_nav">
         {% block resources_nav %}
         <ul>
           {% for resource in resources_nav_items %}
             <li><a href="{# % url api_resource_list % #}">{{ resource }}</a></li>
+          {% endfor %}
         </ul>
         {% endblock %}
       </section>
-      
+
       <section class="content">
         {% block content %}{% endblock %}
       </section>
