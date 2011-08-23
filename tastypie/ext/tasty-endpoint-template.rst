@@ -1,10 +1,3 @@
-.. highlight :: javascript
-   :linenothreshold: 2
-
-All URLs referenced in the documentation have the following base: ::
-
-    http://dev.getsocialize.com/firehose/v1
-
 {% for key,endpoint in endpoints.items %}
 {{endpoint.list_endpoint}}
 ----------------------------------------------------------
