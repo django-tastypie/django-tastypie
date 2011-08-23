@@ -6,7 +6,7 @@ from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.core.management import call_command
 from django.db import models
-from django.db.models import signals, get_models
+from django.db.models import signals
 from django.conf import settings
 
 

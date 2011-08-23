@@ -12,7 +12,6 @@ from django.core.urlresolvers import reverse
 from django import forms
 from django.http import HttpRequest, QueryDict
 from django.test import TestCase
-from django.utils import dateformat
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
 from tastypie.bundle import Bundle
@@ -22,7 +21,7 @@ from tastypie.paginator import Paginator
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
-from tastypie.validation import Validation, FormValidation
+from tastypie.validation import FormValidation
 from core.models import Note, Subject, MediaBit
 from core.tests.mocks import MockRequest
 from core.utils import SimpleHandler

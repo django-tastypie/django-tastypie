@@ -3,7 +3,7 @@ from django.http import HttpRequest
 from django.test import TestCase
 from tastypie.api import Api
 from tastypie.exceptions import NotRegistered, BadRequest
-from tastypie.resources import Resource, ModelResource
+from tastypie.resources import ModelResource
 from core.models import Note
 
 

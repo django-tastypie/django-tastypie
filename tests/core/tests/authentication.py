@@ -1,7 +1,6 @@
 import base64
 import python_digest
 from django.contrib.auth.models import User
-from django.core import mail
 from django.http import HttpRequest
 from django.test import TestCase
 from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, DigestAuthentication

@@ -3,9 +3,6 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from core.tests.mocks import MockRequest
 from django.conf import settings
-from related_resource.api.resources import UserResource, \
-        CategoryResource, TagResource, TaggableResource, TaggableTagResource, \
-        ExtraDataResource
 from related_resource.api.urls import api
 from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData
 
