@@ -1779,7 +1779,9 @@ class ModelResource(Resource):
             related_objs = []
 
             for related_bundle in bundle.data[field_name]:
-                related_bundle.obj.save()
+                if not getattr(field_object, 'is_o2m', False):
+                    related_bundle.obj.save()
+
                 related_objs.append(related_bundle.obj)
 
             related_mngr.add(*related_objs)
