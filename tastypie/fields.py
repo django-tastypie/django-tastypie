@@ -717,7 +717,7 @@ class OneToManyField(ToManyField):
     """
     A convenience subclass for those who prefer to mirror ``django.db.models``.
     """
-    pass
+    is_o2m = True
 
 
 class TimeField(ApiField):
