@@ -737,6 +737,12 @@ class OneToManyField(ToManyField):
 
         return m2m_hydrated
 
+    def resource_from_data(self, fk_resource, data, request=None):
+        data = dict_strip_unicode_keys(data)
+        fk_bundle = fk_resource.build_bundle(data=data, request=request)
+        return fk_resource.full_hydrate(fk_bundle)
+
+
     
 class TimeField(ApiField):
     dehydrated_type = 'time'
