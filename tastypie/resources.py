@@ -1678,7 +1678,17 @@ class ModelResource(Resource):
 
         Takes optional ``kwargs``, which can be used to narrow the query.
         """
-        base_object_list = self.get_object_list(request).filter(**kwargs)
+        filters = {}
+
+        if hasattr(request, 'GET'):
+            # Grab a mutable copy.
+            filters = request.GET.copy()
+
+        # Update with the provided kwargs.
+        filters.update(kwargs)
+        applicable_filters = self.build_filters(filters=filters)
+
+        base_object_list = self.get_object_list(request).filter(**applicable_filters)
         authed_object_list = self.apply_authorization_limits(request, base_object_list)
 
         if hasattr(authed_object_list, 'delete'):
