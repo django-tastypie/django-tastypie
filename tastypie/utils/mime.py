@@ -14,6 +14,10 @@ def determine_format(request, serializer, default_format='application/json'):
     If still no format is found, returns the ``default_format`` (which defaults
     to ``application/json`` if not provided).
     """
+    # Zeroeth, check to see if we have a request to play with.
+    # Otherwise, just use the default format
+    if not request: return default_format
+
     # First, check if they forced the format.
     if request.GET.get('format'):
         if request.GET['format'] in serializer.formats:
