@@ -1686,7 +1686,7 @@ class ModelResource(Resource):
             authed_object_list.delete()
         else:
             for authed_obj in authed_object_list:
-                authed_object_list.delete()
+                authed_object.delete()
 
     def obj_delete(self, request=None, **kwargs):
         """
