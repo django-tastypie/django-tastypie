@@ -58,7 +58,7 @@ supports all CRUD operations in a RESTful way. JSON/XML/YAML support is already
 there, and it's easy to add related data/authentication/caching.
 
 You can find more in the documentation at
-http://toastdriven.github.com/django-tastypie/.
+http://django-tastypie.readthedocs.org/.
 
 
 Why tastypie?
