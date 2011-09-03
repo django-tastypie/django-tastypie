@@ -63,7 +63,7 @@ http://toastdriven.github.com/django-tastypie/.
 How to add TastyDoc?
 ====================
 
-# Edit sphinx projects' config.php. Add 'tastypie.ext.tastydoc' to extensions::
+* Edit sphinx projects' config.php. Add 'tastypie.ext.tastydoc' to extensions::
 
     extensions = ['sphinx.ext.autodoc', 
 			'sphinx.ext.doctest', 
@@ -74,7 +74,7 @@ How to add TastyDoc?
 			'sphinx.ext.viewcode',
 			'tastypie.ext.tastydoc']
 
-# Add directive in the .rst file::
+* Add directive in the .rst file::
     
     .. tastydoc:: path.to.the.api.variable
 
