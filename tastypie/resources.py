@@ -324,6 +324,14 @@ class Resource(object):
 
             options['callback'] = callback
 
+        if 'javascript' in format or 'json' in format:
+            try:
+                options['indent'] = int(request.GET.get('indent'))
+            except ValueError:
+                raise BadRequest('indent must be an integer.')
+            except TypeError:
+                options['indent'] = None
+
         return self._meta.serializer.serialize(data, format, options)
 
     def deserialize(self, request, data, format='application/json'):

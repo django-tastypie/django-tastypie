@@ -300,7 +300,7 @@ class Serializer(object):
         """
         options = options or {}
         data = self.to_simple(data, options)
-        return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True)
+        return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, indent = options['indent'])
 
     def from_json(self, content):
         """
