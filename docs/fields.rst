@@ -258,7 +258,7 @@ This field also has special behavior when dealing with ``attribute`` in that
 it can take a callable. For instance, if you need to filter the reverse
 relation, you can do something like::
 
-    subjects = fields.ToManyField(SubjectResource, attribute=lambda bundle: Subject.objects.filter(notes=bundle.obj, name__startswith='Personal')
+    subjects = fields.ToManyField(SubjectResource, attribute=lambda bundle: Subject.objects.filter(notes=bundle.obj, name__startswith='Personal'))
 
 Note that the ``hydrate`` portions of this field are quite different than
 any other field. ``hydrate_m2m`` actually handles the data and relations.
