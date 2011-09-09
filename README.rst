@@ -60,6 +60,23 @@ there, and it's easy to add related data/authentication/caching.
 You can find more in the documentation at
 http://toastdriven.github.com/django-tastypie/.
 
+How to add TastyDoc?
+====================
+
+* Edit sphinx projects' config.php. Add 'tastypie.ext.tastydoc' to extensions::
+
+    extensions = ['sphinx.ext.autodoc', 
+			'sphinx.ext.doctest', 
+			'sphinx.ext.intersphinx', 
+			'sphinx.ext.todo', 
+			'sphinx.ext.coverage', 
+			'sphinx.ext.ifconfig', 
+			'sphinx.ext.viewcode',
+			'tastypie.ext.tastydoc']
+
+* Add directive in the .rst file::
+    
+    .. tastydoc:: path.to.the.api.variable
 
 Why tastypie?
 =============

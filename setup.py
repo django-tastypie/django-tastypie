@@ -17,9 +17,10 @@ setup(
     packages=[
         'tastypie',
         'tastypie.utils',
+        'tastypie.ext',
     ],
     package_data={
-        'tastypie': ['templates/tastypie/*'],
+        'tastypie': ['templates/tastypie/*', 'ext/*.rst'],
     },
     requires=[
         'mimeparse',
