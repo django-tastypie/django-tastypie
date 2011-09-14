@@ -141,6 +141,19 @@ class MangledBasicResource(BasicResource):
         return bundle_or_list
 
 
+class MROBaseFieldResourceA(Resource):
+    test = fields.CharField(default='test_a')
+
+
+class MROBaseFieldResourceB(Resource):
+    test = fields.CharField(default='test_b')
+    name = fields.CharField(default='Mr. Field')
+
+
+class MROFieldResource(MROBaseFieldResourceA, MROBaseFieldResourceB):
+    pass
+
+
 class ResourceTestCase(TestCase):
     def test_fields(self):
         basic = BasicResource()
@@ -215,6 +228,12 @@ class ResourceTestCase(TestCase):
         self.assertEqual(nouri.fields['date_joined'].instance_name, 'date_joined')
         # Note - automatic resource naming.
         self.assertEqual(nouri._meta.resource_name, 'nouribasic')
+
+    def test_inheritance(self):
+        mrofr = MROFieldResource()
+        self.assertEqual(len(mrofr.fields), 3)
+        self.assertEqual(mrofr.fields['test'].default, 'test_a')
+        self.assertEqual(mrofr.fields['name'].default, 'Mr. Field')
 
     def test_full_dehydrate(self):
         test_object_1 = TestObject()

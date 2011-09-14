@@ -101,6 +101,8 @@ class DeclarativeMetaclass(type):
         # Inherit any fields from parent(s).
         try:
             parents = [b for b in bases if issubclass(b, Resource)]
+            # Simulate the MRO.
+            parents.reverse()
 
             for p in parents:
                 fields = getattr(p, 'base_fields', {})
