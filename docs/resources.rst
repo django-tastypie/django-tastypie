@@ -691,7 +691,7 @@ filter the queryset before processing a request::
             if "q" in filters:
                 sqs = SearchQuerySet().auto_query(filters['q'])
 
-                orm_filters = {"pk__in": [ i.pk for i in sqs ]}
+                orm_filters["pk__in"] = [i.pk for i in sqs]
 
             return orm_filters
 
