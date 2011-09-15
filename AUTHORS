@@ -31,6 +31,7 @@ Contributors:
 * Jason Kraus (zbyte64) for a patch related to script prefix.
 * Timothée Peignier (cyberdelia) for various patches.
 * Chris Beaven (SmileyChris) for a documentation patch.
+* Evan Borgstrom (fatbox) for a documentation patch.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
