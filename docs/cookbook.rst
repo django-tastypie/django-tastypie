@@ -37,7 +37,7 @@ Javascript's use, you could do the following::
     
     def user_detail(request, username):
         ur = UserResource()
-        user = ur.obj_get_detail(username=username)
+        user = ur.obj_get(username=username)
         
         # Other things get prepped to go into the context then...
         
