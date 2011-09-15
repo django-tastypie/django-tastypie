@@ -588,8 +588,8 @@ class ToOneField(RelatedField):
     """
     help_text = 'A single related resource. Can be either a URI or set of nested resource data.'
 
-    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None):
-        super(ToOneField, self).__init__(to, attribute, related_name=related_name, default=default, null=null, blank=blank, readonly=readonly, full=full, unique=unique, help_text=help_text)
+    def __init__(self, *args, **kwargs):
+        super(ToOneField, self).__init__(*args, **kwargs)
         self.fk_resource = None
 
     def dehydrate(self, bundle):
@@ -643,8 +643,8 @@ class ToManyField(RelatedField):
     is_m2m = True
     help_text = 'Many related resources. Can be either a list of URIs or list of individually nested resource data.'
 
-    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None):
-        super(ToManyField, self).__init__(to, attribute, related_name=related_name, default=default, null=null, blank=blank, readonly=readonly, full=full, unique=unique, help_text=help_text)
+    def __init__(self, *args, **kwargs):
+        super(ToManyField, self).__init__(*args, **kwargs)
         self.m2m_bundles = []
 
     def dehydrate(self, bundle):
