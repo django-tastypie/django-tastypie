@@ -1,10 +1,10 @@
-from tests.testcases import TestServerTestCase
 import httplib
-try:
-    import json
-except ImportError:
-    import simplejson as json
 
+from django.utils import simplejson as json
+from django.utils import unittest
+from tastypie.serializers import lxml, yaml, biplist
+
+from ..testcases import TestServerTestCase
 
 class HTTPTestCase(TestServerTestCase):
     def setUp(self):
@@ -25,6 +25,7 @@ class HTTPTestCase(TestServerTestCase):
         self.assertEqual(response.status, 200)
         self.assertEqual(data, '{"notes": {"list_endpoint": "/api/v1/notes/", "schema": "/api/v1/notes/schema/"}, "users": {"list_endpoint": "/api/v1/users/", "schema": "/api/v1/users/schema/"}}')
 
+    @unittest.skipUnless(lxml, 'lxml not installed')
     def test_get_apis_xml(self):
         connection = self.get_connection()
         connection.request('GET', '/api/v1/', headers={'Accept': 'application/xml'})

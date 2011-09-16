@@ -1,11 +1,15 @@
-import datetime
 from decimal import Decimal
+import datetime
+
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
+from django.utils import unittest
+
 from tastypie import fields
-from tastypie.serializers import Serializer
 from tastypie.resources import ModelResource
+from tastypie.serializers import Serializer, lxml, yaml, biplist
+
 from core.models import Note
 
 
@@ -164,21 +168,25 @@ class SerializerTestCase(TestCase):
         # Restore.
         settings.TASTYPIE_DATETIME_FORMATTING = old_format
 
+    @unittest.skipUnless(lxml, 'lxml not installed')
     def test_to_xml(self):
         serializer = Serializer()
         sample_1 = self.get_sample1()
         self.assertEqual(serializer.to_xml(sample_1), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><age type="integer">27</age><name>Daniel</name><date_joined>2010-03-27</date_joined></response>')
 
+    @unittest.skipUnless(lxml, 'lxml not installed')
     def test_to_xml2(self):
         serializer = Serializer()
         sample_2 = self.get_sample2()
         self.assertEqual(serializer.to_xml(sample_2), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><somelist type="list"><value>hello</value><value type="integer">1</value><value type="null"/></somelist><somehash type="hash"><pi type="float">3.14</pi><foo>bar</foo></somehash><false type="boolean">False</false><true type="boolean">True</true><somestring>hello</somestring></response>')
 
+    @unittest.skipUnless(lxml, 'lxml not installed')
     def test_from_xml(self):
         serializer = Serializer()
         data = '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><age type="integer">27</age><name>Daniel</name><date_joined>2010-03-27</date_joined><rocksdahouse type="boolean">True</rocksdahouse></request>'
         self.assertEqual(serializer.from_xml(data), {'rocksdahouse': True, 'age': 27, 'name': 'Daniel', 'date_joined': '2010-03-27'})
 
+    @unittest.skipUnless(lxml, 'lxml not installed')
     def test_from_xml2(self):
         serializer = Serializer()
         data = '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><somelist type="list"><value>hello</value><value type="integer">1</value><value type="null"/></somelist><somehash type="hash"><pi type="float">3.14</pi><foo>bar</foo></somehash><false type="boolean">False</false><true type="boolean">True</true><somestring>hello</somestring></request>'
@@ -199,6 +207,7 @@ class SerializerTestCase(TestCase):
         self.assertEqual(sample_1['age'], 27)
         self.assertEqual(sample_1['date_joined'], u'2010-03-27')
 
+    @unittest.skipUnless(lxml, 'lxml not installed')
     def test_round_trip_xml(self):
         serializer = Serializer()
         sample_data = self.get_sample2()
@@ -216,6 +225,7 @@ class SerializerTestCase(TestCase):
         unserialized = serializer.from_json(serialized)
         self.assertEqual(sample_data, unserialized)
 
+    @unittest.skipUnless(yaml, 'yaml not installed')
     def test_round_trip_yaml(self):
         serializer = Serializer()
         sample_data = self.get_sample2()
@@ -229,12 +239,14 @@ class SerializerTestCase(TestCase):
         sample_1 = self.get_sample1()
         options = {'callback': 'myCallback'}
 
+    @unittest.skipUnless(biplist, 'biplist not installed')
     def test_to_plist(self):
         serializer = Serializer()
         
         sample_1 = self.get_sample1()
         self.assertEqual(serializer.to_plist(sample_1), 'bplist00bybiplist1.0\x00\xd3\x01\x02\x03\x04\x05\x06SageTname[date_joined\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1c %13@\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00K')
-    
+
+    @unittest.skipUnless(biplist, 'biplist not installed')
     def test_from_plist(self):
         serializer = Serializer()
         
@@ -243,6 +255,28 @@ class SerializerTestCase(TestCase):
         self.assertEqual(sample_1['name'], 'Daniel')
         self.assertEqual(sample_1['age'], 27)
         self.assertEqual(sample_1['date_joined'], u'2010-03-27')
+
+    @unittest.skipIf(lxml, 'lxml is installed')
+    def test_no_xml(self):
+        serializer = Serializer()
+        sample_1 = self.get_sample1()
+        self.assertRaises(ImproperlyConfigured, serializer.to_xml, sample_1)
+        self.assertRaises(ImproperlyConfigured, serializer.from_xml, sample_1)
+
+    @unittest.skipIf(yaml, 'yaml is installed')
+    def test_no_yaml(self):
+        serializer = Serializer()
+        sample_1 = self.get_sample1()
+        self.assertRaises(ImproperlyConfigured, serializer.to_yaml, sample_1)
+        self.assertRaises(ImproperlyConfigured, serializer.from_yaml, sample_1)
+
+    @unittest.skipIf(biplist, 'biplist is installed')
+    def test_no_plist(self):
+        serializer = Serializer()
+        sample_1 = self.get_sample1()
+        self.assertRaises(ImproperlyConfigured, serializer.to_plist, sample_1)
+        self.assertRaises(ImproperlyConfigured, serializer.from_plist, sample_1)
+
 
 class ResourceSerializationTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -254,15 +288,18 @@ class ResourceSerializationTestCase(TestCase):
         self.another_resource = AnotherNoteResource()
         self.another_obj_list = [self.another_resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.another_resource.obj_get_list()]
 
+    @unittest.skipUnless(lxml, 'lxml not installed')
     def test_to_xml_multirepr(self):
         serializer = Serializer()
         self.assertEqual(serializer.to_xml(self.obj_list), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<objects><object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id>1</id><resource_uri></resource_uri></object><object><updated>2010-03-31T20:05:00</updated><created>2010-03-31T20:05:00</created><title>Another Post</title><is_active type="boolean">True</is_active><slug>another-post</slug><content>The dog ate my cat today. He looks seriously uncomfortable.</content><id>2</id><resource_uri></resource_uri></object><object><updated>2010-04-01T20:05:00</updated><created>2010-04-01T20:05:00</created><title>Recent Volcanic Activity.</title><is_active type="boolean">True</is_active><slug>recent-volcanic-activity</slug><content>My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.</content><id>4</id><resource_uri></resource_uri></object><object><updated>2010-04-02T10:05:00</updated><created>2010-04-02T10:05:00</created><title>Granny\'s Gone</title><is_active type="boolean">True</is_active><slug>grannys-gone</slug><content>Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!</content><id>6</id><resource_uri></resource_uri></object></objects>')
-
+ 
+    @unittest.skipUnless(lxml, 'lxml not installed')
     def test_to_xml_single(self):
         serializer = Serializer()
         resource = self.obj_list[0]
         self.assertEqual(serializer.to_xml(resource), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id>1</id><resource_uri></resource_uri></object>')
 
+    @unittest.skipUnless(lxml, 'lxml not installed')
     def test_to_xml_nested(self):
         serializer = Serializer()
         resource = self.obj_list[0]

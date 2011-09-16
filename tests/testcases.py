@@ -49,8 +49,9 @@ class TestServerThread(threading.Thread):
 
         # Must do database stuff in this new thread if database in memory.
         from django.conf import settings
-        if settings.DATABASE_ENGINE == 'sqlite3' \
-            and (not settings.TEST_DATABASE_NAME or settings.TEST_DATABASE_NAME == ':memory:'):
+        database = settings.DATABASES['default']
+        if database['ENGINE'].endswith('sqlite3') \
+            and ('TEST_NAME' not in database or database['TEST_NAME'] == ':memory:'):
             # Import the fixture data into the test database.
             if hasattr(self, 'fixtures'):
                 # We have to use this slightly awkward syntax due to the fact

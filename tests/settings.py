@@ -7,10 +7,16 @@ ADMINS = (
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 MEDIA_ROOT = os.path.normpath(os.path.join(BASE_PATH, 'media'))
+STATIC_ROOT = os.path.normpath(os.path.join(BASE_PATH, 'static'))
 
-DATABASE_ENGINE = 'sqlite3'
-DATABASE_NAME = 'tastypie.db'
-TEST_DATABASE_NAME = 'tastypie-test.db'
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'tastypie.db',
+        'TEST_NAME': 'tastypie-test.db'
+    }
+}
+# TEST_DATABASE_NAME = 'tastypie-test.db'
 
 INSTALLED_APPS = [
     'django.contrib.auth',
@@ -20,4 +26,9 @@ INSTALLED_APPS = [
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
-CACHE_BACKEND = 'locmem://'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'
+    }
+}

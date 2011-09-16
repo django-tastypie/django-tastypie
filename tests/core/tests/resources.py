@@ -1,35 +1,35 @@
+from decimal import Decimal
 import base64
 import copy
 import datetime
-from decimal import Decimal
-import django
+
+from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core import mail
 from django.core.cache import cache
 from django.core.exceptions import FieldError, MultipleObjectsReturned
-from django.core import mail
 from django.core.urlresolvers import reverse
-from django import forms
 from django.http import HttpRequest, QueryDict
 from django.test import TestCase
-from django.utils import dateformat
+from django.utils import unittest
+from django.utils import simplejson as json
+import django
+
+from tastypie import fields
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
 from tastypie.bundle import Bundle
 from tastypie.exceptions import InvalidFilterError, InvalidSortError, ImmediateHttpResponse, BadRequest, NotFound
-from tastypie import fields
 from tastypie.paginator import Paginator
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS
-from tastypie.serializers import Serializer
+from tastypie.serializers import Serializer, lxml, yaml, biplist
 from tastypie.throttle import CacheThrottle
-from tastypie.validation import Validation, FormValidation
+from tastypie.validation import FormValidation
+
 from core.models import Note, Subject, MediaBit
 from core.tests.mocks import MockRequest
 from core.utils import SimpleHandler
-try:
-    import json
-except ImportError:
-    import simplejson as json
 
 
 class CustomSerializer(Serializer):
@@ -535,7 +535,7 @@ class ResourceTestCase(TestCase):
         except:
             self.fail()
 
-    def test_create_response(self):
+    def test_create_response_json(self):
         basic = BasicResource()
         request = HttpRequest()
         request.GET = {'format': 'json'}
@@ -545,7 +545,12 @@ class ResourceTestCase(TestCase):
         self.assertEqual(output.status_code, 200)
         self.assertEqual(output.content, '{"hello": "world"}')
 
+    @unittest.skipUnless(lxml, 'lxml not installed')
+    def test_create_response_xml(self):
+        basic = BasicResource()
+        request = HttpRequest()
         request.GET = {'format': 'xml'}
+
         data = {'objects': [{'hello': 'world', 'abc': 123}], 'meta': {'page': 1}}
         output = basic.create_response(request, data)
         self.assertEqual(output.status_code, 200)
@@ -1979,7 +1984,7 @@ class ModelResourceTestCase(TestCase):
         note.rollback(bundles_seen)
         self.assertEqual(Note.objects.all().count(), 5)
 
-    def test_is_valid(self):
+    def test_is_valid_json(self):
         # Using the plug.
         note = NoteResource()
         bundle = Bundle(data={})
@@ -2010,15 +2015,7 @@ class ModelResourceTestCase(TestCase):
                 resource_name = 'validated'
                 validation = FormValidation(form_class=NoteForm)
 
-        class ValidatedXMLNoteResource(ModelResource):
-            class Meta:
-                queryset = Note.objects.all()
-                resource_name = 'validated'
-                validation = FormValidation(form_class=NoteForm)
-                default_format = 'application/xml'
-
         validated = ValidatedNoteResource()
-        validated_xml = ValidatedXMLNoteResource()
 
         # Test empty data.
         bundle = Bundle(data={})
@@ -2029,12 +2026,6 @@ class ModelResourceTestCase(TestCase):
             self.fail("This just passed above, but fails here? WRONG!")
         except ImmediateHttpResponse, e:
             self.assertEqual(e.response.content, '{"__all__": ["Having no content makes for a very boring note."], "is_active": ["This field is required."], "slug": ["This field is required."], "title": ["This field is required."]}')
-
-        try:
-            validated_xml.is_valid(bundle)
-            self.fail("The XML variant is no different & is_valid should have still failed.")
-        except ImmediateHttpResponse, e:
-            self.assertEqual(e.response.content, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><is_active type="list"><value>This field is required.</value></is_active><slug type="list"><value>This field is required.</value></slug><__all__ type="list"><value>Having no content makes for a very boring note.</value></__all__><title type="list"><value>This field is required.</value></title></response>')
 
         # Test something that fails validation.
         bundle = Bundle(data={
@@ -2063,6 +2054,41 @@ class ModelResourceTestCase(TestCase):
             validated.is_valid(bundle)
         except ImmediateHttpResponse, e:
             self.fail("Valid data was provided, yet still somehow errored. Why?")
+
+    @unittest.skipUnless(lxml, 'lxml not installed')
+    def test_is_valid_xml(self):
+        # An actual form.
+        class NoteForm(forms.Form):
+            title = forms.CharField(max_length=100)
+            slug = forms.CharField(max_length=50)
+            content = forms.CharField(required=False, widget=forms.Textarea)
+            is_active = forms.BooleanField()
+
+            # Define a custom clean to make sure non-field errors are making it
+            # through.
+            def clean(self):
+                if not self.cleaned_data.get('content', ''):
+                    raise forms.ValidationError('Having no content makes for a very boring note.')
+
+                return self.cleaned_data
+
+        class ValidatedXMLNoteResource(ModelResource):
+            class Meta:
+                queryset = Note.objects.all()
+                resource_name = 'validated'
+                validation = FormValidation(form_class=NoteForm)
+                default_format = 'application/xml'
+
+        validated_xml = ValidatedXMLNoteResource()
+
+        # Test empty data.
+        bundle = Bundle(data={})
+
+        try:
+            validated_xml.is_valid(bundle)
+            self.fail("The XML variant is no different & is_valid should have still failed.")
+        except ImmediateHttpResponse, e:
+            self.assertEqual(e.response.content, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><is_active type="list"><value>This field is required.</value></is_active><slug type="list"><value>This field is required.</value></slug><__all__ type="list"><value>Having no content makes for a very boring note.</value></__all__><title type="list"><value>This field is required.</value></title></response>')
 
     def test_self_referential(self):
         class SelfResource(ModelResource):
