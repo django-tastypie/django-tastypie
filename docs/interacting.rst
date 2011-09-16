@@ -140,6 +140,8 @@ We'll stick to JSON for the rest of this document, but using XML should be OK
 to do at any time.
 
 
+.. _schema-inspection:
+
 Inspecting The Resource's Schema
 --------------------------------
 
