@@ -33,6 +33,7 @@ Contributors:
 * Chris Beaven (SmileyChris) for a documentation patch.
 * Evan Borgstrom (fatbox) for a documentation patch.
 * Madis V (madisvain) for a README patch.
+* Ed Summers (edsu) for a setup.py patch.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
