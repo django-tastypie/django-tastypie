@@ -17,6 +17,7 @@ setup(
     packages=[
         'tastypie',
         'tastypie.utils',
+        'tastypie.management',
     ],
     package_data={
         'tastypie': ['templates/tastypie/*'],
