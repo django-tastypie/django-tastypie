@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.conf import settings
+from django.http import QueryDict
 from django.test import TestCase
 from tastypie.exceptions import BadRequest
 from tastypie.paginator import Paginator
@@ -32,8 +33,8 @@ class PaginatorTestCase(TestCase):
     def test_page1(self):
         reset_queries()
         self.assertEqual(len(self._get_query_count()), 0)
-        
-        paginator = Paginator({}, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=0)
+        request = QueryDict('', mutable=True)
+        paginator = Paginator(request, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=0)
         
         # REGRESSION: Check to make sure only part of the cache is full.
         # We used to run ``len()`` on the ``QuerySet``, which would populate
@@ -51,7 +52,8 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(meta['total_count'], 6)
 
     def test_page2(self):
-        paginator = Paginator({}, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=2)
+        request = QueryDict('', mutable=True)
+        paginator = Paginator(request, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=2)
         meta = paginator.page()['meta']
         self.assertEqual(meta['limit'], 2)
         self.assertEqual(meta['offset'], 2)
@@ -60,7 +62,8 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(meta['total_count'], 6)
 
     def test_page3(self):
-        paginator = Paginator({}, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=4)
+        request = QueryDict('', mutable=True)
+        paginator = Paginator(request, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=4)
         meta = paginator.page()['meta']
         self.assertEqual(meta['limit'], 2)
         self.assertEqual(meta['offset'], 4)
@@ -69,7 +72,8 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(meta['total_count'], 6)
 
     def test_large_limit(self):
-        paginator = Paginator({}, self.data_set, resource_uri='/api/v1/notes/', limit=20, offset=0)
+        request = QueryDict('', mutable=True)
+        paginator = Paginator(request, self.data_set, resource_uri='/api/v1/notes/', limit=20, offset=0)
         meta = paginator.page()['meta']
         self.assertEqual(meta['limit'], 20)
         self.assertEqual(meta['offset'], 0)
@@ -78,7 +82,9 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(meta['total_count'], 6)
     
     def test_all(self):
-        paginator = Paginator({'limit': 0}, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=0)
+        request = QueryDict('', mutable=True)
+        request.update({'limit': 0})
+        paginator = Paginator(request, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=0)
         page = paginator.page()
         meta = page['meta']
         self.assertEqual(meta['limit'], 0)
@@ -89,10 +95,11 @@ class PaginatorTestCase(TestCase):
         self.assertFalse('next' in meta)
     
     def test_complex_get(self):
-        request = {
+        request = QueryDict('', mutable=True)
+        request.update({
             'slug__startswith': 'food',
             'format': 'json',
-        }
+        })
         paginator = Paginator(request, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=2)
         meta = paginator.page()['meta']
         self.assertEqual(meta['limit'], 2)
@@ -102,7 +109,8 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(meta['total_count'], 6)
 
     def test_limit(self):
-        paginator = Paginator({}, self.data_set, limit=20, offset=0)
+        request = QueryDict('', mutable=True)
+        paginator = Paginator(request, self.data_set, limit=20, offset=0)
 
         paginator.limit = '10'
         self.assertEqual(paginator.get_limit(), 10)
@@ -120,7 +128,8 @@ class PaginatorTestCase(TestCase):
         self.assertRaises(BadRequest, paginator.get_limit)
 
     def test_offset(self):
-        paginator = Paginator({}, self.data_set, limit=20, offset=0)
+        request = QueryDict('', mutable=True)
+        paginator = Paginator(request, self.data_set, limit=20, offset=0)
 
         paginator.offset = '10'
         self.assertEqual(paginator.get_offset(), 10)
@@ -138,21 +147,34 @@ class PaginatorTestCase(TestCase):
         self.assertRaises(BadRequest, paginator.get_offset)
     
     def test_regression_nonqueryset(self):
-        paginator = Paginator({}, ['foo', 'bar', 'baz'], limit=2, offset=0)
+        request = QueryDict('', mutable=True)
+        paginator = Paginator(request, ['foo', 'bar', 'baz'], limit=2, offset=0)
         # This would fail due to ``count`` being present on ``list`` but called
         # differently.
         page = paginator.page()
         self.assertEqual(page['objects'], ['foo', 'bar'])
     
     def test_unicode_request(self):
-        request = {
+        request = QueryDict('', mutable=True)
+        request.update({
             'slug__startswith': u'☃',
             'format': 'json',
-        }
+        })
         paginator = Paginator(request, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=2)
         meta = paginator.page()['meta']
         self.assertEqual(meta['limit'], 2)
         self.assertEqual(meta['offset'], 2)
         self.assertEqual(meta['previous'], '/api/v1/notes/?slug__startswith=%E2%98%83&offset=0&limit=2&format=json')
         self.assertEqual(meta['next'], u'/api/v1/notes/?slug__startswith=%E2%98%83&offset=4&limit=2&format=json')
+        self.assertEqual(meta['total_count'], 6)
+
+    def test_multiple_params(self):
+        request = QueryDict('', mutable=True)
+        request.setlist('param', ['one', 'two'])
+        paginator = Paginator(request, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=2)
+        meta = paginator.page()['meta']
+        self.assertEqual(meta['limit'], 2)
+        self.assertEqual(meta['offset'], 2)
+        self.assertEqual(meta['previous'], '/api/v1/notes/?limit=2&param=one&param=two&offset=0')
+        self.assertEqual(meta['next'], '/api/v1/notes/?limit=2&param=one&param=two&offset=4')
         self.assertEqual(meta['total_count'], 6)

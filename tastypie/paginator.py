@@ -135,12 +135,12 @@ class Paginator(object):
     def _generate_uri(self, limit, offset):
         if self.resource_uri is None:
             return None
-        
-        request_params = dict([k, v.encode('utf-8')] for k, v in self.request_data.items())
+
+        request_params = self.request_data.copy()
         request_params.update({'limit': limit, 'offset': offset})
         return '%s?%s' % (
             self.resource_uri,
-            urlencode(request_params)
+            request_params.urlencode()
         )
 
     def page(self):
