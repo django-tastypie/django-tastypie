@@ -1,5 +1,4 @@
 import base64
-import python_digest
 from django.contrib.auth.models import User
 from django.core import mail
 from django.http import HttpRequest
@@ -7,6 +6,13 @@ from django.test import TestCase
 from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, DigestAuthentication
 from tastypie.http import HttpUnauthorized
 from tastypie.models import ApiKey, create_api_key
+
+
+# Be tricky.
+from tastypie.authentication import python_digest
+if python_digest is None:
+    import warnings
+    warnings.warn("Running tests without python_digest! Bad news!")
 
 
 class AuthenticationTestCase(TestCase):

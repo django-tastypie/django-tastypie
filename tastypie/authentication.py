@@ -1,11 +1,11 @@
 import base64
 import hmac
-import python_digest
 import time
 import uuid
 
 from django.conf import settings
 from django.contrib.auth import authenticate
+from django.core.exceptions import ImproperlyConfigured
 from tastypie.http import HttpUnauthorized
 
 try:
@@ -13,6 +13,11 @@ try:
 except ImportError:
     import sha
     sha1 = sha.sha
+
+try:
+    import python_digest
+except ImportError:
+    python_digest = None
 
 
 class Authentication(object):
@@ -186,6 +191,9 @@ class DigestAuthentication(Authentication):
     def __init__(self, backend=None, realm='django-tastypie'):
         self.backend = backend
         self.realm = realm
+
+        if python_digest is None:
+            raise ImproperlyConfigured("The 'python_digest' package could not be imported. It is required for use with the 'DigestAuthentication' class.")
 
     def _unauthorized(self):
         response = HttpUnauthorized()

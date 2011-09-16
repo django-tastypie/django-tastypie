@@ -26,12 +26,10 @@ setup(
     requires=[
         'mimeparse',
         'python_dateutil(>=1.5, < 2.0)',
-        'python_digest',
     ],
     install_requires=[
         'mimeparse',
         'python_dateutil >= 1.5, < 2.0',
-        'python_digest',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',
