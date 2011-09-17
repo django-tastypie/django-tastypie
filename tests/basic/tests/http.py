@@ -1,3 +1,5 @@
+from django.conf import settings
+
 from tests.testcases import TestServerTestCase
 import httplib
 try:
@@ -63,3 +65,23 @@ class HTTPTestCase(TestServerTestCase):
         self.assertEqual(obj['content'], 'A new post.')
         self.assertEqual(obj['is_active'], True)
         self.assertEqual(obj['user'], '/api/v1/users/1/')
+
+    def test_post_object_no_headers_no_default(self):
+        """ posting to a resource without headers yields a system error (500).
+        """
+        connection = self.get_connection()
+        post_data = '{"content": "A new post.", "is_active": true, "title": "New Title", "slug": "new-title", "user": "/api/v1/users/1/"}'
+        connection.request('POST', '/api/v1/notes/', body=post_data, headers={})
+        response = connection.getresponse()
+        self.assertEqual(response.status, 500)
+
+    def test_post_object_no_headers_with_default(self):
+        """ posting to a resource without headers yields a system error (500), however setting a default content type for
+            the service prevents an internal error.
+        """
+        setattr(settings, 'TASTYPIE_DEFAULT_CONTENT_FORMAT', 'json')
+        connection = self.get_connection()
+        post_data = '{"content": "A new post.", "is_active": true, "title": "New Title", "slug": "new-title", "user": "/api/v1/users/1/"}'
+        connection.request('POST', '/api/v1/notes/', body=post_data, headers={})
+        response = connection.getresponse()
+        self.assertEqual(response.status, 201)
