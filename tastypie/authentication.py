@@ -163,7 +163,7 @@ class ApiKeyAuthentication(Authentication):
 
         This implementation returns the user's username.
         """
-        return request.REQUEST.get('username', 'nouser')
+        return request.GET.get('username') or request.POST.get('username') or 'nouser'
 
 
 class DigestAuthentication(Authentication):

@@ -104,6 +104,7 @@ class ApiKeyAuthenticationTestCase(TestCase):
         request.GET['username'] = 'johndoe'
         request.GET['api_key'] = john_doe.api_key.key
         self.assertEqual(auth.is_authenticated(request), True)
+        self.assertEqual(auth.get_identifier(request), 'johndoe')
 
 
 class DigestAuthenticationTestCase(TestCase):
