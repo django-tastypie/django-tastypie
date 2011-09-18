@@ -15,6 +15,7 @@ interfaces.
    tools
 
    resources
+   bundles
    api
    fields
    caching

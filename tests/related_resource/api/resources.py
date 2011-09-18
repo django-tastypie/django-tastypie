@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from tastypie import fields
 from tastypie.resources import ModelResource
 from tastypie.authorization import Authorization
-from core.models import Note
+from core.models import Note, MediaBit
 from related_resource.models import Category, Tag, ExtraData, Taggable, TaggableTag
 
 
@@ -81,3 +81,20 @@ class ExtraDataResource(ModelResource):
         queryset = ExtraData.objects.all()
         authorization = Authorization()
 
+
+class FreshNoteResource(ModelResource):
+    media_bits = fields.ToManyField('related_resource.api.resources.FreshMediaBitResource', 'media_bits', related_name='note')
+
+    class Meta:
+        queryset = Note.objects.all()
+        resource_name = 'freshnote'
+        authorization = Authorization()
+
+
+class FreshMediaBitResource(ModelResource):
+    note = fields.ToOneField(FreshNoteResource, 'note')
+
+    class Meta:
+        queryset = MediaBit.objects.all()
+        resource_name = 'freshmediabit'
+        authorization = Authorization()

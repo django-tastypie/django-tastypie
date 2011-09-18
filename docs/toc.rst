@@ -12,6 +12,7 @@ Table Of Contents
    tools
 
    resources
+   bundles
    api
    fields
    authentication_authorization

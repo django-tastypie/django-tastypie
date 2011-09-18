@@ -1,20 +1,19 @@
 import json
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
+from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
-from django.conf import settings
-from related_resource.api.resources import UserResource, \
-        CategoryResource, TagResource, TaggableResource, TaggableTagResource, \
-        ExtraDataResource
+from related_resource.api.resources import FreshNoteResource
 from related_resource.api.urls import api
 from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData
 
-settings.DEBUG = True
 
 class RelatedResourceTest(TestCase):
     urls = 'related_resource.api.urls'
 
     def setUp(self):
+        super(RelatedResourceTest, self).setUp()
         self.user = User.objects.create(username="testy_mctesterson")
 
     def test_cannot_access_user_resource(self):
@@ -30,21 +29,21 @@ class RelatedResourceTest(TestCase):
 
     def test_related_resource_authorization(self):
         resource = api.canonical_resource_for('notes')
-        
+
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
         request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": null}'
-        
+
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(User.objects.get(id=self.user.id).username, 'testy_mctesterson')
-        
+
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
         request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": {"id": %s, "username": "foobar"}}' % self.user.id
-        
+
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(User.objects.get(id=self.user.id).username, 'foobar')
@@ -111,7 +110,6 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         # Give each tag some extra data (the lookup of this data is what makes the test fail)
         self.extradata_1 = ExtraData.objects.create(tag=self.tag_1, name='additional')
 
-
     def test_correct_setup(self):
         request = MockRequest()
         request.GET = {'format': 'json'}
@@ -162,3 +160,38 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         deserialized = json.loads(resp.content)
         self.assertEqual(len(deserialized), 5)
         self.assertEqual(deserialized['name'], 'school')
+
+
+class OneToManySetupTestCase(TestCase):
+    urls = 'related_resource.api.urls'
+
+    def test_one_to_many(self):
+        # Sanity checks.
+        self.assertEqual(Note.objects.count(), 2)
+        self.assertEqual(MediaBit.objects.count(), 0)
+
+        fnr = FreshNoteResource()
+
+        data = {
+            'title': 'Create with related URIs',
+            'slug': 'create-with-related-uris',
+            'content': 'Some content here',
+            'is_active': True,
+            'media_bits': [
+                {
+                    'title': 'Picture #1'
+                }
+            ]
+        }
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.raw_post_data = json.dumps(data)
+
+        resp = fnr.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(Note.objects.count(), 3)
+        note = Note.objects.latest('created')
+        self.assertEqual(note.media_bits.count(), 1)
+        self.assertEqual(note.media_bits.all()[0].title, u'Picture #1')

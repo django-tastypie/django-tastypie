@@ -135,19 +135,6 @@ of POST/PUT, the ``hydrate`` cycle additionally takes place and is used to take
 the user data & convert it to raw data for storage.
 
 
-What Are Bundles?
-=================
-
-Bundles are a small abstraction that allow Tastypie to pass data between
-resources. This allows us not to depend on passing ``request`` to every single
-method (especially in places where this would be overkill). It also allows
-resources to work with data coming into the application paired together with
-an unsaved instance of the object in question.
-
-Think of it as package of user data & an object instance (either of which are
-optionally present).
-
-
 Why Resource URIs?
 ==================
 
