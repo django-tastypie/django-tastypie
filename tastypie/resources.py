@@ -676,9 +676,17 @@ class Resource(object):
         if bundle.obj is None:
             bundle.obj = self._meta.object_class()
 
+        bundle = self.hydrate(bundle)
+
         for field_name, field_object in self.fields.items():
             if field_object.readonly is True:
                 continue
+
+            # Check for an optional method to do further hydration.
+            method = getattr(self, "hydrate_%s" % field_name, None)
+
+            if method:
+                bundle = method(bundle)
 
             if field_object.attribute:
                 value = field_object.hydrate(bundle)
@@ -696,13 +704,6 @@ class Resource(object):
                         elif field_object.null:
                             setattr(bundle.obj, field_object.attribute, value)
 
-            # Check for an optional method to do further hydration.
-            method = getattr(self, "hydrate_%s" % field_name, None)
-
-            if method:
-                bundle = method(bundle)
-
-        bundle = self.hydrate(bundle)
         return bundle
 
     def hydrate(self, bundle):

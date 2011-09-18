@@ -315,27 +315,46 @@ The cycle looks like:
 
 * Put the data from the client into a ``Bundle`` instance, which is then passed
   through the various methods.
-* Run through all fields on the ``Resource``, letting each field
-  perform its own ``hydrate`` method on the ``bundle``.
-* While processing each field, look for a ``hydrate_<fieldname>`` method on
+* If the ``hydrate`` method is present on the ``Resource``, it is called & given the entire ``bundle``.
+* Then run through all fields on the ``Resource``, look for a ``hydrate_<fieldname>`` method on
   the ``Resource``. If it's present, call it with the ``bundle``.
-* Finally, after all fields are processed, if the ``hydrate`` method is
-  present on the ``Resource``, it is called & given the entire ``bundle``.
+* Finally after all other processing is done, while processing each field, let each field
+  perform its own ``hydrate`` method on the ``bundle``.
 
 The goal of this cycle is to populate the ``bundle.obj`` data model with data
 suitable for saving/persistence. Again, with the exception of the ``alter_*``
 methods (as hooks to manipulate the overall structure), this cycle controls what
 how the data from the client is interpreted & placed on the data model.
 
-Per-field ``hydrate``
-~~~~~~~~~~~~~~~~~~~~~
+``hydrate``
+~~~~~~~~~~~
 
-Each field (even custom ``ApiField`` subclasses) has its own ``hydrate``
-method. If it knows how to access data (say, given the ``attribute`` kwarg), it
-will attempt to take data from the ``bundle.data`` & assign it on the data
-model.
+The ``hydrate`` method allows you to make final changes to the ``bundle.obj``.
+This includes things like prepopulating fields you don't expose over the API,
+recalculating related data or mangling data.
 
-The return value is put in the ``bundle.obj`` attribute for that fieldname.
+Example::
+
+    class MyResource(ModelResource):
+        # The ``title`` field is already added to the class by ``ModelResource``
+        # and populated off ``Note.title``. We'll use that title to build a
+        # ``Note.slug`` as well.
+
+        class Meta:
+            queryset = Note.objects.all()
+
+        def hydrate(self, bundle):
+            # Don't change existing slugs.
+            # In reality, this would be better implemented at the ``Note.save``
+            # level, but is for demonstration.
+            if not bundle.obj.pk:
+                bundle.obj.slug = slugify(bundle.data['title'])
+
+            return bundle
+
+This method should return a ``bundle``, whether it modifies the existing one or
+creates a whole new one. You can even remove any/all data from the
+``bundle.obj`` if you wish.
 
 ``hydrate_FOO``
 ~~~~~~~~~~~~~~~
@@ -362,33 +381,15 @@ A simple example::
 
 The return value is updated in the ``bundle.obj``.
 
-``hydrate``
-~~~~~~~~~~~
+Per-field ``hydrate``
+~~~~~~~~~~~~~~~~~~~~~
 
-The ``hydrate`` method allows you to make final changes to the ``bundle.obj``. This includes things like prepopulating fields you don't expose over the API,
-recalculating related data or mangling data.
+Each field (even custom ``ApiField`` subclasses) has its own ``hydrate``
+method. If it knows how to access data (say, given the ``attribute`` kwarg), it
+will attempt to take data from the ``bundle.data`` & assign it on the data
+model.
 
-Example::
-
-    class MyResource(ModelResource):
-        # The ``title`` field is already added to the class by ``ModelResource``
-        # and populated off ``Note.title``. We'll use that title to build a
-        # ``Note.slug`` as well.
-
-        class Meta:
-            queryset = Note.objects.all()
-
-        def hydrate(self, bundle):
-            # Don't change existing slugs.
-            # In reality, this would be better implemented at the ``Note.save``
-            # level, but is for demonstration.
-            if not bundle.obj.pk:
-                bundle.obj.slug = slugify(bundle.data['title'])
-
-            return bundle
-
-This method should return a ``bundle``, whether it modifies the existing one or creates a whole new one. You can even remove any/all data from the
-``bundle.obj`` if you wish.
+The return value is put in the ``bundle.obj`` attribute for that fieldname.
 
 
 Reverse "Relationships"
