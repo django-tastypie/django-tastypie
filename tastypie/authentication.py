@@ -6,6 +6,7 @@ import uuid
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.translation import ugettext as _
 from tastypie.http import HttpUnauthorized
 
 try:
@@ -18,6 +19,16 @@ try:
     import python_digest
 except ImportError:
     python_digest = None
+
+try:
+    import oauth2
+except ImportError:
+    oauth2 = None
+
+try:
+    import oauth_provider
+except ImportError:
+    oauth_provider = None
 
 
 class Authentication(object):
@@ -156,7 +167,7 @@ class ApiKeyAuthentication(Authentication):
         from tastypie.models import ApiKey
 
         try:
-            key = ApiKey.objects.get(user=user, key=api_key)
+            ApiKey.objects.get(user=user, key=api_key)
         except ApiKey.DoesNotExist:
             return self._unauthorized()
 
@@ -281,3 +292,71 @@ class DigestAuthentication(Authentication):
                 return request.user.username
 
         return 'nouser'
+
+
+class OAuthAuthentication(Authentication):
+    """
+    Handles OAuth, which checks a user's credentials against a separate service.
+    Currently verifies against OAuth 1.0a services.
+
+    This does *NOT* provide OAuth authentication in your API, strictly
+    consumption.
+    """
+    def __init__(self):
+        super(OAuthAuthentication, self).__init__()
+
+        if oauth2 is None:
+            raise ImproperlyConfigured("The 'python-oauth2' package could not be imported. It is required for use with the 'OAuthAuthentication' class.")
+
+        if oauth_provider is None:
+            raise ImproperlyConfigured("The 'django-oauth-plus' package could not be imported. It is required for use with the 'OAuthAuthentication' class.")
+
+    def is_authenticated(self, request, **kwargs):
+        from oauth_provider.store import store, InvalidTokenError
+
+        if self.is_valid_request(request):
+            oauth_request = oauth_provider.utils.get_oauth_request(request)
+            consumer = store.get_consumer(request, oauth_request, oauth_request.get_parameter('oauth_consumer_key'))
+
+            try:
+                token = store.get_access_token(request, oauth_request, consumer, oauth_request.get_parameter('oauth_token'))
+            except oauth_provider.store.InvalidTokenError:
+                return oauth_provider.utils.send_oauth_error(oauth2.Error(_('Invalid access token: %s') % oauth_request.get_parameter('oauth_token')))
+
+            try:
+                self.validate_token(request, consumer, token)
+            except oauth2.Error, e:
+                return oauth_provider.utils.send_oauth_error(e)
+
+            if consumer and token:
+                request.user = token.user
+                return True
+
+            return oauth_provider.utils.send_oauth_error(oauth2.Error(_('You are not allowed to access this resource.')))
+
+        return oauth_provider.utils.send_oauth_error(oauth2.Error(_('Invalid request parameters.')))
+
+    def is_in(self, params):
+        """
+        Checks to ensure that all the OAuth parameter names are in the
+        provided ``params``.
+        """
+        from oauth_provider.consts import OAUTH_PARAMETERS_NAMES
+        for param_name in OAUTH_PARAMETERS_NAMES:
+            if param_name not in params:
+                return False
+
+        return True
+
+    def is_valid_request(self, request):
+        """
+        Checks whether the required parameters are either in the HTTP
+        ``Authorization`` header sent by some clients (the preferred method
+        according to OAuth spec) or fall back to ``GET/POST``.
+        """
+        auth_params = request.META.get("HTTP_AUTHORIZATION", [])
+        return self.is_in(auth_params) or self.is_in(request.REQUEST)
+
+    def validate_token(self, request, consumer, token):
+        oauth_server, oauth_request = oauth_provider.utils.initialize_server_request(request)
+        return oauth_server.verify_request(oauth_request, consumer, token)

@@ -23,8 +23,8 @@ Using these classes is simple. Simply provide them (or your own class) as a
     from tastypie.authentication import BasicAuthentication
     from tastypie.authorization import DjangoAuthorization
     from tastypie.resources import ModelResource
-    
-    
+
+
     class UserResource(ModelResource):
         class Meta:
             queryset = User.objects.all()
@@ -74,7 +74,7 @@ objects. Hooking it up looks like::
     from django.contrib.auth.models import User
     from django.db import models
     from tastypie.models import create_api_key
-    
+
     models.signals.post_save.connect(create_api_key, sender=User)
 
 ``DigestAuthentication``
@@ -93,6 +93,16 @@ should be included in ``INSTALLED_APPS``.
   only mentions Basic auth).
 
 .. _`this post`: http://www.nerdydork.com/basic-authentication-on-mod_wsgi.html
+
+``OAuthAuthentication``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Handles OAuth, which checks a user's credentials against a separate service.
+Currently verifies against OAuth 1.0a services.
+
+This does *NOT* provide OAuth authentication in your API, strictly
+consumption.
+
 
 Authorization Options
 =====================
@@ -134,31 +144,31 @@ required method and one optional method::
 
     from tastypie.authentication import Authentication
     from tastypie.authorization import Authorization
-    
-    
+
+
     class SillyAuthentication(Authentication):
         def is_authenticated(self, request, **kwargs):
             if 'daniel' in request.user.username:
               return True
-            
+
             return False
-        
+
         # Optional but recommended
         def get_identifier(self, request):
             return request.user.username
-    
+
     class SillyAuthorization(Authorization):
         def is_authorized(self, request, object=None):
             if request.user.date_joined.year == 2010:
                 return True
             else:
                 return False
-        
+
         # Optional but useful for advanced limiting, such as per user.
         def apply_limits(self, request, object_list):
             if request and hasattr(request, 'user'):
                 return object_list.filter(author__username=request.user.username)
-            
+
             return object_list.none()
 
 Under this scheme, only users with 'daniel' in their username will be allowed

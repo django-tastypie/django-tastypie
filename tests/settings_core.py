@@ -1,5 +1,6 @@
 from settings import *
 INSTALLED_APPS.append('core')
+INSTALLED_APPS.append('oauth_provider')
 
 ROOT_URLCONF = 'core.tests.api_urls'
 MEDIA_URL = 'http://localhost:8080/media/'
