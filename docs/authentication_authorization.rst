@@ -103,6 +103,18 @@ Currently verifies against OAuth 1.0a services.
 This does *NOT* provide OAuth authentication in your API, strictly
 consumption.
 
+.. warning::
+
+  If you're used to in-browser OAuth flow (click a "Sign In" button, get
+  redirected, login on remote service, get redirected back), this isn't the
+  same. Most prominently, expecting that would cause API clients to have to use
+  tools like mechanize_ to fill in forms, which would be difficult.
+
+  This authentication expects that you're already followed some sort of OAuth
+  flow & that the credentials (Nonce/token/etc) are simply being passed to it.
+  It merely checks that the credentials are valid. No requests are made
+  to remote services as part of this authentication class.
+
 
 Authorization Options
 =====================
