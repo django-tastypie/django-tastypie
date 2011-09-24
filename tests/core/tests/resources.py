@@ -1774,9 +1774,105 @@ class ModelResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'GET'
 
+        # Patch the ``created/updated`` defaults for testability.
+        old_created = resource.fields['created']._default
+        old_updated = resource.fields['updated']._default
+        resource.fields['created']._default = datetime.datetime(2011, 9, 24, 0, 2)
+        resource.fields['updated']._default = datetime.datetime(2011, 9, 24, 0, 2)
+
         resp = resource.get_schema(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"default_format": "application/json", "fields": {"content": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string"}, "created": {"help_text": "A date & time as a string. Ex: \\"2010-11-10T03:07:43\\"", "nullable": false, "readonly": false, "type": "datetime"}, "id": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string"}, "is_active": {"help_text": "Boolean data. Ex: True", "nullable": false, "readonly": false, "type": "boolean"}, "resource_uri": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": true, "type": "string"}, "slug": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string"}, "title": {"help_text": "Unicode string data. Ex: \\"Hello World\\"", "nullable": false, "readonly": false, "type": "string"}, "updated": {"help_text": "A date & time as a string. Ex: \\"2010-11-10T03:07:43\\"", "nullable": false, "readonly": false, "type": "datetime"}}, "filtering": {"content": ["startswith", "exact"], "slug": ["exact"], "title": 1}, "ordering": ["title", "slug", "resource_uri"]}')
+        schema = {
+            "allowed_detail_http_methods": ["get", "post", "put", "delete", "patch"],
+            "allowed_list_http_methods": ["get", "post", "put", "delete", "patch"],
+            "default_format": "application/json",
+            "default_limit": 20,
+            "fields": {
+                "content": {
+                    "blank": False,
+                    "default": "",
+                    "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "string",
+                    "unique": False
+                },
+                "created": {
+                    "blank": False,
+                    "default": "2011-09-24T00:02:00",
+                    "help_text": "A date & time as a string. Ex: \"2010-11-10T03:07:43\"",
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "datetime",
+                    "unique": False
+                },
+                "id": {
+                    "blank": False,
+                    "default": "",
+                    "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "string",
+                    "unique": True
+                },
+                "is_active": {
+                    "blank": False,
+                    "default": True,
+                    "help_text": "Boolean data. Ex: True",
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "boolean",
+                    "unique": False
+                },
+                "resource_uri": {
+                    "blank": False,
+                    "default": "No default provided.",
+                    "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "nullable": False,
+                    "readonly": True,
+                    "type": "string",
+                    "unique": False
+                },
+                "slug": {
+                    "blank": False,
+                    "default": "No default provided.",
+                    "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "string",
+                    "unique": False
+                },
+                "title": {
+                    "blank": False,
+                    "default": "No default provided.",
+                    "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "string",
+                    "unique": False
+                },
+                "updated": {
+                    "blank": False,
+                    "default": "2011-09-24T00:02:00",
+                    "help_text": "A date & time as a string. Ex: \"2010-11-10T03:07:43\"",
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "datetime",
+                    "unique": False
+                }
+            },
+            "filtering": {
+                "content": ["startswith", "exact"],
+                "slug": ["exact"],
+                "title": 1
+            },
+            "ordering": ["title", "slug", "resource_uri"],
+        }
+        self.assertEqual(json.loads(resp.content), schema)
+
+        # Unpatch.
+        resource.fields['created']._default = old_created
+        resource.fields['updated']._default = old_updated
 
     def test_get_multiple(self):
         resource = NoteResource()

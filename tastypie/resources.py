@@ -758,6 +758,9 @@ class Resource(object):
         data = {
             'fields': {},
             'default_format': self._meta.default_format,
+            'allowed_list_http_methods': self._meta.list_allowed_methods,
+            'allowed_detail_http_methods': self._meta.detail_allowed_methods,
+            'default_limit': self._meta.limit,
         }
 
         if self._meta.ordering:
@@ -768,10 +771,13 @@ class Resource(object):
 
         for field_name, field_object in self.fields.items():
             data['fields'][field_name] = {
+                'default': field_object.default,
                 'type': field_object.dehydrated_type,
                 'nullable': field_object.null,
+                'blank': field_object.blank,
                 'readonly': field_object.readonly,
                 'help_text': field_object.help_text,
+                'unique': field_object.unique,
             }
 
         return data

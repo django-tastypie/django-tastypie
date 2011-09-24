@@ -10,7 +10,8 @@ from tastypie.utils import dict_strip_unicode_keys
 
 
 class NOT_PROVIDED:
-    pass
+    def __str__(self):
+        return 'No default provided.'
 
 
 DATE_REGEX = re.compile('^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2}).*?$')
