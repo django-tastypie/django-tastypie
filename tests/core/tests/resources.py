@@ -1893,6 +1893,19 @@ class ModelResourceTestCase(TestCase):
         customs = VeryCustomNoteResource().obj_delete_list()
         self.assertEqual(len(Note.objects.all()), 0)
 
+    def test_obj_delete_list_non_queryset(self):
+        class NonQuerysetNoteResource(ModelResource):
+            class Meta:
+                queryset = Note.objects.all()
+
+            def apply_authorization_limits(self, request, obj_list):
+                return tuple(obj_list[:2])
+
+        self.assertEqual(len(Note.objects.all()), 6)
+        # This is a regression. Used to fail miserably.
+        notes = NonQuerysetNoteResource().obj_delete_list()
+        self.assertEqual(len(Note.objects.all()), 4)
+
     def test_obj_create(self):
         self.assertEqual(Note.objects.all().count(), 6)
         note = NoteResource()
