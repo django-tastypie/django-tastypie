@@ -99,7 +99,10 @@ class ApiField(object):
 
             for attr in attrs:
                 previous_object = current_object
-                current_object = getattr(current_object, attr, None)
+                if hasattr(current_object, attr):
+                    current_object = getattr(current_object, attr, None)
+                else:
+                    current_object = None
 
                 if current_object is None:
                     if self.has_default():
