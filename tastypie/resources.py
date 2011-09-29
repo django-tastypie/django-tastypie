@@ -398,6 +398,14 @@ class Resource(object):
         """
         return self.dispatch('detail', request, **kwargs)
     
+    def set_verbosity(self, request):
+        verbose = request.GET.get('verbose', None)
+        if verbose is not None:
+            verbose = verbose.lower() == 'true'
+            for field_name, field_object in self.fields.items():
+                if isinstance(field_object, ForeignKey):
+                    field_object.full = verbose
+                    
     def dispatch(self, request_type, request, **kwargs):
         """
         Handles the common operations (allowed HTTP method, authentication,
@@ -414,6 +422,7 @@ class Resource(object):
         self.is_authenticated(request)
         self.is_authorized(request)
         self.throttle_check(request)
+        self.set_verbosity(request)
         
         # All clear. Process the request.
         request = convert_post_to_put(request)
