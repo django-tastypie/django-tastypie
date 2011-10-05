@@ -404,7 +404,10 @@ class Resource(object):
             verbose = verbose.lower() == 'true'
             for field_name, field_object in self.fields.items():
                 if isinstance(field_object, ForeignKey):
-                    field_object.full = verbose
+                    if verbose:
+                        field_object.full = verbose
+                    else:
+                        del(self.fields[field_name])
                     
     def dispatch(self, request_type, request, **kwargs):
         """
