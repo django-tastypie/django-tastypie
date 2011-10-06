@@ -10,7 +10,8 @@ from tastypie.utils import dict_strip_unicode_keys
 
 
 class NOT_PROVIDED:
-    pass
+    def __str__(self):
+        return 'No default provided.'
 
 
 DATE_REGEX = re.compile('^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2}).*?$')
@@ -142,6 +143,12 @@ class ApiField(object):
             return None
 
         if not bundle.data.has_key(self.instance_name):
+            if getattr(self, 'is_related', False) and not getattr(self, 'is_m2m', False):
+                # We've got an FK (or alike field) & a possible parent object.
+                # Check for it.
+                if bundle.related_obj and bundle.related_name in (self.attribute, self.instance_name):
+                    return bundle.related_obj
+
             if self.blank:
                 return None
             elif self.attribute and getattr(bundle.obj, self.attribute, None):
@@ -506,7 +513,7 @@ class RelatedField(ApiField):
             bundle = related_resource.build_bundle(obj=related_resource.instance, request=bundle.request)
             return related_resource.full_dehydrate(bundle)
 
-    def resource_from_uri(self, fk_resource, uri, request=None):
+    def resource_from_uri(self, fk_resource, uri, request=None, related_obj=None, related_name=None):
         """
         Given a URI is provided, the related resource is attempted to be
         loaded based on the identifiers in the URI.
@@ -518,7 +525,7 @@ class RelatedField(ApiField):
         except ObjectDoesNotExist:
             raise ApiFieldError("Could not find the provided object via resource URI '%s'." % uri)
 
-    def resource_from_data(self, fk_resource, data, request=None):
+    def resource_from_data(self, fk_resource, data, request=None, related_obj=None, related_name=None):
         """
         Given a dictionary-like structure is provided, a fresh related
         resource is created using that data.
@@ -526,6 +533,10 @@ class RelatedField(ApiField):
         # Try to hydrate the data provided.
         data = dict_strip_unicode_keys(data)
         fk_bundle = fk_resource.build_bundle(data=data, request=request)
+
+        if related_obj:
+            fk_bundle.related_obj = related_obj
+            fk_bundle.related_name = related_name
 
         # We need to check to see if updates are allowed on the FK
         # resource. If not, we'll just return a populated bundle instead
@@ -549,7 +560,7 @@ class RelatedField(ApiField):
         except MultipleObjectsReturned:
             return fk_resource.full_hydrate(fk_bundle)
 
-    def resource_from_pk(self, fk_resource, obj, request=None):
+    def resource_from_pk(self, fk_resource, obj, request=None, related_obj=None, related_name=None):
         """
         Given an object with a ``pk`` attribute, the related resource
         is attempted to be loaded via that PK.
@@ -557,7 +568,7 @@ class RelatedField(ApiField):
         bundle = fk_resource.build_bundle(obj=obj, request=request)
         return fk_resource.full_dehydrate(bundle)
 
-    def build_related_resource(self, value, request=None):
+    def build_related_resource(self, value, request=None, related_obj=None, related_name=None):
         """
         Returns a bundle of data built by the related resource, usually via
         ``hydrate`` with the data provided.
@@ -566,16 +577,23 @@ class RelatedField(ApiField):
         or an object with a ``pk``.
         """
         self.fk_resource = self.to_class()
+        kwargs = {
+            'request': request,
+            'related_obj': related_obj,
+            'related_name': related_name,
+        }
 
         if isinstance(value, basestring):
             # We got a URI. Load the object and assign it.
-            return self.resource_from_uri(self.fk_resource, value, request=request)
+            return self.resource_from_uri(self.fk_resource, value, **kwargs)
         elif hasattr(value, 'items'):
             # We've got a data dictionary.
-            return self.resource_from_data(self.fk_resource, value, request=request)
+            # Since this leads to creation, this is the only one of these
+            # methods that might care about "parent" data.
+            return self.resource_from_data(self.fk_resource, value, **kwargs)
         elif hasattr(value, 'pk'):
             # We've got an object with a primary key.
-            return self.resource_from_pk(self.fk_resource, value, request=request)
+            return self.resource_from_pk(self.fk_resource, value, **kwargs)
         else:
             raise ApiFieldError("The '%s' field has was given data that was not a URI, not a dictionary-alike and does not have a 'pk' attribute: %s." % (self.instance_name, value))
 
@@ -588,8 +606,14 @@ class ToOneField(RelatedField):
     """
     help_text = 'A single related resource. Can be either a URI or set of nested resource data.'
 
-    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None):
-        super(ToOneField, self).__init__(to, attribute, related_name=related_name, default=default, null=null, blank=blank, readonly=readonly, full=full, unique=unique, help_text=help_text)
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
+                 null=False, blank=False, readonly=False, full=False,
+                 unique=False, help_text=None):
+        super(ToOneField, self).__init__(
+            to, attribute, related_name=related_name, default=default,
+            null=null, blank=blank, readonly=readonly, full=full,
+            unique=unique, help_text=help_text
+        )
         self.fk_resource = None
 
     def dehydrate(self, bundle):
@@ -643,8 +667,14 @@ class ToManyField(RelatedField):
     is_m2m = True
     help_text = 'Many related resources. Can be either a list of URIs or list of individually nested resource data.'
 
-    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None):
-        super(ToManyField, self).__init__(to, attribute, related_name=related_name, default=default, null=null, blank=blank, readonly=readonly, full=full, unique=unique, help_text=help_text)
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
+                 null=False, blank=False, readonly=False, full=False,
+                 unique=False, help_text=None):
+        super(ToManyField, self).__init__(
+            to, attribute, related_name=related_name, default=default,
+            null=null, blank=blank, readonly=readonly, full=full,
+            unique=unique, help_text=help_text
+        )
         self.m2m_bundles = []
 
     def dehydrate(self, bundle):
@@ -701,7 +731,15 @@ class ToManyField(RelatedField):
             if value is None:
                 continue
 
-            m2m_hydrated.append(self.build_related_resource(value, request=bundle.request))
+            kwargs = {
+                'request': bundle.request,
+            }
+
+            if self.related_name:
+                kwargs['related_obj'] = bundle.obj
+                kwargs['related_name'] = self.related_name
+
+            m2m_hydrated.append(self.build_related_resource(value, **kwargs))
 
         return m2m_hydrated
 

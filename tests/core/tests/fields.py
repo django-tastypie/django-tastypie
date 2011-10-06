@@ -757,6 +757,15 @@ class ToOneFieldTestCase(TestCase):
         field_12.instance_name = 'author'
         self.assertEqual(field_12.hydrate(bundle), None)
 
+        # A related object.
+        field_13 = ToOneField(UserResource, 'author')
+        field_13.instance_name = 'fk'
+        bundle.related_obj = User.objects.get(pk=1)
+        bundle.related_name = 'author'
+        fk_bundle = field_13.hydrate(bundle)
+        self.assertEqual(fk_bundle.obj.username, u'johndoe')
+        self.assertEqual(fk_bundle.obj.email, u'john@doe.com')
+
     def test_resource_from_uri(self):
         ur = UserResource()
         field_1 = ToOneField(UserResource, 'author')
@@ -765,6 +774,10 @@ class ToOneFieldTestCase(TestCase):
         self.assertEqual(fk_bundle.data['email'], u'john@doe.com')
         self.assertEqual(fk_bundle.obj.username, u'johndoe')
         self.assertEqual(fk_bundle.obj.email, u'john@doe.com')
+
+        fk_bundle = field_1.resource_from_uri(ur, '/api/v1/users/1/', related_obj='Foo', related_name='Bar')
+        self.assertEqual(fk_bundle.related_obj, None)
+        self.assertEqual(fk_bundle.related_name, None)
 
     def test_resource_from_data(self):
         ur = UserResource()
@@ -779,6 +792,14 @@ class ToOneFieldTestCase(TestCase):
         self.assertEqual(fk_bundle.obj.username, u'mistersmith')
         self.assertEqual(fk_bundle.obj.email, u'smith@example.com')
 
+        fk_bundle = field_1.resource_from_data(ur, {
+            'username': u'mistersmith',
+            'email': u'smith@example.com',
+            'password': u'foobar',
+        }, related_obj='Foo', related_name='Bar')
+        self.assertEqual(fk_bundle.related_obj, 'Foo')
+        self.assertEqual(fk_bundle.related_name, 'Bar')
+
     def test_resource_from_pk(self):
         user = User.objects.get(pk=1)
         ur = UserResource()
@@ -789,6 +810,10 @@ class ToOneFieldTestCase(TestCase):
         self.assertEqual(fk_bundle.obj.username, u'johndoe')
         self.assertEqual(fk_bundle.obj.email, u'john@doe.com')
 
+        fk_bundle = field_1.resource_from_pk(ur, user, related_obj='Foo', related_name='Bar')
+        self.assertEqual(fk_bundle.related_obj, None)
+        self.assertEqual(fk_bundle.related_name, None)
+
 
 class SubjectResource(ModelResource):
     class Meta:
@@ -797,6 +822,15 @@ class SubjectResource(ModelResource):
 
     def get_resource_uri(self, bundle):
         return '/api/v1/subjects/%s/' % bundle.obj.id
+
+
+class MediaBitResource(ModelResource):
+    class Meta:
+        resource_name = 'mediabits'
+        queryset = MediaBit.objects.all()
+
+    def get_resource_uri(self, bundle):
+        return '/api/v1/mediabits/%s/' % bundle.obj.id
 
 
 class ToManyFieldTestCase(TestCase):
@@ -1035,3 +1069,16 @@ class ToManyFieldTestCase(TestCase):
         field_9 = ToManyField(SubjectResource, 'subjects', readonly=True)
         field_9.instance_name = 'm2m'
         self.assertEqual(field_9.hydrate(bundle_6), None)
+
+        # A related object.
+        field_10 = ToManyField(MediaBitResource, 'media_bits', related_name='note')
+        field_10.instance_name = 'mbs'
+        note_1 = Note.objects.get(pk=1)
+        bundle_10 = Bundle(obj=note_1, data={'mbs': [
+            {
+                'title': 'Foo!',
+            },
+        ]})
+        media_bundle_list = field_10.hydrate_m2m(bundle_10)
+        self.assertEqual(len(media_bundle_list), 1)
+        self.assertEqual(media_bundle_list[0].obj.title, u'Foo!')

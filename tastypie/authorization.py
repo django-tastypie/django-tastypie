@@ -52,7 +52,7 @@ class DjangoAuthorization(Authorization):
         klass = self.resource_meta.object_class
 
         # cannot check permissions if we don't know the model
-        if not klass:
+        if not klass or not getattr(klass, '_meta', None):
             return True
 
         permission_codes = {

@@ -3,7 +3,8 @@ from django.http import HttpRequest
 from django.contrib.auth.models import User, Permission
 from core.models import Note
 from tastypie.authorization import Authorization, ReadOnlyAuthorization, DjangoAuthorization
-from tastypie.resources import ModelResource
+from tastypie import fields
+from tastypie.resources import Resource, ModelResource
 
 
 class NoRulesNoteResource(ModelResource):
@@ -24,6 +25,19 @@ class DjangoNoteResource(ModelResource):
     class Meta:
         resource_name = 'notes'
         queryset = Note.objects.filter(is_active=True)
+        authorization = DjangoAuthorization()
+
+
+class NotAModel(object):
+    name = 'Foo'
+
+
+class NotAModelResource(Resource):
+    name = fields.CharField(attribute='name')
+
+    class Meta:
+        resource_name = 'notamodel'
+        object_class = NotAModel
         authorization = DjangoAuthorization()
 
 
@@ -106,3 +120,12 @@ class DjangoAuthorizationTestCase(TestCase):
         for method in ('GET', 'POST', 'PUT', 'DELETE'):
             request.method = method
             self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
+
+    def test_not_a_model(self):
+        request = HttpRequest()
+        request.user = self.user
+
+        # give add permission
+        request.user.user_permissions.add(self.add)
+        request.method = 'POST'
+        self.assertTrue(NotAModelResource()._meta.authorization.is_authorized(request))

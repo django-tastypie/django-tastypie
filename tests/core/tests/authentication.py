@@ -1,12 +1,23 @@
 import base64
-import python_digest
+import time
+import warnings
 from django.contrib.auth.models import User
 from django.core import mail
 from django.http import HttpRequest
 from django.test import TestCase
-from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, DigestAuthentication
+from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, DigestAuthentication, OAuthAuthentication
 from tastypie.http import HttpUnauthorized
 from tastypie.models import ApiKey, create_api_key
+
+
+# Be tricky.
+from tastypie.authentication import python_digest, oauth2, oauth_provider
+if python_digest is None:
+    warnings.warn("Running tests without python_digest! Bad news!")
+if oauth2 is None:
+    warnings.warn("Running tests without oauth2! Bad news!")
+if oauth_provider is None:
+    warnings.warn("Running tests without oauth_provider! Bad news!")
 
 
 class AuthenticationTestCase(TestCase):
@@ -158,3 +169,48 @@ class DigestAuthenticationTestCase(TestCase):
         )
         auth_request = auth.is_authenticated(request)
         self.assertEqual(auth_request, True)
+
+
+class OAuthAuthenticationTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+
+    def test_is_authenticated(self):
+        from oauth_provider.models import Consumer, Token, Resource
+        auth = OAuthAuthentication()
+        request = HttpRequest()
+        request.META['SERVER_NAME'] = 'testsuite'
+        request.META['SERVER_PORT'] = '8080'
+        request.REQUEST = request.GET = {}
+        request.method = "GET"
+
+        # Invalid request.
+        resp = auth.is_authenticated(request)
+        self.assertEqual(resp.status_code, 401)
+
+        # No username/api_key details should fail.
+        request.REQUEST = request.GET = {
+            'oauth_consumer_key': '123',
+            'oauth_nonce': 'abc',
+            'oauth_signature': '&',
+            'oauth_signature_method': 'PLAINTEXT',
+            'oauth_timestamp': str(int(time.time())),
+            'oauth_token': 'foo',
+        }
+        user = User.objects.create_user('daniel', 'test@example.com', 'password')
+        request.META['Authorization'] = 'OAuth ' + ','.join([key+'='+value for key, value in request.REQUEST.items()])
+        resource, _ = Resource.objects.get_or_create(url='test', defaults={
+            'name': 'Test Resource'
+        })
+        consumer, _ = Consumer.objects.get_or_create(key='123', defaults={
+            'name': 'Test',
+            'description': 'Testing...'
+        })
+        token, _ = Token.objects.get_or_create(key='foo', token_type=Token.ACCESS, defaults={
+            'consumer': consumer,
+            'resource': resource,
+            'secret': '',
+            'user': user,
+        })
+        resp = auth.is_authenticated(request)
+        self.assertEqual(resp, True)
+        self.assertEqual(request.user.pk, user.pk)

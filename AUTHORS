@@ -30,6 +30,12 @@ Contributors:
 * ulmus for a cookbook example.
 * Jason Kraus (zbyte64) for a patch related to script prefix.
 * Timothée Peignier (cyberdelia) for various patches.
+* Chris Beaven (SmileyChris) for a documentation patch.
+* Evan Borgstrom (fatbox) for a documentation patch.
+* Madis V (madisvain) for a README patch.
+* Ed Summers (edsu) for a setup.py patch.
+* Sébastien Fievet (zyegfryed) for the initial OAuth implementation.
+* Jacob Kaplan-Moss (jacobkm) for the PATCH patch.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.

@@ -135,19 +135,6 @@ of POST/PUT, the ``hydrate`` cycle additionally takes place and is used to take
 the user data & convert it to raw data for storage.
 
 
-What Are Bundles?
-=================
-
-Bundles are a small abstraction that allow Tastypie to pass data between
-resources. This allows us not to depend on passing ``request`` to every single
-method (especially in places where this would be overkill). It also allows
-resources to work with data coming into the application paired together with
-an unsaved instance of the object in question.
-
-Think of it as package of user data & an object instance (either of which are
-optionally present).
-
-
 Why Resource URIs?
 ==================
 
@@ -328,27 +315,46 @@ The cycle looks like:
 
 * Put the data from the client into a ``Bundle`` instance, which is then passed
   through the various methods.
-* Run through all fields on the ``Resource``, letting each field
-  perform its own ``hydrate`` method on the ``bundle``.
-* While processing each field, look for a ``hydrate_<fieldname>`` method on
+* If the ``hydrate`` method is present on the ``Resource``, it is called & given the entire ``bundle``.
+* Then run through all fields on the ``Resource``, look for a ``hydrate_<fieldname>`` method on
   the ``Resource``. If it's present, call it with the ``bundle``.
-* Finally, after all fields are processed, if the ``hydrate`` method is
-  present on the ``Resource``, it is called & given the entire ``bundle``.
+* Finally after all other processing is done, while processing each field, let each field
+  perform its own ``hydrate`` method on the ``bundle``.
 
 The goal of this cycle is to populate the ``bundle.obj`` data model with data
 suitable for saving/persistence. Again, with the exception of the ``alter_*``
 methods (as hooks to manipulate the overall structure), this cycle controls what
 how the data from the client is interpreted & placed on the data model.
 
-Per-field ``hydrate``
-~~~~~~~~~~~~~~~~~~~~~
+``hydrate``
+~~~~~~~~~~~
 
-Each field (even custom ``ApiField`` subclasses) has its own ``hydrate``
-method. If it knows how to access data (say, given the ``attribute`` kwarg), it
-will attempt to take data from the ``bundle.data`` & assign it on the data
-model.
+The ``hydrate`` method allows you to make final changes to the ``bundle.obj``.
+This includes things like prepopulating fields you don't expose over the API,
+recalculating related data or mangling data.
 
-The return value is put in the ``bundle.obj`` attribute for that fieldname.
+Example::
+
+    class MyResource(ModelResource):
+        # The ``title`` field is already added to the class by ``ModelResource``
+        # and populated off ``Note.title``. We'll use that title to build a
+        # ``Note.slug`` as well.
+
+        class Meta:
+            queryset = Note.objects.all()
+
+        def hydrate(self, bundle):
+            # Don't change existing slugs.
+            # In reality, this would be better implemented at the ``Note.save``
+            # level, but is for demonstration.
+            if not bundle.obj.pk:
+                bundle.obj.slug = slugify(bundle.data['title'])
+
+            return bundle
+
+This method should return a ``bundle``, whether it modifies the existing one or
+creates a whole new one. You can even remove any/all data from the
+``bundle.obj`` if you wish.
 
 ``hydrate_FOO``
 ~~~~~~~~~~~~~~~
@@ -375,33 +381,15 @@ A simple example::
 
 The return value is updated in the ``bundle.obj``.
 
-``hydrate``
-~~~~~~~~~~~
+Per-field ``hydrate``
+~~~~~~~~~~~~~~~~~~~~~
 
-The ``hydrate`` method allows you to make final changes to the ``bundle.obj``. This includes things like prepopulating fields you don't expose over the API,
-recalculating related data or mangling data.
+Each field (even custom ``ApiField`` subclasses) has its own ``hydrate``
+method. If it knows how to access data (say, given the ``attribute`` kwarg), it
+will attempt to take data from the ``bundle.data`` & assign it on the data
+model.
 
-Example::
-
-    class MyResource(ModelResource):
-        # The ``title`` field is already added to the class by ``ModelResource``
-        # and populated off ``Note.title``. We'll use that title to build a
-        # ``Note.slug`` as well.
-
-        class Meta:
-            queryset = Note.objects.all()
-
-        def hydrate(self, bundle):
-            # Don't change existing slugs.
-            # In reality, this would be better implemented at the ``Note.save``
-            # level, but is for demonstration.
-            if not bundle.obj.pk:
-                bundle.obj.slug = slugify(bundle.data['title'])
-
-            return bundle
-
-This method should return a ``bundle``, whether it modifies the existing one or creates a whole new one. You can even remove any/all data from the
-``bundle.obj`` if you wish.
+The return value is put in the ``bundle.obj`` attribute for that fieldname.
 
 
 Reverse "Relationships"
@@ -520,20 +508,20 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Default is ``None``, which means delegate to the more specific
   ``list_allowed_methods`` & ``detail_allowed_methods`` options.
 
-  You may specify a list like ``['get', 'post', 'put', 'delete']`` as a shortcut
+  You may specify a list like ``['get', 'post', 'put', 'delete', 'patch']`` as a shortcut
   to prevent having to specify the other options.
 
 ``list_allowed_methods``
 ------------------------
 
   Controls what list REST methods the ``Resource`` should respond to. Default
-  is ``['get', 'post', 'put', 'delete']``.
+  is ``['get', 'post', 'put', 'delete', 'patch']``.
 
 ``detail_allowed_methods``
 --------------------------
 
   Controls what detail REST methods the ``Resource`` should respond to. Default
-  is ``['get', 'post', 'put', 'delete']``.
+  is ``['get', 'post', 'put', 'delete', 'patch']``.
 
 ``limit``
 ---------
@@ -601,6 +589,12 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Default is ``None``.
 
   Unused by ``Resource`` but present for consistency.
+
+.. warning::
+
+  If you place any callables in this, they'll only be evaluated once (when
+  the ``Meta`` class is instantiated). This especially affects things that
+  are date/time related. Please see the :ref:cookbook for a way around this.
 
 ``fields``
 ----------
@@ -691,7 +685,7 @@ filter the queryset before processing a request::
             if "q" in filters:
                 sqs = SearchQuerySet().auto_query(filters['q'])
 
-                orm_filters = {"pk__in": [ i.pk for i in sqs ]}
+                orm_filters["pk__in"] = [i.pk for i in sqs]
 
             return orm_filters
 
@@ -1376,6 +1370,63 @@ Destroys a single resource/object.
 Calls ``obj_delete``.
 
 If the resource is deleted, return ``HttpNoContent`` (204 No Content).
+If the resource did not exist, return ``HttpNotFound`` (404 Not Found).
+
+``patch_list``
+--------------
+
+.. method:: Resource.patch_list(self, request, **kwargs)
+
+Updates a collection in-place.
+
+The exact behavior of ``PATCH`` to a list resource is still the matter of
+some debate in REST circles, and the ``PATCH`` RFC isn't standard. So the
+behavior this method implements (described below) is something of a
+stab in the dark. It's mostly cribbed from GData, with a smattering
+of ActiveResource-isms and maybe even an original idea or two.
+
+The ``PATCH`` format is one that's similar to the response returned from
+a ``GET`` on a list resource::
+
+    {
+      "objects": [{object}, {object}, ...],
+      "deleted_objects": ["URI", "URI", "URI", ...],
+    }
+
+For each object in ``objects``:
+
+  * If the dict does not have a ``resource_uri`` key then the item is
+    considered "new" and is handled like a ``POST`` to the resource list.
+
+  * If the dict has a ``resource_uri`` key and the ``resource_uri`` refers
+    to an existing resource then the item is a update; it's treated
+    like a ``PATCH`` to the corresponding resource detail.
+
+  * If the dict has a ``resource_uri`` but the resource *doesn't* exist,
+    then this is considered to be a create-via-``PUT``.
+
+Each entry in ``deleted_objects`` referes to a resource URI of an existing
+resource to be deleted; each is handled like a ``DELETE`` to the relevent
+resource.
+
+In any case:
+
+  * If there's a resource URI it *must* refer to a resource of this
+    type. It's an error to include a URI of a different resource.
+
+  * ``PATCH`` is all or nothing. If a single sub-operation fails, the
+    entire request will fail and all resources will be rolled back.
+
+``patch_detail``
+----------------
+
+.. method:: Resource.patch_detail(self, request, **kwargs)
+
+Updates a resource in-place.
+
+Calls ``obj_update``.
+
+If the resource is updated, return ``HttpAccepted`` (202 Accepted).
 If the resource did not exist, return ``HttpNotFound`` (404 Not Found).
 
 ``get_schema``

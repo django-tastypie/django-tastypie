@@ -22,6 +22,21 @@ provide additional values::
             return bundle
 
 
+Pre-Request Alterations To The Queryset
+---------------------------------------
+
+A common pattern is needing to limit a queryset by something that changes
+per-request, for instance the date/time. You can accomplish this by lightly
+modifying ``get_object_list``::
+
+    class MyResource(ModelResource):
+        class Meta:
+            queryset = MyObject.objects.all()
+
+        def get_object_list(self, request):
+            return super(MyResource, self).get_object_list(request).filter(start_date__gte=datetime.datetime.now)
+
+
 Using Your ``Resource`` In Regular Views
 ----------------------------------------
 
@@ -33,14 +48,14 @@ Javascript's use, you could do the following::
     # views.py
     from django.shortcuts import render_to_response
     from myapp.api.resources import UserResource
-    
-    
+
+
     def user_detail(request, username):
         ur = UserResource()
-        user = ur.obj_get_detail(username=username)
-        
+        user = ur.obj_get(username=username)
+
         # Other things get prepped to go into the context then...
-        
+
         ur_bundle = ur.build_bundle(obj=user, request=request)
         return render_to_response('myapp/user_detail.html', {
             # Other things here.
@@ -63,7 +78,7 @@ something like the following::
     class UserResource(ModelResource):
         class Meta:
             queryset = User.objects.all()
-        
+
         def override_urls(self):
             return [
                 url(r"^(?P<resource_name>%s)/(?P<username>[\w\d_.-]+)/$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
@@ -82,12 +97,12 @@ handle the children::
 
     class ParentResource(ModelResource):
         children = fields.ToManyField(ChildResource, 'children')
-        
+
         def override_urls(self):
             return [
                 url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/children%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_children'), name="api_get_children"),
             ]
-        
+
         def get_children(self, request, **kwargs):
             try:
                 obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
@@ -95,7 +110,7 @@ handle the children::
                 return HttpGone()
             except MultipleObjectsReturned:
                 return HttpMultipleChoices("More than one resource is found at this URI.")
-            
+
             child_resource = ChildResource()
             return child_resource.get_detail(request, parent_id=obj.pk)
 
@@ -104,16 +119,16 @@ Another alternative approach is to override the ``dispatch`` method::
     # myapp/api/resources.py
     class EntryResource(ModelResource):
         user = fields.ForeignKey(UserResource, 'user')
-        
+
         class Meta:
             queryset = Entry.objects.all()
             resource_name = 'entry'
-        
+
         def dispatch(self, request_type, request, **kwargs):
             username = kwargs.pop('username')
             kwargs['user'] = get_object_or_404(User, username=username)
             return super(EntryResource, self).dispatch(request_type, request, **kwargs)
-    
+
     # urls.py
     from django.conf.urls.defaults import *
     from myapp.api import EntryResource
@@ -141,43 +156,43 @@ at ``/api/v1/notes/search/``::
     from tastypie.resources import ModelResource
     from tastypie.utils import trailing_slash
     from notes.models import Note
-    
-    
+
+
     class NoteResource(ModelResource):
         class Meta:
             queryset = Note.objects.all()
             resource_name = 'notes'
-        
+
         def override_urls(self):
             return [
                 url(r"^(?P<resource_name>%s)/search%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_search'), name="api_get_search"),
             ]
-        
+
         def get_search(self, request, **kwargs):
             self.method_check(request, allowed=['get'])
             self.is_authenticated(request)
             self.throttle_check(request)
-            
+
             # Do the query.
             sqs = SearchQuerySet().models(Note).load_all().auto_query(request.GET.get('q', ''))
             paginator = Paginator(sqs, 20)
-            
+
             try:
                 page = paginator.page(int(request.GET.get('page', 1)))
             except InvalidPage:
                 raise Http404("Sorry, no results on that page.")
-            
+
             objects = []
-            
+
             for result in page.object_list:
                 bundle = self.build_bundle(obj=result.object, request=request)
                 bundle = self.full_dehydrate(bundle)
                 objects.append(bundle)
-            
+
             object_list = {
                 'objects': objects,
             }
-            
+
             self.log_throttled_access(request)
             return self.create_response(request, object_list)
 
@@ -206,10 +221,10 @@ resulting code will look something like::
             list_allowed_methods = ['get', 'post']
             authentication = ApiKeyAuthentication()
             authorization = Authorization()
-        
+
         def obj_create(self, bundle, request=None, **kwargs):
             return super(EnvironmentResource, self).obj_create(bundle, request, user=request.user)
-        
+
         def apply_authorization_limits(self, request, object_list):
             return object_list.filter(user=request.user)
 
