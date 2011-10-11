@@ -24,6 +24,7 @@ try:
 except ImportError:
     biplist = None
 
+from dateutil.tz import gettz
 
 class Serializer(object):
     """
@@ -55,6 +56,9 @@ class Serializer(object):
     def __init__(self, formats=None, content_types=None, datetime_formatting=None):
         self.supported_formats = []
         self.datetime_formatting = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING', 'iso-8601')
+        timezone_str = getattr(settings, 'TIME_ZONE', None)
+        if timezone_str:
+            self.tzinfo = gettz(timezone_str)
         
         if formats is not None:
             self.formats = formats
@@ -95,6 +99,9 @@ class Serializer(object):
         if self.datetime_formatting == 'rfc-2822':
             return format_datetime(data)
         
+        if self.tzinfo:
+        	data = datetime.datetime(data.year, data.month, data.day, data.hour, data.minute, data.second, data.microsecond, self.tzinfo)
+        	
         return data.isoformat()
     
     def format_date(self, data):
