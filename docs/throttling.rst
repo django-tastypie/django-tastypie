@@ -57,7 +57,7 @@ common logic and serves as an api-compatible plug. Very useful for development.
 ~~~~~~~~~~~~~~~~~
 
 This uses just the cache to manage throttling. Fast but prone to cache misses
-and/or cache restarts.
+and/or cache restarts. Cannot be used with Django's DummyCache backend.
 
 ``CacheDBThrottle``
 ~~~~~~~~~~~~~~~~~~~
