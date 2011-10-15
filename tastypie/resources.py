@@ -182,6 +182,7 @@ class Resource(object):
         """
         @csrf_exempt
         def wrapper(request, *args, **kwargs):
+            self.request = request
             try:
                 callback = getattr(self, view)
                 response = callback(request, *args, **kwargs)
