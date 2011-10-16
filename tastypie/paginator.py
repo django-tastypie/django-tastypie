@@ -15,13 +15,14 @@ class Paginator(object):
     ``total_count`` of resources seen and convenience links to the
     ``previous``/``next`` pages of data as available.
     """
-    def __init__(self, request_data, objects, resource_uri=None, limit=None, offset=0):
+    def __init__(self, request, objects, resource_uri=None, limit=None, offset=0):
         """
         Instantiates the ``Paginator`` and allows for some configuration.
         
-        The ``request_data`` argument ought to be a dictionary-like object.
+        The ``request`` argument is django HttpRequest object.
         May provide ``limit`` and/or ``offset`` to override the defaults.
-        Commonly provided ``request.GET``. Required.
+        Commonly provided ``request.GET``, but also accepts it via HTTP_RANGE.
+        Required.
         
         The ``objects`` should be a list-like object of ``Resources``.
         This is typically a ``QuerySet`` but can be anything that
@@ -33,7 +34,16 @@ class Paginator(object):
         Optionally accepts an ``offset`` argument, which specifies where in
         the ``objects`` to start displaying results from. Defaults to 0.
         """
-        self.request_data = request_data
+
+        r = request.META.get("HTTP_RANGE", None)
+        if r:
+            r = r.split('=', 1)[1].split('-')
+            offset = int(r[0])
+            if r[1]:
+                r2 = int(r[1]) + 1
+            limit = r2 - offset
+
+        self.request = request
         self.objects = objects
         self.limit = limit
         self.offset = offset
@@ -53,10 +63,11 @@ class Paginator(object):
         """
         limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)
         
-        if 'limit' in self.request_data:
-            limit = self.request_data['limit']
+        if 'limit' in self.request.GET:
+            limit = self.request.GET['limit']
         elif self.limit is not None:
             limit = self.limit
+
         
         try:
             limit = int(limit)
@@ -79,8 +90,8 @@ class Paginator(object):
         """
         offset = self.offset
         
-        if 'offset' in self.request_data:
-            offset = self.request_data['offset']
+        if 'offset' in self.request.GET:
+            offset = self.request.GET['offset']
         
         try:
             offset = int(offset)
@@ -136,7 +147,7 @@ class Paginator(object):
         if self.resource_uri is None:
             return None
         
-        request_params = dict([k, v.encode('utf-8')] for k, v in self.request_data.items())
+        request_params = dict([k, v.encode('utf-8')] for k, v in self.request.GET.items())
         request_params.update({'limit': limit, 'offset': offset})
         return '%s?%s' % (
             self.resource_uri,
