@@ -7,7 +7,7 @@ from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.fields import *
 from tastypie.resources import ModelResource
-from core.models import Note, Subject, MediaBit
+from core.models import Note, Subject, MediaBit, NoteEdit
 
 
 class ApiFieldTestCase(TestCase):
@@ -241,6 +241,25 @@ class IntegerFieldTestCase(TestCase):
 
         field_3 = IntegerField(default=18.5)
         self.assertEqual(field_3.dehydrate(bundle), 18)
+
+    def test_dehydrate_check_null_allowed_first(self):
+        note = Note.objects.get(pk=1)
+        note_edit = NoteEdit.objects.create(note=note, age=None)
+
+        bundle = Bundle(obj=note_edit)
+
+        # Simulate the field the ModelResource metaclass would create based
+        # on the Note model's fields
+        field = NoteEdit._meta.get_field_by_name('age')[0]
+        age_field = IntegerField(
+            attribute='age',
+            null=field.null,
+            blank=field.blank,
+            default=field.default
+        )
+
+        # Should be None because null=True
+        self.assertEqual(age_field.dehydrate(bundle), None)
 
 
 class FloatFieldTestCase(TestCase):

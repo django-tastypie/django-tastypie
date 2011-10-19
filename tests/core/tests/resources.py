@@ -23,7 +23,7 @@ from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS,
 from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
 from tastypie.validation import Validation, FormValidation
-from core.models import Note, Subject, MediaBit
+from core.models import Note, Subject, MediaBit, NoteEdit
 from core.tests.mocks import MockRequest
 from core.utils import SimpleHandler
 try:
@@ -921,6 +921,13 @@ class PerObjectNoteResource(NoteResource):
 # End per object authorization bits.
 
 
+class AgeOnlyNoteEditResource(ModelResource):
+    class Meta:
+        resource_name = 'ageonlynoteedit'
+        queryset = NoteEdit.objects.all()
+        fields = ('age',)
+
+
 class ModelResourceTestCase(TestCase):
     fixtures = ['note_testdata.json']
     urls = 'core.tests.field_urls'
@@ -1408,6 +1415,16 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.get_detail(request, pk=300)
         self.assertEqual(resp.status_code, 404)
+
+    def test_get_detail_with_nullable_field_allowed(self):
+        NoteEdit.objects.create(note=self.note_1, age=None)
+        resource = AgeOnlyNoteEditResource()
+        request= HttpRequest()
+        request.GET = {'format': 'json'}
+
+        resp = resource.get_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"age": null, "resource_uri": ""}')
 
     def test_put_list(self):
         resource = NoteResource()
