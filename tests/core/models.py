@@ -47,3 +47,13 @@ class MediaBit(models.Model):
     
     def __unicode__(self):
         return self.title
+
+
+class NoteEdit(models.Model):
+    note = models.ForeignKey(Note, related_name='edits')
+    diff = models.TextField(blank=True)
+    age = models.IntegerField(null=True, blank=True, default=0,
+                              help_text='In seconds')
+
+    def __unicode__(self):
+        return u'Edit for %s' % self.note

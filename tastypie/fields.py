@@ -102,13 +102,12 @@ class ApiField(object):
                 current_object = getattr(current_object, attr, None)
 
                 if current_object is None:
-                    if self.has_default():
-                        current_object = self._default
+                    if self.null:
                         # Fall out of the loop, given any further attempts at
                         # accesses will fail miserably.
                         break
-                    elif self.null:
-                        current_object = None
+                    if self.has_default():
+                        current_object = self._default
                         # Fall out of the loop, given any further attempts at
                         # accesses will fail miserably.
                         break
