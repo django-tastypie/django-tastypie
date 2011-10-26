@@ -134,6 +134,14 @@ class Api(object):
 
             options['callback'] = callback
 
+        if 'javascript' in desired_format or 'json' in desired_format:
+            try:
+                options['indent'] = int(request.GET.get('indent'))
+            except ValueError:
+                raise BadRequest('indent must be an integer.')
+            except TypeError:
+                options['indent'] = None
+
         serialized = serializer.serialize(available_resources, desired_format, options)
         return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
 
