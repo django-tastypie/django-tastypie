@@ -47,6 +47,12 @@ As an example, we'll take integrating with Riak_ (a Dynamo-like NoSQL store)
 since it has both a simple API and demonstrate what hooking up to a
 non-relational datastore looks like::
 
+    from tastypie import fields
+    from tastypie.resources import Resource
+    from tastypie.authorization import Authorization
+    import riak
+    from riak.riak_object import RiakObject
+
     # We need a generic object to shove data in/get data from.
     # Riak generally just tosses around dictionaries, so we'll lightly
     # wrap that.
