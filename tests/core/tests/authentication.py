@@ -115,7 +115,11 @@ class ApiKeyAuthenticationTestCase(TestCase):
         request.GET['username'] = 'johndoe'
         request.GET['api_key'] = john_doe.api_key.key
         self.assertEqual(auth.is_authenticated(request), True)
-
+        request.META['HTTP_X_API_USERNAME'] = 'johndoe'
+        request.META['HTTP_X_API_KEY'] = john_doe.api_key.key
+        del request.GET['username']
+        del request.GET['api_key']
+        self.assertEqual(auth.is_authenticated(request), True)
 
 class DigestAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
