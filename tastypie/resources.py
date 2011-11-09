@@ -253,7 +253,7 @@ class Resource(object):
         # Value errors that trace up this far are almost always due to JSON parsing problems
         if isinstance(exception, (ValueError)):
             data = {
-                "error_message": "The server had a problem processing your request. Check that your JSON is not malformed."
+                "error_message": "Sorry, this request could not be processed. Check that your JSON is not malformed. The exception message was: " + exception.message
             }
             
         else:
