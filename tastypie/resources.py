@@ -250,10 +250,18 @@ class Resource(object):
                 message = "%s\n\n%s" % (the_trace, request_repr)
                 mail_admins(subject, message, fail_silently=True)
 
-        # Prep the data going out.
-        data = {
-            "error_message": getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later."),
-        }
+        # Value errors that trace up this far are almost always due to JSON parsing problems
+        if isinstance(exception, (ValueError)):
+            data = {
+                "error_message": "Sorry, this request could not be processed. Check that your JSON is not malformed. The exception message was: " + exception.message
+            }
+            
+        else:
+            # Prep the data going out.
+            data = {
+                "error_message": getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later."),
+            }
+        
         desired_format = self.determine_format(request)
         serialized = self.serialize(request, data, desired_format)
         return response_class(content=serialized, content_type=build_content_type(desired_format))
