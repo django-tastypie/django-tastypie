@@ -8,6 +8,8 @@ class HttpCreated(HttpResponse):
     status_code = 201
     
     def __init__(self, *args, **kwargs):
+        location = ''
+
         if 'location' in kwargs:
             location = kwargs['location']
             del(kwargs['location'])
@@ -17,6 +19,10 @@ class HttpCreated(HttpResponse):
 
 
 class HttpAccepted(HttpResponse):
+    status_code = 202
+
+
+class HttpNoContent(HttpResponse):
     status_code = 204
 
 
@@ -42,6 +48,10 @@ class HttpUnauthorized(HttpResponse):
 
 class HttpForbidden(HttpResponse):
     status_code = 403
+
+
+class HttpNotFound(HttpResponse):
+    status_code = 404
 
 
 class HttpMethodNotAllowed(HttpResponse):

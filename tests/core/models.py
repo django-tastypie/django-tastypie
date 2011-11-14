@@ -25,6 +25,10 @@ class Note(models.Model):
     def get_absolute_url(self):
         return '/some/fake/path/%s/' % self.pk
 
+    @property
+    def my_property(self):
+        return 'my_property'
+
 
 class Subject(models.Model):
     notes = models.ManyToManyField(Note, related_name='subjects')

@@ -22,18 +22,18 @@ A sample resource definition might look something like::
     from tastypie.authorization import DjangoAuthorization
     from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
     from myapp.models import Entry
-    
-    
+
+
     class UserResource(ModelResource):
         class Meta:
             queryset = User.objects.all()
             resource_name = 'auth/user'
             excludes = ['email', 'password', 'is_superuser']
-    
-    
+
+
     class EntryResource(ModelResource):
         user = fields.ForeignKey(UserResource, 'user')
-        
+
         class Meta:
             queryset = Entry.objects.all()
             list_allowed_methods = ['get', 'post']
@@ -97,7 +97,7 @@ As an example, we'll walk through what a GET request to a list endpoint (say
   * the user is authenticated (``is_authenticated``),
   * the user is authorized (``is_authorized``),
   * & the user has not exceeded their throttle (``throttle_check``).
-  
+
   At this point, ``dispatch`` actually calls the requested method (``get_list``).
 
 * ``get_list`` does the actual work of the API. It does:
@@ -135,19 +135,6 @@ of POST/PUT, the ``hydrate`` cycle additionally takes place and is used to take
 the user data & convert it to raw data for storage.
 
 
-What Are Bundles?
-=================
-
-Bundles are a small abstraction that allow Tastypie to pass data between
-resources. This allows us not to depend on passing ``request`` to every single
-method (especially in places where this would be overkill). It also allows
-resources to work with data coming into the application paired together with
-an unsaved instance of the object in question.
-
-Think of it as package of user data & an object instance (either of which are
-optionally present).
-
-
 Why Resource URIs?
 ==================
 
@@ -174,23 +161,235 @@ consequences of each approach.
 Advanced Data Preparation
 =========================
 
-Tastypie uses a "dehydrate" cycle to prepare data for serialization & a
-"hydrate" cycle to take data sent to it & turn that back into useful Python
-objects.
+Not all data can be easily pull off an object/model attribute. And sometimes,
+you (or the client) may need to send data that doesn't neatly fit back into the
+data model on the server side. For this, Tastypie has the "dehydrate/hydrate"
+cycle.
 
-Within these cycles, there are several points of customization if you need them.
+The Dehydrate Cycle
+-------------------
 
-``dehydrate``
--------------
+Tastypie uses a "dehydrate" cycle to prepare data for serialization, which is
+to say that it takes the raw, potentially complicated data model & turns it
+into a (generally simpler) processed data structure for client consumption.
+This usually means taking a complex data object & turning it into a dictionary
+of simple data types.
+
+Broadly speaking, this takes the ``bundle.obj`` instance & builds
+``bundle.data``, which is what is actually serialized.
+
+The cycle looks like:
+
+* Put the data model into a ``Bundle`` instance, which is then passed through
+  the various methods.
+* Run through all fields on the ``Resource``, letting each field
+  perform its own ``dehydrate`` method on the ``bundle``.
+* While processing each field, look for a ``dehydrate_<fieldname>`` method on
+  the ``Resource``. If it's present, call it with the ``bundle``.
+* Finally, after all fields are processed, if the ``dehydrate`` method is
+  present on the ``Resource``, it is called & given the entire ``bundle``.
+
+The goal of this cycle is to populate the ``bundle.data`` dictionary with data
+suitable for serialization. With the exception of the ``alter_*`` methods (as
+hooks to manipulate the overall structure), this cycle controls what is
+actually handed off to be serialized & sent to the client.
+
+Per-field ``dehydrate``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Each field (even custom ``ApiField`` subclasses) has its own ``dehydrate``
+method. If it knows how to access data (say, given the ``attribute`` kwarg), it
+will attempt to populate values itself.
+
+The return value is put in the ``bundle.data`` dictionary (by the ``Resource``)
+with the fieldname as the key.
 
 ``dehydrate_FOO``
------------------
+~~~~~~~~~~~~~~~~~
+
+Since not all data may be ready for consumption based on just attribute access
+(or may require an advanced lookup/calculation), this hook enables you to fill
+in data or massage whatever the field generated.
+
+.. note::
+
+  The ``FOO`` here is not literal. Instead, it is a placeholder that should be
+  replaced with the fieldname in question.
+
+Defining these methods is especially common when denormalizing related data,
+providing statistics or filling in unrelated data.
+
+A simple example::
+
+    class MyResource(ModelResource):
+        # The ``title`` field is already added to the class by ``ModelResource``
+        # and populated off ``Note.title``. But we want allcaps titles...
+
+        class Meta:
+            queryset = Note.objects.all()
+
+        def dehydrate_title(self, bundle):
+            return bundle.data['title'].upper()
+
+A complex example::
+
+    class MyResource(ModelResource):
+        # As is, this is just an empty field. Without the ``dehydrate_rating``
+        # method, no data would be populated for it.
+        rating = fields.FloatField(readonly=True)
+
+        class Meta:
+            queryset = Note.objects.all()
+
+        def dehydrate_rating(self, bundle):
+            total_score = 0.0
+
+            # Make sure we don't have to worry about "divide by zero" errors.
+            if not bundle.obj.rating_set.count():
+                return rating
+
+            # We'll run over all the ``Rating`` objects & calculate an average.
+            for rating in bundle.obj.rating_set.all():
+                total_score += rating.rating
+
+            return total_score /  bundle.obj.rating_set.count()
+
+The return value is updated in the ``bundle.data``. You should avoid altering
+``bundle.data`` here if you can help it.
+
+``dehydrate``
+~~~~~~~~~~~~~
+
+The ``dehydrate`` method takes a now fully-populated ``bundle.data`` & make
+any last alterations to it. This is useful for when a piece of data might
+depend on more than one field, if you want to shove in extra data that isn't
+worth having its own field or if you want to dynamically remove things from
+the data to be returned.
+
+A simple example::
+
+    class MyResource(ModelResource):
+        class Meta:
+            queryset = Note.objects.all()
+
+        def dehydrate(self, bundle):
+            # Include the request IP in the bundle.
+            bundle.data['request_ip'] = bundle.request.META.get('REMOTE_ADDR')
+            return bundle
+
+A complex example::
+
+    class MyResource(ModelResource):
+        class Meta:
+            queryset = User.objects.all()
+            excludes = ['email', 'password', 'is_staff', 'is_superuser']
+
+        def dehydrate(self, bundle):
+            # If they're requesting their own record, add in their email address.
+            if bundle.request.user.pk == bundle.obj.pk:
+                # Note that there isn't an ``email`` field on the ``Resource``.
+                # By this time, it doesn't matter, as the built data will no
+                # longer be checked against the fields on the ``Resource``.
+                bundle.data['email'] = bundle.obj.email
+
+            return bundle
+
+This method should return a ``bundle``, whether it modifies the existing one or creates a whole new one. You can even remove any/all data from the
+``bundle.data`` if you wish.
+
+The Hydrate Cycle
+-------------------
+
+Tastypie uses a "hydrate" cycle to take serializated data from the client
+and turn it into something the data model can use. This is the reverse process
+from the ``dehydrate`` cycle. If fact, by default, Tastypie's serialized data
+should be "round-trip-able", meaning the data that comes out should be able to
+be fed back in & result in the same original data model. This usually means
+taking a dictionary of simple data types & turning it into a complex data
+object.
+
+Broadly speaking, this takes the recently-deserialized ``bundle.data``
+dictionary & builds ``bundle.obj`` (but does **NOT** save it).
+
+The cycle looks like:
+
+* Put the data from the client into a ``Bundle`` instance, which is then passed
+  through the various methods.
+* If the ``hydrate`` method is present on the ``Resource``, it is called & given the entire ``bundle``.
+* Then run through all fields on the ``Resource``, look for a ``hydrate_<fieldname>`` method on
+  the ``Resource``. If it's present, call it with the ``bundle``.
+* Finally after all other processing is done, while processing each field, let each field
+  perform its own ``hydrate`` method on the ``bundle``.
+
+The goal of this cycle is to populate the ``bundle.obj`` data model with data
+suitable for saving/persistence. Again, with the exception of the ``alter_*``
+methods (as hooks to manipulate the overall structure), this cycle controls what
+how the data from the client is interpreted & placed on the data model.
 
 ``hydrate``
------------
+~~~~~~~~~~~
+
+The ``hydrate`` method allows you to make final changes to the ``bundle.obj``.
+This includes things like prepopulating fields you don't expose over the API,
+recalculating related data or mangling data.
+
+Example::
+
+    class MyResource(ModelResource):
+        # The ``title`` field is already added to the class by ``ModelResource``
+        # and populated off ``Note.title``. We'll use that title to build a
+        # ``Note.slug`` as well.
+
+        class Meta:
+            queryset = Note.objects.all()
+
+        def hydrate(self, bundle):
+            # Don't change existing slugs.
+            # In reality, this would be better implemented at the ``Note.save``
+            # level, but is for demonstration.
+            if not bundle.obj.pk:
+                bundle.obj.slug = slugify(bundle.data['title'])
+
+            return bundle
+
+This method should return a ``bundle``, whether it modifies the existing one or
+creates a whole new one. You can even remove any/all data from the
+``bundle.obj`` if you wish.
 
 ``hydrate_FOO``
----------------
+~~~~~~~~~~~~~~~
+
+Data from the client may not map directly onto the data model or might need
+augmentation. This hook lets you take that data & convert it.
+
+.. note::
+
+  The ``FOO`` here is not literal. Instead, it is a placeholder that should be
+  replaced with the fieldname in question.
+
+A simple example::
+
+    class MyResource(ModelResource):
+        # The ``title`` field is already added to the class by ``ModelResource``
+        # and populated off ``Note.title``. But we want lowercase titles...
+
+        class Meta:
+            queryset = Note.objects.all()
+
+        def hydrate_title(self, bundle):
+            return bundle.data['title'].lower()
+
+The return value is updated in the ``bundle.obj``.
+
+Per-field ``hydrate``
+~~~~~~~~~~~~~~~~~~~~~
+
+Each field (even custom ``ApiField`` subclasses) has its own ``hydrate``
+method. If it knows how to access data (say, given the ``attribute`` kwarg), it
+will attempt to take data from the ``bundle.data`` & assign it on the data
+model.
+
+The return value is put in the ``bundle.obj`` attribute for that fieldname.
 
 
 Reverse "Relationships"
@@ -210,18 +409,18 @@ relationship looks like so::
   from tastypie import fields
   from tastypie.resources import ModelResource
   from myapp.models import Note, Comment
-  
-  
+
+
   class NoteResource(ModelResource):
       comments = fields.ToManyField('myapp.api.resources.CommentResource', 'comments')
-      
+
       class Meta:
           queryset = Note.objects.all()
-  
-  
+
+
   class CommentResource(ModelResource):
       note = fields.ToOneField(NoteResource, 'notes')
-      
+
       class Meta:
           queryset = Comment.objects.all()
 
@@ -239,11 +438,11 @@ a similar relation in Tastypie would look like::
   from tastypie import fields
   from tastypie.resources import ModelResource
   from myapp.models import Note
-  
-  
+
+
   class NoteResource(ModelResource):
       sub_notes = fields.ToManyField('self', 'notes')
-      
+
       class Meta:
           queryset = Note.objects.all()
 
@@ -308,21 +507,21 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Controls what list & detail REST methods the ``Resource`` should respond to.
   Default is ``None``, which means delegate to the more specific
   ``list_allowed_methods`` & ``detail_allowed_methods`` options.
-  
-  You may specify a list like ``['get', 'post', 'put', 'delete']`` as a shortcut
+
+  You may specify a list like ``['get', 'post', 'put', 'delete', 'patch']`` as a shortcut
   to prevent having to specify the other options.
 
 ``list_allowed_methods``
 ------------------------
 
   Controls what list REST methods the ``Resource`` should respond to. Default
-  is ``['get', 'post', 'put', 'delete']``.
+  is ``['get', 'post', 'put', 'delete', 'patch']``.
 
 ``detail_allowed_methods``
 --------------------------
 
   Controls what detail REST methods the ``Resource`` should respond to. Default
-  is ``['get', 'post', 'put', 'delete']``.
+  is ``['get', 'post', 'put', 'delete', 'patch']``.
 
 ``limit``
 ---------
@@ -342,7 +541,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   An override for the ``Resource`` to use when generating resource URLs.
   Default is ``None``.
-  
+
   If not provided, the ``Resource`` or ``ModelResource`` will attempt to name
   itself. This means a lowercase version of the classname preceding the word
   ``Resource`` if present (i.e. ``SampleContentResource`` would become
@@ -360,7 +559,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   Provides a list of fields that the ``Resource`` will accept client
   filtering on. Default is ``{}``.
-  
+
   Keys should be the fieldnames as strings while values should be a list of
   accepted filter types.
 
@@ -369,7 +568,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   Specifies the what fields the ``Resource`` should should allow ordering on.
   Default is ``[]``.
-  
+
   Values should be the fieldnames as strings. When provided to the ``Resource``
   by the ``order_by`` GET parameter, you can specify either the ``fieldname``
   (ascending order) or ``-fieldname`` (descending order).
@@ -379,7 +578,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   Provides the ``Resource`` with the object that serves as the data source.
   Default is ``None``.
-  
+
   In the case of ``ModelResource``, this is automatically populated by the
   ``queryset`` option and is the model class.
 
@@ -388,8 +587,14 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   Provides the ``Resource`` with the set of Django models to respond with.
   Default is ``None``.
-  
+
   Unused by ``Resource`` but present for consistency.
+
+.. warning::
+
+  If you place any callables in this, they'll only be evaluated once (when
+  the ``Meta`` class is instantiated). This especially affects things that
+  are date/time related. Please see the :ref:cookbook for a way around this.
 
 ``fields``
 ----------
@@ -415,6 +620,19 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Specifies if the ``Resource`` should include an extra field that displays
   the ``get_absolute_url`` for that object (on the site proper). Default is
   ``False``.
+
+``always_return_data``
+------------------------
+
+  Specifies all HTTP methods (except ``DELETE``) should return a serialized form
+  of the data. Default is ``False``.
+
+  If ``False``, ``HttpNoContent`` (204) is returned on ``POST/PUT``
+  with an empty body & a ``Location`` header of where to request the full
+  resource.
+
+  If ``True``, ``HttpAccepted`` (202) is returned on ``POST/PUT``
+  with a body containing all the data in a serialized form.
 
 
 Basic Filtering
@@ -456,19 +674,19 @@ additional constraints (e.g. text filtering using `django-haystack
 filter the queryset before processing a request::
 
     from haystack.query import SearchQuerySet
-    
+
     class MyResource(Resource):
         def build_filters(self, filters=None):
             if filters is None:
                 filters = {}
-            
+
             orm_filters = super(MyResource, self).build_filters(filters)
-            
+
             if "q" in filters:
                 sqs = SearchQuerySet().auto_query(filters['q'])
-                
-                orm_filters = {"pk__in": [ i.pk for i in sqs ]}
-            
+
+                orm_filters["pk__in"] = [i.pk for i in sqs]
+
             return orm_filters
 
 
@@ -663,10 +881,10 @@ HTTP methods to check against. Usually, this looks like::
 
     # The most generic lookup.
     self.method_check(request, self._meta.allowed_methods)
-    
+
     # A lookup against what's allowed for list-type methods.
     self.method_check(request, self._meta.list_allowed_methods)
-    
+
     # A useful check when creating a new endpoint that only handles
     # GET.
     self.method_check(request, ['get'])
@@ -715,7 +933,7 @@ Mostly a hook, this uses class assigned to ``throttle`` from
 ``build_bundle``
 ----------------
 
-.. method:: Resource.build_bundle(self, obj=None, data=None)
+.. method:: Resource.build_bundle(self, obj=None, data=None, request=None)
 
 Given either an object, a data dictionary or both, builds a ``Bundle``
 for use throughout the ``dehydrate/hydrate`` cycle.
@@ -772,10 +990,12 @@ Returns a URL specific to this resource's list endpoint.
 ``get_via_uri``
 ---------------
 
-.. method:: Resource.get_via_uri(self, uri)
+.. method:: Resource.get_via_uri(self, uri, request=None)
 
 This pulls apart the salient bits of the URI and populates the
 resource via a ``obj_get``.
+
+Optionally accepts a ``request``.
 
 If you need custom behavior based on other portions of the URI,
 simply override this method.
@@ -783,10 +1003,10 @@ simply override this method.
 ``full_dehydrate``
 ------------------
 
-.. method:: Resource.full_dehydrate(self, obj)
+.. method:: Resource.full_dehydrate(self, bundle)
 
-Given an object instance, extract the information from it to populate
-the resource.
+Given a bundle with an object instance, extract the information from it to
+populate the resource.
 
 ``dehydrate``
 -------------
@@ -903,6 +1123,18 @@ Used when hydrating related data.
 
 Checks to ensure ``delete`` is within ``allowed_methods``.
 
+``apply_filters``
+-----------------
+
+.. method:: Resource.apply_filters(self, request, applicable_filters)
+
+A hook to alter how the filters are applied to the object list.
+
+This needs to be implemented at the user level.
+
+``ModelResource`` includes a full working version specific to Django's
+``Models``.
+
 ``obj_get_list``
 ----------------
 
@@ -996,7 +1228,7 @@ Deletes a single object.
 ``create_response``
 -------------------
 
-.. method:: Resource.create_response(self, request, data)
+.. method:: Resource.create_response(self, request, data, response_class=HttpResponse, **response_kwargs)
 
 Extracts the common "which-format/serialize/return-response" cycle.
 
@@ -1063,7 +1295,11 @@ Replaces a collection of resources with another collection.
 Calls ``delete_list`` to clear out the collection then ``obj_create``
 with the provided the data to create the new collection.
 
-Return ``HttpAccepted`` (204 No Content).
+Return ``HttpNoContent`` (204 No Content) if
+``Meta.always_return_data = False`` (default).
+
+Return ``HttpAccepted`` (202 Accepted) if
+``Meta.always_return_data = True``.
 
 ``put_detail``
 --------------
@@ -1077,7 +1313,15 @@ Calls ``obj_update`` with the provided data first, but falls back to
 ``obj_create`` if the object does not already exist.
 
 If a new resource is created, return ``HttpCreated`` (201 Created).
-If an existing resource is modified, return ``HttpAccepted`` (204 No Content).
+If ``Meta.always_return_data = True``, there will be a populated body
+of serialized data.
+
+If an existing resource is modified and
+``Meta.always_return_data = False`` (default), return ``HttpNoContent``
+(204 No Content).
+If an existing resource is modified and
+``Meta.always_return_data = True``, return ``HttpAccepted`` (202
+Accepted).
 
 ``post_list``
 -------------
@@ -1090,6 +1334,8 @@ Calls ``obj_create`` with the provided data and returns a response
 with the new resource's location.
 
 If a new resource is created, return ``HttpCreated`` (201 Created).
+If ``Meta.always_return_data = True``, there will be a populated body
+of serialized data.
 
 ``post_detail``
 ---------------
@@ -1112,7 +1358,7 @@ Destroys a collection of resources/objects.
 
 Calls ``obj_delete_list``.
 
-If the resources are deleted, return ``HttpAccepted`` (204 No Content).
+If the resources are deleted, return ``HttpNoContent`` (204 No Content).
 
 ``delete_detail``
 -----------------
@@ -1123,8 +1369,65 @@ Destroys a single resource/object.
 
 Calls ``obj_delete``.
 
-If the resource is deleted, return ``HttpAccepted`` (204 No Content).
-If the resource did not exist, return ``HttpGone`` (410 Gone).
+If the resource is deleted, return ``HttpNoContent`` (204 No Content).
+If the resource did not exist, return ``HttpNotFound`` (404 Not Found).
+
+``patch_list``
+--------------
+
+.. method:: Resource.patch_list(self, request, **kwargs)
+
+Updates a collection in-place.
+
+The exact behavior of ``PATCH`` to a list resource is still the matter of
+some debate in REST circles, and the ``PATCH`` RFC isn't standard. So the
+behavior this method implements (described below) is something of a
+stab in the dark. It's mostly cribbed from GData, with a smattering
+of ActiveResource-isms and maybe even an original idea or two.
+
+The ``PATCH`` format is one that's similar to the response returned from
+a ``GET`` on a list resource::
+
+    {
+      "objects": [{object}, {object}, ...],
+      "deleted_objects": ["URI", "URI", "URI", ...],
+    }
+
+For each object in ``objects``:
+
+  * If the dict does not have a ``resource_uri`` key then the item is
+    considered "new" and is handled like a ``POST`` to the resource list.
+
+  * If the dict has a ``resource_uri`` key and the ``resource_uri`` refers
+    to an existing resource then the item is a update; it's treated
+    like a ``PATCH`` to the corresponding resource detail.
+
+  * If the dict has a ``resource_uri`` but the resource *doesn't* exist,
+    then this is considered to be a create-via-``PUT``.
+
+Each entry in ``deleted_objects`` referes to a resource URI of an existing
+resource to be deleted; each is handled like a ``DELETE`` to the relevent
+resource.
+
+In any case:
+
+  * If there's a resource URI it *must* refer to a resource of this
+    type. It's an error to include a URI of a different resource.
+
+  * ``PATCH`` is all or nothing. If a single sub-operation fails, the
+    entire request will fail and all resources will be rolled back.
+
+``patch_detail``
+----------------
+
+.. method:: Resource.patch_detail(self, request, **kwargs)
+
+Updates a resource in-place.
+
+Calls ``obj_update``.
+
+If the resource is updated, return ``HttpAccepted`` (202 Accepted).
+If the resource did not exist, return ``HttpNotFound`` (404 Not Found).
 
 ``get_schema``
 --------------
@@ -1245,6 +1548,16 @@ field name) or descending (the field name with a ``-`` in front).
 
 The field name should be the resource field, **NOT** model field.
 
+``apply_filters``
+-----------------
+
+.. method:: ModelResource.apply_filters(self, request, applicable_filters)
+
+An ORM-specific implementation of ``apply_filters``.
+
+The default simply applies the ``applicable_filters`` as ``**kwargs``,
+but should make it possible to do more advanced things.
+
 ``get_object_list``
 -------------------
 
@@ -1316,6 +1629,21 @@ A ORM-specific implementation of ``rollback``.
 
 Given the list of bundles, delete all models pertaining to those
 bundles.
+
+``save_related``
+----------------
+
+.. method:: ModelResource.save_related(self, bundle)
+
+Handles the saving of related non-M2M data.
+
+Calling assigning ``child.parent = parent`` & then calling
+``Child.save`` isn't good enough to make sure the ``parent``
+is saved.
+
+To get around this, we go through all our related fields &
+call ``save`` on them if they have related, non-M2M data.
+M2M data is handled by the ``ModelResource.save_m2m`` method.
 
 ``save_m2m``
 ------------

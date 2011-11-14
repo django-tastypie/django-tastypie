@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from distutils.core import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from ez_setup import use_setuptools
+    use_setuptools()
+    from setuptools import setup
 
 setup(
     name='django-tastypie',
@@ -9,9 +14,12 @@ setup(
     author='Daniel Lindsley',
     author_email='daniel@toastdriven.com',
     url='http://github.com/toastdriven/django-tastypie/',
+    long_description=open('README.rst', 'r').read(),
     packages=[
         'tastypie',
         'tastypie.utils',
+        'tastypie.management',
+        'tastypie.management.commands',
     ],
     package_data={
         'tastypie': ['templates/tastypie/*'],
@@ -19,12 +27,10 @@ setup(
     requires=[
         'mimeparse',
         'python_dateutil(>=1.5, < 2.0)',
-        'python_digest',
     ],
     install_requires=[
         'mimeparse',
         'python_dateutil >= 1.5, < 2.0',
-        'python_digest',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

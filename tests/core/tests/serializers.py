@@ -34,19 +34,24 @@ class AnotherNoteResource(ModelResource):
 class SerializerTestCase(TestCase):
     def test_init(self):
         serializer_1 = Serializer()
-        self.assertEqual(serializer_1.formats, ['json', 'jsonp', 'xml', 'yaml', 'html'])
-        self.assertEqual(serializer_1.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html'})
-        self.assertEqual(serializer_1.supported_formats, ['application/json', 'text/javascript', 'application/xml', 'text/yaml', 'text/html'])
+        self.assertEqual(serializer_1.formats, ['json', 'jsonp', 'xml', 'yaml', 'html', 'plist'])
+        self.assertEqual(serializer_1.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
+        self.assertEqual(serializer_1.supported_formats, ['application/json', 'text/javascript', 'application/xml', 'text/yaml', 'text/html', 'application/x-plist'])
         
         serializer_2 = Serializer(formats=['json', 'xml'])
         self.assertEqual(serializer_2.formats, ['json', 'xml'])
-        self.assertEqual(serializer_2.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html'})
+        self.assertEqual(serializer_2.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
         self.assertEqual(serializer_2.supported_formats, ['application/json', 'application/xml'])
         
         serializer_3 = Serializer(formats=['json', 'xml'], content_types={'json': 'text/json', 'xml': 'application/xml'})
         self.assertEqual(serializer_3.formats, ['json', 'xml'])
         self.assertEqual(serializer_3.content_types, {'xml': 'application/xml', 'json': 'text/json'})
         self.assertEqual(serializer_3.supported_formats, ['text/json', 'application/xml'])
+        
+        serializer_4 = Serializer(formats=['plist', 'json'], content_types={'plist': 'application/x-plist', 'json': 'application/json'})
+        self.assertEqual(serializer_4.formats, ['plist', 'json'])
+        self.assertEqual(serializer_4.content_types, {'plist': 'application/x-plist', 'json': 'application/json'})
+        self.assertEqual(serializer_4.supported_formats, ['application/x-plist', 'application/json'])
         
         self.assertRaises(ImproperlyConfigured, Serializer, formats=['json', 'xml'], content_types={'json': 'text/json'})
 
@@ -223,7 +228,21 @@ class SerializerTestCase(TestCase):
 
         sample_1 = self.get_sample1()
         options = {'callback': 'myCallback'}
-        self.assertEqual(serializer.to_jsonp(sample_1, options), 'myCallback({"age": 27, "date_joined": "2010-03-27", "name": "Daniel"})')
+
+    def test_to_plist(self):
+        serializer = Serializer()
+        
+        sample_1 = self.get_sample1()
+        self.assertEqual(serializer.to_plist(sample_1), 'bplist00bybiplist1.0\x00\xd3\x01\x02\x03\x04\x05\x06SageTname[date_joined\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1c %13@\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00K')
+    
+    def test_from_plist(self):
+        serializer = Serializer()
+        
+        sample_1 = serializer.from_plist('bplist00bybiplist1.0\x00\xd3\x01\x02\x03\x04\x05\x06SageTname[date_joined\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1c %13@\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00K')
+        self.assertEqual(len(sample_1), 3)
+        self.assertEqual(sample_1['name'], 'Daniel')
+        self.assertEqual(sample_1['age'], 27)
+        self.assertEqual(sample_1['date_joined'], u'2010-03-27')
 
 class ResourceSerializationTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -231,9 +250,9 @@ class ResourceSerializationTestCase(TestCase):
     def setUp(self):
         super(ResourceSerializationTestCase, self).setUp()
         self.resource = NoteResource()
-        self.obj_list = [self.resource.full_dehydrate(obj=obj) for obj in self.resource.obj_get_list()]
+        self.obj_list = [self.resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.resource.obj_get_list()]
         self.another_resource = AnotherNoteResource()
-        self.another_obj_list = [self.another_resource.full_dehydrate(obj=obj) for obj in self.another_resource.obj_get_list()]
+        self.another_obj_list = [self.another_resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.another_resource.obj_get_list()]
 
     def test_to_xml_multirepr(self):
         serializer = Serializer()

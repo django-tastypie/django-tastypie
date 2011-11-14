@@ -19,8 +19,8 @@ We'll assume that we're interacting with the following Tastypie code::
     from tastypie import fields
     from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
     from myapp.models import Entry
-    
-    
+
+
     class UserResource(ModelResource):
         class Meta:
             queryset = User.objects.all()
@@ -29,11 +29,11 @@ We'll assume that we're interacting with the following Tastypie code::
             filtering = {
                 'username': ALL,
             }
-    
-    
+
+
     class EntryResource(ModelResource):
         user = fields.ForeignKey(UserResource, 'user')
-        
+
         class Meta:
             queryset = Entry.objects.all()
             resource_name = 'entry'
@@ -42,17 +42,17 @@ We'll assume that we're interacting with the following Tastypie code::
                 'user': ALL_WITH_RELATIONS,
                 'pub_date': ['exact', 'lt', 'lte', 'gte', 'gt'],
             }
-    
-    
+
+
     # urls.py
     from django.conf.urls.defaults import *
     from tastypie.api import Api
     from myapp.api.resources import EntryResource, UserResource
-    
+
     v1_api = Api(api_name='v1')
     v1_api.register(UserResource())
     v1_api.register(EntryResource())
-    
+
     urlpatterns = patterns('',
         # The normal jazz here...
         (r'^blog/', include('myapp.urls')),
@@ -76,7 +76,7 @@ all interactions with Tastypie through relatively few endpoints.
   append ``?format=json`` (or ``xml`` or ``yaml``) to the URL. Your browser
   requests ``application/xml`` before ``application/json``, so you'll always
   get back XML if you don't specify it.
-  
+
   That's also why it's recommended that you explore via curl, because you
   avoid your browser's opinionated requests & get something closer to what
   any programmatic clients will get.
@@ -139,6 +139,8 @@ To which you'd receive::
 We'll stick to JSON for the rest of this document, but using XML should be OK
 to do at any time.
 
+
+.. _schema-inspection:
 
 Inspecting The Resource's Schema
 --------------------------------
@@ -350,6 +352,16 @@ given, we get back::
         "username": "daniel"
     }
 
+You can do a similar fetch using the following Javascript/jQuery (though be
+wary of same-domain policy)::
+
+    $.ajax({
+      url: 'http://localhost:8000/api/v1/user/1/',
+      type: 'GET',
+      accepts: 'application/json',
+      dataType: 'json'
+    })
+
 
 Selecting A Subset Of Resources
 -------------------------------
@@ -408,7 +420,7 @@ it, we can freely write data.
   Note that this is a huge security hole as well. Don't put unauthorized
   write-enabled resources on the Internet, because someone will trash your
   data.
-  
+
   This is why ``ReadOnlyAuthorization`` is the default in Tastypie & why you
   must override to provide more access.
 
@@ -422,6 +434,15 @@ Creating A New Resource (POST)
 
 Let's add a new entry. To create new data, we'll switch from ``GET`` requests
 to the familiar ``POST`` request.
+
+.. note::
+
+    Tastypie encourages "round-trippable" data, which means the data you
+    can GET should be able to be POST/PUT'd back to recreate the same
+    object.
+
+    If you're ever in question about what you should send, do a GET on
+    another object & see what Tastypie thinks it should look like.
 
 To create new resources/objects, you will ``POST`` to the list endpoint of
 a resource. Trying to ``POST`` to a detail endpoint has a different meaning in
@@ -460,8 +481,28 @@ We get back::
     Date: Fri, 20 May 2011 06:53:02 GMT
     Server: WSGIServer/0.1 Python/2.7
     Content-Type: text/html; charset=utf-8
-    
+
     The 'user' field has no data and doesn't allow a default or null value.
+
+You can do a similar POST using the following Javascript/jQuery (though be
+wary of same-domain policy)::
+
+    # This may require the ``json2.js`` library for older browsers.
+    var data = JSON.stringify({
+        "body": "This will prbbly be my lst post.",
+        "pub_date": "2011-05-22T00:46:38",
+        "slug": "another-post",
+        "title": "Another Post"
+    });
+
+    $.ajax({
+      url: 'http://localhost:8000/api/v1/entry/',
+      type: 'POST',
+      contentType: 'application/json',
+      data: data,
+      dataType: 'json',
+      processData: false
+    })
 
 
 Updating An Existing Resource (PUT)
@@ -469,7 +510,7 @@ Updating An Existing Resource (PUT)
 
 You might have noticed that we made some typos when we submitted the POST
 request. We can fix this using a ``PUT`` request to the detail endpoint (modify
-this instance of a resource).
+this instance of a resource).::
 
     curl --dump-header - -H "Content-Type: application/json" -X PUT --data '{"body": "This will probably be my last post.", "pub_date": "2011-05-22T00:46:38", "slug": "another-post", "title": "Another Post", "user": "/api/v1/user/1/"}' http://localhost:8000/api/v1/entry/4/
 

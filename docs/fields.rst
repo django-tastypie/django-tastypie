@@ -19,8 +19,8 @@ For the impatient::
   from tastypie import fields
   from tastypie.resources import Resource
   from myapp.api.resources import ProfileResource, NoteResource
-  
-  
+
+
   class PersonResource(Resource):
       name = fields.CharField(attribute='name')
       age = fields.IntegerField(attribute='years_old', null=True)
@@ -223,8 +223,28 @@ be included in full.
 
 .. attribute:: RelatedField.related_name
 
-Currently unused, as unlike Django's ORM layer, reverse relations between
-``Resource`` classes are not automatically created. Defaults to ``None``.
+Used to help automatically populate reverse relations when creating data.
+Defaults to ``None``.
+
+In order for this option to work correctly, there must be a field on the
+other ``Resource`` with this as an ``attribute/instance_name``. Usually this
+just means adding a reflecting ``ToOneField`` pointing back.
+
+Example::
+
+    class EntryResource(ModelResource):
+        authors = fields.ToManyField('path.to.api.resources.AuthorResource', 'author_set', related_name='entry')
+
+        class Meta:
+            queryset = Entry.objects.all()
+            resource_name = 'entry'
+
+    class AuthorResource(ModelResource):
+        entry = fields.ToOneField(EntryResource, 'entry')
+
+        class Meta:
+            queryset = Author.objects.all()
+            resource_name = 'author'
 
 
 Field Types
@@ -258,7 +278,7 @@ This field also has special behavior when dealing with ``attribute`` in that
 it can take a callable. For instance, if you need to filter the reverse
 relation, you can do something like::
 
-    subjects = fields.ToManyField(SubjectResource, ToManyField(SubjectResource, attribute=lambda bundle: Subject.objects.filter(notes=bundle.obj, name__startswith='Personal'))
+    subjects = fields.ToManyField(SubjectResource, attribute=lambda bundle: Subject.objects.filter(notes=bundle.obj, name__startswith='Personal'))
 
 Note that the ``hydrate`` portions of this field are quite different than
 any other field. ``hydrate_m2m`` actually handles the data and relations.

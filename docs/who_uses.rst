@@ -40,3 +40,11 @@ An e-book search site that lets you fetch pricing information.
 
 * http://luzme.com/
 * http://luzme.readthedocs.org/en/latest/
+
+
+Politifact
+----------
+
+To power their mobile (iPhone/Android/Playbook) applications.
+
+* http://www.politifact.com/mobile/
