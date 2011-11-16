@@ -14,7 +14,7 @@ Requirements
 Required
 --------
 
-* Python 2.5+
+* Python 2.6+
 * Django 1.2+ (May work on Django 1.1)
 * mimeparse 0.1.3+ (http://code.google.com/p/mimeparse/)
 
