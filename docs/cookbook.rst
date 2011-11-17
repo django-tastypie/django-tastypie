@@ -236,6 +236,8 @@ where Tastypie uses underscore syntax, which can lead to "ugly" looking
 code in Javascript. You can create a custom serializer that emits
 values in camelCase instead::
 
+    import re
+    import simplejson
     from tastypie.serializers import Serializer
 
     class CamelCaseJSONSerializer(Serializer):
@@ -288,7 +290,7 @@ values in camelCase instead::
                     return data
                 return data
 
-        underscored_data = underscorize(data)
+            underscored_data = underscorize(data)
 
-        return underscored_data
+            return underscored_data
 
