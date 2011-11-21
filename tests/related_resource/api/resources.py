@@ -23,7 +23,7 @@ class NoteResource(ModelResource):
 
 
 class CategoryResource(ModelResource):
-    parent = fields.ToOneField('self', 'parent', null=True)
+    parent = fields.ToOneField('self', 'parent', null=True, is_recursive=True)
 
     class Meta:
         resource_name = 'category'
@@ -38,7 +38,7 @@ class TagResource(ModelResource):
 
     extradata = fields.ToOneField(
             'related_resource.api.resources.ExtraDataResource', 'extradata',
-            null=True, blank=True, full=True)
+            null=True, blank=True, full=True, is_recursive=True)
 
     class Meta:
         resource_name = 'tag'

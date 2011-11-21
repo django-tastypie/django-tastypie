@@ -1,6 +1,7 @@
 import logging
 import warnings
 import urlparse
+import sys
 import django
 from django.conf import settings
 from django.conf.urls.defaults import patterns, url
