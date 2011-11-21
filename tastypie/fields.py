@@ -505,13 +505,15 @@ class RelatedField(ApiField):
         Based on the ``full_resource``, returns either the endpoint or the data
         from ``full_dehydrate`` for the related resource.
         """
-        if not self.full:
+        depth = getattr(bundle, 'depth', None)
+        if self.full and not depth:
+            depth = sys.maxint # as close as we're going to get to infinite right now.  If you're going past that, your API may have other problems.
+        if depth:
+            bundle = related_resource.build_bundle(obj=related_resource.instance, request=bundle.request)
+            return related_resource.full_dehydrate(bundle, depth=depth)
+        else:
             # Be a good netizen.
             return related_resource.get_resource_uri(bundle)
-        else:
-            # ZOMG extra data and big payloads.
-            bundle = related_resource.build_bundle(obj=related_resource.instance, request=bundle.request)
-            return related_resource.full_dehydrate(bundle)
 
     def resource_from_uri(self, fk_resource, uri, request=None, related_obj=None, related_name=None):
         """
@@ -628,8 +630,12 @@ class ToOneField(RelatedField):
 
             return None
 
+        depth = getattr(bundle, 'depth', None)
         self.fk_resource = self.get_related_resource(foreign_obj)
         fk_bundle = Bundle(obj=foreign_obj, request=bundle.request)
+        # child should retrieve at one depth less
+        if depth is not None:
+            fk_bundle.depth = depth-1
         return self.dehydrate_related(fk_bundle, self.fk_resource)
 
     def hydrate(self, bundle):
@@ -699,12 +705,17 @@ class ToManyField(RelatedField):
 
         self.m2m_resources = []
         m2m_dehydrated = []
+        
+        depth = getattr(bundle, 'depth', None)
 
         # TODO: Also model-specific and leaky. Relies on there being a
         #       ``Manager`` there.
         for m2m in the_m2ms.all():
             m2m_resource = self.get_related_resource(m2m)
             m2m_bundle = Bundle(obj=m2m, request=bundle.request)
+            # child should retrieve at one depth less
+            if depth is not None:
+                m2m_bundle.depth = depth-1
             self.m2m_resources.append(m2m_resource)
             m2m_dehydrated.append(self.dehydrate_related(m2m_bundle, m2m_resource))
 

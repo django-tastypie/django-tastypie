@@ -1,5 +1,6 @@
 import logging
 import warnings
+import urlparse
 import django
 from django.conf import settings
 from django.conf.urls.defaults import patterns, url
@@ -634,11 +635,14 @@ class Resource(object):
 
     # Data preparation.
 
-    def full_dehydrate(self, bundle):
+    def full_dehydrate(self, bundle, depth=None):
         """
         Given a bundle with an object instance, extract the information from it
         to populate the resource.
         """
+        if depth is not None:
+            bundle.depth = depth
+            
         # Dehydrate each field.
         for field_name, field_object in self.fields.items():
             # A touch leaky but it makes URI resolution work.
@@ -1021,6 +1025,7 @@ class Resource(object):
         """
         # TODO: Uncached for now. Invalidation that works for everyone may be
         #       impossible.
+        depth = self.depth_from_request(request)
         objects = self.obj_get_list(request=request, **self.remove_api_resource_names(kwargs))
         sorted_objects = self.apply_sorting(objects, options=request.GET)
 
@@ -1029,7 +1034,7 @@ class Resource(object):
 
         # Dehydrate the bundles in preparation for serialization.
         bundles = [self.build_bundle(obj=obj, request=request) for obj in to_be_serialized['objects']]
-        to_be_serialized['objects'] = [self.full_dehydrate(bundle) for bundle in bundles]
+        to_be_serialized['objects'] = [self.full_dehydrate(bundle, depth=depth) for bundle in bundles]
         to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
         return self.create_response(request, to_be_serialized)
 
@@ -1042,6 +1047,7 @@ class Resource(object):
 
         Should return a HttpResponse (200 OK).
         """
+        depth = self.depth_from_request(request)
         try:
             obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
         except ObjectDoesNotExist:
@@ -1050,7 +1056,7 @@ class Resource(object):
             return http.HttpMultipleChoices("More than one resource is found at this URI.")
 
         bundle = self.build_bundle(obj=obj, request=request)
-        bundle = self.full_dehydrate(bundle)
+        bundle = self.full_dehydrate(bundle, depth=depth)
         bundle = self.alter_detail_data_to_serialize(request, bundle)
         return self.create_response(request, bundle)
 
@@ -1962,6 +1968,36 @@ class ModelResource(Resource):
             kwargs['api_name'] = self._meta.api_name
 
         return self._build_reverse_url("api_dispatch_detail", kwargs=kwargs)
+        
+    def depth_from_request(self, request):
+        # first look in accept header
+        depth = self.depth_from_accept_header(request)
+        # then in GET args
+        if depth is None:
+            depth = self.depth_from_get_params(request)
+        return depth
+        
+    def depth_from_get_params(self, request):
+        depth = request.GET.get('depth', None)
+        if depth:
+            try:
+                depth = int(depth)
+            except TypeError:
+                return None
+        return depth
+            
+    def depth_from_accept_header(self, request):
+        accept_header = request.META.get('HTTP_ACCEPT', None)
+        if not accept_header:
+            return None
+        params = urlparse.parse_qs(accept_header)
+        depth = params.get('depth', None)
+        if depth:
+            try:
+                depth = int(depth)
+            except TypeError:
+                return None
+        return depth
 
 
 class NamespacedModelResource(ModelResource):
