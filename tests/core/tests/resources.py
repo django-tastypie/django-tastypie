@@ -1541,6 +1541,21 @@ class ModelResourceTestCase(TestCase):
         new_note = Note.objects.get(slug='cat-is-back-again')
         self.assertEqual(new_note.content, "The cat is back. The dog coughed him up out back.")
 
+    def test_patch_list_data(self):
+        resource = NoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PATCH'
+        request._read_started = False
+
+        self.assertEqual(Note.objects.count(), 6)
+        request._raw_post_data = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}], "deleted_objects": ["/api/v1/notes/1/"]}'
+
+        always_resource = AlwaysDataNoteResource()
+        resp = always_resource.patch_list(request)
+        self.assertEqual(resp.status_code, 202)
+        self.assertTrue(resp.content.startswith('{"objects": ['))
+
     def test_patch_detail(self):
         self.assertEqual(Note.objects.count(), 6)
         resource = NoteResource()
@@ -1567,6 +1582,27 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(Note.objects.count(), 6)
         new_note = Note.objects.get(pk=1)
         self.assertEqual(new_note.content, u'The cat is gone again. I think it was the rabbits that ate him this time.')
+
+    def test_patch_detail_data(self):
+        self.assertEqual(Note.objects.count(), 6)
+        resource = NoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PATCH'
+        request._read_started = False
+        request._raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00"}'
+
+        always_resource = AlwaysDataNoteResource()
+        resp = always_resource.patch_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 202)
+        data = json.loads(resp.content)
+        self.assertTrue("id" in data)
+        self.assertEqual(data["id"], "1")
+        self.assertTrue("content" in data)
+        self.assertEqual(data["content"], "The cat is back. The dog coughed him up out back.")
+        self.assertTrue("resource_uri" in data)
+        self.assertTrue("title" in data)
+        self.assertTrue("is_active" in data)
 
     def test_dispatch_list(self):
         resource = NoteResource()
