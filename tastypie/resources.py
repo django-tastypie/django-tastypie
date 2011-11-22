@@ -1470,6 +1470,8 @@ class ModelResource(Resource):
             result = fields.DecimalField
         elif f.get_internal_type() in ('IntegerField', 'PositiveIntegerField', 'PositiveSmallIntegerField', 'SmallIntegerField'):
             result = fields.IntegerField
+        elif f.get_internal_type() in ('BigIntegerField',):
+            result = fields.LongField
         elif f.get_internal_type() in ('FileField', 'ImageField'):
             result = fields.FileField
         elif f.get_internal_type() == 'TimeField':

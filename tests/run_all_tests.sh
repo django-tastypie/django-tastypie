@@ -22,6 +22,11 @@ django-admin.py test alphanumeric --settings=settings_alphanumeric
 
 echo
 echo
+echo "** BigInteger Primary Keys **"
+django-admin.py test biginteger --settings=settings_biginteger
+
+echo
+echo
 echo "** Slashless **"
 django-admin.py test slashless --settings=settings_slashless
 

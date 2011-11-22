@@ -1,0 +1,56 @@
+[
+    {
+        "fields": {
+            "name": "Skateboardrampe",
+            "created": "2010-03-30 20:05:00",
+            "updated": "2010-03-30 20:05:00"
+        },
+        "model": "biginteger.product",
+        "pk": 9007199254740990
+    },
+    {
+        "fields": {
+            "name": "Bigwheel",
+            "created": "2010-05-04 20:05:00",
+            "updated": "2010-05-04 20:05:00"
+        },
+        "model": "biginteger.product",
+        "pk": 9007199254740991
+    },
+    {
+        "fields": {
+            "name": "Trampolin",
+            "created": "2010-05-04 20:05:00",
+            "updated": "2010-05-04 20:05:00"
+        },
+        "model": "biginteger.product",
+        "pk": 9007199254740992
+    },
+    {
+        "fields": {
+            "name": "Laufrad",
+            "created": "2010-05-04 20:05:00",
+            "updated": "2010-05-04 20:05:00"
+        },
+        "model": "biginteger.product",
+        "pk": 9007199254740980
+    },
+    {
+        "fields": {
+            "name": "Bigwheel",
+            "created": "2010-05-04 20:05:00",
+            "updated": "2010-05-04 20:05:00"
+        },
+        "model": "biginteger.product",
+        "pk": 9007199254740981
+    },
+    {
+        "fields": {
+            "name": "Trampolin",
+            "created": "2010-05-04 20:05:00",
+            "updated": "2010-05-04 20:05:00"
+        },
+        "model": "biginteger.product",
+        "pk": 9007199254740982
+    }
+]

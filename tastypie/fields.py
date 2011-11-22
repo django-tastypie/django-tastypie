@@ -222,6 +222,22 @@ class IntegerField(ApiField):
         return int(value)
 
 
+class LongField(ApiField):
+    """
+    A long field.
+
+    Covers ``models.BigIntegerField``
+    """
+    dehydrated_type = 'long'
+    help_text = 'Long data. Ex: 6902343450'
+
+    def convert(self, value):
+        if value is None:
+            return None
+
+        return long(value)
+
+
 class FloatField(ApiField):
     """
     A floating point field.
