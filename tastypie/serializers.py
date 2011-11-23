@@ -328,7 +328,8 @@ class Serializer(object):
         """
         options = options or {}
         data = self.to_simple(data, options)
-        return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True)
+        return simplejson.dumps(data, cls=json.DjangoJSONEncoder,
+	                        sort_keys=True, indent=4 if settings.DEBUG else 0)
 
     def from_json(self, content):
         """

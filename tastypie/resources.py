@@ -77,6 +77,7 @@ class ResourceOptions(object):
     include_resource_uri = True
     include_absolute_url = False
     always_return_data = False
+    full_clean_obj = False
 
     def __new__(cls, meta=None):
         overrides = {}
@@ -1776,6 +1777,10 @@ class ModelResource(Resource):
         # Save FKs just in case.
         self.save_related(bundle)
 
+        # Call full_clean on the object if requested
+        if self._meta.full_clean_obj:
+            bundle.obj.full_clean()
+
         # Save the main object.
         bundle.obj.save()
 
@@ -1819,6 +1824,10 @@ class ModelResource(Resource):
 
         # Save FKs just in case.
         self.save_related(bundle)
+
+        # Call full_clean on the object if requested
+        if self._meta.full_clean_obj:
+            bundle.obj.full_clean()
 
         # Save the main object.
         bundle.obj.save()
@@ -1915,6 +1924,9 @@ class ModelResource(Resource):
 
             # Because sometimes it's ``None`` & that's OK.
             if related_obj:
+                # Call full_clean on the object if requested
+                if self._meta.full_clean_obj:
+                    related_obj.full_clean()
                 related_obj.save()
                 setattr(bundle.obj, field_object.attribute, related_obj)
 
@@ -1948,6 +1960,9 @@ class ModelResource(Resource):
             related_objs = []
 
             for related_bundle in bundle.data[field_name]:
+                # Call full_clean on the object if requested
+                if self._meta.full_clean_obj:
+                    related_bundle.obj.full_clean()
                 related_bundle.obj.save()
                 related_objs.append(related_bundle.obj)
 
