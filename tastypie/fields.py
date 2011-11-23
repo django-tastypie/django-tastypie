@@ -318,6 +318,8 @@ class DateField(ApiField):
 
     def hydrate(self, bundle):
         value = super(DateField, self).hydrate(bundle)
+        if value == "":
+            return None
 
         if value and not hasattr(value, 'year'):
             try:
@@ -356,6 +358,8 @@ class DateTimeField(ApiField):
 
     def hydrate(self, bundle):
         value = super(DateTimeField, self).hydrate(bundle)
+        if value == "":
+            return None
 
         if value and not hasattr(value, 'year'):
             try:
