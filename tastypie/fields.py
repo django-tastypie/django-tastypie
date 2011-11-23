@@ -617,11 +617,14 @@ class ToOneField(RelatedField):
         self.fk_resource = None
 
     def dehydrate(self, bundle):
-        try:
-            foreign_obj = getattr(bundle.obj, self.attribute)
-        except ObjectDoesNotExist:
-            foreign_obj = None
-
+        if isinstance(self.attribute, basestring):
+            try:
+                foreign_obj = getattr(bundle.obj, self.attribute)
+            except ObjectDoesNotExist:
+                foreign_obj = None
+        elif callable(self.attribute):
+            foreign_obj = self.attribute(bundle)
+        
         if not foreign_obj:
             if not self.null:
                 raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (bundle.obj, self.attribute))
@@ -639,6 +642,7 @@ class ToOneField(RelatedField):
             return value
 
         return self.build_related_resource(value, request=bundle.request)
+
 
 class ForeignKey(ToOneField):
     """
@@ -681,35 +685,37 @@ class ToManyField(RelatedField):
         if not bundle.obj or not bundle.obj.pk:
             if not self.null:
                 raise ApiFieldError("The model '%r' does not have a primary key and can not be used in a ToMany context." % bundle.obj)
-
+            
             return []
-
-        the_m2ms = None
+        
+        m2m_objs = []
+        related_mngr = None
 
         if isinstance(self.attribute, basestring):
-            the_m2ms = getattr(bundle.obj, self.attribute)
+            related_mngr = getattr(bundle.obj, self.attribute)
         elif callable(self.attribute):
-            the_m2ms = self.attribute(bundle)
-
-        if not the_m2ms:
+            m2m_objs = self.attribute(bundle)
+        
+        if not related_mngr and not m2m_objs:
             if not self.null:
                 raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (bundle.obj, self.attribute))
-
+            
             return []
-
+        
         self.m2m_resources = []
         m2m_dehydrated = []
+        
+        if not m2m_objs:
+            m2m_objs = related_mngr.all()
 
-        # TODO: Also model-specific and leaky. Relies on there being a
-        #       ``Manager`` there.
-        for m2m in the_m2ms.all():
-            m2m_resource = self.get_related_resource(m2m)
-            m2m_bundle = Bundle(obj=m2m, request=bundle.request)
+        for m2m_obj in m2m_objs:
+            m2m_resource = self.get_related_resource(m2m_obj)
+            m2m_bundle = Bundle(obj=m2m_obj, request=bundle.request)
             self.m2m_resources.append(m2m_resource)
             m2m_dehydrated.append(self.dehydrate_related(m2m_bundle, m2m_resource))
-
+        
         return m2m_dehydrated
-
+    
     def hydrate(self, bundle):
         pass
 
