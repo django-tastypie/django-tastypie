@@ -2152,6 +2152,40 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(latest.subjects.all().count(), 1)
         self.assertEqual([sub.id for sub in latest.subjects.all()], [3])
 
+        # Fix non-native types (like datetimes) during attempted hydration.
+        # This ensures that handing the wrong type should get coerced to the
+        # right thing.
+        self.assertEqual(Note.objects.all().count(), 6)
+        note = NoteResource()
+        note_obj = note.obj_get(pk=1)
+        self.assertEqual(note_obj.title, u'Yet another another new post!')
+        self.assertEqual(note_obj.created, datetime.datetime(2010, 3, 30, 20, 5))
+        note_bundle = note.build_bundle(obj=note_obj)
+        note_bundle = note.full_dehydrate(note_bundle)
+        note_bundle.data['title'] = 'OMGOMGOMGOMG!'
+        note_bundle.data['created'] = datetime.datetime(2011, 11, 23, 1, 0, 0)
+        note.obj_update(note_bundle, pk=1, created='2010-03-30T20:05:00')
+        self.assertEqual(Note.objects.all().count(), 6)
+        numero_uno = Note.objects.get(pk=1)
+        self.assertEqual(numero_uno.title, u'OMGOMGOMGOMG!')
+        self.assertEqual(numero_uno.slug, u'yet-another-another-new-post')
+        self.assertEqual(numero_uno.content, u'WHEEEEEE!')
+        self.assertEqual(numero_uno.created, datetime.datetime(2011, 11, 23, 1, 0))
+
+        # Now try a lookup that should fail.
+        note = NoteResource()
+        note_bundle = note.build_bundle(data={
+            "author": "/api/v1/users/1/",
+            "title": "Something something Post!",
+            "slug": "something-something-post",
+            "content": "Stock post content.",
+            "is_active": True,
+            "created": "2011-03-30 20:05:00",
+            "updated": "2011-03-30 20:05:00"
+        })
+        self.assertRaises(NotFound, note.obj_update, note_bundle, pk=1, created='2010-03-31T20:05:00')
+        self.assertEqual(Note.objects.all().count(), 6)
+
     def test_obj_delete(self):
         self.assertEqual(Note.objects.all().count(), 6)
         note = NoteResource()
