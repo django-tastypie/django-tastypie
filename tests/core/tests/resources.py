@@ -443,74 +443,113 @@ class ResourceTestCase(TestCase):
         bundles_seen = []
         self.assertRaises(NotImplementedError, basic.rollback, bundles_seen)
 
+    def adjust_schema(self, schema_dict):
+        for field, field_info in schema_dict['fields'].items():
+            if isinstance(field_info['default'], fields.NOT_PROVIDED):
+                schema_dict['fields'][field]['default'] = 'No default provided.'
+
+        return schema_dict
+
     def test_build_schema(self):
         basic = BasicResource()
-        self.assertEqual(basic.build_schema(), {
+        schema = self.adjust_schema(basic.build_schema())
+        self.assertEqual(schema, {
+            'allowed_detail_http_methods': ['get', 'post', 'put', 'delete', 'patch'],
+            'allowed_list_http_methods': ['get', 'post', 'put', 'delete', 'patch'],
+            'default_format': 'application/json',
+            'default_limit': 20,
             'fields': {
-                'view_count': {
-                    'help_text': 'Integer data. Ex: 2673',
-                    'readonly': False,
-                    'type': 'integer',
-                    'nullable': False
-                },
                 'date_joined': {
+                    'blank': False,
+                    'default': 'No default provided.',
                     'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
+                    'nullable': True,
                     'readonly': False,
                     'type': 'datetime',
-                    'nullable': True
+                    'unique': False
                 },
                 'name': {
+                    'blank': False,
+                    'default': 'No default provided.',
                     'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'nullable': False,
                     'readonly': False,
                     'type': 'string',
-                    'nullable': False
+                    'unique': False
                 },
                 'resource_uri': {
+                    'blank': False,
+                    'default': 'No default provided.',
                     'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'nullable': False,
                     'readonly': True,
                     'type': 'string',
-                    'nullable': False
+                    'unique': False
+                },
+                'view_count': {
+                    'blank': False,
+                    'default': 0,
+                    'help_text': 'Integer data. Ex: 2673',
+                    'nullable': False,
+                    'readonly': False,
+                    'type': 'integer',
+                    'unique': False
                 }
-            },
-            'default_format': 'application/json'
+            }
         })
 
         basic = BasicResource()
         basic._meta.ordering = ['date_joined', 'name']
         basic._meta.filtering = {'date_joined': ['gt', 'gte'], 'name': ALL}
-        self.assertEqual(basic.build_schema(), {
+        schema = self.adjust_schema(basic.build_schema())
+        self.assertEqual(schema, {
+            'filtering': {
+                'name': 1,
+                'date_joined': ['gt', 'gte']
+            },
+            'allowed_detail_http_methods': ['get', 'post', 'put', 'delete', 'patch'],
+            'ordering': ['date_joined', 'name'],
             'fields': {
                 'view_count': {
-                    'help_text': 'Integer data. Ex: 2673',
+                    'nullable': False,
+                    'default': 0,
                     'readonly': False,
-                    'type': 'integer',
-                    'nullable': False
+                    'blank': False,
+                    'help_text': 'Integer data. Ex: 2673',
+                    'unique': False,
+                    'type': 'integer'
                 },
                 'date_joined': {
-                    'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
+                    'nullable': True,
+                    'default': 'No default provided.',
                     'readonly': False,
-                    'type': 'datetime',
-                    'nullable': True
+                    'blank': False,
+                    'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
+                    'unique': False,
+                    'type': 'datetime'
                 },
                 'name': {
-                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'nullable': False,
+                    'default': 'No default provided.',
                     'readonly': False,
-                    'type': 'string',
-                    'nullable': False
+                    'blank': False,
+                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'unique': False,
+                    'type': 'string'
                 },
                 'resource_uri': {
-                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'nullable': False,
+                    'default': 'No default provided.',
                     'readonly': True,
-                    'type': 'string',
-                    'nullable': False
+                    'blank': False,
+                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'unique': False,
+                    'type': 'string'
                 }
             },
             'default_format': 'application/json',
-            'ordering': ['date_joined', 'name'],
-            'filtering': {
-                'date_joined': ['gt', 'gte'],
-                'name': ALL,
-            }
+            'default_limit': 20,
+            'allowed_list_http_methods': ['get', 'post', 'put', 'delete', 'patch']
         })
 
     def test_subclassing(self):
