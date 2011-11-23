@@ -31,6 +31,21 @@ class CategoryResource(ModelResource):
         authorization = Authorization()
 
 
+class LimitedTagResource(ModelResource):
+    taggabletags = fields.ToManyField(
+            'related_resource.api.resources.TaggableTagResource', 'taggabletags',
+            null=True)
+
+    extradata = fields.ToOneField(
+            'related_resource.api.resources.ExtraDataResource', 'extradata',
+            null=True, blank=True, full=True, is_recursive=True, max_depth=3)
+
+    class Meta:
+        resource_name = 'limitedtag'
+        queryset = Tag.objects.all()
+        authorization = Authorization()
+
+
 class TagResource(ModelResource):
     taggabletags = fields.ToManyField(
             'related_resource.api.resources.TaggableTagResource', 'taggabletags',

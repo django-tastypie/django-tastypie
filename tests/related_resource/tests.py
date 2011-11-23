@@ -137,6 +137,13 @@ class ExplicitM2MResourceRegressionTest(TestCase):
 
         # and check whether the extradata is present
         self.assertEqual(data['extradata']['name'], u'additional')
+        self.assertTrue(isinstance(data['extradata']['tag']['extradata']['tag'], dict))
+
+        resource = api.canonical_resource_for('limitedtag')
+        resp = resource.wrap_view('dispatch_detail')(request, pk=self.tag_1.pk)
+        data = json.loads(resp.content)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['extradata']['tag']['extradata']['tag'], '/v1/tag/1/')
         
     
     def test_depth_param(self):
@@ -166,6 +173,12 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(data['name'], 'important')
         self.assertEqual(data['taggabletags'][0]['tag'], '/v1/tag/1/')
+
+        resource = api.canonical_resource_for('limitedtag')
+        resp = resource.wrap_view('dispatch_detail')(request, pk=self.tag_1.pk)
+        data = json.loads(resp.content)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['extradata']['tag'], '/v1/tag/1/')
 
 
     def test_post_new_tag(self):

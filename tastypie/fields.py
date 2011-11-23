@@ -513,7 +513,9 @@ class RelatedField(ApiField):
                 depth = 10 # Prevent infinite recursion
             else:
                 depth = 30
-        if depth is not None and self.max_depth is not None:
+        if depth is None:
+        	depth = 0
+        if self.max_depth is not None:
             depth = min(depth, self.max_depth)
         if depth:
             bundle = related_resource.build_bundle(obj=related_resource.instance, request=bundle.request)
