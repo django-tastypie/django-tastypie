@@ -1995,8 +1995,8 @@ class ModelResource(Resource):
         depth = params.get('depth', None)
         if depth:
             try:
-                depth = int(depth)
-            except TypeError:
+                depth = int(depth[0])
+            except IndexError, TypeError:
                 return None
         return depth
 
