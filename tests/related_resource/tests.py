@@ -48,6 +48,32 @@ class RelatedResourceTest(TestCase):
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(User.objects.get(id=self.user.id).username, 'foobar')
 
+class UriInRelatedResourceTest(TestCase):
+    urls = 'related_resource.api.urls'
+
+    def setUp(self):
+        super(UriInRelatedResourceTest, self).setUp()
+        self.parent_cat = Category.objects.create(parent=None, name='pie')
+
+    def test_uri_in_full_related_resource(self):
+        resource = api.canonical_resource_for('category')
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+        resp = resource.wrap_view('dispatch_detail')(request, pk=self.parent_cat.pk)
+
+        self.assertEqual(resp.status_code, 200)
+        parent_json = resp.content
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.raw_post_data = '{"name": "tasty", "parent": %s}' % parent_json
+        resp = resource.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+        
+
 
 class CategoryResourceTest(TestCase):
     urls = 'related_resource.api.urls'

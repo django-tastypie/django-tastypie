@@ -2,7 +2,7 @@ import datetime
 from dateutil.parser import parse
 from decimal import Decimal
 import re
-from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, FieldError
 from django.utils import datetime_safe, importlib
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
@@ -546,7 +546,7 @@ class RelatedField(ApiField):
 
         try:
             return fk_resource.obj_update(fk_bundle, **data)
-        except NotFound:
+        except (NotFound, FieldError):
             try:
                 # Attempt lookup by primary key
                 lookup_kwargs = dict((k, v) for k, v in data.iteritems() if getattr(fk_resource, k).unique)
