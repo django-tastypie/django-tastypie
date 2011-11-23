@@ -9,7 +9,7 @@ class Note(models.Model):
     slug = models.SlugField()
     content = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
-    created = models.DateTimeField(default=datetime.datetime.now)
+    created = models.DateTimeField(default=datetime.datetime.now, blank=True, null=True)
     updated = models.DateTimeField(default=datetime.datetime.now)
     
     def __unicode__(self):
