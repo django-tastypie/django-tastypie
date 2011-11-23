@@ -558,8 +558,11 @@ class Resource(object):
         """
         if obj is None:
             obj = self._meta.object_class()
+            obj_is_new = True
+        else:
+            obj_is_new = False
 
-        return Bundle(obj=obj, data=data, request=request)
+        return Bundle(obj=obj, data=data, request=request, obj_is_new=obj_is_new)
 
     def build_filters(self, filters=None):
         """
@@ -1788,7 +1791,7 @@ class ModelResource(Resource):
         """
         A ORM-specific implementation of ``obj_update``.
         """
-        if not bundle.obj or not bundle.obj.pk:
+        if not bundle.obj or bundle.obj_is_new:
             # Attempt to hydrate data from kwargs before doing a lookup for the object.
             # This step is needed so certain values (like datetime) will pass model validation.
             try:

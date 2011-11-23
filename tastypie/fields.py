@@ -678,7 +678,7 @@ class ToManyField(RelatedField):
         self.m2m_bundles = []
 
     def dehydrate(self, bundle):
-        if not bundle.obj or not bundle.obj.pk:
+        if not bundle.obj or bundle.obj_is_new:
             if not self.null:
                 raise ApiFieldError("The model '%r' does not have a primary key and can not be used in a ToMany context." % bundle.obj)
 
