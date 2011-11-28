@@ -87,6 +87,7 @@ class ResourceOptions(object):
     always_return_data = False
     collection_name = 'objects'
     detail_uri_name = 'pk'
+    full_clean_obj = False
 
     def __new__(cls, meta=None):
         overrides = {}
@@ -1931,7 +1932,15 @@ class ModelResource(Resource):
         # Save FKs just in case.
         self.save_related(bundle)
 
+<<<<<<< HEAD
         # Save parent
+=======
+        # Call full_clean on the object if requested
+        if self._meta.full_clean_obj:
+            bundle.obj.full_clean()
+
+        # Save the main object.
+>>>>>>> To make it easier to 'clean' a model object provide a new meta option 'full_clean_obj' in ResourceOptions.
         bundle.obj.save()
 
         # Now pick up the M2M bits.
@@ -2004,6 +2013,10 @@ class ModelResource(Resource):
 
         # Save FKs just in case.
         self.save_related(bundle)
+
+        # Call full_clean on the object if requested
+        if self._meta.full_clean_obj:
+            bundle.obj.full_clean()
 
         # Save the main object.
         bundle.obj.save()
