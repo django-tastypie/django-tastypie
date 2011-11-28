@@ -1924,6 +1924,9 @@ class ModelResource(Resource):
 
             # Because sometimes it's ``None`` & that's OK.
             if related_obj:
+                # Call full_clean on the object if requested
+                if self._meta.full_clean_obj:
+                    related_obj.full_clean()
                 related_obj.save()
                 setattr(bundle.obj, field_object.attribute, related_obj)
 
@@ -1957,6 +1960,9 @@ class ModelResource(Resource):
             related_objs = []
 
             for related_bundle in bundle.data[field_name]:
+                # Call full_clean on the object if requested
+                if self._meta.full_clean_obj:
+                    related_bundle.obj.full_clean()
                 related_bundle.obj.save()
                 related_objs.append(related_bundle.obj)
 
