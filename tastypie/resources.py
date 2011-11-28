@@ -77,6 +77,7 @@ class ResourceOptions(object):
     include_resource_uri = True
     include_absolute_url = False
     always_return_data = False
+    full_clean_obj = False
 
     def __new__(cls, meta=None):
         overrides = {}
@@ -1776,6 +1777,10 @@ class ModelResource(Resource):
         # Save FKs just in case.
         self.save_related(bundle)
 
+        # Call full_clean on the object if requested
+        if self._meta.full_clean_obj:
+            bundle.obj.full_clean()
+
         # Save the main object.
         bundle.obj.save()
 
@@ -1819,6 +1824,10 @@ class ModelResource(Resource):
 
         # Save FKs just in case.
         self.save_related(bundle)
+
+        # Call full_clean on the object if requested
+        if self._meta.full_clean_obj:
+            bundle.obj.full_clean()
 
         # Save the main object.
         bundle.obj.save()
