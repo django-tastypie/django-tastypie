@@ -19,11 +19,11 @@ class AnotherNoteResource(ModelResource):
     aliases = fields.ListField(attribute='aliases', null=True)
     meta = fields.DictField(attribute='metadata', null=True)
     owed = fields.DecimalField(attribute='money_owed', null=True)
-    
+
     class Meta:
         resource_name = 'anothernotes'
         queryset = Note.objects.filter(is_active=True)
-    
+
     def dehydrate(self, bundle):
         bundle.data['aliases'] = ['Mr. Smith', 'John Doe']
         bundle.data['meta'] = {'threat': 'high'}
@@ -37,22 +37,22 @@ class SerializerTestCase(TestCase):
         self.assertEqual(serializer_1.formats, ['json', 'jsonp', 'xml', 'yaml', 'html', 'plist'])
         self.assertEqual(serializer_1.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
         self.assertEqual(serializer_1.supported_formats, ['application/json', 'text/javascript', 'application/xml', 'text/yaml', 'text/html', 'application/x-plist'])
-        
+
         serializer_2 = Serializer(formats=['json', 'xml'])
         self.assertEqual(serializer_2.formats, ['json', 'xml'])
         self.assertEqual(serializer_2.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
         self.assertEqual(serializer_2.supported_formats, ['application/json', 'application/xml'])
-        
+
         serializer_3 = Serializer(formats=['json', 'xml'], content_types={'json': 'text/json', 'xml': 'application/xml'})
         self.assertEqual(serializer_3.formats, ['json', 'xml'])
         self.assertEqual(serializer_3.content_types, {'xml': 'application/xml', 'json': 'text/json'})
         self.assertEqual(serializer_3.supported_formats, ['text/json', 'application/xml'])
-        
+
         serializer_4 = Serializer(formats=['plist', 'json'], content_types={'plist': 'application/x-plist', 'json': 'application/json'})
         self.assertEqual(serializer_4.formats, ['plist', 'json'])
         self.assertEqual(serializer_4.content_types, {'plist': 'application/x-plist', 'json': 'application/json'})
         self.assertEqual(serializer_4.supported_formats, ['application/x-plist', 'application/json'])
-        
+
         self.assertRaises(ImproperlyConfigured, Serializer, formats=['json', 'xml'], content_types={'json': 'text/json'})
 
     def get_sample1(self):
@@ -70,97 +70,97 @@ class SerializerTestCase(TestCase):
             'true': True,
             'false': False,
         }
-    
+
     def test_format_datetime(self):
         serializer = Serializer()
         self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33')
-        
+
         serializer = Serializer(datetime_formatting='iso-8601')
         self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33')
-        
+
         serializer = Serializer(datetime_formatting='rfc-2822')
         self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), u'Thu, 16 Dec 2010 02:31:33 -0600')
-        
+
         serializer = Serializer(datetime_formatting='random-garbage')
         self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33')
-        
+
         # Stow.
         old_format = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING', 'iso-8601')
-        
+
         settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601'
         serializer = Serializer()
         self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33')
-        
+
         settings.TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
         serializer = Serializer()
         self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), u'Thu, 16 Dec 2010 02:31:33 -0600')
-        
+
         settings.TASTYPIE_DATETIME_FORMATTING = 'random-garbage'
         serializer = Serializer()
         self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33')
-        
+
         # Restore.
         settings.TASTYPIE_DATETIME_FORMATTING = old_format
-    
+
     def test_format_date(self):
         serializer = Serializer()
         self.assertEqual(serializer.format_date(datetime.date(2010, 12, 16)), '2010-12-16')
-        
+
         serializer = Serializer(datetime_formatting='iso-8601')
         self.assertEqual(serializer.format_date(datetime.date(2010, 12, 16)), '2010-12-16')
-        
+
         serializer = Serializer(datetime_formatting='rfc-2822')
         self.assertEqual(serializer.format_date(datetime.date(2010, 12, 16)), u'16 Dec 2010')
-        
+
         serializer = Serializer(datetime_formatting='random-garbage')
         self.assertEqual(serializer.format_date(datetime.date(2010, 12, 16)), '2010-12-16')
-        
+
         # Stow.
         old_format = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING', 'iso-8601')
-        
+
         settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601'
         serializer = Serializer()
         self.assertEqual(serializer.format_date(datetime.date(2010, 12, 16)), '2010-12-16')
-        
+
         settings.TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
         serializer = Serializer()
         self.assertEqual(serializer.format_date(datetime.date(2010, 12, 16)), u'16 Dec 2010')
-        
+
         settings.TASTYPIE_DATETIME_FORMATTING = 'random-garbage'
         serializer = Serializer()
         self.assertEqual(serializer.format_date(datetime.date(2010, 12, 16)), '2010-12-16')
-        
+
         # Restore.
         settings.TASTYPIE_DATETIME_FORMATTING = old_format
-    
+
     def test_format_time(self):
         serializer = Serializer()
         self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), '02:31:33')
-        
+
         serializer = Serializer(datetime_formatting='iso-8601')
         self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), '02:31:33')
-        
+
         serializer = Serializer(datetime_formatting='rfc-2822')
         self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), u'02:31:33 -0600')
-        
+
         serializer = Serializer(datetime_formatting='random-garbage')
         self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), '02:31:33')
-        
+
         # Stow.
         old_format = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING', 'iso-8601')
-        
+
         settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601'
         serializer = Serializer()
         self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), '02:31:33')
-        
+
         settings.TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
         serializer = Serializer()
         self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), u'02:31:33 -0600')
-        
+
         settings.TASTYPIE_DATETIME_FORMATTING = 'random-garbage'
         serializer = Serializer()
         self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), '02:31:33')
-        
+
         # Restore.
         settings.TASTYPIE_DATETIME_FORMATTING = old_format
 
@@ -183,16 +183,16 @@ class SerializerTestCase(TestCase):
         serializer = Serializer()
         data = '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><somelist type="list"><value>hello</value><value type="integer">1</value><value type="null"/></somelist><somehash type="hash"><pi type="float">3.14</pi><foo>bar</foo></somehash><false type="boolean">False</false><true type="boolean">True</true><somestring>hello</somestring></request>'
         self.assertEqual(serializer.from_xml(data), self.get_sample2())
-    
+
     def test_to_json(self):
         serializer = Serializer()
-        
+
         sample_1 = self.get_sample1()
         self.assertEqual(serializer.to_json(sample_1), '{"age": 27, "date_joined": "2010-03-27", "name": "Daniel"}')
-    
+
     def test_from_json(self):
         serializer = Serializer()
-        
+
         sample_1 = serializer.from_json('{"age": 27, "date_joined": "2010-03-27", "name": "Daniel"}')
         self.assertEqual(len(sample_1), 3)
         self.assertEqual(sample_1['name'], 'Daniel')
@@ -231,13 +231,13 @@ class SerializerTestCase(TestCase):
 
     def test_to_plist(self):
         serializer = Serializer()
-        
+
         sample_1 = self.get_sample1()
         self.assertEqual(serializer.to_plist(sample_1), 'bplist00bybiplist1.0\x00\xd3\x01\x02\x03\x04\x05\x06SageTname[date_joined\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1c %13@\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00K')
-    
+
     def test_from_plist(self):
         serializer = Serializer()
-        
+
         sample_1 = serializer.from_plist('bplist00bybiplist1.0\x00\xd3\x01\x02\x03\x04\x05\x06SageTname[date_joined\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1c %13@\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00K')
         self.assertEqual(len(sample_1), 3)
         self.assertEqual(sample_1['name'], 'Daniel')
@@ -282,7 +282,7 @@ class ResourceSerializationTestCase(TestCase):
         serializer = Serializer()
         resource = self.obj_list[0]
         self.assertEqual(serializer.to_json(resource), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
-    
+
     def test_to_json_decimal_list_dict(self):
         serializer = Serializer()
         resource = self.another_obj_list[0]
@@ -308,11 +308,11 @@ class StubbedSerializer(Serializer):
         self.from_yaml_called = False
         self.from_html_called = False
         self.from_jsonp_called = False
-        
+
     def from_json(self, data):
         self.from_json_called = True
         return True
-    
+
     def from_xml(self, data):
         self.from_xml_called = True
         return True
@@ -339,7 +339,7 @@ class ContentHeaderTest(TestCase):
         serializer = StubbedSerializer()
         serializer.deserialize('{}', 'application/json; charset=UTF-8')
         self.assertTrue(serializer.from_json_called)
-    
+
     def test_deserialize_xml(self):
         serializer = StubbedSerializer()
         serializer.deserialize('', 'application/xml')
@@ -359,7 +359,7 @@ class ContentHeaderTest(TestCase):
         serializer = StubbedSerializer()
         serializer.deserialize('', 'text/yaml; charset=UTF-8')
         self.assertTrue(serializer.from_yaml_called)
-        
+
     def test_deserialize_jsonp(self):
         serializer = StubbedSerializer()
         serializer.deserialize('{}', 'text/javascript')
@@ -369,7 +369,7 @@ class ContentHeaderTest(TestCase):
         serializer = StubbedSerializer()
         serializer.deserialize('{}', 'text/javascript; charset=UTF-8')
         self.assertTrue(serializer.from_jsonp_called)
-    
+
     def test_deserialize_html(self):
         serializer = StubbedSerializer()
         serializer.deserialize('', 'text/html')
@@ -379,4 +379,4 @@ class ContentHeaderTest(TestCase):
         serializer = StubbedSerializer()
         serializer.deserialize('', 'text/html; charset=UTF-8')
         self.assertTrue(serializer.from_html_called)
-        
+

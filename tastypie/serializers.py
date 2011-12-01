@@ -25,6 +25,34 @@ except ImportError:
     biplist = None
 
 
+# Ugh & blah.
+# So doing a regular dump is generally fine, since Tastypie doesn't usually
+# serialize advanced types. *HOWEVER*, it will dump out Python Unicode strings
+# as a custom YAML tag, which of course ``yaml.safe_load`` can't handle.
+if yaml is not None:
+    from yaml.constructor import SafeConstructor
+    from yaml.loader import Reader, Scanner, Parser, Composer, Resolver
+
+    class TastypieConstructor(SafeConstructor):
+        def construct_yaml_unicode_dammit(self, node):
+            value = self.construct_scalar(node)
+            try:
+                return value.encode('ascii')
+            except UnicodeEncodeError:
+                return value
+
+    TastypieConstructor.add_constructor(u'tag:yaml.org,2002:python/unicode', TastypieConstructor.construct_yaml_unicode_dammit)
+
+    class TastypieLoader(Reader, Scanner, Parser, Composer, TastypieConstructor, Resolver):
+        def __init__(self, stream):
+            Reader.__init__(self, stream)
+            Scanner.__init__(self)
+            Parser.__init__(self)
+            Composer.__init__(self)
+            TastypieConstructor.__init__(self)
+            Resolver.__init__(self)
+
+
 class Serializer(object):
     """
     A swappable class for serialization.
@@ -354,7 +382,7 @@ class Serializer(object):
         if yaml is None:
             raise ImproperlyConfigured("Usage of the YAML aspects requires yaml.")
 
-        return yaml.safe_load(content)
+        return yaml.load(content, Loader=TastypieLoader)
 
     def to_plist(self, data, options=None):
         """
