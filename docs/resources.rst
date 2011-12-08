@@ -377,9 +377,10 @@ A simple example::
             queryset = Note.objects.all()
 
         def hydrate_title(self, bundle):
-            return bundle.data['title'].lower()
+            bundle.obj.title = bundle.data['title'].lower()
+            return bundle
 
-The return value is updated in the ``bundle.obj``.
+The method should return the bundle.
 
 Per-field ``hydrate``
 ~~~~~~~~~~~~~~~~~~~~~
@@ -389,7 +390,7 @@ method. If it knows how to access data (say, given the ``attribute`` kwarg), it
 will attempt to take data from the ``bundle.data`` & assign it on the data
 model.
 
-The return value is put in the ``bundle.obj`` attribute for that fieldname.
+The method should return the bundle.
 
 
 Reverse "Relationships"
