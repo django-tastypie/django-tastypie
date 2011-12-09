@@ -1,6 +1,7 @@
 import datetime
 from django.contrib.auth.models import User
 from django.db import models
+from django.forms import ModelForm
 
 
 class Note(models.Model):
@@ -25,3 +26,7 @@ class AnnotatedNote(models.Model):
     
     def __unicode__(self):
         return u"Annotated %s" % self.note.title
+
+class UserForm(ModelForm):
+    class Meta:
+        model = User
