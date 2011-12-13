@@ -1072,7 +1072,13 @@ class Resource(object):
         Return ``HttpAccepted`` (202 Accepted) if
         ``Meta.always_return_data = True``.
         """
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        data = request.raw_post_data
+
+        #if user-agent is CURL, get payload parameter from POST instead of raw_post_data
+        if 'HTTP_USER_AGENT' in request.META and request.META['HTTP_USER_AGENT'][:4] == "curl" and 'payload' in request.POST:
+            data = request.POST['payload']
+        
+        deserialized = self.deserialize(request, data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_list_data(request, deserialized)
 
         if not 'objects' in deserialized:

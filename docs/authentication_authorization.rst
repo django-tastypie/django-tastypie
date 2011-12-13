@@ -77,6 +77,22 @@ objects. Hooking it up looks like::
 
     models.signals.post_save.connect(create_api_key, sender=User)
 
+.. warning::
+
+  If you need to test your api with username and api_key parameters and
+  you are using curl, you can't provide a url with more than 2 parameters
+  like 'username=<username>&api_key=<api_key>. To solve this you need to
+  pass in your curl data parameter your payload with paramenter name
+  'payload' and your username and api_key. Tastypie will verify your user
+  agent and if it's curl will check 'payload' paramenter to get your 
+  data in order to deserialized it.
+
+
+Let me ilustrate this behaviour::
+    
+    curl --dump-header - -H "Content-Type: application/json" -X POST --data 'payload={"body": "This will prbbly be my lst post.", "pub_date": "2011-05-22T00:46:38", "slug": "another-post", "title": "Another Post"}&username=<username>&api_key=<api_key>' http://localhost:8000/api/v1/entry/
+
+
 ``DigestAuthentication``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
