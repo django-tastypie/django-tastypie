@@ -1,7 +1,7 @@
 import datetime
 from django.contrib.auth.models import User
 from django.db import models
-from django.forms import ModelForm
+from django import forms
 
 
 class Note(models.Model):
@@ -27,6 +27,11 @@ class AnnotatedNote(models.Model):
     def __unicode__(self):
         return u"Annotated %s" % self.note.title
 
-class UserForm(ModelForm):
-    class Meta:
+class UserForm(forms.ModelForm):
+    # XXX: A better fix is probably to not emit fractional seconds in the
+    # default serializers. In the meantime, be sure we accept what we output.
+    formats = ['%Y-%m-%dT%H:%M:%S.%f','%Y-%m-%dT%H:%M:%S'] 
+    date_joined = forms.DateTimeField(input_formats=formats) 
+    last_login = forms.DateTimeField(input_formats=formats) 
+    class Meta: 
         model = User
