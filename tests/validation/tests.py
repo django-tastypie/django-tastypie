@@ -40,4 +40,3 @@ class PutValidationTestCase(TestCase):
         resp = self.client.get(user['resource_uri'])
         updated = json.loads(resp.content)
         self.assertEquals(user, updated)
-
