@@ -202,7 +202,7 @@ class Resource(object):
             except (BadRequest, fields.ApiFieldError), e:
                 return http.HttpBadRequest(e.args[0])
             except ValidationError, e:
-                return http.HttpBadRequest(', '.join(e.messages))
+                return http.HttpBadRequest(', '.join(getattr(e,'messages',e)))
             except Exception, e:
                 if hasattr(e, 'response'):
                     return e.response
