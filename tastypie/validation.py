@@ -1,5 +1,4 @@
 from django.core.exceptions import ImproperlyConfigured
-from copy import copy
 
 class Validation(object):
     """
@@ -53,8 +52,7 @@ class FormValidation(Validation):
         if data is None:
             data = {}
 
-        obj = copy(bundle.obj)
-        form = self.form_class(data,instance=obj)
+        form = self.form_class(data,instance=bundle.obj)
 
         if form.is_valid():
             return {}
@@ -88,14 +86,12 @@ class CleanedDataFormValidation(FormValidation):
         if data is None:
             data = {}
 
-        obj = copy(bundle.obj)
-        form = self.form_class(data,obj)
+        form = self.form_class(data,instance=bundle.obj)
 
         if form.is_valid():
             # We're different here & relying on having a reference to the same
             # bundle the rest of the process is using.
             bundle.data = form.cleaned_data
-            bundle.obj = form.save(commit=False)
             return {}
 
         # The data is invalid. Let's collect all the error messages & return
