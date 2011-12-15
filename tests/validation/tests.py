@@ -2,6 +2,10 @@ from django.conf import settings
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.http import HttpRequest
 from django.test import TestCase
+import django
+
+if django.get_version() < '1.2':
+    import monkeypatch_django_test_put
 
 try:
     import json
