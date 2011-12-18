@@ -86,7 +86,7 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
             " Check if token is still valid."
 
             # Get valid period.
-            valid_time = int(getattr(settings, 'TOKEN_VALID_TIME', '3600'))
+            valid_time = getattr(settings, 'TOKEN_VALID_TIME', 3600)
 
             if (now - self.last) < datetime.timedelta(seconds=valid_time):
                 self.last = now
