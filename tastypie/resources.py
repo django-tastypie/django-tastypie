@@ -511,13 +511,15 @@ class Resource(object):
             self._meta.authentication = [self._meta.authentication]
 
         # Loop over authentication classes and try them all
+        auth_result = False
         for auth_class in self._meta.authentication:
             auth_result = auth_class.is_authenticated(request)
             if isinstance(auth_result, HttpResponse):
                 raise ImmediateHttpResponse(response=auth_result)
 
-        # If we fall through, then none of the authenication classes passed.
-        raise ImmediateHttpResponse(response=HttpUnauthorized())
+        # If nothing passed, then all authentication attempts failed
+        if not auth_result is True:
+            raise ImmediateHttpResponse(response=HttpUnauthorized())
 
     def throttle_check(self, request):
         """
