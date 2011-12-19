@@ -30,6 +30,7 @@ class Authentication(object):
         """
         return True
 
+    @staticmethod
     def get_identifier(self, request):
         """
         Provides a unique string identifier for the requestor.

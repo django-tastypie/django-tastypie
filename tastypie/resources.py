@@ -507,13 +507,17 @@ class Resource(object):
         ``Resource._meta``.
         """
         # Authenticate the request as needed.
-        auth_result = self._meta.authentication.is_authenticated(request)
+        if not isinstance(self._meta.authentication, list):
+            self._meta.authentication = [self._meta.authentication]
 
-        if isinstance(auth_result, HttpResponse):
-            raise ImmediateHttpResponse(response=auth_result)
+        # Loop over authentication classes and try them all
+        for auth_class in self._meta.authentication:
+            auth_result = self._meta.authentication.is_authenticated(request)
+            if isinstance(auth_result, HttpResponse):
+                raise ImmediateHttpResponse(response=auth_result)
 
-        if not auth_result is True:
-            raise ImmediateHttpResponse(response=HttpUnauthorized())
+        # If we fall through, then none of the authenication classes passed.
+        raise ImmediateHttpResponse(response=HttpUnauthorized())
 
     def throttle_check(self, request):
         """
@@ -522,7 +526,7 @@ class Resource(object):
         Mostly a hook, this uses class assigned to ``throttle`` from
         ``Resource._meta``.
         """
-        identifier = self._meta.authentication.get_identifier(request)
+        identifier = Authentication.get_identifier(request)
 
         # Check to see if they should be throttled.
         if self._meta.throttle.should_be_throttled(identifier):
@@ -537,7 +541,7 @@ class Resource(object):
         ``Resource._meta``.
         """
         request_method = request.method.lower()
-        self._meta.throttle.accessed(self._meta.authentication.get_identifier(request), url=request.get_full_path(), request_method=request_method)
+        self._meta.throttle.accessed(Authentication.get_identifier(request), url=request.get_full_path(), request_method=request_method)
 
     def build_bundle(self, obj=None, data=None, request=None):
         """
