@@ -514,6 +514,8 @@ class Resource(object):
         auth_result = False
         for auth_class in self._meta.authentication:
             auth_result = auth_class.is_authenticated(request)
+            if auth_result is True:
+                break
             if isinstance(auth_result, HttpResponse):
                 raise ImmediateHttpResponse(response=auth_result)
 
