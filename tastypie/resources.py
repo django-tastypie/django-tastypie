@@ -512,7 +512,7 @@ class Resource(object):
 
         # Loop over authentication classes and try them all
         for auth_class in self._meta.authentication:
-            auth_result = self._meta.authentication.is_authenticated(request)
+            auth_result = auth_class.is_authenticated(request)
             if isinstance(auth_result, HttpResponse):
                 raise ImmediateHttpResponse(response=auth_result)
 
