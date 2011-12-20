@@ -978,6 +978,25 @@ class Resource(object):
         serialized = self.serialize(request, data, desired_format)
         return response_class(content=serialized, content_type=build_content_type(desired_format), **response_kwargs)
 
+    def is_update_valid(self, bundle, request=None):
+        """
+        Handles checking if the data provided byt ther user to
+        update an object is valid.
+
+
+        """
+        errors = self._meta.validation.is_update_valid(bundle, request)
+
+        if len(errors):
+            if request:
+                desired_format = self.determine_format(request)
+            else:
+                desired_format = self._meta.default_format
+
+            serialized = self.serialize(request, errors, desired_format)
+            response = http.HttpBadRequest(content=serialized, content_type=build_content_type(desired_format))
+            raise ImmediateHttpResponse(response=response)
+
     def is_valid(self, bundle, request=None):
         """
         Handles checking if the data provided by the user is valid.
@@ -1087,12 +1106,11 @@ class Resource(object):
             # Attempt to be transactional, deleting any previously created
             # objects if validation fails.
             try:
-                self.is_valid(bundle, request)
+                self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
             except ImmediateHttpResponse:
                 self.rollback(bundles_seen)
                 raise
 
-            self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
             bundles_seen.append(bundle)
 
         if not self._meta.always_return_data:
@@ -1125,7 +1143,7 @@ class Resource(object):
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
-        self.is_valid(bundle, request)
+        # self.is_valid(bundle, request)
 
         try:
             updated_bundle = self.obj_update(bundle, request=request, **self.remove_api_resource_names(kwargs))
@@ -1161,7 +1179,7 @@ class Resource(object):
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
-        self.is_valid(bundle, request)
+        # self.is_valid(bundle, request)
         updated_bundle = self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
         location = self.get_resource_uri(updated_bundle)
 
@@ -1280,14 +1298,14 @@ class Resource(object):
                     data = self.alter_deserialized_detail_data(request, data)
                     bundle = self.build_bundle(data=dict_strip_unicode_keys(data))
                     bundle.obj.pk = obj.pk
-                    self.is_valid(bundle, request)
+                    # self.is_valid(bundle, request)
                     self.obj_create(bundle, request=request)
             else:
                 # There's no resource URI, so this is a create call just
                 # like a POST to the list resource.
                 data = self.alter_deserialized_detail_data(request, data)
                 bundle = self.build_bundle(data=dict_strip_unicode_keys(data))
-                self.is_valid(bundle, request)
+                # self.is_valid(bundle, request)
                 self.obj_create(bundle, request=request)
 
         if len(deserialized.get('deleted_objects', [])) and 'delete' not in self._meta.detail_allowed_methods:
@@ -1342,7 +1360,7 @@ class Resource(object):
         # we're basically in the same spot as a PUT request. SO the rest of this
         # function is cribbed from put_detail.
         self.alter_deserialized_detail_data(request, original_bundle.data)
-        self.is_valid(original_bundle, request)
+        # self.is_valid(original_bundle, request)
         return self.obj_update(original_bundle, request=request, pk=original_bundle.obj.pk)
 
     def get_schema(self, request, **kwargs):
@@ -1768,6 +1786,9 @@ class ModelResource(Resource):
         """
         bundle.obj = self._meta.object_class()
 
+        # Check if the creation is valid
+        self.is_valid(bundle, request=request)
+
         for key, value in kwargs.items():
             setattr(bundle.obj, key, value)
 
@@ -1814,6 +1835,9 @@ class ModelResource(Resource):
                 bundle.obj = self.obj_get(request, **lookup_kwargs)
             except ObjectDoesNotExist:
                 raise NotFound("A model instance matching the provided arguments could not be found.")
+
+        # Check if the update is valid
+        self.is_update_valid(bundle, request=request)
 
         bundle = self.full_hydrate(bundle)
 

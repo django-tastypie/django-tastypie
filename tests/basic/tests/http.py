@@ -1,4 +1,6 @@
-from tests.testcases import TestServerTestCase
+from __future__ import absolute_import
+from testcases import TestServerTestCase
+# from tests.testcases import TestServerTestCase
 import httplib
 try:
     import json
