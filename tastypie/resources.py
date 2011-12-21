@@ -1800,7 +1800,7 @@ class ModelResource(Resource):
                 lookup_kwargs = kwargs.copy()
 
                 for key in kwargs.keys():
-                    if key == 'pk':
+                    if key == self._meta.resource_uri_fieldname:
                         continue
                     elif getattr(bundle.obj, key, NOT_AVAILABLE) is not NOT_AVAILABLE:
                         lookup_kwargs[key] = getattr(bundle.obj, key)
