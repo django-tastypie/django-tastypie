@@ -190,14 +190,6 @@ class Resource(object):
             try:
                 callback = getattr(self, view)
                 response = callback(request, *args, **kwargs)
-
-
-                if request.is_ajax():
-                    # IE excessively caches XMLHttpRequests, so we're disabling
-                    # the browser cache here.
-                    # See http://www.enhanceie.com/ie/bugs.asp for details.
-                    patch_cache_control(response, no_cache=True)
-
                 return response
             except (BadRequest, fields.ApiFieldError), e:
                 return http.HttpBadRequest(e.args[0])
@@ -976,7 +968,13 @@ class Resource(object):
         """
         desired_format = self.determine_format(request)
         serialized = self.serialize(request, data, desired_format)
-        return response_class(content=serialized, content_type=build_content_type(desired_format), **response_kwargs)
+        response = response_class(content=serialized, content_type=build_content_type(desired_format), **response_kwargs)
+        if request.is_ajax():
+            # IE excessively caches XMLHttpRequests, so we're disabling
+            # the browser cache here.
+            # See http://www.enhanceie.com/ie/bugs.asp for details.
+            patch_cache_control(response, no_cache=True)
+        return response
 
     def is_valid(self, bundle, request=None):
         """
