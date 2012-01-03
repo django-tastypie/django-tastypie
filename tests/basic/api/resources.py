@@ -12,6 +12,18 @@ class UserResource(ModelResource):
         authorization = Authorization()
 
 
+class CachedUserResource(ModelResource):
+    class Meta:
+        allowed_methods = ('get', )
+        queryset = User.objects.all()
+        resource_name = 'cached_users'
+
+    def create_response(self, *args, **kwargs):
+        resp = super(CachedUserResource, self).create_response(*args, **kwargs)
+        resp['Cache-Control'] = "max-age=3600"
+        return resp
+
+
 class NoteResource(ModelResource):
     user = fields.ForeignKey(UserResource, 'user')
 

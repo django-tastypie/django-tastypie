@@ -194,8 +194,7 @@ class Resource(object):
                 callback = getattr(self, view)
                 response = callback(request, *args, **kwargs)
 
-
-                if request.is_ajax():
+                if request.is_ajax() and not response.has_header("Cache-Control"):
                     # IE excessively caches XMLHttpRequests, so we're disabling
                     # the browser cache here.
                     # See http://www.enhanceie.com/ie/bugs.asp for details.
