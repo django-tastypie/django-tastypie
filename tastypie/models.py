@@ -26,6 +26,7 @@ class ApiAccess(models.Model):
 
 
 if 'django.contrib.auth' in settings.INSTALLED_APPS:
+    print 'create model'
     import uuid
     from django.conf import settings
     from django.contrib.auth.models import User
@@ -57,3 +58,5 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
         """
         if kwargs.get('created') is True:
             ApiKey.objects.create(user=kwargs.get('instance'))
+else:
+    print "i am not here"
