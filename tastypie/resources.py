@@ -784,6 +784,12 @@ class Resource(object):
                 'help_text': field_object.help_text,
                 'unique': field_object.unique,
             }
+            if field_object.dehydrated_type == 'related':
+                if getattr(field_object, 'is_m2m', False):
+                    related_type = 'to_many'
+                else:
+                    related_type = 'to_one'
+                data['fields'][field_name]['related_type'] = related_type
 
         return data
 

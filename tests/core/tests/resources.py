@@ -1159,6 +1159,105 @@ class ModelResourceTestCase(TestCase):
         request.META = {'HTTP_ACCEPT': 'text/plain,application/xml,application/json;q=0.9,*/*;q=0.8'}
         self.assertEqual(resource.determine_format(request), 'application/xml')
 
+    def adjust_schema(self, schema_dict):
+        for field, field_info in schema_dict['fields'].items():
+            if isinstance(field_info['default'], fields.NOT_PROVIDED):
+                schema_dict['fields'][field]['default'] = 'No default provided.'
+            if isinstance(field_info['default'], (datetime.datetime, datetime.date)):
+                schema_dict['fields'][field]['default'] = 'The current date.'
+
+        return schema_dict
+
+    def test_build_schema(self):
+        related = RelatedNoteResource()
+        schema = self.adjust_schema(related.build_schema())
+        self.assertEqual(schema, {
+            'filtering': {
+                'subjects': 2,
+                'author': 1
+            },
+            'allowed_detail_http_methods': ['get', 'post', 'put', 'delete', 'patch'],
+            'fields': {
+                'author': {
+                    'related_type': 'to_one',
+                    'nullable': False,
+                    'default': 'No default provided.',
+                    'readonly': False,
+                    'blank': False,
+                    'help_text': 'A single related resource. Can be either a URI or set of nested resource data.',
+                    'unique': False,
+                    'type': 'related'
+                },
+                'title': {
+                    'nullable': False,
+                    'default': 'No default provided.',
+                    'readonly': False,
+                    'blank': False,
+                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'unique': False,
+                    'type': 'string'
+                },
+                'created': {
+                    'nullable': False,
+                    'default': 'The current date.',
+                    'readonly': False,
+                    'blank': False,
+                    'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
+                    'unique': False,
+                    'type': 'datetime'
+                },
+                'is_active': {
+                    'nullable': False,
+                    'default': True,
+                    'readonly': False,
+                    'blank': False,
+                    'help_text': 'Boolean data. Ex: True',
+                    'unique': False,
+                    'type': 'boolean'
+                },
+                'content': {
+                    'nullable': False,
+                    'default': '',
+                    'readonly': False,
+                    'blank': False,
+                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'unique': False,
+                    'type': 'string'
+                },
+                'subjects': {
+                    'related_type': 'to_many',
+                    'nullable': False,
+                    'default': 'No default provided.',
+                    'readonly': False,
+                    'blank': False,
+                    'help_text': 'Many related resources. Can be either a list of URIs or list of individually nested resource data.',
+                    'unique': False,
+                    'type': 'related'
+                },
+                'slug': {
+                    'nullable': False,
+                    'default': 'No default provided.',
+                    'readonly': False,
+                    'blank': False,
+                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'unique': False,
+                    'type': 'string'
+                },
+                'resource_uri': {
+                    'nullable': False,
+                    'default': 'No default provided.',
+                    'readonly': True,
+                    'blank': False,
+                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'unique': False,
+                    'type': 'string'
+                }
+            },
+            'default_format': 'application/json',
+            'default_limit': 20,
+            'allowed_list_http_methods': ['get', 'post', 'put', 'delete', 'patch']
+        })
+
     def test_build_filters(self):
         resource = NoteResource()
 
