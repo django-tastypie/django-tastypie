@@ -229,15 +229,6 @@ class Resource(object):
         if isinstance(exception, (NotFound, ObjectDoesNotExist)):
             response_class = HttpResponseNotFound
 
-        if settings.DEBUG:
-            data = {
-                "error_message": unicode(exception),
-                "traceback": the_trace,
-            }
-            desired_format = self.determine_format(request)
-            serialized = self.serialize(request, data, desired_format)
-            return response_class(content=serialized, content_type=build_content_type(desired_format))
-
         # When DEBUG is False, send an error message to the admins (unless it's
         # a 404, in which case we check the setting).
         if not isinstance(exception, (NotFound, ObjectDoesNotExist)):
@@ -254,6 +245,15 @@ class Resource(object):
 
                 message = "%s\n\n%s" % (the_trace, request_repr)
                 mail_admins(subject, message, fail_silently=True)
+
+        if settings.DEBUG:
+            data = {
+                "error_message": unicode(exception),
+                "traceback": the_trace,
+            }
+            desired_format = self.determine_format(request)
+            serialized = self.serialize(request, data, desired_format)
+            return response_class(content=serialized, content_type=build_content_type(desired_format))
 
         # Prep the data going out.
         data = {
