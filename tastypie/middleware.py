@@ -17,7 +17,7 @@ class ApiSessionMiddleware(SessionMiddleware):
     """
     def process_request(self, request):
         request.tastypie = ApiSessionOptions()
-        return super(ApiSessionMiddleware).process_request(request)
+        return super(ApiSessionMiddleware, self).process_request(request)
         
     def process_response(self, request, response):
         """
@@ -32,6 +32,6 @@ class ApiSessionMiddleware(SessionMiddleware):
             pass
         else:
             if not suppress_session:
-                response = super(ApiSessionMiddleware).process_response(request, response)
+                response = super(ApiSessionMiddleware, self).process_response(request, response)
 
         return response
