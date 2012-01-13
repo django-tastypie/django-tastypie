@@ -1,4 +1,4 @@
-from django.contrib.session.middleware import SessionMiddleware
+from django.contrib.sessions.middleware import SessionMiddleware
 
 
 class ApiSessionOptions(object):
