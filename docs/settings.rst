@@ -29,6 +29,41 @@ If you don't want to limit the number of records by default, you can set this se
 Defaults to 20.
 
 
+.. _ref-settings-API_SUPPRESSES_SESSIONS:
+
+``API_SUPPRESSES_SESSIONS``
+===========================
+
+**Optional**
+
+This setting controls whether
+``tastypie.middleware.ApiSessionMiddleware`` will suppress
+sessions by default when Resources are requested. Of course, this
+requires ``tastypie.middleware.ApiSessionMiddleware`` to be in your
+``MIDDLEWARE_CLASSES`` setting.
+
+If ``tastypie.middleware.ApiSessionMiddleware`` is not installed in
+``MIDDLEWARE_CLASSES``, this setting has no effect.
+
+This setting may be overridden on individual ``Resource``
+implementations. For a full description of this setting's behavior,
+see :ref:`ref-resources-suppress_sessions` in
+:ref:`ref-resources`.
+
+An example::
+
+    API_SUPPRESSES_SESSIONS = True
+
+If you don't want to suppress sessions in Resource requests by
+default, you can set this setting to False::
+
+    API_SUPPRESSES_SESSIONS = False
+
+Defaults to ``True`` (has no effect unless the middleware is
+installed).
+
+
+
 ``TASTYPIE_FULL_DEBUG``
 =======================
 
