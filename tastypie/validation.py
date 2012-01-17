@@ -1,6 +1,5 @@
 from django.core.exceptions import ImproperlyConfigured
 
-
 class Validation(object):
     """
     A basic validation stub that does no validation.
@@ -53,7 +52,7 @@ class FormValidation(Validation):
         if data is None:
             data = {}
 
-        form = self.form_class(data)
+        form = self.form_class(data, instance=bundle.obj if bundle.obj.pk else None)
 
         if form.is_valid():
             return {}
@@ -87,7 +86,7 @@ class CleanedDataFormValidation(FormValidation):
         if data is None:
             data = {}
 
-        form = self.form_class(data)
+        form = self.form_class(data, instance=bundle.obj if bundle.obj.pk else None)
 
         if form.is_valid():
             # We're different here & relying on having a reference to the same

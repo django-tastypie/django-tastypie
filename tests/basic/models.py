@@ -1,6 +1,7 @@
 import datetime
 from django.contrib.auth.models import User
 from django.db import models
+from django import forms
 
 
 class Note(models.Model):
@@ -25,3 +26,10 @@ class AnnotatedNote(models.Model):
     
     def __unicode__(self):
         return u"Annotated %s" % self.note.title
+
+class UserForm(forms.ModelForm):
+    class Meta:
+        model = User
+    formats = ['%Y-%m-%dT%H:%M:%S.%f','%Y-%m-%dT%H:%M:%S'] 
+    date_joined = forms.DateTimeField(input_formats=formats) 
+    last_login = forms.DateTimeField(input_formats=formats) 
