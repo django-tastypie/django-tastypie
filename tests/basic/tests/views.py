@@ -37,7 +37,7 @@ class ViewsTestCase(TestCase):
 
     def test_posts(self):
         request = HttpRequest()
-        post_data = '{"content": "A new post.", "is_active": true, "title": "New Title", "slug": "new-title", "user": "/api/v1/users/1/"}'
+        post_data = '{"content": "A new post.", "is_active": true, "title": "New Title", "slug": "new-title", "user": "/api/v1/users/johndoe/"}'
         request._raw_post_data = post_data
 
         resp = self.client.post('/api/v1/notes/', data=post_data, content_type='application/json')
@@ -50,11 +50,11 @@ class ViewsTestCase(TestCase):
         obj = json.loads(resp.content)
         self.assertEqual(obj['content'], 'A new post.')
         self.assertEqual(obj['is_active'], True)
-        self.assertEqual(obj['user'], '/api/v1/users/1/')
+        self.assertEqual(obj['user'], '/api/v1/users/johndoe/')
 
     def test_puts(self):
         request = HttpRequest()
-        post_data = '{"content": "Another new post.", "is_active": true, "title": "Another New Title", "slug": "new-title", "user": "/api/v1/users/1/"}'
+        post_data = '{"content": "Another new post.", "is_active": true, "title": "Another New Title", "slug": "new-title", "user": "/api/v1/users/johndoe/"}'
         request._raw_post_data = post_data
 
         resp = self.client.put('/api/v1/notes/1/', data=post_data, content_type='application/json')
@@ -66,7 +66,7 @@ class ViewsTestCase(TestCase):
         obj = json.loads(resp.content)
         self.assertEqual(obj['content'], 'Another new post.')
         self.assertEqual(obj['is_active'], True)
-        self.assertEqual(obj['user'], '/api/v1/users/1/')
+        self.assertEqual(obj['user'], '/api/v1/users/johndoe/')
 
     def test_api_field_error(self):
         # When a field error is encountered, we should be presenting the message
