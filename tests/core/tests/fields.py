@@ -9,6 +9,8 @@ from tastypie.fields import *
 from tastypie.resources import ModelResource
 from core.models import Note, Subject, MediaBit
 
+from tastypie.utils import aware_datetime, aware_date
+
 
 class ApiFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -75,7 +77,7 @@ class ApiFieldTestCase(TestCase):
 
         # Correct callable attribute.
         field_6 = ApiField(attribute='what_time_is_it', default=True)
-        self.assertEqual(field_6.dehydrate(bundle), datetime.datetime(2010, 4, 1, 0, 48))
+        self.assertEqual(field_6.dehydrate(bundle), aware_datetime(2010, 4, 1, 0, 48))
 
     def test_convert(self):
         field_1 = ApiField()
@@ -390,7 +392,7 @@ class TimeFieldTestCase(TestCase):
         bundle = Bundle(obj=note)
 
         field_1 = TimeField(attribute='created')
-        self.assertEqual(field_1.dehydrate(bundle), datetime.datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(field_1.dehydrate(bundle), aware_datetime(2010, 3, 30, 20, 5))
 
         field_2 = TimeField(default=datetime.time(23, 5, 58))
         self.assertEqual(field_2.dehydrate(bundle), datetime.time(23, 5, 58))
@@ -452,7 +454,7 @@ class DateFieldTestCase(TestCase):
         bundle = Bundle(obj=note)
 
         field_1 = DateField(attribute='created')
-        self.assertEqual(field_1.dehydrate(bundle), datetime.datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(field_1.dehydrate(bundle), aware_datetime(2010, 3, 30, 20, 5))
 
         field_2 = DateField(default=datetime.date(2010, 4, 1))
         self.assertEqual(field_2.dehydrate(bundle), datetime.date(2010, 4, 1))
@@ -517,14 +519,14 @@ class DateTimeFieldTestCase(TestCase):
         bundle = Bundle(obj=note)
 
         field_1 = DateTimeField(attribute='created')
-        self.assertEqual(field_1.dehydrate(bundle), datetime.datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(field_1.dehydrate(bundle), aware_datetime(2010, 3, 30, 20, 5))
 
-        field_2 = DateTimeField(default=datetime.datetime(2010, 4, 1, 1, 7))
-        self.assertEqual(field_2.dehydrate(bundle), datetime.datetime(2010, 4, 1, 1, 7))
+        field_2 = DateTimeField(default=aware_datetime(2010, 4, 1, 1, 7))
+        self.assertEqual(field_2.dehydrate(bundle), aware_datetime(2010, 4, 1, 1, 7))
 
         note.created_string = '2010-04-02 01:11:00'
         field_3 = DateTimeField(attribute='created_string')
-        self.assertEqual(field_3.dehydrate(bundle), datetime.datetime(2010, 4, 2, 1, 11))
+        self.assertEqual(field_3.dehydrate(bundle), aware_datetime(2010, 4, 2, 1, 11))
 
     def test_hydrate(self):
         note = Note.objects.get(pk=1)
@@ -534,19 +536,19 @@ class DateTimeFieldTestCase(TestCase):
         })
         field_1 = DateTimeField(attribute='created')
         field_1.instance_name = 'datetime'
-        self.assertEqual(field_1.hydrate(bundle_1), datetime.datetime(2010, 5, 12, 10, 36, 28))
+        self.assertEqual(field_1.hydrate(bundle_1), aware_datetime(2010, 5, 12, 10, 36, 28))
 
         bundle_2 = Bundle()
-        field_2 = DateTimeField(default=datetime.datetime(2010, 4, 1, 2, 0))
+        field_2 = DateTimeField(default=aware_datetime(2010, 4, 1, 2, 0))
         field_2.instance_name = 'datetime'
-        self.assertEqual(field_2.hydrate(bundle_2), datetime.datetime(2010, 4, 1, 2, 0))
+        self.assertEqual(field_2.hydrate(bundle_2), aware_datetime(2010, 4, 1, 2, 0))
 
         bundle_3 = Bundle(data={
             'datetime': 'Tue, 30 Mar 2010 20:05:00 -0500',
         })
         field_3 = DateTimeField(attribute='created_string')
         field_3.instance_name = 'datetime'
-        self.assertEqual(field_3.hydrate(bundle_3), datetime.datetime(2010, 3, 30, 20, 5, tzinfo=tzoffset(None, -18000)))
+        self.assertEqual(field_3.hydrate(bundle_3), aware_datetime(2010, 3, 30, 20, 5, tzinfo=tzoffset(None, -18000)))
 
         bundle_4 = Bundle(data={
             'datetime': None,

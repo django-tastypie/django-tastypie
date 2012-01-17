@@ -9,6 +9,8 @@ from django.db import models
 from django.db.models import signals, get_models
 from django.conf import settings
 
+from tastypie.utils import now
+
 
 class Post(models.Model):
     user = models.ForeignKey(User, related_name='notes')
@@ -16,15 +18,15 @@ class Post(models.Model):
     slug = models.SlugField()
     content = models.TextField()
     is_active = models.BooleanField(default=True)
-    created = models.DateTimeField(default=datetime.datetime.now)
-    updated = models.DateTimeField(default=datetime.datetime.now)
+    created = models.DateTimeField(default=now)
+    updated = models.DateTimeField(default=now)
     comments = generic.GenericRelation(Comment, content_type_field="content_type", object_id_field="object_pk")
 
     def __unicode__(self):
         return self.title
 
     def save(self, *args, **kwargs):
-        self.updated = datetime.datetime.now()
+        self.updated = now()
         return super(Post, self).save(*args, **kwargs)
 
 
