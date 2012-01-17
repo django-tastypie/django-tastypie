@@ -2008,7 +2008,6 @@ def convert_post_to_VERB(request, verb):
             request.META['REQUEST_METHOD'] = 'POST'
             request._load_post_and_files()
             request.META['REQUEST_METHOD'] = verb
-
         setattr(request, verb, request.POST)
 
     return request

@@ -3,6 +3,8 @@ import hmac
 import time
 from django.conf import settings
 from django.db import models
+from tastypie.utils import now
+
 try:
     from hashlib import sha1
 except ImportError:
@@ -33,8 +35,8 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
     class ApiKey(models.Model):
         user = models.OneToOneField(User, related_name='api_key')
         key = models.CharField(max_length=256, blank=True, default='')
-        created = models.DateTimeField(default=datetime.datetime.now)
-        
+        created = models.DateTimeField(default=now)
+
         def __unicode__(self):
             return u"%s for %s" % (self.key, self.user)
         
