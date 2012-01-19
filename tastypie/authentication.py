@@ -136,6 +136,20 @@ class ApiKeyAuthentication(Authentication):
     def _unauthorized(self):
         return HttpUnauthorized()
 
+    def extract_credentials(self, request):
+        if request.META.get('HTTP_AUTHORIZATION') and request.META['HTTP_AUTHORIZATION'].startswith('ApiKey '):
+            (auth_type, data) = request.META['HTTP_AUTHORIZATION'].split()
+
+            if auth_type != 'ApiKey':
+                raise ValueError("Incorrect authorization header.")
+
+            username, api_key = data.split(':', 1)
+        else:
+            username = request.GET.get('username') or request.POST.get('username')
+            api_key = request.GET.get('api_key') or request.POST.get('api_key')
+
+        return username, api_key
+
     def is_authenticated(self, request, **kwargs):
         """
         Finds the user and checks their API key.
@@ -145,8 +159,10 @@ class ApiKeyAuthentication(Authentication):
         """
         from django.contrib.auth.models import User
 
-        username = request.GET.get('username') or request.POST.get('username')
-        api_key = request.GET.get('api_key') or request.POST.get('api_key')
+        try:
+            username, api_key = self.extract_credentials(request)
+        except ValueError:
+            return self._unauthorized()
 
         if not username or not api_key:
             return self._unauthorized()
@@ -179,7 +195,8 @@ class ApiKeyAuthentication(Authentication):
 
         This implementation returns the user's username.
         """
-        return request.REQUEST.get('username', 'nouser')
+        username, api_key = self.extract_credentials(request)
+        return username or 'nouser'
 
 
 class DigestAuthentication(Authentication):
