@@ -94,7 +94,7 @@ class BasicAuthentication(Authentication):
 
         try:
             (auth_type, data) = request.META['HTTP_AUTHORIZATION'].split()
-            if auth_type != 'Basic':
+            if auth_type.lower() != 'basic':
                 return self._unauthorized()
             user_pass = base64.b64decode(data)
         except:
@@ -137,10 +137,10 @@ class ApiKeyAuthentication(Authentication):
         return HttpUnauthorized()
 
     def extract_credentials(self, request):
-        if request.META.get('HTTP_AUTHORIZATION') and request.META['HTTP_AUTHORIZATION'].startswith('ApiKey '):
+        if request.META.get('HTTP_AUTHORIZATION') and request.META['HTTP_AUTHORIZATION'].lower().startswith('apikey '):
             (auth_type, data) = request.META['HTTP_AUTHORIZATION'].split()
 
-            if auth_type != 'ApiKey':
+            if auth_type.lower() != 'apikey':
                 raise ValueError("Incorrect authorization header.")
 
             username, api_key = data.split(':', 1)
@@ -243,7 +243,7 @@ class DigestAuthentication(Authentication):
         try:
             (auth_type, data) = request.META['HTTP_AUTHORIZATION'].split(' ', 1)
 
-            if auth_type != 'Digest':
+            if auth_type.lower() != 'digest':
                 return self._unauthorized()
         except:
             return self._unauthorized()
