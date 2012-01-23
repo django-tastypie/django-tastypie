@@ -6,7 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.utils import datetime_safe, importlib
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
-from tastypie.utils import dict_strip_unicode_keys
+from tastypie.utils import dict_strip_unicode_keys, make_aware
 
 
 class NOT_PROVIDED:
@@ -324,7 +324,7 @@ class DateField(ApiField):
         if value and not hasattr(value, 'year'):
             try:
                 # Try to rip a date/datetime out of it.
-                value = parse(value)
+                value = make_aware(parse(value))
 
                 if hasattr(value, 'hour'):
                     value = value.date()
@@ -350,7 +350,7 @@ class DateTimeField(ApiField):
 
             if match:
                 data = match.groupdict()
-                return datetime_safe.datetime(int(data['year']), int(data['month']), int(data['day']), int(data['hour']), int(data['minute']), int(data['second']))
+                return make_aware(datetime_safe.datetime(int(data['year']), int(data['month']), int(data['day']), int(data['hour']), int(data['minute']), int(data['second'])))
             else:
                 raise ApiFieldError("Datetime provided to '%s' field doesn't appear to be a valid datetime string: '%s'" % (self.instance_name, value))
 
@@ -364,7 +364,7 @@ class DateTimeField(ApiField):
         if value and not hasattr(value, 'year'):
             try:
                 # Try to rip a date/datetime out of it.
-                value = parse(value)
+                value = make_aware(parse(value))
             except ValueError:
                 pass
 

@@ -25,7 +25,7 @@ of the code that are Tastypie-specific in any kind of depth.
 For example purposes, we'll be adding an API to a simple blog application.
 Here is ``myapp/models.py``::
 
-    import datetime
+    from tastypie.utils import now
     from django.contrib.auth.models import User
     from django.db import models
     from django.template.defaultfilters import slugify
@@ -33,7 +33,7 @@ Here is ``myapp/models.py``::
     
     class Entry(models.Model):
         user = models.ForeignKey(User)
-        pub_date = models.DateTimeField(default=datetime.datetime.now)
+        pub_date = models.DateTimeField(default=now)
         title = models.CharField(max_length=200)
         slug = models.SlugField()
         body = models.TextField()

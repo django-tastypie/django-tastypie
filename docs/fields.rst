@@ -15,8 +15,7 @@ Quick Start
 
 For the impatient::
 
-  import datetime
-  from tastypie import fields
+  from tastypie import fields, utils
   from tastypie.resources import Resource
   from myapp.api.resources import ProfileResource, NoteResource
 
@@ -24,7 +23,7 @@ For the impatient::
   class PersonResource(Resource):
       name = fields.CharField(attribute='name')
       age = fields.IntegerField(attribute='years_old', null=True)
-      created = fields.DateTimeField(readonly=True, help_text='When the person was created', default=datetime.datetime.now)
+      created = fields.DateTimeField(readonly=True, help_text='When the person was created', default=utils.now)
       is_active = fields.BooleanField(default=True)
       profile = fields.ToOneField(ProfileResource, 'profile')
       notes = fields.ToManyField(NoteResource, 'notes', full=True)
