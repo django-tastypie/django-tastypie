@@ -130,7 +130,7 @@ As an example, we'll walk through what a GET request to a list endpoint (say
 
 Processing on other endpoints or using the other HTTP methods results in a
 similar cycle, usually differing only in what "actual work" method gets called
-(which follows the format of "``<http_method>_<list_or_detail>"). In the case
+(which follows the format of "``<http_method>_<list_or_detail>``"). In the case
 of POST/PUT, the ``hydrate`` cycle additionally takes place and is used to take
 the user data & convert it to raw data for storage.
 
