@@ -1258,7 +1258,7 @@ class Resource(object):
               entire request will fail and all resources will be rolled back.
         """
         request = convert_post_to_patch(request)
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, format=request.META.get('CONTENT_TYPE', 'application/json'))
 
         if "objects" not in deserialized:
             raise BadRequest("Invalid data sent.")
@@ -1334,7 +1334,7 @@ class Resource(object):
         bundle = self.alter_detail_data_to_serialize(request, bundle)
 
         # Now update the bundle in-place.
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, format=request.META.get('CONTENT_TYPE', 'application/json'))
         self.update_in_place(request, bundle, deserialized)
         return http.HttpAccepted()
 
