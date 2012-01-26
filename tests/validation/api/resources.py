@@ -7,6 +7,9 @@ from basic.models import Note, AnnotatedNote
 from django import forms
 from tastypie.validation import FormValidation
 
+# NOTES:
+# model defaults don't matter since we are not rendering a form, if you want to use a default exclude the field.
+
 
 class UserResource(ModelResource):
     class Meta:
@@ -18,6 +21,7 @@ class AnnotatedNoteForm(forms.ModelForm):
 
     class Meta:
         model = AnnotatedNote
+        exclude = ('note',)
 
 class AnnotatedNoteResource(ModelResource):
 
@@ -31,10 +35,11 @@ class NoteForm(forms.ModelForm):
 
     class Meta:
         model = Note
+        exclude = ('user', 'created', 'updated')
 
 class NoteResource(ModelResource):
     user = fields.ForeignKey(UserResource, 'user')
-    annotated_note = fields.ForeignKey(AnnotatedNote, 'annotated', null=True)
+    annotated_note = fields.ForeignKey(AnnotatedNoteResource, 'annotated', null=True, full=True)
 
     class Meta:
         resource_name = 'notes'

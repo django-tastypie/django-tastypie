@@ -994,7 +994,22 @@ class Resource(object):
         If validation fails, an error is raised with the error messages
         serialized inside it.
         """
-        errors = self._meta.validation.is_valid(bundle, request)
+        related_data = {}
+        errors = {}
+        for field_name, field_object in self.fields.items():
+            if getattr(field_object, 'is_related', False) and bundle.data.has_key(field_name):
+                resource = field_object.get_related_resource(None)
+                related_data[field_name] = bundle.data.pop(field_name)
+                fbundle = resource.build_bundle(data=related_data[field_name], request=request)
+                field_errors = resource._meta.validation.is_valid(fbundle, request)
+                if field_errors:
+                    errors[field_name] = field_errors
+
+        errors.update(self._meta.validation.is_valid(bundle, request))
+
+        bundle.data.update(related_data)
+
+        # errors = self._meta.validation.is_valid(bundle, request)
 
         if len(errors):
             if request:
