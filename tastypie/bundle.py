@@ -16,6 +16,7 @@ class Bundle(object):
         self.request = request or HttpRequest()
         self.related_obj = related_obj
         self.related_name = related_name
+        self.errors = {}
 
     def __repr__(self):
         return "<Bundle for obj: '%s' and with data: '%s'>" % (self.obj, self.data)

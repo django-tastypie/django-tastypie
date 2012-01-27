@@ -680,7 +680,6 @@ class Resource(object):
         """
         if bundle.obj is None:
             bundle.obj = self._meta.object_class()
-
         bundle = self.hydrate(bundle)
         for field_name, field_object in self.fields.items():
             if field_object.readonly is True:
@@ -691,9 +690,12 @@ class Resource(object):
 
             if method:
                 bundle = method(bundle)
-
             if field_object.attribute:
                 value = field_object.hydrate(bundle)
+
+                # NOTE: We only get back a bundle when it is related field.
+                if isinstance(value, Bundle) and value.errors:
+                    bundle.errors[field_name] = value.errors
 
                 if value is not None or field_object.null:
                     # We need to avoid populating M2M data here as that will
@@ -982,6 +984,16 @@ class Resource(object):
         serialized = self.serialize(request, data, desired_format)
         return response_class(content=serialized, content_type=build_content_type(desired_format), **response_kwargs)
 
+    def error_response(self, errors, request):
+        if request:
+            desired_format = self.determine_format(request)
+        else:
+            desired_format = self._meta.default_format
+
+        serialized = self.serialize(request, errors, desired_format)
+        response = http.HttpBadRequest(content=serialized, content_type=build_content_type(desired_format))
+        raise ImmediateHttpResponse(response=response)
+
     def is_valid(self, bundle, request=None):
         """
         Handles checking if the data provided by the user is valid.
@@ -1006,20 +1018,16 @@ class Resource(object):
         #             errors[field_name] = field_errors
 
         errors.update(self._meta.validation.is_valid(bundle, request))
+        bundle.errors.update(errors)
 
-        bundle.data.update(related_data)
+        return bool(errors)
+
+        # bundle.data.update(related_data)
 
         # errors = self._meta.validation.is_valid(bundle, request)
 
-        if len(errors):
-            if request:
-                desired_format = self.determine_format(request)
-            else:
-                desired_format = self._meta.default_format
+        # TODO: Move in to responding method.
 
-            serialized = self.serialize(request, errors, desired_format)
-            response = http.HttpBadRequest(content=serialized, content_type=build_content_type(desired_format))
-            raise ImmediateHttpResponse(response=response)
 
     def rollback(self, bundles):
         """
@@ -1784,9 +1792,11 @@ class ModelResource(Resource):
 
         for key, value in kwargs.items():
             setattr(bundle.obj, key, value)
-
         bundle = self.full_hydrate(bundle)
         self.is_valid(bundle,request)
+
+        if bundle.errors:
+            self.error_response(bundle.errors, request)
 
         bundle.obj.save()
 
@@ -1801,7 +1811,7 @@ class ModelResource(Resource):
         self.save_m2m(m2m_bundle)
         return bundle
 
-    def obj_update(self, bundle, request=None, **kwargs):
+    def obj_update(self, bundle, request=None, skip_errors=False, **kwargs):
         """
         A ORM-specific implementation of ``obj_update``.
         """
@@ -1834,6 +1844,9 @@ class ModelResource(Resource):
 
         bundle = self.full_hydrate(bundle)
         self.is_valid(bundle,request)
+
+        if bundle.errors and not skip_errors:
+            self.error_response(bundle.errors, request)
 
         # Save FKs just in case.
         self.save_related(bundle)

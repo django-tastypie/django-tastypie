@@ -1,5 +1,6 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.models import model_to_dict
+from django.forms import ModelForm
 
 class Validation(object):
     """
@@ -56,7 +57,8 @@ class FormValidation(Validation):
         kwargs = {}
         model_data = {}
         if hasattr(bundle.obj, 'pk'):
-            kwargs['instance'] = bundle.obj
+            if issubclass(self.form_class, ModelForm):
+                kwargs['instance'] = bundle.obj 
             model_data = model_to_dict(bundle.obj)
 
         model_data.update(data)
@@ -97,7 +99,8 @@ class CleanedDataFormValidation(FormValidation):
         kwargs = {}
         model_data = {}
         if hasattr(bundle.obj, 'pk'):
-            kwargs['instance'] = bundle.obj
+            if issubclass(self.form_class, ModelForm):
+                kwargs['instance'] = bundle.obj 
             model_data = model_to_dict(bundle.obj)
 
         model_data.update(data)
