@@ -412,7 +412,6 @@ class Resource(object):
         """
         allowed_methods = getattr(self._meta, "%s_allowed_methods" % request_type, None)
         request_method = self.method_check(request, allowed=allowed_methods)
-
         method = getattr(self, "%s_%s" % (request_method, request_type), None)
 
         if method is None:
@@ -1023,7 +1022,7 @@ class Resource(object):
 
     def rollback(self, bundles):
         """
-        Given the list of bundles, delete all objects pertaining to those
+        Given the list of bundles, delete all objects pertaining to those`
         bundles.
 
         This needs to be implemented at the user level. No exceptions should
@@ -1098,7 +1097,6 @@ class Resource(object):
 
         if not 'objects' in deserialized:
             raise BadRequest("Invalid data sent.")
-
         self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
         bundles_seen = []
 
@@ -1112,7 +1110,6 @@ class Resource(object):
             except ImmediateHttpResponse:
                 self.rollback(bundles_seen)
                 raise
-
             self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
             bundles_seen.append(bundle)
 
@@ -1787,17 +1784,25 @@ class ModelResource(Resource):
         """
         A ORM-specific implementation of ``obj_create``.
         """
+
         bundle.obj = self._meta.object_class()
 
         for key, value in kwargs.items():
             setattr(bundle.obj, key, value)
 
+        # FIXME: All this saving and full_hydrate seem wrong.
+        bundle = self.full_hydrate(bundle)
+
+        # Save the main object.
+        bundle.obj.save()
+
+        # Note do this so that the nested object get the parent id.
         bundle = self.full_hydrate(bundle)
 
         # Save FKs just in case.
         self.save_related(bundle)
 
-        # Save the main object.
+        # After saving related object we may need to update the parent again.
         bundle.obj.save()
 
         # Now pick up the M2M bits.
@@ -1925,7 +1930,7 @@ class ModelResource(Resource):
             if not field_object.attribute:
                 continue
 
-            if field_object.blank:
+            if field_object.blank and not bundle.data.has_key(field_name):
                 continue
 
             # Get the object.

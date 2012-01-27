@@ -28,7 +28,7 @@ class FilteringErrorsTestCase(TestCase):
                                                       'created__gte':'foo-baz-bar'})
         self.assertEqual(resp.status_code, 400)
 
-class CreatingNestResouceValidationTestCase(TestCase):
+class PostNestResouceValidationTestCase(TestCase):
     urls = 'validation.api.urls'
 
     def test_valid_data(self):
@@ -59,32 +59,83 @@ class CreatingNestResouceValidationTestCase(TestCase):
         self.assertEqual(set(['title', 'annotated_note']), set(json.loads(resp.content).keys()))
 
 
-# class UpdatingNestResouceValidationTestCase(TestCase):
-#     urls = 'validation.api.urls'
+class PutDetailNestResouceValidationTestCase(TestCase):
+    urls = 'validation.api.urls'
 
-#     def test_valid_data(self):
-#         data = json.dumps({
-#             'title' : 'Test Title',
-#             'slug' : 'test-title',
-#             'content' : 'This is the content',
-#             'user' : {'pk' : 1}, # loaded from fixtures
-#             'annotated_note' : {'annotations' : 'This is an annotations'},
-#         })
+    def test_valid_data(self):
+        data = json.dumps({
+            'title' : 'Test Title',
+            'slug' : 'test-title',
+            'content' : 'This is the content',
+            'annotated_note' : {'annotations' : 'This is another annotations'},
+        })
 
-#         resp = self.client.post('/api/v1/notes/', data=data, content_type='application/json')
-#         import ipdb; ipdb.set_trace() # FIXME: Remove debugger
-#         self.assertEqual(resp.status_code, 201)
+        resp = self.client.put('/api/v1/notes/1/', data=data, content_type='application/json')
+        self.assertEqual(resp.status_code, 204)
+        note = json.loads(self.client.get('/api/v1/notes/1/', content_type='application/json').content)
+        self.assertTrue(note['annotated_note'])
 
-#     def test_invalid_data(self):
-#         data = json.dumps({
-#             'title' : '',
-#             'slug' : 'test-title',
-#             'content' : 'This is the content',
-#             'user' : {'pk' : 1}, # loaded from fixtures
-#             'annotated_note' : {'annotations' : ''},
-#         })
+    def test_invalid_data(self):
+        data = json.dumps({
+            'title' : '',
+            'slug' : '',
+            'content' : 'This is the content',
+            'annotated_note' : {'annotations' : None},
+        })
 
-#         resp = self.client.post('/api/v1/notes/', data=data, content_type='application/json')
-#         self.assertEqual(resp.status_code, 400)
-#         self.assertEqual(set(['title', 'annotated_note']), set(json.loads(resp.content).keys()))
+        resp = self.client.put('/api/v1/notes/1/', data=data, content_type='application/json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(set(['title', 'annotated_note', 'slug']), set(json.loads(resp.content).keys()))
 
+
+class PutListNestResouceValidationTestCase(TestCase):
+    urls = 'validation.api.urls'
+
+    def test_valid_data(self):
+        data = json.dumps({'objects' : [
+            {
+                'pk' : 1,
+                'title' : 'Test Title',
+                'slug' : 'test-title',
+                'content' : 'This is the content',
+                'annotated_note' : {'annotations' : 'This is another annotations'},
+                'user' : {'pk' : 1}
+            },
+            {
+                'pk' : 2,
+                'title' : 'Test Title',
+                'slug' : 'test-title',
+                'content' : 'This is the content',
+                'annotated_note' : {'annotations' : 'This is the third annotations'},
+                'user' : {'pk' : 1}
+            }
+
+        ]})
+
+        resp = self.client.put('/api/v1/notes/', data=data, content_type='application/json')
+        self.assertEqual(resp.status_code, 204)
+        note = json.loads(self.client.get('/api/v1/notes/1/', content_type='application/json').content)
+        self.assertTrue(note['annotated_note'])
+        note = json.loads(self.client.get('/api/v1/notes/2/', content_type='application/json').content)
+        self.assertTrue(note['annotated_note'])
+
+    def test_invalid_data(self):
+        data = json.dumps({'objects' : [
+            {
+                'pk' : 1,
+                'title' : 'Test Title',
+                'slug' : 'test-title',
+                'annotated_note' : {'annotations' : None},
+                'user' : {'pk' : 1}
+            },
+            {
+                'pk' : 2,
+                'title' : 'Test Title',
+                'annotated_note' : {'annotations' : None},
+                'user' : {'pk' : 1}
+            }
+        ]})
+
+        resp = self.client.put('/api/v1/notes/', data=data, content_type='application/json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(set(['content', 'annotated_note']), set(json.loads(resp.content).keys()))
