@@ -20,7 +20,7 @@ class Note(models.Model):
         return super(Note, self).save(*args, **kwargs)
 
 class AnnotatedNote(models.Model):
-    note = models.OneToOneField(Note, related_name='annotated', null=True)
+    note = models.OneToOneField(Note, related_name='annotated')
     annotations = models.TextField()
 
     def __unicode__(self):

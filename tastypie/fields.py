@@ -148,7 +148,6 @@ class ApiField(object):
                 # Check for it.
                 if bundle.related_obj and bundle.related_name in (self.attribute, self.instance_name):
                     return bundle.related_obj
-
             if self.blank:
                 return None
             elif self.attribute and getattr(bundle.obj, self.attribute, None):
