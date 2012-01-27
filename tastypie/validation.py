@@ -1,5 +1,5 @@
 from django.core.exceptions import ImproperlyConfigured
-
+from django.forms.models import model_to_dict
 
 class Validation(object):
     """
@@ -53,7 +53,14 @@ class FormValidation(Validation):
         if data is None:
             data = {}
 
-        form = self.form_class(data)
+        kwargs = {}
+        model_data = {}
+        if hasattr(bundle.obj, 'pk'):
+            kwargs['instance'] = bundle.obj
+            model_data = model_to_dict(bundle.obj)
+
+        model_data.update(data)
+        form = self.form_class(model_data, **kwargs)
 
         if form.is_valid():
             return {}
@@ -87,7 +94,14 @@ class CleanedDataFormValidation(FormValidation):
         if data is None:
             data = {}
 
-        form = self.form_class(data)
+        kwargs = {}
+        model_data = {}
+        if hasattr(bundle.obj, 'pk'):
+            kwargs['instance'] = bundle.obj
+            model_data = model_to_dict(bundle.obj)
+
+        model_data.update(data)
+        form = self.form_class(model_data, **kwargs)
 
         if form.is_valid():
             # We're different here & relying on having a reference to the same

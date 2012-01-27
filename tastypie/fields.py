@@ -141,7 +141,6 @@ class ApiField(object):
         """
         if self.readonly:
             return None
-
         if not bundle.data.has_key(self.instance_name):
             if getattr(self, 'is_related', False) and not getattr(self, 'is_m2m', False):
                 # We've got an FK (or alike field) & a possible parent object.
@@ -555,7 +554,9 @@ class RelatedField(ApiField):
 
                 return fk_resource.obj_update(fk_bundle, **lookup_kwargs)
             except NotFound:
-                return fk_resource.full_hydrate(fk_bundle)
+                fk_bundle = fk_resource.full_hydrate(fk_bundle)
+                fk_resource.is_valid(fk_bundle, request)
+                return fk_bundle
         except MultipleObjectsReturned:
             return fk_resource.full_hydrate(fk_bundle)
 

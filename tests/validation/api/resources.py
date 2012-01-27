@@ -3,7 +3,7 @@ from tastypie import fields
 from tastypie.constants import ALL
 from tastypie.resources import ModelResource
 from tastypie.authorization import Authorization
-from basic.models import Note, AnnotatedNote
+from basic.models import Note, AnnotatedNote, UserForm
 from django import forms
 from tastypie.validation import FormValidation
 
@@ -16,6 +16,7 @@ class UserResource(ModelResource):
         resource_name = 'users'
         queryset = User.objects.all()
         authorization = Authorization()
+        validation = FormValidation(form_class=UserForm)
 
 class AnnotatedNoteForm(forms.ModelForm):
 

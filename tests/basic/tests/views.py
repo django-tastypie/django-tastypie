@@ -4,6 +4,9 @@ try:
     import json
 except ImportError:
     import simplejson as json
+import django
+if django.get_version() < '1.2':
+    import monkeypatch_django_test_put
 
 
 class ViewsTestCase(TestCase):

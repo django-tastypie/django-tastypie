@@ -202,7 +202,7 @@ class Resource(object):
             except (BadRequest, fields.ApiFieldError), e:
                 return http.HttpBadRequest(e.args[0])
             except ValidationError, e:
-                return http.HttpBadRequest(', '.join(e.messages))
+                return http.HttpBadRequest(', '.join(getattr(e,'messages',e)))
             except Exception, e:
                 if hasattr(e, 'response'):
                     return e.response
@@ -682,7 +682,6 @@ class Resource(object):
             bundle.obj = self._meta.object_class()
 
         bundle = self.hydrate(bundle)
-
         for field_name, field_object in self.fields.items():
             if field_object.readonly is True:
                 continue
@@ -995,16 +994,16 @@ class Resource(object):
         """
         related_data = {}
         errors = {}
-        for field_name, field_object in self.fields.items():
-            # Only care about validating if we have data to validate.
-            if getattr(field_object, 'is_related', False) and bundle.data.has_key(field_name) \
-                and isinstance(bundle.data[field_name], dict):
-                resource = field_object.get_related_resource(None)
-                related_data[field_name] = bundle.data.pop(field_name)
-                fbundle = resource.build_bundle(data=related_data[field_name], request=request)
-                field_errors = resource._meta.validation.is_valid(fbundle, request)
-                if field_errors:
-                    errors[field_name] = field_errors
+        # for field_name, field_object in self.fields.items():
+        #     # Only care about validating if we have data to validate.
+        #     if getattr(field_object, 'is_related', False) and bundle.data.has_key(field_name) \
+        #         and isinstance(bundle.data[field_name], dict):
+        #         resource = field_object.get_related_resource(None)
+        #         related_data[field_name] = bundle.data.pop(field_name)
+        #         fbundle = resource.build_bundle(data=related_data[field_name], request=request)
+        #         field_errors = resource._meta.validation.is_valid(fbundle, request)
+        #         if field_errors:
+        #             errors[field_name] = field_errors
 
         errors.update(self._meta.validation.is_valid(bundle, request))
 
@@ -1108,12 +1107,11 @@ class Resource(object):
             # Attempt to be transactional, deleting any previously created
             # objects if validation fails.
             try:
-                self.is_valid(bundle, request)
+                self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
+                bundles_seen.append(bundle)
             except ImmediateHttpResponse:
                 self.rollback(bundles_seen)
                 raise
-            self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
-            bundles_seen.append(bundle)
 
         if not self._meta.always_return_data:
             return http.HttpNoContent()
@@ -1145,7 +1143,6 @@ class Resource(object):
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
-        self.is_valid(bundle, request)
 
         try:
             updated_bundle = self.obj_update(bundle, request=request, **self.remove_api_resource_names(kwargs))
@@ -1181,7 +1178,6 @@ class Resource(object):
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
-        self.is_valid(bundle, request)
         updated_bundle = self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
         location = self.get_resource_uri(updated_bundle)
 
@@ -1300,14 +1296,12 @@ class Resource(object):
                     data = self.alter_deserialized_detail_data(request, data)
                     bundle = self.build_bundle(data=dict_strip_unicode_keys(data))
                     bundle.obj.pk = obj.pk
-                    self.is_valid(bundle, request)
                     self.obj_create(bundle, request=request)
             else:
                 # There's no resource URI, so this is a create call just
                 # like a POST to the list resource.
                 data = self.alter_deserialized_detail_data(request, data)
                 bundle = self.build_bundle(data=dict_strip_unicode_keys(data))
-                self.is_valid(bundle, request)
                 self.obj_create(bundle, request=request)
 
         if len(deserialized.get('deleted_objects', [])) and 'delete' not in self._meta.detail_allowed_methods:
@@ -1362,7 +1356,6 @@ class Resource(object):
         # we're basically in the same spot as a PUT request. SO the rest of this
         # function is cribbed from put_detail.
         self.alter_deserialized_detail_data(request, original_bundle.data)
-        self.is_valid(original_bundle, request)
         return self.obj_update(original_bundle, request=request, pk=original_bundle.obj.pk)
 
     def get_schema(self, request, **kwargs):
@@ -1793,6 +1786,7 @@ class ModelResource(Resource):
             setattr(bundle.obj, key, value)
 
         bundle = self.full_hydrate(bundle)
+        self.is_valid(bundle,request)
 
         bundle.obj.save()
 
@@ -1839,6 +1833,7 @@ class ModelResource(Resource):
                 raise NotFound("A model instance matching the provided arguments could not be found.")
 
         bundle = self.full_hydrate(bundle)
+        self.is_valid(bundle,request)
 
         # Save FKs just in case.
         self.save_related(bundle)
