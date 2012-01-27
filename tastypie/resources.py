@@ -1790,14 +1790,9 @@ class ModelResource(Resource):
         for key, value in kwargs.items():
             setattr(bundle.obj, key, value)
 
-        # FIXME: All this saving and full_hydrate seem wrong.
         bundle = self.full_hydrate(bundle)
 
-        # Save the main object.
         bundle.obj.save()
-
-        # Note do this so that the nested object get the parent id.
-        bundle = self.full_hydrate(bundle)
 
         # Save FKs just in case.
         self.save_related(bundle)
@@ -1941,6 +1936,9 @@ class ModelResource(Resource):
 
             # Because sometimes it's ``None`` & that's OK.
             if related_obj:
+                if field_object.related_name:
+                    setattr(related_obj, field_object.related_name, bundle.obj)
+
                 related_obj.save()
                 setattr(bundle.obj, field_object.attribute, related_obj)
 

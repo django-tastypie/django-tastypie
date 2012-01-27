@@ -39,7 +39,7 @@ class NoteForm(forms.ModelForm):
 
 class NoteResource(ModelResource):
     user = fields.ForeignKey(UserResource, 'user')
-    annotated_note = fields.ForeignKey(AnnotatedNoteResource, 'annotated', null=True, blank=True, full=True)
+    annotated_note = fields.ForeignKey(AnnotatedNoteResource, 'annotated', related_name='note', null=True, blank=True, full=True)
 
     class Meta:
         resource_name = 'notes'
