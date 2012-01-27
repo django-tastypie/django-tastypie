@@ -996,7 +996,9 @@ class Resource(object):
         related_data = {}
         errors = {}
         for field_name, field_object in self.fields.items():
-            if getattr(field_object, 'is_related', False) and bundle.data.has_key(field_name):
+            # Only care about validating if we have data to validate.
+            if getattr(field_object, 'is_related', False) and bundle.data.has_key(field_name) \
+                and isinstance(bundle.data[field_name], dict):
                 resource = field_object.get_related_resource(None)
                 related_data[field_name] = bundle.data.pop(field_name)
                 fbundle = resource.build_bundle(data=related_data[field_name], request=request)
