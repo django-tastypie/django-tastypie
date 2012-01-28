@@ -25,7 +25,6 @@ class AnnotatedNoteForm(forms.ModelForm):
         exclude = ('note',)
 
 class AnnotatedNoteResource(ModelResource):
-    note = fields.ForeignKey('validation.api.resources.NoteResource', 'note', related_name='annotated')
 
     class Meta:
         resource_name = 'annotated'
