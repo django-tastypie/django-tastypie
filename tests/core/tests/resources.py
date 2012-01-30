@@ -586,8 +586,20 @@ class ResourceTestCase(TestCase):
         # No allowed methods. Kaboom.
         self.assertRaises(ImmediateHttpResponse, basic.method_check, request)
 
+        try:
+            basic.method_check(request)
+            self.fail("Should have thrown an exception.")
+        except ImmediateHttpResponse, e:
+            self.assertEqual(e.response['Allow'], '')
+
         # Not an allowed request.
         self.assertRaises(ImmediateHttpResponse, basic.method_check, request, allowed=['post'])
+
+        try:
+            basic.method_check(request, allowed=['post'])
+            self.fail("Should have thrown an exception.")
+        except ImmediateHttpResponse, e:
+            self.assertEqual(e.response['Allow'], 'POST')
 
         # Allowed (single).
         request_method = basic.method_check(request, allowed=['get'])
@@ -603,6 +615,12 @@ class ResourceTestCase(TestCase):
 
         # Not an allowed request.
         self.assertRaises(ImmediateHttpResponse, basic.method_check, request, allowed=['get'])
+
+        try:
+            basic.method_check(request, allowed=['get', 'put', 'delete', 'patch'])
+            self.fail("Should have thrown an exception.")
+        except ImmediateHttpResponse, e:
+            self.assertEqual(e.response['Allow'], 'GET,PUT,DELETE,PATCH')
 
         # Allowed (multiple).
         request_method = basic.method_check(request, allowed=['post', 'get', 'put'])
