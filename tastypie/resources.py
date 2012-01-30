@@ -479,15 +479,17 @@ class Resource(object):
             allowed = []
 
         request_method = request.method.lower()
+        allows = ','.join(map(str.upper, allowed))
 
         if request_method == "options":
-            allows = ','.join(map(str.upper, allowed))
             response = HttpResponse(allows)
             response['Allow'] = allows
             raise ImmediateHttpResponse(response=response)
 
         if not request_method in allowed:
-            raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
+            response = http.HttpMethodNotAllowed(allows)
+            response['Allow'] = allows
+            raise ImmediateHttpResponse(response=response)
 
         return request_method
 
