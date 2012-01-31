@@ -694,8 +694,8 @@ class Resource(object):
                 value = field_object.hydrate(bundle)
 
                 # NOTE: We only get back a bundle when it is related field.
-                if isinstance(value, Bundle) and value.errors:
-                    bundle.errors[field_name] = value.errors
+                if isinstance(value, Bundle) and value.errors.get(field_name):
+                    bundle.errors[field_name] = value.errors[field_name]
 
                 if value is not None or field_object.null:
                     # We need to avoid populating M2M data here as that will
@@ -1004,30 +1004,11 @@ class Resource(object):
         If validation fails, an error is raised with the error messages
         serialized inside it.
         """
-        related_data = {}
-        errors = {}
-        # for field_name, field_object in self.fields.items():
-        #     # Only care about validating if we have data to validate.
-        #     if getattr(field_object, 'is_related', False) and bundle.data.has_key(field_name) \
-        #         and isinstance(bundle.data[field_name], dict):
-        #         resource = field_object.get_related_resource(None)
-        #         related_data[field_name] = bundle.data.pop(field_name)
-        #         fbundle = resource.build_bundle(data=related_data[field_name], request=request)
-        #         field_errors = resource._meta.validation.is_valid(fbundle, request)
-        #         if field_errors:
-        #             errors[field_name] = field_errors
-
-        errors.update(self._meta.validation.is_valid(bundle, request))
-        bundle.errors.update(errors)
-
-        return bool(errors)
-
-        # bundle.data.update(related_data)
-
-        # errors = self._meta.validation.is_valid(bundle, request)
-
-        # TODO: Move in to responding method.
-
+        errors = self._meta.validation.is_valid(bundle, request)
+        if errors:
+            bundle.errors[self._meta.resource_name] = errors
+            return False
+        return True
 
     def rollback(self, bundles):
         """

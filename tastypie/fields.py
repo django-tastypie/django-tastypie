@@ -551,7 +551,7 @@ class RelatedField(ApiField):
 
                 if not lookup_kwargs:
                     raise NotFound()
-                return fk_resource.obj_update(fk_bundle, **lookup_kwargs)
+                return fk_resource.obj_update(fk_bundle, skip_errors=True, **lookup_kwargs)
             except NotFound:
                 fk_bundle = fk_resource.full_hydrate(fk_bundle)
                 fk_resource.is_valid(fk_bundle, request)
