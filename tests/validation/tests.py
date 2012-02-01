@@ -15,22 +15,22 @@ except ImportError:
 
 from basic.models import Note
 
-# class FilteringErrorsTestCase(TestCase):
-#     urls = 'validation.api.urls'
+class FilteringErrorsTestCase(TestCase):
+    urls = 'validation.api.urls'
 
-#     def test_valid_date(self):
-#         resp = self.client.get('/api/v1/notes/', data={'format': 'json',
-#                                                       'created__gte':'2010-03-31'})
-#         self.assertEqual(resp.status_code, 200)
-#         deserialized = json.loads(resp.content)
-#         self.assertEqual(len(deserialized['objects']),
-#                          Note.objects.filter(created__gte='2010-03-31').count())
+    def test_valid_date(self):
+        resp = self.client.get('/api/v1/notes/', data={'format': 'json',
+                                                      'created__gte':'2010-03-31'})
+        self.assertEqual(resp.status_code, 200)
+        deserialized = json.loads(resp.content)
+        self.assertEqual(len(deserialized['objects']),
+                         Note.objects.filter(created__gte='2010-03-31').count())
 
 
-#     def test_invalid_date(self):
-#         resp = self.client.get('/api/v1/notes/', data={'format': 'json',
-#                                                       'created__gte':'foo-baz-bar'})
-#         self.assertEqual(resp.status_code, 400)
+    def test_invalid_date(self):
+        resp = self.client.get('/api/v1/notes/', data={'format': 'json',
+                                                      'created__gte':'foo-baz-bar'})
+        self.assertEqual(resp.status_code, 400)
 
 class PostNestResouceValidationTestCase(TestCase):
     urls = 'validation.api.urls'
@@ -45,7 +45,6 @@ class PostNestResouceValidationTestCase(TestCase):
         })
 
         resp = self.client.post('/api/v1/notes/', data=data, content_type='application/json')
-        print resp.content
         self.assertEqual(resp.status_code, 201)
         note = json.loads(self.client.get(resp['location']).content)
         self.assertTrue(note['annotated'])
@@ -61,7 +60,8 @@ class PostNestResouceValidationTestCase(TestCase):
 
         resp = self.client.post('/api/v1/notes/', data=data, content_type='application/json')
         self.assertEqual(resp.status_code, 400)
-        self.assertEqual(set(['title', 'annotated']), set(json.loads(resp.content).keys()))
+        self.assertEqual({'notes': {'title': ['This field is required.']},
+            'annotated': {'annotations': ['This field is required.']}}, json.loads(resp.content))
 
 
 class PutDetailNestResouceValidationTestCase(TestCase):
@@ -91,7 +91,9 @@ class PutDetailNestResouceValidationTestCase(TestCase):
 
         resp = self.client.put('/api/v1/notes/1/', data=data, content_type='application/json')
         self.assertEqual(resp.status_code, 400)
-        self.assertEqual(set(['title', 'annotated', 'slug']), set(json.loads(resp.content).keys()))
+        self.assertEqual({'notes': {'slug': ['This field is required.'],
+        'title': ['This field is required.']},
+        'annotated': {'annotations': ['This field is required.']}}, json.loads(resp.content))
 
 
 class PutListNestResouceValidationTestCase(TestCase):
@@ -125,24 +127,24 @@ class PutListNestResouceValidationTestCase(TestCase):
         note = json.loads(self.client.get('/api/v1/notes/2/', content_type='application/json').content)
         self.assertTrue(note['annotated'])
 
-    # def test_invalid_data(self):
-    #     # FIXME: Should show errors for all.
-    #     data = json.dumps({'objects' : [
-    #         {
-    #             'pk' : 1,
-    #             'title' : 'Test Title',
-    #             'slug' : 'test-title',
-    #             'annotated' : {'annotations' : None},
-    #             'user' : {'pk' : 1}
-    #         },
-    #         {
-    #             'pk' : 2,
-    #             'title' : 'Test Title',
-    #             'annotated' : {'annotations' : None},
-    #             'user' : {'pk' : 1}
-    #         }
-    #     ]})
+    def test_invalid_data(self):
+        data = json.dumps({'objects' : [
+            {
+                'pk' : 1,
+                'title' : 'Test Title',
+                'slug' : 'test-title',
+                'annotated' : {'annotations' : None},
+                'user' : {'pk' : 1}
+            },
+            {
+                'pk' : 2,
+                'title' : 'Test Title',
+                'annotated' : {'annotations' : None},
+                'user' : {'pk' : 1}
+            }
+        ]})
 
-    #     resp = self.client.put('/api/v1/notes/', data=data, content_type='application/json')
-    #     self.assertEqual(resp.status_code, 400)
-    #     self.assertEqual(set(['content', 'annotated']), set(json.loads(resp.content).keys()))
+        resp = self.client.put('/api/v1/notes/', data=data, content_type='application/json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual({'notes': {'content': ['This field is required.']},
+            'annotated': {'annotations': ['This field is required.']}}, json.loads(resp.content))
