@@ -14,3 +14,4 @@ from core.tests.serializers import *
 from core.tests.throttle import *
 from core.tests.utils import *
 from core.tests.validation import *
+from core.tests.xhmo import *

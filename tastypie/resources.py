@@ -478,7 +478,15 @@ class Resource(object):
         if allowed is None:
             allowed = []
 
+        # Normally we'll just use request.method to determine the request
+        # method. However, since some bad clients can't support all HTTP
+        # methods, we allow overloading POST requests with a
+        # X-HTTP-Method-Override header. This allows POST requests to
+        # masquerade as different methods.
         request_method = request.method.lower()
+        if request_method == 'post' and 'HTTP_X_HTTP_METHOD_OVERRIDE' in request.META:
+            request_method = request.META['HTTP_X_HTTP_METHOD_OVERRIDE'].lower()
+
         allows = ','.join(map(str.upper, allowed))
 
         if request_method == "options":
