@@ -377,9 +377,10 @@ A simple example::
             queryset = Note.objects.all()
 
         def hydrate_title(self, bundle):
-            return bundle.data['title'].lower()
+            bundle.data['title'] = bundle.data['title'].lower()
+            return bundle
 
-The return value is updated in the ``bundle.obj``.
+The return value is the ``bundle``.
 
 Per-field ``hydrate``
 ~~~~~~~~~~~~~~~~~~~~~
