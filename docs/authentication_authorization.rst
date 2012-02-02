@@ -68,6 +68,17 @@ As an alternative to requiring sensitive data like a password, the
 machine-generated api key. Tastypie ships with a special ``Model`` just for
 this purpose, so you'll need to ensure ``tastypie`` is in ``INSTALLED_APPS``.
 
+To use this mechanism, the end user can either specify an ``Authorization``
+header or pass the ``username/api_key`` combination as ``GET/POST`` parameters.
+Examples::
+
+  # As a header
+  # Format is ``Authorization: ApiKey <username>:<api_key>
+  Authorization: ApiKey daniel:204db7bcfafb2deb7506b89eb3b9b715b09905c8
+
+  # As GET params
+  http://127.0.0.1:8000/api/v1/entries/?username=daniel&api_key=204db7bcfafb2deb7506b89eb3b9b715b09905c8
+
 Tastypie includes a signal function you can use to auto-create ``ApiKey``
 objects. Hooking it up looks like::
 
@@ -114,6 +125,8 @@ consumption.
   flow & that the credentials (Nonce/token/etc) are simply being passed to it.
   It merely checks that the credentials are valid. No requests are made
   to remote services as part of this authentication class.
+
+.. _mechanize: http://pypi.python.org/pypi/mechanize/
 
 
 Authorization Options

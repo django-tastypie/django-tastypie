@@ -7,7 +7,7 @@ from django.utils import simplejson
 from django.utils.encoding import force_unicode
 from tastypie.bundle import Bundle
 from tastypie.exceptions import UnsupportedFormat
-from tastypie.utils import format_datetime, format_date, format_time
+from tastypie.utils import format_datetime, format_date, format_time, make_naive
 try:
     import lxml
     from lxml.etree import parse as parse_xml
@@ -120,6 +120,7 @@ class Serializer(object):
 
         Default is ``iso-8601``, which looks like "2010-12-16T03:02:14".
         """
+        data = make_naive(data)
         if self.datetime_formatting == 'rfc-2822':
             return format_datetime(data)
 

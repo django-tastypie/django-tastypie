@@ -29,12 +29,14 @@ A common pattern is needing to limit a queryset by something that changes
 per-request, for instance the date/time. You can accomplish this by lightly
 modifying ``get_object_list``::
 
+    from tastypie.utils import now
+
     class MyResource(ModelResource):
         class Meta:
             queryset = MyObject.objects.all()
 
         def get_object_list(self, request):
-            return super(MyResource, self).get_object_list(request).filter(start_date__gte=datetime.datetime.now)
+            return super(MyResource, self).get_object_list(request).filter(start_date__gte=now)
 
 
 Using Your ``Resource`` In Regular Views
@@ -292,3 +294,44 @@ values in camelCase instead::
 
         return underscored_data
 
+Determining format via URL
+--------------------------
+
+Sometimes it's required to allow selecting the response format by
+specifying it in the API URL, for example ``/api/v1/users.json`` instead
+of ``/api/v1/users/?format=json``. The following snippet allows that kind
+of syntax additional to the default URL scheme::
+
+    # myapp/api/resources.py
+    class UserResource(ModelResource):
+        class Meta:
+            queryset = User.objects.all()
+
+        def override_urls(self):
+            """
+            Returns a URL scheme based on the default scheme to specify
+            the response format as a file extension, e.g. /api/v1/users.json
+            """
+            return [
+                url(r"^(?P<resource_name>%s)\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('dispatch_list'), name="api_dispatch_list"),
+                url(r"^(?P<resource_name>%s)/schema\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('get_schema'), name="api_get_schema"),
+                url(r"^(?P<resource_name>%s)/set/(?P<pk_list>\w[\w/;-]*)\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('get_multiple'), name="api_get_multiple"),
+                url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
+            ]
+
+        def determine_format(self, request):
+            """
+            Used to determine the desired format from the request.format
+            attribute.
+            """
+            if (hasattr(request, 'format') and
+                    request.format in self._meta.serializer.formats):
+                return self._meta.serializer.get_mime_for_format(request.format)
+            return super(UserResource, self).determine_format(request)
+
+        def wrap_view(self, view):
+            def wrapper(request, *args, **kwargs):
+                request.format = kwargs.pop('format', None)
+                wrapped_view = super(UserResource, self).wrap_view(view)
+                return wrapped_view(request, *args, **kwargs)
+            return wrapper
