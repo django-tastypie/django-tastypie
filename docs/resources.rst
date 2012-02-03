@@ -482,7 +482,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 -------------------
 
   Controls which paginator class the ``Resource`` should use. Default is
-  ``tastypie.paginator.Paginator()``.
+  ``tastypie.paginator.Paginator``.
 
 .. note::
 
