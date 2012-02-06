@@ -216,6 +216,11 @@ class Resource(object):
                 if settings.DEBUG and getattr(settings, 'TASTYPIE_FULL_DEBUG', False):
                     raise
 
+                # Re-raise the error to get a proper traceback when the error
+                # happend during a test case
+                if request.META.get('SERVER_NAME') == 'testserver':
+                    raise
+
                 # Rather than re-raising, we're going to things similar to
                 # what Django does. The difference is returning a serialized
                 # error message.

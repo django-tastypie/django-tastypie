@@ -35,6 +35,10 @@ class ViewsTestCase(TestCase):
         self.assertEqual(len(deserialized['objects']), 2)
         self.assertEqual([obj['title'] for obj in deserialized['objects']], [u'Another Post', u'First Post!'])
 
+    def test_get_test_client_error(self):
+        # The test server should re-raise exceptions to make debugging easier.
+        self.assertRaises(Exception, self.client.get, '/api/v2/busted/', data={'format': 'json'})
+
     def test_posts(self):
         request = HttpRequest()
         post_data = '{"content": "A new post.", "is_active": true, "title": "New Title", "slug": "new-title", "user": "/api/v1/users/1/"}'
