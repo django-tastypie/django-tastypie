@@ -137,6 +137,48 @@ class ExplicitM2MResourceRegressionTest(TestCase):
 
         # and check whether the extradata is present
         self.assertEqual(data['extradata']['name'], u'additional')
+        self.assertTrue(isinstance(data['extradata']['tag']['extradata']['tag'], dict))
+
+        resource = api.canonical_resource_for('limitedtag')
+        resp = resource.wrap_view('dispatch_detail')(request, pk=self.tag_1.pk)
+        data = json.loads(resp.content)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['extradata']['tag']['extradata']['tag'], '/v1/tag/1/')
+        
+    
+    def test_depth_param(self):
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+        request.GET['depth'] = '2'
+
+        # Verify the explicit 'through' relationships has been created correctly
+        resource = api.canonical_resource_for('taggabletag')
+        resp = resource.wrap_view('dispatch_detail')(request, pk=self.taggabletag_1.pk)
+        data = json.loads(resp.content)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['tag']['extradata'], '/v1/extradata/1/')
+        self.assertEqual(data['taggable']['taggabletags'][0], '/v1/taggabletag/1/')
+
+        resource = api.canonical_resource_for('taggable')
+        resp = resource.wrap_view('dispatch_detail')(request, pk=self.taggable_1.pk)
+        data = json.loads(resp.content)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['name'], 'exam')
+        self.assertEqual(data['taggabletags'][0]['tag'], '/v1/tag/1/')
+
+        resource = api.canonical_resource_for('tag')
+        resp = resource.wrap_view('dispatch_detail')(request, pk=self.tag_1.pk)
+        data = json.loads(resp.content)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['name'], 'important')
+        self.assertEqual(data['taggabletags'][0]['tag'], '/v1/tag/1/')
+
+        resource = api.canonical_resource_for('limitedtag')
+        resp = resource.wrap_view('dispatch_detail')(request, pk=self.tag_1.pk)
+        data = json.loads(resp.content)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(data['extradata']['tag'], '/v1/tag/1/')
 
 
     def test_post_new_tag(self):
