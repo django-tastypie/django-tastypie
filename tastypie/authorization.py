@@ -1,3 +1,6 @@
+import operator
+
+
 class Authorization(object):
     """
     A base class that provides no permissions checking.
@@ -55,23 +58,24 @@ class DjangoAuthorization(Authorization):
         if not klass or not getattr(klass, '_meta', None):
             return True
 
-        permission_codes = {
-            'POST': '%s.add_%s',
-            'PUT': '%s.change_%s',
-            'DELETE': '%s.delete_%s',
+        permission_map = {
+            'POST': ['%s.add_%s'],
+            'PUT': ['%s.change_%s'],
+            'DELETE': ['%s.delete_%s'],
+            'PATCH': ['%s.add_%s', '%s.change_%s', '%s.delete_%s'],
         }
+        permission_codes = []
 
         # cannot map request method to permission code name
-        if request.method not in permission_codes:
+        if request.method not in permission_map:
             return True
 
-        permission_code = permission_codes[request.method] % (
-            klass._meta.app_label,
-            klass._meta.module_name)
+        for perm in permission_map[request.method]:
+            permission_codes.append(perm % (klass._meta.app_label, klass._meta.module_name))
 
         # user must be logged in to check permissions
         # authentication backend must set request.user
         if not hasattr(request, 'user'):
             return False
 
-        return request.user.has_perm(permission_code)
+        return request.user.has_perms(permission_codes)
