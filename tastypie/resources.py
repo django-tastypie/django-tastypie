@@ -1799,24 +1799,19 @@ class ModelResource(Resource):
         if not bundle.obj or not bundle.obj.pk:
             # Attempt to hydrate data from kwargs before doing a lookup for the object.
             # This step is needed so certain values (like datetime) will pass model validation.
-            try:
-                bundle.obj = self.get_object_list(request).model()
-                bundle.data.update(kwargs)
-                bundle = self.full_hydrate(bundle)
-                lookup_kwargs = kwargs.copy()
 
-                for key in kwargs.keys():
-                    if key == 'pk':
-                        continue
-                    elif getattr(bundle.obj, key, NOT_AVAILABLE) is not NOT_AVAILABLE:
-                        lookup_kwargs[key] = getattr(bundle.obj, key)
-                    else:
-                        del lookup_kwargs[key]
-            except:
-                # if there is trouble hydrating the data, fall back to just
-                # using kwargs by itself (usually it only contains a "pk" key
-                # and this will work fine.
-                lookup_kwargs = kwargs
+            bundle.obj = self.get_object_list(request).model()
+            bundle.data.update(kwargs)
+            bundle = self.full_hydrate(bundle)
+            lookup_kwargs = kwargs.copy()
+
+            for key in kwargs.keys():
+                if key == 'pk':
+                    continue
+                elif getattr(bundle.obj, key, NOT_AVAILABLE) is not NOT_AVAILABLE:
+                    lookup_kwargs[key] = getattr(bundle.obj, key)
+                else:
+                    del lookup_kwargs[key]
 
             try:
                 bundle.obj = self.obj_get(request, **lookup_kwargs)
