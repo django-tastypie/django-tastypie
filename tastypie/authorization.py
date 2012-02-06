@@ -44,17 +44,18 @@ class ReadOnlyAuthorization(Authorization):
 
 class DjangoAuthorization(Authorization):
     """
-    Uses permission checking from ``django.contrib.auth`` to map ``POST``,
-    ``PUT``, and ``DELETE`` to their equivalent django auth permissions.
+    Uses permission checking from ``django.contrib.auth`` to map
+    ``POST / PUT / DELETE / PATCH`` to their equivalent Django auth
+    permissions.
     """
     def is_authorized(self, request, object=None):
-        # GET is always allowed
-        if request.method == 'GET':
+        # GET-style methods are always allowed.
+        if request.method in ('GET', 'OPTIONS', 'HEAD'):
             return True
 
         klass = self.resource_meta.object_class
 
-        # cannot check permissions if we don't know the model
+        # If it doesn't look like a model, we can't check permissions.
         if not klass or not getattr(klass, '_meta', None):
             return True
 
@@ -66,15 +67,15 @@ class DjangoAuthorization(Authorization):
         }
         permission_codes = []
 
-        # cannot map request method to permission code name
+        # If we don't recognize the HTTP method, we don't know what
+        # permissions to check. Deny.
         if request.method not in permission_map:
-            return True
+            return False
 
         for perm in permission_map[request.method]:
             permission_codes.append(perm % (klass._meta.app_label, klass._meta.module_name))
 
-        # user must be logged in to check permissions
-        # authentication backend must set request.user
+        # User must be logged in to check permissions.
         if not hasattr(request, 'user'):
             return False
 
