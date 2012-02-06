@@ -58,6 +58,7 @@ class DjangoAuthorization(Authorization):
         permission_codes = {
             'POST': '%s.add_%s',
             'PUT': '%s.change_%s',
+            'PATCH': '%s.change_%s',
             'DELETE': '%s.delete_%s',
         }
 
