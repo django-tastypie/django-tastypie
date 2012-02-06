@@ -119,7 +119,7 @@ class DjangoAuthorizationTestCase(TestCase):
         request.user.user_permissions.add(self.change)
         request.user.user_permissions.add(self.delete)
 
-        for method in ('GET', 'POST', 'PUT', 'DELETE', 'PATCH'):
+        for method in ('GET', 'OPTIONS', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH'):
             request.method = method
             self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
 
@@ -150,3 +150,11 @@ class DjangoAuthorizationTestCase(TestCase):
         # Nuke the perm cache. :/
         del request.user._perm_cache
         self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
+
+    def test_unrecognized_method(self):
+        request = HttpRequest()
+        request.user = self.user
+
+        # Check a non-existent HTTP method.
+        request.method = 'EXPLODE'
+        self.assertFalse(DjangoNoteResource()._meta.authorization.is_authorized(request))
