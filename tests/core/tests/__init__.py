@@ -4,6 +4,7 @@ warnings.simplefilter('ignore', Warning)
 from core.tests.api import *
 from core.tests.authentication import *
 from core.tests.authorization import *
+from core.tests.objectperms import *
 from core.tests.cache import *
 from core.tests.commands import *
 from core.tests.fields import *
