@@ -64,6 +64,7 @@ class ResourceOptions(object):
     list_allowed_methods = None
     detail_allowed_methods = None
     limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)
+    max_limit = 1000
     api_name = None
     resource_name = None
     urlconf_namespace = None
@@ -1041,7 +1042,7 @@ class Resource(object):
         objects = self.obj_get_list(request=request, **self.remove_api_resource_names(kwargs))
         sorted_objects = self.apply_sorting(objects, options=request.GET)
 
-        paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri(), limit=self._meta.limit)
+        paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri(), limit=self._meta.limit, max_limit=self._meta.max_limit)
         to_be_serialized = paginator.page()
 
         # Dehydrate the bundles in preparation for serialization.
