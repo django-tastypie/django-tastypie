@@ -16,11 +16,11 @@ class PaginatorTestCase(TestCase):
         self.data_set = Note.objects.all()
         self.old_debug = settings.DEBUG
         settings.DEBUG = True
-    
+
     def tearDown(self):
         settings.DEBUG = self.old_debug
         super(PaginatorTestCase, self).tearDown()
-    
+
     def _get_query_count(self):
         try:
             from django.db import connections
@@ -32,9 +32,9 @@ class PaginatorTestCase(TestCase):
     def test_page1(self):
         reset_queries()
         self.assertEqual(len(self._get_query_count()), 0)
-        
+
         paginator = Paginator({}, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=0)
-        
+
         # REGRESSION: Check to make sure only part of the cache is full.
         # We used to run ``len()`` on the ``QuerySet``, which would populate
         # the entire result set. Owwie.
@@ -42,7 +42,7 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(len(self._get_query_count()), 1)
         # Should be nothing in the cache.
         self.assertEqual(paginator.objects._result_cache, None)
-        
+
         meta = paginator.page()['meta']
         self.assertEqual(meta['limit'], 2)
         self.assertEqual(meta['offset'], 0)
@@ -76,7 +76,7 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(meta['previous'], None)
         self.assertEqual(meta['next'], None)
         self.assertEqual(meta['total_count'], 6)
-    
+
     def test_all(self):
         paginator = Paginator({'limit': 0}, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=0)
         page = paginator.page()
@@ -87,7 +87,7 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(len(page['objects']), 6)
         self.assertFalse('previous' in meta)
         self.assertFalse('next' in meta)
-    
+
     def test_complex_get(self):
         request = {
             'slug__startswith': 'food',
@@ -119,6 +119,16 @@ class PaginatorTestCase(TestCase):
         paginator.limit = 'hAI!'
         self.assertRaises(BadRequest, paginator.get_limit)
 
+        # Test the max_limit.
+        paginator.limit = 1000
+        self.assertEqual(paginator.get_limit(), 1000)
+
+        paginator.limit = 1001
+        self.assertEqual(paginator.get_limit(), 1000)
+
+        paginator = Paginator({}, self.data_set, limit=20, offset=0, max_limit=10)
+        self.assertEqual(paginator.get_limit(), 10)
+
     def test_offset(self):
         paginator = Paginator({}, self.data_set, limit=20, offset=0)
 
@@ -136,14 +146,14 @@ class PaginatorTestCase(TestCase):
 
         paginator.offset = 'hAI!'
         self.assertRaises(BadRequest, paginator.get_offset)
-    
+
     def test_regression_nonqueryset(self):
         paginator = Paginator({}, ['foo', 'bar', 'baz'], limit=2, offset=0)
         # This would fail due to ``count`` being present on ``list`` but called
         # differently.
         page = paginator.page()
         self.assertEqual(page['objects'], ['foo', 'bar'])
-    
+
     def test_unicode_request(self):
         request = {
             'slug__startswith': u'☃',

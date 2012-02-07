@@ -531,6 +531,13 @@ The inner ``Meta`` class allows for class-level configuration of how the
   is either the ``API_LIMIT_PER_PAGE`` setting (if provided) or ``20`` if not
   specified.
 
+``max_limit``
+-------------
+
+  Controls the maximum number of results the ``Resource`` will show at a time.
+  If the user-specified ``limit`` is higher than this, it will be capped to
+  this limit. Set to ``0`` or ``None`` to allow unlimited results.
+
 ``api_name``
 ------------
 

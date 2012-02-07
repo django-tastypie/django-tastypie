@@ -20,6 +20,7 @@ Table Of Contents
    caching
    serialization
    throttling
+   paginator
 
    cookbook
    debugging
