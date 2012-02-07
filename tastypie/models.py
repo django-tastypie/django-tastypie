@@ -53,9 +53,9 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
             return hmac.new(str(new_uuid), digestmod=sha1).hexdigest()
     
     
-    def create_api_key(sender, **kwargs):
+    def create_api_key(sender, instance, created, raw, **kwargs):
         """
         A signal for hooking up automatic ``ApiKey`` creation.
         """
-        if kwargs.get('created') is True:
-            ApiKey.objects.create(user=kwargs.get('instance'))
+        if raw is False and created is True:  
+            ApiKey.objects.create(user=instance)
