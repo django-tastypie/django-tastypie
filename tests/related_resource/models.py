@@ -55,3 +55,26 @@ class ExtraData(models.Model):
         return u"%s" % (self.name)
 
 
+class Company(models.Model):
+    name = models.CharField(max_length=32)
+
+    def __unicode__(self):
+        return u"%s" % (self.name)
+
+
+class Person(models.Model):
+    name = models.CharField(max_length=32)
+    company = models.ForeignKey(Company, related_name="employees")
+
+    def __unicode__(self):
+        return u"%s" % (self.name)
+
+
+class Dog(models.Model):
+    name = models.CharField(max_length=32)
+    owner = models.ForeignKey(Person, related_name="dogs")
+
+    def __unicode__(self):
+        return u"%s" % (self.name)
+
+    

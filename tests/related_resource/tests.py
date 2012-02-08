@@ -4,9 +4,9 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
-from related_resource.api.resources import FreshNoteResource
+from related_resource.api.resources import FreshNoteResource, CompanyResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData
+from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company
 
 
 class RelatedResourceTest(TestCase):
@@ -47,32 +47,6 @@ class RelatedResourceTest(TestCase):
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(User.objects.get(id=self.user.id).username, 'foobar')
-
-class UriInRelatedResourceTest(TestCase):
-    urls = 'related_resource.api.urls'
-
-    def setUp(self):
-        super(UriInRelatedResourceTest, self).setUp()
-        self.parent_cat = Category.objects.create(parent=None, name='pie')
-
-    def test_uri_in_full_related_resource(self):
-        resource = api.canonical_resource_for('category')
-
-        request = MockRequest()
-        request.GET = {'format': 'json'}
-        request.method = 'GET'
-        resp = resource.wrap_view('dispatch_detail')(request, pk=self.parent_cat.pk)
-
-        self.assertEqual(resp.status_code, 200)
-        parent_json = resp.content
-
-        request = MockRequest()
-        request.GET = {'format': 'json'}
-        request.method = 'POST'
-        request.raw_post_data = '{"name": "tasty", "parent": %s}' % parent_json
-        resp = resource.post_list(request)
-        self.assertEqual(resp.status_code, 201)
-        
 
 
 class CategoryResourceTest(TestCase):
@@ -221,3 +195,52 @@ class OneToManySetupTestCase(TestCase):
         note = Note.objects.latest('created')
         self.assertEqual(note.media_bits.count(), 1)
         self.assertEqual(note.media_bits.all()[0].title, u'Picture #1')
+
+
+class UriInRelatedResourceTest(TestCase):
+    urls = 'related_resource.api.urls'
+
+    def test_uri_in_full_related_resource(self):
+        # Sanity checks.
+        self.assertEqual(Company.objects.count(), 0)
+
+        cr = CompanyResource()
+
+        data = {
+            'name': 'Yum Yum Pie Factory!',
+            'employees': [
+                {
+                    'name': 'Joan Rivers',
+                    'dogs': [
+                        {
+                            'name': 'Fido'
+                        }
+                    ]
+                }
+            ]
+        }
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.raw_post_data = json.dumps(data)
+        resp = cr.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+        
+        pk = Company.objects.all()[0]
+        request = MockRequest()
+        request.method = 'GET'
+        resp = cr.get_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 200)
+        print resp.content
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.raw_post_data = resp.content
+        resp = cr.put_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 204)
+
+        
+
+
