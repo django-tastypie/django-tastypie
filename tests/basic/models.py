@@ -1,7 +1,7 @@
 import datetime
 from django.contrib.auth.models import User
 from django.db import models
-
+from tastypie.utils import now
 
 class Note(models.Model):
     user = models.ForeignKey(User, related_name='notes')
@@ -9,14 +9,14 @@ class Note(models.Model):
     slug = models.SlugField()
     content = models.TextField()
     is_active = models.BooleanField(default=True)
-    created = models.DateTimeField(default=datetime.datetime.now)
-    updated = models.DateTimeField(default=datetime.datetime.now)
-    
+    created = models.DateTimeField(default=now)
+    updated = models.DateTimeField(default=now)
+
     def __unicode__(self):
         return self.title
     
     def save(self, *args, **kwargs):
-        self.updated = datetime.datetime.now()
+        self.updated = now()
         return super(Note, self).save(*args, **kwargs)
 
 class AnnotatedNote(models.Model):

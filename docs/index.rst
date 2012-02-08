@@ -23,6 +23,7 @@ interfaces.
    authentication_authorization
    serialization
    throttling
+   paginator
 
    cookbook
    debugging
