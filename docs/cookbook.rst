@@ -205,11 +205,11 @@ Creating per-user resources
 ---------------------------
 
 One might want to create an API which will require every user to authenticate
-and every user will be working only with objects associated with him. Let's see
+and every user will be working only with objects associated with them. Let's see
 how to implement it for two basic operations: listing and creation of an object.
 
 For listing we want to list only objects for which 'user' field matches
-'request.user'. This could be done my applying filter in ``apply_authorization_limits``
+'request.user'. This could be done by applying a filter in the ``apply_authorization_limits``
 method of your resource.
 
 For creating we'd have to wrap ``obj_create`` method of ``ModelResource``. Then the
