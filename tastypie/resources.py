@@ -786,6 +786,7 @@ class Resource(object):
                 'readonly': field_object.readonly,
                 'help_text': field_object.help_text,
                 'unique': field_object.unique,
+                'extras': field_object.additionals,
             }
             if field_object.dehydrated_type == 'related':
                 if getattr(field_object, 'is_m2m', False):
