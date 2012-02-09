@@ -2977,7 +2977,8 @@ class ModelResourceTestCase(TestCase):
         # resp = resource.get_detail(request, pk=1)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
-        self.assertFalse(resp.has_header('Cache-Control'))
+        self.assertTrue(resp.has_header('Cache-Control'))
+        self.assertEqual(resp._headers['cache-control'], ('Cache-Control', 'no-cache'))
 
         # Now as Ajax.
         request.META = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
