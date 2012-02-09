@@ -610,11 +610,11 @@ class ToOneField(RelatedField):
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
                  null=False, blank=False, readonly=False, full=False,
-                 unique=False, help_text=None):
+                 unique=False, help_text=None, extras=None):
         super(ToOneField, self).__init__(
             to, attribute, related_name=related_name, default=default,
             null=null, blank=blank, readonly=readonly, full=full,
-            unique=unique, help_text=help_text
+            unique=unique, help_text=help_text, extras=extras
         )
         self.fk_resource = None
 
@@ -671,11 +671,11 @@ class ToManyField(RelatedField):
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
                  null=False, blank=False, readonly=False, full=False,
-                 unique=False, help_text=None):
+                 unique=False, help_text=None, extras=None):
         super(ToManyField, self).__init__(
             to, attribute, related_name=related_name, default=default,
             null=null, blank=blank, readonly=readonly, full=full,
-            unique=unique, help_text=help_text
+            unique=unique, help_text=help_text, extras=extras
         )
         self.m2m_bundles = []
 
