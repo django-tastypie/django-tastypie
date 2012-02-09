@@ -1315,6 +1315,9 @@ class Resource(object):
         Calls ``obj_update``.
 
         If the resource is updated, return ``HttpAccepted`` (202 Accepted).
+        If ``Meta.always_return_data = True``, there will be a populated body
+        of serialized data.
+        
         If the resource did not exist, return ``HttpNotFound`` (404 Not Found).
         """
         request = convert_post_to_patch(request)
@@ -1339,7 +1342,13 @@ class Resource(object):
         # Now update the bundle in-place.
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         self.update_in_place(request, bundle, deserialized)
-        return http.HttpAccepted()
+        
+        if not self._meta.always_return_data:
+            return http.HttpAccepted()
+        else:
+            bundle = self.full_dehydrate(bundle)
+            bundle = self.alter_detail_data_to_serialize(request, bundle)
+            return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
     def update_in_place(self, request, original_bundle, new_data):
         """
