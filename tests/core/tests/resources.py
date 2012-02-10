@@ -10,7 +10,7 @@ from django.core.exceptions import FieldError, MultipleObjectsReturned
 from django.core import mail
 from django.core.urlresolvers import reverse
 from django import forms
-from django.http import HttpRequest, QueryDict
+from django.http import HttpRequest, QueryDict, Http404
 from django.test import TestCase
 from django.utils import dateformat
 from tastypie.authentication import BasicAuthentication
@@ -22,9 +22,9 @@ from tastypie.paginator import Paginator
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS, convert_post_to_put, convert_post_to_patch
 from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
-from tastypie.utils import aware_datetime, make_naive
+from tastypie.utils import aware_datetime, make_naive, now
 from tastypie.validation import Validation, FormValidation
-from core.models import Note, Subject, MediaBit
+from core.models import Note, Subject, MediaBit, AutoNowNote
 from core.tests.mocks import MockRequest
 from core.utils import SimpleHandler
 try:
@@ -586,8 +586,20 @@ class ResourceTestCase(TestCase):
         # No allowed methods. Kaboom.
         self.assertRaises(ImmediateHttpResponse, basic.method_check, request)
 
+        try:
+            basic.method_check(request)
+            self.fail("Should have thrown an exception.")
+        except ImmediateHttpResponse, e:
+            self.assertEqual(e.response['Allow'], '')
+
         # Not an allowed request.
         self.assertRaises(ImmediateHttpResponse, basic.method_check, request, allowed=['post'])
+
+        try:
+            basic.method_check(request, allowed=['post'])
+            self.fail("Should have thrown an exception.")
+        except ImmediateHttpResponse, e:
+            self.assertEqual(e.response['Allow'], 'POST')
 
         # Allowed (single).
         request_method = basic.method_check(request, allowed=['get'])
@@ -603,6 +615,12 @@ class ResourceTestCase(TestCase):
 
         # Not an allowed request.
         self.assertRaises(ImmediateHttpResponse, basic.method_check, request, allowed=['get'])
+
+        try:
+            basic.method_check(request, allowed=['get', 'put', 'delete', 'patch'])
+            self.fail("Should have thrown an exception.")
+        except ImmediateHttpResponse, e:
+            self.assertEqual(e.response['Allow'], 'GET,PUT,DELETE,PATCH')
 
         # Allowed (multiple).
         request_method = basic.method_check(request, allowed=['post', 'get', 'put'])
@@ -705,6 +723,15 @@ class VeryCustomNoteResource(NoteResource):
         detail_allowed_methods = ['get', 'post', 'put']
         queryset = Note.objects.all()
         fields = ['title', 'content', 'created', 'is_active']
+
+
+class AutoNowNoteResource(ModelResource):
+    class Meta:
+        resource_name = 'autonownotes'
+        queryset = AutoNowNote.objects.filter(is_active=True)
+
+    def get_resource_uri(self, bundle_or_obj):
+        return '/api/v1/autonownotes/%s/' % bundle_or_obj.obj.id
 
 
 class CustomPaginator(Paginator):
@@ -1064,6 +1091,91 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resource_1.fields['subjects']._resource, resource_1.__class__)
         self.assertEqual(resource_1.fields['subjects'].instance_name, 'subjects')
 
+        # Sanity check the other introspected fields.
+        annr = AutoNowNoteResource()
+        self.assertEqual(len(annr.fields), 8)
+        self.assertEqual(sorted(annr.fields.keys()), ['content', 'created', 'id', 'is_active', 'resource_uri', 'slug', 'title', 'updated'])
+
+        self.assertTrue(isinstance(annr.fields['content'], fields.CharField))
+        self.assertEqual(annr.fields['content'].attribute, 'content')
+        self.assertEqual(annr.fields['content'].blank, True)
+        self.assertEqual(annr.fields['content']._default, '')
+        self.assertEqual(annr.fields['content'].instance_name, 'content')
+        self.assertEqual(annr.fields['content'].null, False)
+        self.assertEqual(annr.fields['content'].readonly, False)
+        self.assertEqual(annr.fields['content'].unique, False)
+        self.assertEqual(annr.fields['content'].value, None)
+
+        self.assertTrue(isinstance(annr.fields['created'], fields.DateTimeField))
+        self.assertEqual(annr.fields['created'].attribute, 'created')
+        self.assertEqual(annr.fields['created'].blank, False)
+        self.assertTrue(isinstance(annr.fields['created']._default(), datetime.datetime))
+        self.assertEqual(annr.fields['created'].instance_name, 'created')
+        self.assertEqual(annr.fields['created'].null, True)
+        self.assertEqual(annr.fields['created'].readonly, False)
+        self.assertEqual(annr.fields['created'].unique, False)
+        self.assertEqual(annr.fields['created'].value, None)
+
+        self.assertTrue(isinstance(annr.fields['id'], fields.CharField))
+        self.assertEqual(annr.fields['id'].attribute, 'id')
+        self.assertEqual(annr.fields['id'].blank, True)
+        self.assertEqual(annr.fields['id']._default, '')
+        self.assertEqual(annr.fields['id'].instance_name, 'id')
+        self.assertEqual(annr.fields['id'].null, False)
+        self.assertEqual(annr.fields['id'].readonly, False)
+        self.assertEqual(annr.fields['id'].unique, True)
+        self.assertEqual(annr.fields['id'].value, None)
+
+        self.assertTrue(isinstance(annr.fields['is_active'], fields.BooleanField))
+        self.assertEqual(annr.fields['is_active'].attribute, 'is_active')
+        self.assertEqual(annr.fields['is_active'].blank, True)
+        self.assertEqual(annr.fields['is_active']._default, True)
+        self.assertEqual(annr.fields['is_active'].instance_name, 'is_active')
+        self.assertEqual(annr.fields['is_active'].null, False)
+        self.assertEqual(annr.fields['is_active'].readonly, False)
+        self.assertEqual(annr.fields['is_active'].unique, False)
+        self.assertEqual(annr.fields['is_active'].value, None)
+
+        self.assertTrue(isinstance(annr.fields['resource_uri'], fields.CharField))
+        self.assertEqual(annr.fields['resource_uri'].attribute, None)
+        self.assertEqual(annr.fields['resource_uri'].blank, False)
+        self.assertEqual(annr.fields['resource_uri']._default, fields.NOT_PROVIDED)
+        self.assertEqual(annr.fields['resource_uri'].instance_name, 'resource_uri')
+        self.assertEqual(annr.fields['resource_uri'].null, False)
+        self.assertEqual(annr.fields['resource_uri'].readonly, True)
+        self.assertEqual(annr.fields['resource_uri'].unique, False)
+        self.assertEqual(annr.fields['resource_uri'].value, None)
+
+        self.assertTrue(isinstance(annr.fields['slug'], fields.CharField))
+        self.assertEqual(annr.fields['slug'].attribute, 'slug')
+        self.assertEqual(annr.fields['slug'].blank, False)
+        self.assertEqual(annr.fields['slug']._default, fields.NOT_PROVIDED)
+        self.assertEqual(annr.fields['slug'].instance_name, 'slug')
+        self.assertEqual(annr.fields['slug'].null, False)
+        self.assertEqual(annr.fields['slug'].readonly, False)
+        self.assertEqual(annr.fields['slug'].unique, True)
+        self.assertEqual(annr.fields['slug'].value, None)
+
+        self.assertTrue(isinstance(annr.fields['title'], fields.CharField))
+        self.assertEqual(annr.fields['title'].attribute, 'title')
+        self.assertEqual(annr.fields['title'].blank, False)
+        self.assertEqual(annr.fields['title']._default, fields.NOT_PROVIDED)
+        self.assertEqual(annr.fields['title'].instance_name, 'title')
+        self.assertEqual(annr.fields['title'].null, False)
+        self.assertEqual(annr.fields['title'].readonly, False)
+        self.assertEqual(annr.fields['title'].unique, False)
+        self.assertEqual(annr.fields['title'].value, None)
+
+        self.assertTrue(isinstance(annr.fields['updated'], fields.DateTimeField))
+        self.assertEqual(annr.fields['updated'].attribute, 'updated')
+        self.assertEqual(annr.fields['updated'].blank, True)
+        self.assertTrue(isinstance(annr.fields['updated']._default(), datetime.datetime))
+        self.assertEqual(annr.fields['updated'].instance_name, 'updated')
+        self.assertEqual(annr.fields['updated'].null, False)
+        self.assertEqual(annr.fields['updated'].readonly, False)
+        self.assertEqual(annr.fields['updated'].unique, False)
+        self.assertEqual(annr.fields['updated'].value, None)
+
     def test_urls(self):
         # The common case, where the ``Api`` specifies the name.
         resource = NoteResource(api_name='v1')
@@ -1211,7 +1323,7 @@ class ModelResourceTestCase(TestCase):
                     'nullable': False,
                     'default': True,
                     'readonly': False,
-                    'blank': False,
+                    'blank': True,
                     'help_text': 'Boolean data. Ex: True',
                     'unique': False,
                     'type': 'boolean'
@@ -1220,7 +1332,7 @@ class ModelResourceTestCase(TestCase):
                     'nullable': False,
                     'default': '',
                     'readonly': False,
-                    'blank': False,
+                    'blank': True,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
                     'unique': False,
                     'type': 'string'
@@ -1928,7 +2040,7 @@ class ModelResourceTestCase(TestCase):
             "default_limit": 20,
             "fields": {
                 "content": {
-                    "blank": False,
+                    "blank": True,
                     "default": "",
                     "help_text": "Unicode string data. Ex: \"Hello World\"",
                     "nullable": False,
@@ -1946,7 +2058,7 @@ class ModelResourceTestCase(TestCase):
                     "unique": False
                 },
                 "id": {
-                    "blank": False,
+                    "blank": True,
                     "default": "",
                     "help_text": "Unicode string data. Ex: \"Hello World\"",
                     "nullable": False,
@@ -1955,7 +2067,7 @@ class ModelResourceTestCase(TestCase):
                     "unique": True
                 },
                 "is_active": {
-                    "blank": False,
+                    "blank": True,
                     "default": True,
                     "help_text": "Boolean data. Ex: True",
                     "nullable": False,
@@ -2776,6 +2888,9 @@ class BustedResource(BasicResource):
     def get_detail(self, request, **kwargs):
         raise NotFound("It's just not there.")
 
+    def post_list(self, request, **kwargs):
+        raise Http404("Not here either")
+
 
 class BustedResourceTestCase(TestCase):
     def setUp(self):
@@ -2875,3 +2990,8 @@ class BustedResourceTestCase(TestCase):
             self.assertEqual(resp.content, '{"error_message": "Oops, you bwoke it."}')
             self.assertEqual(len(mail.outbox), 3)
             mail.outbox = []
+
+    def test_http404_raises_404(self):
+        self.request.method = 'POST'
+        resp = self.resource.wrap_view('post_list')(self.request, pk=1)
+        self.assertEqual(resp.status_code, 404)

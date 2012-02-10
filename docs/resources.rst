@@ -130,7 +130,7 @@ As an example, we'll walk through what a GET request to a list endpoint (say
 
 Processing on other endpoints or using the other HTTP methods results in a
 similar cycle, usually differing only in what "actual work" method gets called
-(which follows the format of "``<http_method>_<list_or_detail>"). In the case
+(which follows the format of "``<http_method>_<list_or_detail>``"). In the case
 of POST/PUT, the ``hydrate`` cycle additionally takes place and is used to take
 the user data & convert it to raw data for storage.
 
@@ -377,9 +377,10 @@ A simple example::
             queryset = Note.objects.all()
 
         def hydrate_title(self, bundle):
-            return bundle.data['title'].lower()
+            bundle.data['title'] = bundle.data['title'].lower()
+            return bundle
 
-The return value is updated in the ``bundle.obj``.
+The return value is the ``bundle``.
 
 Per-field ``hydrate``
 ~~~~~~~~~~~~~~~~~~~~~
@@ -481,7 +482,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 -------------------
 
   Controls which paginator class the ``Resource`` should use. Default is
-  ``tastypie.paginator.Paginator()``.
+  ``tastypie.paginator.Paginator``.
 
 .. note::
 
@@ -529,6 +530,13 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Controls what how many results the ``Resource`` will show at a time. Default
   is either the ``API_LIMIT_PER_PAGE`` setting (if provided) or ``20`` if not
   specified.
+
+``max_limit``
+-------------
+
+  Controls the maximum number of results the ``Resource`` will show at a time.
+  If the user-specified ``limit`` is higher than this, it will be capped to
+  this limit. Set to ``0`` or ``None`` to allow unlimited results.
 
 ``api_name``
 ------------

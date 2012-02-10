@@ -7,7 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, 
 from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404, get_script_prefix
 from django.db import transaction
 from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
-from django.http import HttpResponse, HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.utils.cache import patch_cache_control
 from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
@@ -64,6 +64,7 @@ class ResourceOptions(object):
     list_allowed_methods = None
     detail_allowed_methods = None
     limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)
+    max_limit = 1000
     api_name = None
     resource_name = None
     urlconf_namespace = None
@@ -226,7 +227,9 @@ class Resource(object):
         the_trace = '\n'.join(traceback.format_exception(*(sys.exc_info())))
         response_class = http.HttpApplicationError
 
-        if isinstance(exception, (NotFound, ObjectDoesNotExist)):
+        NOT_FOUND_EXCEPTIONS = (NotFound, ObjectDoesNotExist, Http404)
+
+        if isinstance(exception, NOT_FOUND_EXCEPTIONS):
             response_class = HttpResponseNotFound
 
         if settings.DEBUG:
@@ -240,7 +243,7 @@ class Resource(object):
 
         # When DEBUG is False, send an error message to the admins (unless it's
         # a 404, in which case we check the setting).
-        if not isinstance(exception, (NotFound, ObjectDoesNotExist)):
+        if not isinstance(exception, NOT_FOUND_EXCEPTIONS):
             log = logging.getLogger('django.request.tastypie')
             log.error('Internal Server Error: %s' % request.path, exc_info=sys.exc_info(), extra={'status_code': 500, 'request':request})
 
@@ -479,15 +482,17 @@ class Resource(object):
             allowed = []
 
         request_method = request.method.lower()
+        allows = ','.join(map(str.upper, allowed))
 
         if request_method == "options":
-            allows = ','.join(map(str.upper, allowed))
             response = HttpResponse(allows)
             response['Allow'] = allows
             raise ImmediateHttpResponse(response=response)
 
         if not request_method in allowed:
-            raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
+            response = http.HttpMethodNotAllowed(allows)
+            response['Allow'] = allows
+            raise ImmediateHttpResponse(response=response)
 
         return request_method
 
@@ -1035,7 +1040,7 @@ class Resource(object):
         objects = self.obj_get_list(request=request, **self.remove_api_resource_names(kwargs))
         sorted_objects = self.apply_sorting(objects, options=request.GET)
 
-        paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri(), limit=self._meta.limit)
+        paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri(), limit=self._meta.limit, max_limit=self._meta.max_limit)
         to_be_serialized = paginator.page()
 
         # Dehydrate the bundles in preparation for serialization.
@@ -1538,12 +1543,19 @@ class ModelResource(Resource):
 
             if not f.null and f.blank is True:
                 kwargs['default'] = ''
+                kwargs['blank'] = True
 
             if f.get_internal_type() == 'TextField':
                 kwargs['default'] = ''
 
             if f.has_default():
                 kwargs['default'] = f.default
+
+            if getattr(f, 'auto_now', False):
+                kwargs['default'] = f.auto_now
+
+            if getattr(f, 'auto_now_add', False):
+                kwargs['default'] = f.auto_now_add
 
             final_fields[f.name] = api_field_class(**kwargs)
             final_fields[f.name].instance_name = f.name
