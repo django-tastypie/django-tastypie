@@ -18,7 +18,7 @@ Contributors:
 * David Guaraglia (dguaraglia) for the requirements file & a patch to limits.
 * whiteblack for a patch to Meta inheritance.
 * Travis Cline (traviscline) for patches regarding URLconf namespacing & pagination.
-* Jannis Leidel (jezdez) for patches regarding the ApiKey model & an admin inline.
+* Jannis Leidel (jezdez) for patches regarding the ApiKey model, an admin inline and Django 1.4's timezone support.
 * Malcolm Tredinnick (malcolmt) for documentation corrections.
 * Vincent Driessen (nvie) for FileField related patches.
 * Christopher Grebs (EnTeQuAk) for various patches.
