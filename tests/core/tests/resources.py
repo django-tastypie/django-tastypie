@@ -10,7 +10,7 @@ from django.core.exceptions import FieldError, MultipleObjectsReturned
 from django.core import mail
 from django.core.urlresolvers import reverse
 from django import forms
-from django.http import HttpRequest, QueryDict
+from django.http import HttpRequest, QueryDict, Http404
 from django.test import TestCase
 from django.utils import dateformat
 from tastypie.authentication import BasicAuthentication
@@ -2888,6 +2888,9 @@ class BustedResource(BasicResource):
     def get_detail(self, request, **kwargs):
         raise NotFound("It's just not there.")
 
+    def post_list(self, request, **kwargs):
+        raise Http404("Not here either")
+
 
 class BustedResourceTestCase(TestCase):
     def setUp(self):
@@ -2987,3 +2990,8 @@ class BustedResourceTestCase(TestCase):
             self.assertEqual(resp.content, '{"error_message": "Oops, you bwoke it."}')
             self.assertEqual(len(mail.outbox), 3)
             mail.outbox = []
+
+    def test_http404_raises_404(self):
+        self.request.method = 'POST'
+        resp = self.resource.wrap_view('post_list')(self.request, pk=1)
+        self.assertEqual(resp.status_code, 404)
