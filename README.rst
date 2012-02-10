@@ -26,7 +26,7 @@ Optional
 --------
 
 * python_digest (https://bitbucket.org/akoha/python-digest/)
-* lxml (http://codespeak.net/lxml/) if using the XML serializer
+* lxml (http://lxml.de/) if using the XML serializer
 * pyyaml (http://pyyaml.org/) if using the YAML serializer
 * biplist (http://explorapp.com/biplist/) if using the binary plist serializer
 
