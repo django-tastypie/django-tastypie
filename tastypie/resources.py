@@ -1541,12 +1541,19 @@ class ModelResource(Resource):
 
             if not f.null and f.blank is True:
                 kwargs['default'] = ''
+                kwargs['blank'] = True
 
             if f.get_internal_type() == 'TextField':
                 kwargs['default'] = ''
 
             if f.has_default():
                 kwargs['default'] = f.default
+
+            if getattr(f, 'auto_now', False):
+                kwargs['default'] = f.auto_now
+
+            if getattr(f, 'auto_now_add', False):
+                kwargs['default'] = f.auto_now_add
 
             final_fields[f.name] = api_field_class(**kwargs)
             final_fields[f.name].instance_name = f.name

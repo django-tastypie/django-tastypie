@@ -15,11 +15,11 @@ class Note(models.Model):
 
     def __unicode__(self):
         return self.title
-    
+
     def save(self, *args, **kwargs):
         self.updated = now()
         return super(Note, self).save(*args, **kwargs)
-    
+
     def what_time_is_it(self):
         return aware_datetime(2010, 4, 1, 0, 48)
 
@@ -45,6 +45,19 @@ class MediaBit(models.Model):
     note = models.ForeignKey(Note, related_name='media_bits')
     title = models.CharField(max_length=32)
     image = models.FileField(blank=True, null=True, upload_to='bits/')
-    
+
+    def __unicode__(self):
+        return self.title
+
+
+class AutoNowNote(models.Model):
+    # Purposely a bit more complex to test correct introspection.
+    title = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True)
+    content = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created = models.DateTimeField(auto_now_add=now, null=True)
+    updated = models.DateTimeField(auto_now=now)
+
     def __unicode__(self):
         return self.title
