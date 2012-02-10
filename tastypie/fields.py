@@ -617,16 +617,21 @@ class ToOneField(RelatedField):
         self.fk_resource = None
 
     def dehydrate(self, bundle):
-        try:
-            foreign_obj = getattr(bundle.obj, self.attribute)
-        except ObjectDoesNotExist:
-            foreign_obj = None
+        attrs = self.attribute.split('__')
+        foreign_obj = bundle.obj
 
-        if not foreign_obj:
-            if not self.null:
-                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (bundle.obj, self.attribute))
+        for attr in attrs:
+            previous_obj = foreign_obj
+            try:
+                foreign_obj = getattr(foreign_obj, attr, None)
+            except ObjectDoesNotExist:
+                foreign_obj = None
 
-            return None
+            if not foreign_obj:
+                if not self.null:
+                    raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
+
+                return None
 
         self.fk_resource = self.get_related_resource(foreign_obj)
         fk_bundle = Bundle(obj=foreign_obj, request=bundle.request)

@@ -816,6 +816,19 @@ class ToOneFieldTestCase(TestCase):
         self.assertEqual(fk_bundle.related_obj, None)
         self.assertEqual(fk_bundle.related_name, None)
 
+    def test_traversed_attribute_dehydrate(self):
+        user = User.objects.get(pk=1)
+        mediabit = MediaBit(note=Note(author=user))
+        bundle = Bundle(obj=mediabit)
+        
+        field_1 = ToOneField(UserResource, 'note__author')
+        field_1.instance_name = 'fk'
+        self.assertEqual(field_1.dehydrate(bundle), '/api/v1/users/1/')
+
+        field_2 = ToOneField(UserResource, 'fakefield__author')
+        field_2.instance_name = 'fk'
+        self.assertRaises(ApiFieldError, field_2.hydrate, bundle)
+    
 
 class SubjectResource(ModelResource):
     class Meta:
