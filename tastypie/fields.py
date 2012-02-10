@@ -690,15 +690,29 @@ class ToManyField(RelatedField):
             return []
 
         the_m2ms = None
+        previous_obj = bundle.obj
+        attr = self.attribute
 
         if isinstance(self.attribute, basestring):
-            the_m2ms = getattr(bundle.obj, self.attribute)
+            attrs = self.attribute.split('__')
+            the_m2ms = bundle.obj
+
+            for attr in attrs:
+                previous_obj = the_m2ms
+                try:
+                    the_m2ms = getattr(the_m2ms, attr, None)
+                except ObjectDoesNotExist:
+                    the_m2ms = None
+
+                if not the_m2ms:
+                    break
+
         elif callable(self.attribute):
             the_m2ms = self.attribute(bundle)
 
         if not the_m2ms:
             if not self.null:
-                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (bundle.obj, self.attribute))
+                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
 
             return []
 

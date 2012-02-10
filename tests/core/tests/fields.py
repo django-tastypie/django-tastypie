@@ -1097,3 +1097,12 @@ class ToManyFieldTestCase(TestCase):
         media_bundle_list = field_10.hydrate_m2m(bundle_10)
         self.assertEqual(len(media_bundle_list), 1)
         self.assertEqual(media_bundle_list[0].obj.title, u'Foo!')
+
+    def test_traversed_attribute_dehydrate(self):
+        mediabit = MediaBit(id=1, note=self.note_1)
+        bundle = Bundle(obj=mediabit)
+        
+        field_1 = ToManyField(SubjectResource, 'note__subjects')
+        field_1.instance_name = 'm2m'
+        self.assertEqual(field_1.dehydrate(bundle), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
+    
