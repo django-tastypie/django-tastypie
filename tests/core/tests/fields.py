@@ -1106,3 +1106,6 @@ class ToManyFieldTestCase(TestCase):
         field_1.instance_name = 'm2m'
         self.assertEqual(field_1.dehydrate(bundle), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
     
+        field_2 = ToOneField(SubjectResource, 'fakefield__subjects')
+        field_2.instance_name = 'm2m'
+        self.assertRaises(ApiFieldError, field_2.hydrate, bundle)
