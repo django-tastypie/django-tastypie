@@ -688,14 +688,17 @@ class ToManyField(RelatedField):
 
         if isinstance(self.attribute, basestring):
             the_m2ms = getattr(bundle.obj, self.attribute)
+            
+            if not the_m2ms:
+                if not self.null:
+                    raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (bundle.obj, self.attribute))
+
+                return []
+        
         elif callable(self.attribute):
             the_m2ms = self.attribute(bundle)
 
-        if not the_m2ms:
-            if not self.null:
-                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (bundle.obj, self.attribute))
-
-            return []
+        
 
         self.m2m_resources = []
         m2m_dehydrated = []
