@@ -25,6 +25,7 @@ Table Of Contents
    cookbook
    debugging
    who_uses
+   contributing
 
 
 Indices and tables
