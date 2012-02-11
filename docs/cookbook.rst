@@ -22,7 +22,7 @@ provide additional values::
             return bundle
 
 
-Pre-Request Alterations To The Queryset
+Per-Request Alterations To The Queryset
 ---------------------------------------
 
 A common pattern is needing to limit a queryset by something that changes
