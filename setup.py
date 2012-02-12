@@ -9,7 +9,7 @@ except ImportError:
 
 setup(
     name='django-tastypie',
-    version='1.0.0-beta',
+    version='0.9.11',
     description='A flexible & capable API layer for Django.',
     author='Daniel Lindsley',
     author_email='daniel@toastdriven.com',
@@ -20,6 +20,7 @@ setup(
         'tastypie.utils',
         'tastypie.management',
         'tastypie.management.commands',
+        'tastypie.migrations',
     ],
     package_data={
         'tastypie': ['templates/tastypie/*'],

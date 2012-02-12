@@ -6,16 +6,16 @@ from urllib import urlencode
 class Paginator(object):
     """
     Limits result sets down to sane amounts for passing to the client.
-    
+
     This is used in place of Django's ``Paginator`` due to the way pagination
     works. ``limit`` & ``offset`` (tastypie) are used in place of ``page``
     (Django) so none of the page-related calculations are necessary.
-    
+
     This implementation also provides additional details like the
     ``total_count`` of resources seen and convenience links to the
     ``previous``/``next`` pages of data as available.
     """
-    def __init__(self, request, objects, resource_uri=None, limit=None, offset=0):
+    def __init__(self, request, objects, resource_uri=None, limit=None, offset=0, max_limit=1000):
         """
         Instantiates the ``Paginator`` and allows for some configuration.
         
@@ -27,12 +27,16 @@ class Paginator(object):
         The ``objects`` should be a list-like object of ``Resources``.
         This is typically a ``QuerySet`` but can be anything that
         implements slicing. Required.
-        
+
         Optionally accepts a ``limit`` argument, which specifies how many
         items to show at a time. Defaults to ``None``, which is no limit.
-        
+
         Optionally accepts an ``offset`` argument, which specifies where in
         the ``objects`` to start displaying results from. Defaults to 0.
+
+        Optionally accepts a ``max_limit`` argument, which the upper bound
+        limit. Defaults to ``1000``. If you set it to 0 or ``None``, no upper
+        bound will be enforced.
         """
 
         r = request.META.get("HTTP_RANGE", None)
@@ -46,19 +50,20 @@ class Paginator(object):
         self.request = request
         self.objects = objects
         self.limit = limit
+        self.max_limit = max_limit
         self.offset = offset
         self.resource_uri = resource_uri
-    
+
     def get_limit(self):
         """
         Determines the proper maximum number of results to return.
-        
+
         In order of importance, it will use:
-        
+
             * The user-requested ``limit`` from the GET parameters, if specified.
             * The object-level ``limit`` if specified.
             * ``settings.API_LIMIT_PER_PAGE`` if specified.
-        
+
         Default is 20 per page.
         """
         limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)
@@ -73,19 +78,24 @@ class Paginator(object):
             limit = int(limit)
         except ValueError:
             raise BadRequest("Invalid limit '%s' provided. Please provide a positive integer.")
-        
+
         if limit < 0:
             raise BadRequest("Invalid limit '%s' provided. Please provide an integer >= 0.")
-        
+
+        if self.max_limit and limit > self.max_limit:
+            # If it's more than the max, we're only going to return the max.
+            # This is to prevent excessive DB (or other) load.
+            return self.max_limit
+
         return limit
-    
+
     def get_offset(self):
         """
         Determines the proper starting offset of results to return.
-        
+
         It attempst to use the user-provided ``offset`` from the GET parameters,
         if specified. Otherwise, it falls back to the object-level ``offset``.
-        
+
         Default is 0.
         """
         offset = self.offset
@@ -97,12 +107,12 @@ class Paginator(object):
             offset = int(offset)
         except ValueError:
             raise BadRequest("Invalid offset '%s' provided. Please provide an integer.")
-        
+
         if offset < 0:
             raise BadRequest("Invalid offset '%s' provided. Please provide an integer >= 0.")
-        
+
         return offset
-    
+
     def get_slice(self, limit, offset):
         """
         Slices the result set to the specified ``limit`` & ``offset``.
@@ -110,9 +120,9 @@ class Paginator(object):
         # If it's zero, return everything.
         if limit == 0:
             return self.objects[offset:]
-        
+
         return self.objects[offset:offset + limit]
-    
+
     def get_count(self):
         """
         Returns a count of the total number of objects seen.
@@ -130,7 +140,7 @@ class Paginator(object):
         """
         if offset - limit < 0:
             return None
-        
+
         return self._generate_uri(limit, offset-limit)
 
     def get_next(self, limit, offset, count):
@@ -140,7 +150,7 @@ class Paginator(object):
         """
         if offset + limit >= count:
             return None
-        
+
         return self._generate_uri(limit, offset+limit)
 
     def _generate_uri(self, limit, offset):
@@ -157,7 +167,7 @@ class Paginator(object):
     def page(self):
         """
         Generates all pertinent data about the requested page.
-        
+
         Handles getting the correct ``limit`` & ``offset``, then slices off
         the correct set of results and returns all pertinent metadata.
         """
@@ -170,7 +180,7 @@ class Paginator(object):
             'limit': limit,
             'total_count': count,
         }
-        
+
         if limit:
             meta['previous'] = self.get_previous(limit, offset)
             meta['next'] = self.get_next(limit, offset, count)

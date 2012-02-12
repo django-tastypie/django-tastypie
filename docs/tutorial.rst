@@ -25,27 +25,27 @@ of the code that are Tastypie-specific in any kind of depth.
 For example purposes, we'll be adding an API to a simple blog application.
 Here is ``myapp/models.py``::
 
-    import datetime
+    from tastypie.utils import now
     from django.contrib.auth.models import User
     from django.db import models
     from django.template.defaultfilters import slugify
-    
-    
+
+
     class Entry(models.Model):
         user = models.ForeignKey(User)
-        pub_date = models.DateTimeField(default=datetime.datetime.now)
+        pub_date = models.DateTimeField(default=now)
         title = models.CharField(max_length=200)
         slug = models.SlugField()
         body = models.TextField()
-        
+
         def __unicode__(self):
             return self.title
-        
+
         def save(self, *args, **kwargs):
             # For automatic slug generation.
             if not self.slug:
                 self.slug = slugify(self.title)[:50]
-            
+
             return super(Entry, self).save(*args, **kwargs)
 
 With that, we'll move on to installing and configuring Tastypie.
@@ -58,19 +58,19 @@ Installing Tastypie is as simple as checking out the source and adding it to
 your project or ``PYTHONPATH``.
 
   1. Download the dependencies:
-  
+
     * Python 2.4+
     * Django 1.0+ (tested on Django 1.1+)
     * ``mimeparse`` 0.1.3+ (http://code.google.com/p/mimeparse/)
-    
+
       * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
-    
+
     * ``dateutil`` (http://labix.org/python-dateutil)
-    * **OPTIONAL** - ``lxml`` (http://codespeak.net/lxml/) if using the XML serializer
+    * **OPTIONAL** - ``lxml`` (http://lxml.de/) if using the XML serializer
     * **OPTIONAL** - ``pyyaml`` (http://pyyaml.org/) if using the YAML serializer
     * **OPTIONAL** - ``uuid`` (present in 2.5+, downloadable from
       http://pypi.python.org/pypi/uuid/) if using the ``ApiKey`` authentication
-  
+
   2. Either check out tastypie from GitHub_ or to pull a release off PyPI_.
      Doing ``sudo pip install django-tastypie`` or
      ``sudo easy_install django-tastypie`` is all that should be required.
@@ -110,8 +110,8 @@ though they can live anywhere in your application::
     # myapp/api.py
     from tastypie.resources import ModelResource
     from myapp.models import Entry
-    
-    
+
+
     class EntryResource(ModelResource):
         class Meta:
             queryset = Entry.objects.all()
@@ -128,7 +128,7 @@ much like the way Django's ``ModelForm`` class introspects.
     provided, it is automatically generated off the classname, removing any
     instances of :class:`~tastypie.resources.Resource` and lowercasing the
     string. So ``EntryResource`` would become just ``entry``.
-    
+
     We've included the ``resource_name`` attribute in this example for clarity,
     especially when looking at the URLs, but you should feel free to omit it if
     you're comfortable with the automatic behavior.
@@ -144,16 +144,16 @@ do this, we simply instantiate the resource in our URLconf and hook up its
     # urls.py
     from django.conf.urls.defaults import *
     from myapp.api import EntryResource
-    
+
     entry_resource = EntryResource()
-    
+
     urlpatterns = patterns('',
         # The normal jazz here...
         (r'^blog/', include('myapp.urls')),
         (r'^api/', include(entry_resource.urls)),
     )
 
-Now it's just a matter of firing up server (``./manage.py runserver``) and 
+Now it's just a matter of firing up server (``./manage.py runserver``) and
 going to http://127.0.0.1:8000/api/entry/?format=json. You should get back a
 list of ``Entry``-like objects.
 
@@ -162,9 +162,9 @@ list of ``Entry``-like objects.
     The ``?format=json`` is an override required to make things look decent
     in the browser (accept headers vary between browsers). Tastypie properly
     handles the ``Accept`` header. So the following will work properly::
-    
+
         curl -H "Accept: application/json" http://127.0.0.1:8000/api/entry/
-    
+
     But if you're sure you want something else (or want to test in a browser),
     Tastypie lets you specify ``?format=...`` when you really want to force
     a certain type.
@@ -187,8 +187,8 @@ us from doing POST/PUT/DELETE. Let's enable those::
     from tastypie.authorization import Authorization
     from tastypie.resources import ModelResource
     from myapp.models import Entry
-    
-    
+
+
     class EntryResource(ModelResource):
         class Meta:
             queryset = Entry.objects.all()
@@ -229,17 +229,17 @@ In order to handle our ``user`` relation, we'll need to create a
     from tastypie import fields
     from tastypie.resources import ModelResource
     from myapp.models import Entry
-    
-    
+
+
     class UserResource(ModelResource):
         class Meta:
             queryset = User.objects.all()
             resource_name = 'user'
-    
-    
+
+
     class EntryResource(ModelResource):
         user = fields.ForeignKey(UserResource, 'user')
-        
+
         class Meta:
             queryset = Entry.objects.all()
             resource_name = 'entry'
@@ -267,11 +267,11 @@ following::
     from django.conf.urls.defaults import *
     from tastypie.api import Api
     from myapp.api import EntryResource, UserResource
-    
+
     v1_api = Api(api_name='v1')
     v1_api.register(UserResource())
     v1_api.register(EntryResource())
-    
+
     urlpatterns = patterns('',
         # The normal jazz here...
         (r'^blog/', include('myapp.urls')),

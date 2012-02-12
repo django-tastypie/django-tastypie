@@ -3,7 +3,8 @@ Primary authors:
 * Daniel Lindsley
 * Cody Soyland
 * Matt Croydon
-
+* Josh Bohde
+* Issac Kelly
 
 Contributors:
 
@@ -16,9 +17,8 @@ Contributors:
 * jonozzz for a patch regarding Paginator optimizations & a patch to multiple sort_by parameters.
 * David Guaraglia (dguaraglia) for the requirements file & a patch to limits.
 * whiteblack for a patch to Meta inheritance.
-* Josh Bohde (joshbohde) for a patch to ignore problematic deserialization charsets & for docs on "nested" resources.
 * Travis Cline (traviscline) for patches regarding URLconf namespacing & pagination.
-* Jannis Leidel (jezdez) for patches regarding the ApiKey model & an admin inline.
+* Jannis Leidel (jezdez) for patches regarding the ApiKey model, an admin inline and Django 1.4's timezone support.
 * Malcolm Tredinnick (malcolmt) for documentation corrections.
 * Vincent Driessen (nvie) for FileField related patches.
 * Christopher Grebs (EnTeQuAk) for various patches.

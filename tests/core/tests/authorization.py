@@ -68,6 +68,7 @@ class DjangoAuthorizationTestCase(TestCase):
         self.change = Permission.objects.get_by_natural_key('change_note', 'core', 'note')
         self.delete = Permission.objects.get_by_natural_key('delete_note', 'core', 'note')
         self.user = User.objects.all()[0]
+        self.user.user_permissions.clear()
 
     def test_no_perms(self):
         # sanity check: user has no permissions
@@ -117,7 +118,8 @@ class DjangoAuthorizationTestCase(TestCase):
         request.user.user_permissions.add(self.add)
         request.user.user_permissions.add(self.change)
         request.user.user_permissions.add(self.delete)
-        for method in ('GET', 'POST', 'PUT', 'DELETE'):
+
+        for method in ('GET', 'OPTIONS', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH'):
             request.method = method
             self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
 
@@ -129,3 +131,30 @@ class DjangoAuthorizationTestCase(TestCase):
         request.user.user_permissions.add(self.add)
         request.method = 'POST'
         self.assertTrue(NotAModelResource()._meta.authorization.is_authorized(request))
+
+    def test_patch_perms(self):
+        request = HttpRequest()
+        request.user = self.user
+        request.method = 'PATCH'
+
+        # Not enough.
+        request.user.user_permissions.add(self.add)
+        self.assertFalse(DjangoNoteResource()._meta.authorization.is_authorized(request))
+
+        # Still not enough.
+        request.user.user_permissions.add(self.change)
+        self.assertFalse(DjangoNoteResource()._meta.authorization.is_authorized(request))
+
+        # Much better.
+        request.user.user_permissions.add(self.delete)
+        # Nuke the perm cache. :/
+        del request.user._perm_cache
+        self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
+
+    def test_unrecognized_method(self):
+        request = HttpRequest()
+        request.user = self.user
+
+        # Check a non-existent HTTP method.
+        request.method = 'EXPLODE'
+        self.assertFalse(DjangoNoteResource()._meta.authorization.is_authorized(request))

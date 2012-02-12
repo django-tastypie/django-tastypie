@@ -6,7 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.utils import datetime_safe, importlib
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
-from tastypie.utils import dict_strip_unicode_keys
+from tastypie.utils import dict_strip_unicode_keys, make_aware
 
 
 class NOT_PROVIDED:
@@ -322,7 +322,7 @@ class DateField(ApiField):
         if value and not hasattr(value, 'year'):
             try:
                 # Try to rip a date/datetime out of it.
-                value = parse(value)
+                value = make_aware(parse(value))
 
                 if hasattr(value, 'hour'):
                     value = value.date()
@@ -348,7 +348,7 @@ class DateTimeField(ApiField):
 
             if match:
                 data = match.groupdict()
-                return datetime_safe.datetime(int(data['year']), int(data['month']), int(data['day']), int(data['hour']), int(data['minute']), int(data['second']))
+                return make_aware(datetime_safe.datetime(int(data['year']), int(data['month']), int(data['day']), int(data['hour']), int(data['minute']), int(data['second'])))
             else:
                 raise ApiFieldError("Datetime provided to '%s' field doesn't appear to be a valid datetime string: '%s'" % (self.instance_name, value))
 
@@ -360,7 +360,7 @@ class DateTimeField(ApiField):
         if value and not hasattr(value, 'year'):
             try:
                 # Try to rip a date/datetime out of it.
-                value = parse(value)
+                value = make_aware(parse(value))
             except ValueError:
                 pass
 
@@ -617,16 +617,21 @@ class ToOneField(RelatedField):
         self.fk_resource = None
 
     def dehydrate(self, bundle):
-        try:
-            foreign_obj = getattr(bundle.obj, self.attribute)
-        except ObjectDoesNotExist:
-            foreign_obj = None
+        attrs = self.attribute.split('__')
+        foreign_obj = bundle.obj
 
-        if not foreign_obj:
-            if not self.null:
-                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (bundle.obj, self.attribute))
+        for attr in attrs:
+            previous_obj = foreign_obj
+            try:
+                foreign_obj = getattr(foreign_obj, attr, None)
+            except ObjectDoesNotExist:
+                foreign_obj = None
 
-            return None
+            if not foreign_obj:
+                if not self.null:
+                    raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
+
+                return None
 
         self.fk_resource = self.get_related_resource(foreign_obj)
         fk_bundle = Bundle(obj=foreign_obj, request=bundle.request)
@@ -685,15 +690,29 @@ class ToManyField(RelatedField):
             return []
 
         the_m2ms = None
+        previous_obj = bundle.obj
+        attr = self.attribute
 
         if isinstance(self.attribute, basestring):
-            the_m2ms = getattr(bundle.obj, self.attribute)
+            attrs = self.attribute.split('__')
+            the_m2ms = bundle.obj
+
+            for attr in attrs:
+                previous_obj = the_m2ms
+                try:
+                    the_m2ms = getattr(the_m2ms, attr, None)
+                except ObjectDoesNotExist:
+                    the_m2ms = None
+
+                if not the_m2ms:
+                    break
+
         elif callable(self.attribute):
             the_m2ms = self.attribute(bundle)
 
         if not the_m2ms:
             if not self.null:
-                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (bundle.obj, self.attribute))
+                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
 
             return []
 
