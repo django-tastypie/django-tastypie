@@ -232,7 +232,6 @@ class UriInRelatedResourceTest(TestCase):
         request.method = 'GET'
         resp = cr.get_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 200)
-        print resp.content
 
         request = MockRequest()
         request.GET = {'format': 'json'}
