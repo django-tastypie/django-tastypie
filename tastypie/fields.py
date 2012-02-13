@@ -546,7 +546,7 @@ class RelatedField(ApiField):
 
         try:
             return fk_resource.obj_update(fk_bundle, **data)
-        except NotFound:
+        except (NotFound, TypeError):
             try:
                 # Attempt lookup by primary key
                 lookup_kwargs = dict((k, v) for k, v in data.iteritems() if getattr(fk_resource, k).unique)
