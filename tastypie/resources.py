@@ -422,7 +422,6 @@ class Resource(object):
             raise ImmediateHttpResponse(response=http.HttpNotImplemented())
 
         self.is_authenticated(request)
-        self.is_authorized(request)
         self.throttle_check(request)
 
         # All clear. Process the request.
@@ -496,21 +495,6 @@ class Resource(object):
 
         return request_method
 
-    def is_authorized(self, request, object=None):
-        """
-        Handles checking of permissions to see if the user has authorization
-        to GET, POST, PUT, or DELETE this resource.  If ``object`` is provided,
-        the authorization backend can apply additional row-level permissions
-        checking.
-        """
-        auth_result = self._meta.authorization.is_authorized(request, object)
-
-        if isinstance(auth_result, HttpResponse):
-            raise ImmediateHttpResponse(response=auth_result)
-
-        if not auth_result is True:
-            raise ImmediateHttpResponse(response=http.HttpUnauthorized())
-
     def is_authenticated(self, request):
         """
         Handles checking if the user is authenticated and dealing with
@@ -551,6 +535,50 @@ class Resource(object):
         """
         request_method = request.method.lower()
         self._meta.throttle.accessed(self._meta.authentication.get_identifier(request), url=request.get_full_path(), request_method=request_method)
+
+    def handle_authorized_result(self, result, fail_silently=False):
+        if isinstance(result, HttpResponse):
+            raise ImmediateHttpResponse(response=result)
+
+        if not result is True:
+            if fail_silently:
+                return False
+
+            raise ImmediateHttpResponse(response=http.HttpUnauthorized())
+
+        return result
+
+    def authorized_to_read(self, bundle, fail_silently=False):
+        """
+        Handles checking of permissions to see if the user has authorization
+        to GET this resource.
+        """
+        auth_result = self._meta.authorization.to_read(bundle)
+        return self.handle_authorized_result(auth_result, fail_silently)
+
+    def authorized_to_add(self, bundle, fail_silently=False):
+        """
+        Handles checking of permissions to see if the user has authorization
+        to POST this resource.
+        """
+        auth_result = self._meta.authorization.to_add(bundle)
+        return self.handle_authorized_result(auth_result, fail_silently)
+
+    def authorized_to_change(self, bundle, fail_silently=False):
+        """
+        Handles checking of permissions to see if the user has authorization
+        to PUT this resource.
+        """
+        auth_result = self._meta.authorization.to_change(bundle)
+        return self.handle_authorized_result(auth_result, fail_silently)
+
+    def authorized_to_delete(self, bundle, fail_silently=False):
+        """
+        Handles checking of permissions to see if the user has authorization
+        to DELETE this resource.
+        """
+        auth_result = self._meta.authorization.to_delete(bundle)
+        return self.handle_authorized_result(auth_result, fail_silently)
 
     def build_bundle(self, obj=None, data=None, request=None):
         """
@@ -844,10 +872,7 @@ class Resource(object):
         Allows the ``Authorization`` class to further limit the object list.
         Also a hook to customize per ``Resource``.
         """
-        if hasattr(self._meta.authorization, 'apply_limits'):
-            object_list = self._meta.authorization.apply_limits(request, object_list)
-
-        return object_list
+        return self._meta.authorization.apply_limits(request, object_list)
 
     def can_create(self):
         """
@@ -1044,8 +1069,15 @@ class Resource(object):
         to_be_serialized = paginator.page()
 
         # Dehydrate the bundles in preparation for serialization.
-        bundles = [self.build_bundle(obj=obj, request=request) for obj in to_be_serialized['objects']]
-        to_be_serialized['objects'] = [self.full_dehydrate(bundle) for bundle in bundles]
+        bundles = []
+
+        for obj in to_be_serialized['objects']:
+            bundle = self.build_bundle(obj=obj, request=request)
+
+            if self.authorized_to_read(bundle, fail_silently=True):
+                bundles.append(self.full_dehydrate(bundle))
+
+        to_be_serialized['objects'] = bundles
         to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
         return self.create_response(request, to_be_serialized)
 
@@ -1068,7 +1100,47 @@ class Resource(object):
         bundle = self.build_bundle(obj=obj, request=request)
         bundle = self.full_dehydrate(bundle)
         bundle = self.alter_detail_data_to_serialize(request, bundle)
+        self.authorized_to_read(bundle)
         return self.create_response(request, bundle)
+
+    def post_list(self, request, **kwargs):
+        """
+        Creates a new resource/object with the provided data.
+
+        Calls ``obj_create`` with the provided data and returns a response
+        with the new resource's location.
+
+        If a new resource is created, return ``HttpCreated`` (201 Created).
+        If ``Meta.always_return_data = True``, there will be a populated body
+        of serialized data.
+        """
+        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+        self.is_valid(bundle, request)
+        self.authorized_to_add(bundle)
+        updated_bundle = self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
+        location = self.get_resource_uri(updated_bundle)
+
+        if not self._meta.always_return_data:
+            return http.HttpCreated(location=location)
+        else:
+            updated_bundle = self.full_dehydrate(updated_bundle)
+            updated_bundle = self.alter_detail_data_to_serialize(request, updated_bundle)
+            return self.create_response(request, updated_bundle, response_class=http.HttpCreated, location=location)
+
+    def post_detail(self, request, **kwargs):
+        """
+        Creates a new subcollection of the resource under a resource.
+
+        This is not implemented by default because most people's data models
+        aren't self-referential.
+
+        If a new resource is created, return ``HttpCreated`` (201 Created).
+        """
+        bundle = self.build_bundle(request=request)
+        self.authorized_to_add(bundle)
+        return http.HttpNotImplemented()
 
     def put_list(self, request, **kwargs):
         """
@@ -1099,6 +1171,7 @@ class Resource(object):
             # objects if validation fails.
             try:
                 self.is_valid(bundle, request)
+                self.authorized_to_change(bundle)
             except ImmediateHttpResponse:
                 self.rollback(bundles_seen)
                 raise
@@ -1137,6 +1210,7 @@ class Resource(object):
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
         self.is_valid(bundle, request)
+        self.authorized_to_change(bundle)
 
         try:
             updated_bundle = self.obj_update(bundle, request=request, **self.remove_api_resource_names(kwargs))
@@ -1158,42 +1232,6 @@ class Resource(object):
                 updated_bundle = self.alter_detail_data_to_serialize(request, updated_bundle)
                 return self.create_response(request, updated_bundle, response_class=http.HttpCreated, location=location)
 
-    def post_list(self, request, **kwargs):
-        """
-        Creates a new resource/object with the provided data.
-
-        Calls ``obj_create`` with the provided data and returns a response
-        with the new resource's location.
-
-        If a new resource is created, return ``HttpCreated`` (201 Created).
-        If ``Meta.always_return_data = True``, there will be a populated body
-        of serialized data.
-        """
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
-        deserialized = self.alter_deserialized_detail_data(request, deserialized)
-        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
-        self.is_valid(bundle, request)
-        updated_bundle = self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
-        location = self.get_resource_uri(updated_bundle)
-
-        if not self._meta.always_return_data:
-            return http.HttpCreated(location=location)
-        else:
-            updated_bundle = self.full_dehydrate(updated_bundle)
-            updated_bundle = self.alter_detail_data_to_serialize(request, updated_bundle)
-            return self.create_response(request, updated_bundle, response_class=http.HttpCreated, location=location)
-
-    def post_detail(self, request, **kwargs):
-        """
-        Creates a new subcollection of the resource under a resource.
-
-        This is not implemented by default because most people's data models
-        aren't self-referential.
-
-        If a new resource is created, return ``HttpCreated`` (201 Created).
-        """
-        return http.HttpNotImplemented()
-
     def delete_list(self, request, **kwargs):
         """
         Destroys a collection of resources/objects.
@@ -1202,6 +1240,8 @@ class Resource(object):
 
         If the resources are deleted, return ``HttpNoContent`` (204 No Content).
         """
+        bundle = self.build_bundle(request=request)
+        self.authorized_to_delete(bundle)
         self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
         return http.HttpNoContent()
 
@@ -1214,6 +1254,9 @@ class Resource(object):
         If the resource is deleted, return ``HttpNoContent`` (204 No Content).
         If the resource did not exist, return ``Http404`` (404 Not Found).
         """
+        bundle = self.build_bundle(request=request)
+        self.authorized_to_delete(bundle)
+
         try:
             self.obj_delete(request=request, **self.remove_api_resource_names(kwargs))
             return http.HttpNoContent()
@@ -1292,6 +1335,7 @@ class Resource(object):
                     bundle = self.build_bundle(data=dict_strip_unicode_keys(data))
                     bundle.obj.pk = obj.pk
                     self.is_valid(bundle, request)
+                    self.authorized_to_add(bundle)
                     self.obj_create(bundle, request=request)
             else:
                 # There's no resource URI, so this is a create call just
@@ -1299,6 +1343,7 @@ class Resource(object):
                 data = self.alter_deserialized_detail_data(request, data)
                 bundle = self.build_bundle(data=dict_strip_unicode_keys(data))
                 self.is_valid(bundle, request)
+                self.authorized_to_add(bundle)
                 self.obj_create(bundle, request=request)
 
         if len(deserialized.get('deleted_objects', [])) and 'delete' not in self._meta.detail_allowed_methods:
@@ -1306,6 +1351,8 @@ class Resource(object):
 
         for uri in deserialized.get('deleted_objects', []):
             obj = self.get_via_uri(uri, request=request)
+            bundle = self.build_bundle(obj=obj, request=request)
+            self.authorized_to_delete(bundle)
             self.obj_delete(request=request, _obj=obj)
 
         return http.HttpAccepted()
@@ -1354,6 +1401,7 @@ class Resource(object):
         # function is cribbed from put_detail.
         self.alter_deserialized_detail_data(request, original_bundle.data)
         self.is_valid(original_bundle, request)
+        self.authorized_to_change(original_bundle)
         return self.obj_update(original_bundle, request=request, pk=original_bundle.obj.pk)
 
     def get_schema(self, request, **kwargs):
@@ -1369,6 +1417,8 @@ class Resource(object):
         self.is_authenticated(request)
         self.throttle_check(request)
         self.log_throttled_access(request)
+        bundle = self.build_bundle(request=request)
+        self.authorized_to_read(bundle)
         return self.create_response(request, self.build_schema())
 
     def get_multiple(self, request, **kwargs):
@@ -1395,7 +1445,9 @@ class Resource(object):
                 obj = self.obj_get(request, pk=pk)
                 bundle = self.build_bundle(obj=obj, request=request)
                 bundle = self.full_dehydrate(bundle)
-                objects.append(bundle)
+
+                if self.authorized_to_read(bundle, fail_silently=True):
+                    objects.append(bundle)
             except ObjectDoesNotExist:
                 not_found.append(pk)
 
