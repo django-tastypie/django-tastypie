@@ -668,7 +668,7 @@ We should get back::
 
 The Accepted response means the server has accepted the request, but gives no details on the result. In order to see any created resources, we would need to do a get ``GET`` on the list endpoint. 
 
-This request is atomic, in that all operations succeed or fail. The request body can contain an ``objects`` list to containing the list of objects to be created or updated. If the object has a ``resource_uri`` field and there exists a model corresponding to that ``resource_uri``, it will be partially updated, otherwise it will be created.  The request body can also contain a ``deleted_objects`` list, which is a list resource_uris to be deleted.
+For detailed information on the format of a bulk request, see :ref:`patch-list`.
 
 
 You Did It!
