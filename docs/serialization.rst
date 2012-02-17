@@ -95,8 +95,9 @@ In the case of adding a different format, let's say you want to add a CSV
 output option to the existing set. Your ``Serializer`` subclass might look
 like::
 
+    from django.http import HttpResponse
     import csv
-    import StringIO
+
     from tastypie.serializers import Serializer
 
 
@@ -115,12 +116,14 @@ like::
         def to_csv(self, data, options=None):
             options = options or {}
             data = self.to_simple(data, options)
-            raw_data = StringIO.StringIO()
-            # Untested, so this might not work exactly right.
-            for item in data:
-                writer = csv.DictWriter(raw_data, item.keys(), extrasaction='ignore')
-                writer.write(item)
-            return raw_data
+            response = HttpResponse(mimetype='text/csv')
+            response['Content-Disposition'] = 'attachment; filename=data.csv'
+
+            writer = csv.writer(response)
+            for item in data['objects']:
+                writer.writerow([unicode(item[key]).encode(
+                            "utf-8", "replace") for key in item.keys()])
+            return response
 
         def from_csv(self, content):
             raw_data = StringIO.StringIO(content)
