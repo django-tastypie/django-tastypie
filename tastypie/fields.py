@@ -545,7 +545,7 @@ class RelatedField(ApiField):
             return fk_resource.full_hydrate(fk_bundle)
 
         try:
-            return fk_resource.obj_update(fk_bundle, **data)
+            return fk_resource.obj_update(fk_bundle, request=request, **data)
         except NotFound:
             try:
                 # Attempt lookup by primary key
@@ -554,7 +554,7 @@ class RelatedField(ApiField):
                 if not lookup_kwargs:
                     raise NotFound()
 
-                return fk_resource.obj_update(fk_bundle, **lookup_kwargs)
+                return fk_resource.obj_update(fk_bundle, request=request, **lookup_kwargs)
             except NotFound:
                 return fk_resource.full_hydrate(fk_bundle)
         except MultipleObjectsReturned:
