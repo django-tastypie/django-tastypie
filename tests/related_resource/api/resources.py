@@ -101,7 +101,7 @@ class FreshMediaBitResource(ModelResource):
 
 
 class CompanyResource(ModelResource):
-    employees = fields.ToManyField('related_resource.api.resources.PersonResource', 'employees', full=True)
+    employees = fields.ToManyField('related_resource.api.resources.PersonResource', 'employees', full=True, related_name='company')
 
     class Meta:
         queryset = Company.objects.all()
@@ -111,7 +111,7 @@ class CompanyResource(ModelResource):
 
 class PersonResource(ModelResource):
     company = fields.ToOneField(CompanyResource, 'company')
-    dogs = fields.ToManyField('related_resource.api.resources.DogResource', 'dogs', full=True)
+    dogs = fields.ToManyField('related_resource.api.resources.DogResource', 'dogs', full=True, related_name='owner')
 
     class Meta:
         queryset = Person.objects.all()

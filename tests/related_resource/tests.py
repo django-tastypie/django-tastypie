@@ -227,7 +227,7 @@ class UriInRelatedResourceTest(TestCase):
         resp = cr.post_list(request)
         self.assertEqual(resp.status_code, 201)
         
-        pk = Company.objects.all()[0]
+        pk = Company.objects.all()[0].pk
         request = MockRequest()
         request.method = 'GET'
         resp = cr.get_detail(request, pk=pk)
