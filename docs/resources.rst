@@ -1380,6 +1380,9 @@ Calls ``obj_delete``.
 If the resource is deleted, return ``HttpNoContent`` (204 No Content).
 If the resource did not exist, return ``HttpNotFound`` (404 Not Found).
 
+
+.. _patch-list:
+
 ``patch_list``
 --------------
 
