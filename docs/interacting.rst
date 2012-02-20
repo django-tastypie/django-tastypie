@@ -526,6 +526,27 @@ We get a 204 status code, meaning our update was successful. We don't get
 a ``Location`` header back because we did the ``PUT`` on a detail URL, which
 presumably did not change.
 
+.. note::
+
+    A ``PUT`` request requires that the entire resource representation be enclosed. Missing fields may cause errors, or be filled in by default values. 
+
+
+Partially Updating An Existing Resource (PATCH)
+-----------------------------------------------
+
+In some cases, you may not want to send the entire resource when updating. To update just a subset of the fields, we can send a ``PATCH`` request to the detail endpoint.::
+
+    curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"body": "This actually is my last post."}' http://localhost:8000/api/v1/entry/4/
+
+
+To which we should get back::
+
+    HTTP/1.0 202 ACCEPTED
+    Date: Fri, 20 May 2011 07:13:21 GMT
+    Server: WSGIServer/0.1 Python/2.7
+    Content-Length: 0
+    Content-Type: text/html; charset=utf-8
+
 
 Updating A Whole Collection Of Resources (PUT)
 ----------------------------------------------
@@ -628,6 +649,26 @@ Gives us a 200 but no objects::
         },
         "objects": []
     }
+
+
+Bulk Operations
+===============
+
+As an optimization, it is possible to do many creations, updates, and deletions to a collection in a single request by sending a ``PATCH`` to the list endpoint.::
+
+    curl --dump-header - -H "Content-Type: application/json" -X PATCH --data '{"objects": [{"body": "Surprise! Another post!.", "pub_date": "2012-02-16T00:46:38", "slug": "yet-another-post", "title": "Yet Another Post"}], "deleted_objects": ["http://localhost:8000/api/v1/entry/4/"]}'  http://localhost:8000/api/v1/entry/
+
+We should get back::
+
+    HTTP/1.0 202 ACCEPTED
+    Date: Fri, 16 Feb 2012 00:46:38 GMT
+    Server: WSGIServer/0.1 Python/2.7
+    Content-Length: 0
+    Content-Type: text/html; charset=utf-8
+
+The Accepted response means the server has accepted the request, but gives no details on the result. In order to see any created resources, we would need to do a get ``GET`` on the list endpoint. 
+
+For detailed information on the format of a bulk request, see :ref:`patch-list`.
 
 
 You Did It!
