@@ -6,7 +6,7 @@ from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
 from related_resource.api.resources import FreshNoteResource, CompanyResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company
+from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog
 
 
 class RelatedResourceTest(TestCase):
@@ -203,6 +203,8 @@ class UriInRelatedResourceTest(TestCase):
     def test_uri_in_full_related_resource(self):
         # Sanity checks.
         self.assertEqual(Company.objects.count(), 0)
+        self.assertEqual(Person.objects.count(), 0)
+        self.assertEqual(Dog.objects.count(), 0)
 
         cr = CompanyResource()
 
@@ -226,12 +228,25 @@ class UriInRelatedResourceTest(TestCase):
         request.raw_post_data = json.dumps(data)
         resp = cr.post_list(request)
         self.assertEqual(resp.status_code, 201)
-        
+
         pk = Company.objects.all()[0].pk
         request = MockRequest()
         request.method = 'GET'
         resp = cr.get_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 200)
+        
+        company = json.loads(resp.content)
+
+        self.assertEqual(company['name'], 'Yum Yum Pie Factory!')
+        self.assertEqual(len(company['employees']), 1)
+
+        employee = company['employees'][0]
+        self.assertEqual(employee['name'], 'Joan Rivers')
+        self.assertEqual(len(employee['dogs']), 1)
+
+        dog = employee['dogs'][0]
+        self.assertEqual(dog['name'], 'Fido')
+
 
         request = MockRequest()
         request.GET = {'format': 'json'}
