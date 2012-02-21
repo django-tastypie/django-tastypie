@@ -15,7 +15,7 @@ class Paginator(object):
     ``total_count`` of resources seen and convenience links to the
     ``previous``/``next`` pages of data as available.
     """
-    def __init__(self, request_data, objects, resource_uri=None, limit=None, offset=0):
+    def __init__(self, request_data, objects, resource_uri=None, limit=None, offset=0, collection_name='objects'):
         """
         Instantiates the ``Paginator`` and allows for some configuration.
         
@@ -38,6 +38,7 @@ class Paginator(object):
         self.limit = limit
         self.offset = offset
         self.resource_uri = resource_uri
+        self.collection_name = collection_name
     
     def get_limit(self):
         """
@@ -165,6 +166,6 @@ class Paginator(object):
             meta['next'] = self.get_next(limit, offset, count)
 
         return {
-            'objects': objects,
+            self.collection_name: objects,
             'meta': meta,
         }

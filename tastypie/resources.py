@@ -77,6 +77,7 @@ class ResourceOptions(object):
     include_resource_uri = True
     include_absolute_url = False
     always_return_data = False
+    collection_name = 'objects'
 
     def __new__(cls, meta=None):
         overrides = {}
@@ -1029,7 +1030,7 @@ class Resource(object):
         objects = self.obj_get_list(request=request, **self.remove_api_resource_names(kwargs))
         sorted_objects = self.apply_sorting(objects, options=request.GET)
 
-        paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri(), limit=self._meta.limit)
+        paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri(), limit=self._meta.limit, collection_name=self._meta.collection_name)
         to_be_serialized = paginator.page()
 
         # Dehydrate the bundles in preparation for serialization.

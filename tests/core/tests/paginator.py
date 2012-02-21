@@ -156,3 +156,13 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(meta['previous'], '/api/v1/notes/?slug__startswith=%E2%98%83&offset=0&limit=2&format=json')
         self.assertEqual(meta['next'], u'/api/v1/notes/?slug__startswith=%E2%98%83&offset=4&limit=2&format=json')
         self.assertEqual(meta['total_count'], 6)
+
+    def test_custom_collection_name(self):
+        paginator = Paginator({}, self.data_set, resource_uri='/api/v1/notes/', limit=20, offset=0, collection_name='notes')
+        meta = paginator.page()['meta']
+        self.assertEqual(meta['limit'], 20)
+        self.assertEqual(meta['offset'], 0)
+        self.assertEqual(meta['previous'], None)
+        self.assertEqual(meta['next'], None)
+        self.assertEqual(meta['total_count'], 6)
+        self.assertEqual(len(paginator.page()['notes']), 6)
