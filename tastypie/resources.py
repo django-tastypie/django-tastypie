@@ -1957,6 +1957,7 @@ class ModelResource(Resource):
                 continue
 
             # Get the manager.
+            resource = field_object.to_class()
             related_mngr = getattr(bundle.obj, field_object.attribute)
 
             if hasattr(related_mngr, 'clear'):
@@ -1967,6 +1968,10 @@ class ModelResource(Resource):
 
             for related_bundle in bundle.data[field_name]:
                 related_bundle.obj.save()
+                
+                m2m_bundle = resource.hydrate_m2m(related_bundle)
+                resource.save_m2m(m2m_bundle)
+
                 related_objs.append(related_bundle.obj)
 
             related_mngr.add(*related_objs)
