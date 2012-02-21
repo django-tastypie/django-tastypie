@@ -120,7 +120,7 @@ class PersonResource(ModelResource):
 
 
 class DogResource(ModelResource):
-    owner = fields.ToOneField(CompanyResource, 'owner')
+    owner = fields.ToOneField(PersonResource, 'owner')
 
     class Meta:
         queryset = Dog.objects.all()
