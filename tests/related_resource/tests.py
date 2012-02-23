@@ -6,7 +6,7 @@ from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
 from related_resource.api.resources import FreshNoteResource, CompanyResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog
+from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse
 
 
 class RelatedResourceTest(TestCase):
@@ -205,6 +205,7 @@ class UriInRelatedResourceTest(TestCase):
         self.assertEqual(Company.objects.count(), 0)
         self.assertEqual(Person.objects.count(), 0)
         self.assertEqual(Dog.objects.count(), 0)
+        self.assertEqual(DogHouse.objects.count(), 0)
 
         cr = CompanyResource()
 
@@ -215,7 +216,10 @@ class UriInRelatedResourceTest(TestCase):
                     'name': 'Joan Rivers',
                     'dogs': [
                         {
-                            'name': 'Fido'
+                            'name': 'Fido',
+                            'house': {
+                                'color': 'Red'
+                            }
                         }
                     ]
                 }
@@ -246,7 +250,8 @@ class UriInRelatedResourceTest(TestCase):
 
         dog = employee['dogs'][0]
         self.assertEqual(dog['name'], 'Fido')
-
+        self.assertEqual(dog['house']['color'], 'Red')
+ 
 
         request = MockRequest()
         request.GET = {'format': 'json'}

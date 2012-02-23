@@ -69,10 +69,17 @@ class Person(models.Model):
     def __unicode__(self):
         return u"%s" % (self.name)
 
+class DogHouse(models.Model):
+    color = models.CharField(max_length=32)
+
+    def __unicode__(self):
+        return u"%s" % (self.color)
+
 
 class Dog(models.Model):
     name = models.CharField(max_length=32)
     owner = models.ForeignKey(Person, related_name="dogs")
+    house = models.ForeignKey(DogHouse, related_name="dogs")
 
     def __unicode__(self):
         return u"%s" % (self.name)

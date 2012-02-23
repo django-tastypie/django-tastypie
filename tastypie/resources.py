@@ -1967,6 +1967,8 @@ class ModelResource(Resource):
             related_objs = []
 
             for related_bundle in bundle.data[field_name]:
+                resource.save_related(related_bundle)
+
                 related_bundle.obj.save()
                 
                 m2m_bundle = resource.hydrate_m2m(related_bundle)

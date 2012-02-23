@@ -3,7 +3,7 @@ from tastypie.api import Api
 from related_resource.api.resources import NoteResource, UserResource, \
         CategoryResource, TagResource, TaggableTagResource, TaggableResource, \
         ExtraDataResource, FreshNoteResource, FreshMediaBitResource, \
-        CompanyResource, PersonResource, DogResource
+        CompanyResource, PersonResource, DogResource, DogHouseResource
 
 api = Api(api_name='v1')
 api.register(NoteResource(), canonical=True)
@@ -18,5 +18,6 @@ api.register(FreshMediaBitResource(), canonical=True)
 api.register(CompanyResource(), canonical=True)
 api.register(PersonResource(), canonical=True)
 api.register(DogResource(), canonical=True)
+api.register(DogHouseResource(), canonical=True)
 
 urlpatterns = api.urls
