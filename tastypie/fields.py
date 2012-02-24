@@ -99,7 +99,10 @@ class ApiField(object):
 
             for attr in attrs:
                 previous_object = current_object
-                current_object = getattr(current_object, attr, None)
+                if hasattr(current_object, attr):
+                    current_object = getattr(current_object, attr, None)
+                else:
+                    current_object = None
 
                 if current_object is None:
                     if self.has_default():
@@ -151,7 +154,7 @@ class ApiField(object):
 
             if self.blank:
                 return None
-            elif self.attribute and getattr(bundle.obj, self.attribute, None):
+            elif self.attribute and hasattr(bundle.obj, self.attribute):
                 return getattr(bundle.obj, self.attribute)
             elif self.instance_name and hasattr(bundle.obj, self.instance_name):
                 return getattr(bundle.obj, self.instance_name)
