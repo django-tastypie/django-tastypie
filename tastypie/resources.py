@@ -1985,6 +1985,12 @@ class ModelResource(Resource):
 
             # Because sometimes it's ``None`` & that's OK.
             if related_obj:
+                related_resource = field_object.get_related_resource(related_obj)
+                related_bundle = related_resource.build_bundle(obj=related_obj, request=bundle.request)
+
+                # Check if they're authorized.
+                related_resource.authorized_to_change(related_bundle)
+
                 related_obj.save()
                 setattr(bundle.obj, field_object.attribute, related_obj)
 
@@ -2012,12 +2018,18 @@ class ModelResource(Resource):
             related_mngr = getattr(bundle.obj, field_object.attribute)
 
             if hasattr(related_mngr, 'clear'):
+                # FIXME: Dupe the original bundle, copy in the new object &
+                #        check the perms on that (usin the related resource)?
+
                 # Clear it out, just to be safe.
                 related_mngr.clear()
 
             related_objs = []
 
             for related_bundle in bundle.data[field_name]:
+                # FIXME: Dupe the original bundle, copy in the new object &
+                #        check the perms on that (usin the related resource)?
+
                 related_bundle.obj.save()
                 related_objs.append(related_bundle.obj)
 
