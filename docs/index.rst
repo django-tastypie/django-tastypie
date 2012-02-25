@@ -23,10 +23,12 @@ interfaces.
    authentication_authorization
    serialization
    throttling
+   paginator
 
    cookbook
    debugging
    who_uses
+   contributing
 
 
 Getting Help
@@ -95,8 +97,31 @@ Optional
 --------
 
 * python_digest (https://bitbucket.org/akoha/python-digest/)
-* lxml (http://codespeak.net/lxml/) if using the XML serializer
+* lxml (http://lxml.de/) if using the XML serializer
 * pyyaml (http://pyyaml.org/) if using the YAML serializer
 * biplist (http://explorapp.com/biplist/) if using the binary plist serializer
 
 .. _Pip: http://pip.openplans.org/
+
+
+Running The Tests
+=================
+
+The easiest way to get setup to run Tastypie's tests looks like::
+
+  $ git clone https://github.com/toastdriven/django-tastypie.git
+  $ cd django-tastypie
+  $ virtualenv env
+  $ . env/bin/activate
+  $ ./env/bin/pip install -U -r requirements.txt
+
+Then running the tests is as simple as::
+
+  # From the same directory as above:
+  $ cd tests
+  $ ./run_all_test.sh
+
+Tastypie is maintained with all tests passing at all times. If you find a
+failure, please `report it`_ along with the versions of the installed software.
+
+.. _`report it`: https://github.com/toastdriven/django-tastypie/issues
