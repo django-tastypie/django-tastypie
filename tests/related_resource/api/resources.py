@@ -3,7 +3,7 @@ from tastypie import fields
 from tastypie.resources import ModelResource
 from tastypie.authorization import Authorization
 from core.models import Note, MediaBit
-from related_resource.models import Category, Tag, ExtraData, Taggable, TaggableTag, Company, Person, Dog, DogHouse
+from related_resource.models import Category, Tag, ExtraData, Taggable, TaggableTag, Company, Person, Dog, DogHouse, Product
 
 
 class UserResource(ModelResource):
@@ -133,4 +133,13 @@ class DogResource(ModelResource):
     class Meta:
         queryset = Dog.objects.all()
         resource_name = 'dog'
+        authorization = Authorization()
+
+
+class ProductResource(ModelResource):
+    producer = fields.ToOneField(CompanyResource, 'producer', full=True)
+
+    class Meta:
+        queryset = Product.objects.all()
+        resource_name = 'product'
         authorization = Authorization()

@@ -84,4 +84,12 @@ class Dog(models.Model):
     def __unicode__(self):
         return u"%s" % (self.name)
 
-    
+
+class Product(models.Model):
+    name = models.CharField(max_length=32)
+    producer = models.ForeignKey(Company, related_name="products")
+
+    def __unicode__(self):
+        return u"%s" % (self.name)
+
+        

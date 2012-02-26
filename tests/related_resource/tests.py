@@ -4,9 +4,9 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
-from related_resource.api.resources import FreshNoteResource, CompanyResource
+from related_resource.api.resources import FreshNoteResource, CompanyResource, ProductResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse
+from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Product
 
 
 class RelatedResourceTest(TestCase):
@@ -261,5 +261,70 @@ class UriInRelatedResourceTest(TestCase):
         self.assertEqual(resp.status_code, 204)
 
         
+    def test_product(self):
+        # Sanity checks.
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(Company.objects.count(), 0)
+        self.assertEqual(Person.objects.count(), 0)
+        self.assertEqual(Dog.objects.count(), 0)
+        self.assertEqual(DogHouse.objects.count(), 0)
 
+        pr = ProductResource()
 
+        data = {
+            'name': 'Tasty Pie',
+            'producer': {
+                'name': 'Yum Yum Pie Factory!',
+                'employees': [
+                    {
+                        'name': 'Joan Rivers',
+                        'dogs': [
+                            {
+                                'name': 'Fido',
+                                'house': {
+                                    'color': 'Red'
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.raw_post_data = json.dumps(data)
+        resp = pr.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+
+        pk = Product.objects.all()[0].pk
+        request = MockRequest()
+        request.method = 'GET'
+        resp = pr.get_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 200)
+        
+        product = json.loads(resp.content)
+
+        self.assertEqual(product['name'], 'Tasty Pie')
+
+        company = product['producer']
+
+        self.assertEqual(company['name'], 'Yum Yum Pie Factory!')
+        self.assertEqual(len(company['employees']), 1)
+
+        employee = company['employees'][0]
+        self.assertEqual(employee['name'], 'Joan Rivers')
+        self.assertEqual(len(employee['dogs']), 1)
+
+        dog = employee['dogs'][0]
+        self.assertEqual(dog['name'], 'Fido')
+        self.assertEqual(dog['house']['color'], 'Red')
+ 
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.raw_post_data = resp.content
+        resp = pr.put_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 204)
