@@ -4,9 +4,9 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
-from related_resource.api.resources import FreshNoteResource, CompanyResource, ProductResource
+from related_resource.api.resources import FreshNoteResource, PersonResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Product
+from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address
 
 
 class RelatedResourceTest(TestCase):
@@ -197,95 +197,76 @@ class OneToManySetupTestCase(TestCase):
         self.assertEqual(note.media_bits.all()[0].title, u'Picture #1')
 
 
-class UriInRelatedResourceTest(TestCase):
+class NestedRelatedResourceTest(TestCase):
     urls = 'related_resource.api.urls'
 
-    def test_uri_in_full_related_resource(self):
-        # Sanity checks.
-        self.assertEqual(Company.objects.count(), 0)
+    def test_one_to_one(self):
+        """
+        Test a related ToOne resource with a nested full ToOne resource
+        """
         self.assertEqual(Person.objects.count(), 0)
-        self.assertEqual(Dog.objects.count(), 0)
-        self.assertEqual(DogHouse.objects.count(), 0)
+        self.assertEqual(Company.objects.count(), 0)
+        self.assertEqual(Address.objects.count(), 0)
 
-        cr = CompanyResource()
-
+        pr = PersonResource()
+        
         data = {
-            'name': 'Yum Yum Pie Factory!',
-            'employees': [
-                {
-                    'name': 'Joan Rivers',
-                    'dogs': [
-                        {
-                            'name': 'Fido',
-                            'house': {
-                                'color': 'Red'
-                            }
-                        }
-                    ]
+            'name': 'Joan Rivers',
+            'company': {
+                'name': 'Yum Yum Pie Factory!',
+                'address': {
+                    'line': 'Somewhere, Utah'
                 }
-            ]
+            }
         }
 
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
         request.raw_post_data = json.dumps(data)
-        resp = cr.post_list(request)
+        resp = pr.post_list(request)
         self.assertEqual(resp.status_code, 201)
 
-        pk = Company.objects.all()[0].pk
+        pk = Person.objects.all()[0].pk
         request = MockRequest()
         request.method = 'GET'
-        resp = cr.get_detail(request, pk=pk)
+        resp = pr.get_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 200)
         
-        company = json.loads(resp.content)
+        person = json.loads(resp.content)
+        self.assertEqual(person['name'], 'Joan Rivers')
 
+        company = person['company']
         self.assertEqual(company['name'], 'Yum Yum Pie Factory!')
-        self.assertEqual(len(company['employees']), 1)
 
-        employee = company['employees'][0]
-        self.assertEqual(employee['name'], 'Joan Rivers')
-        self.assertEqual(len(employee['dogs']), 1)
-
-        dog = employee['dogs'][0]
-        self.assertEqual(dog['name'], 'Fido')
-        self.assertEqual(dog['house']['color'], 'Red')
- 
+        address = company['address']
+        self.assertEqual(address['line'], 'Somewhere, Utah')
 
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
         request.raw_post_data = resp.content
-        resp = cr.put_detail(request, pk=pk)
+        resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
 
-        
-    def test_product(self):
-        # Sanity checks.
-        self.assertEqual(Product.objects.count(), 0)
-        self.assertEqual(Company.objects.count(), 0)
+
+    def test_one_to_many(self):
+        """
+        Test a related ToOne resource with a nested full ToMany resource
+        """
         self.assertEqual(Person.objects.count(), 0)
-        self.assertEqual(Dog.objects.count(), 0)
-        self.assertEqual(DogHouse.objects.count(), 0)
+        self.assertEqual(Company.objects.count(), 0)
+        self.assertEqual(Product.objects.count(), 0)
 
-        pr = ProductResource()
-
+        pr = PersonResource()
+        
         data = {
-            'name': 'Tasty Pie',
-            'producer': {
+            'name': 'Joan Rivers',
+            'company': {
                 'name': 'Yum Yum Pie Factory!',
-                'employees': [
+                'products': [
                     {
-                        'name': 'Joan Rivers',
-                        'dogs': [
-                            {
-                                'name': 'Fido',
-                                'house': {
-                                    'color': 'Red'
-                                }
-                            }
-                        ]
+                        'name': 'Tasty Pie'
                     }
                 ]
             }
@@ -298,29 +279,130 @@ class UriInRelatedResourceTest(TestCase):
         resp = pr.post_list(request)
         self.assertEqual(resp.status_code, 201)
 
-        pk = Product.objects.all()[0].pk
+        pk = Person.objects.all()[0].pk
         request = MockRequest()
         request.method = 'GET'
         resp = pr.get_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 200)
         
-        product = json.loads(resp.content)
+        person = json.loads(resp.content)
+        self.assertEqual(person['name'], 'Joan Rivers')
 
+        company = person['company']
+        self.assertEqual(company['name'], 'Yum Yum Pie Factory!')
+        self.assertEqual(len(company['products']), 1)
+
+        product = company['products'][0]
         self.assertEqual(product['name'], 'Tasty Pie')
 
-        company = product['producer']
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.raw_post_data = resp.content
+        resp = pr.put_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 204)
 
-        self.assertEqual(company['name'], 'Yum Yum Pie Factory!')
-        self.assertEqual(len(company['employees']), 1)
 
-        employee = company['employees'][0]
-        self.assertEqual(employee['name'], 'Joan Rivers')
-        self.assertEqual(len(employee['dogs']), 1)
+    def test_many_to_one(self):
+        """
+        Test a related ToMany resource with a nested full ToOne resource
+        """
+        self.assertEqual(Person.objects.count(), 0)
+        self.assertEqual(Dog.objects.count(), 0)
+        self.assertEqual(DogHouse.objects.count(), 0)
 
-        dog = employee['dogs'][0]
-        self.assertEqual(dog['name'], 'Fido')
-        self.assertEqual(dog['house']['color'], 'Red')
- 
+        pr = PersonResource()
+        
+        data = {
+            'name': 'Joan Rivers',
+            'dogs': [
+                {
+                    'name': 'Snoopy',
+                    'house': {
+                        'color': 'Red'
+                    }
+                }
+            ]
+        }
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.raw_post_data = json.dumps(data)
+        resp = pr.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+
+        pk = Person.objects.all()[0].pk
+        request = MockRequest()
+        request.method = 'GET'
+        resp = pr.get_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 200)
+        
+        person = json.loads(resp.content)
+        self.assertEqual(person['name'], 'Joan Rivers')
+        self.assertEqual(len(person['dogs']), 1)
+
+        dog = person['dogs'][0]
+        self.assertEqual(dog['name'], 'Snoopy')
+
+        house = dog['house']
+        self.assertEqual(house['color'], 'Red')
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.raw_post_data = resp.content
+        resp = pr.put_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 204)
+
+
+    def test_many_to_many(self):
+        """
+        Test a related ToMany resource with a nested full ToMany resource
+        """
+        self.assertEqual(Person.objects.count(), 0)
+        self.assertEqual(Dog.objects.count(), 0)
+        self.assertEqual(Bone.objects.count(), 0)
+
+        pr = PersonResource()
+        
+        data = {
+            'name': 'Joan Rivers',
+            'dogs': [
+                {
+                    'name': 'Snoopy',
+                    'bones': [
+                        {
+                            'color': 'white'
+                        }
+                    ]
+                }
+            ]
+        }
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.raw_post_data = json.dumps(data)
+        resp = pr.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+
+        pk = Person.objects.all()[0].pk
+        request = MockRequest()
+        request.method = 'GET'
+        resp = pr.get_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 200)
+        
+        person = json.loads(resp.content)
+        self.assertEqual(person['name'], 'Joan Rivers')
+        self.assertEqual(len(person['dogs']), 1)
+
+        dog = person['dogs'][0]
+        self.assertEqual(dog['name'], 'Snoopy')
+        self.assertEqual(len(dog['bones']), 1)
+
+        bone = dog['bones'][0]
+        self.assertEqual(bone['color'], 'white')
 
         request = MockRequest()
         request.GET = {'format': 'json'}
