@@ -1619,9 +1619,13 @@ class ModelResource(Resource):
         # Split on ',' if not empty string and either an in or range filter.
         if filter_type in ('in', 'range') and len(value):
             if hasattr(filters, 'getlist'):
-                value = filters.getlist(filter_expr)
+                value = []
+
+                for part in filters.getlist(filter_expr):
+                    value.extend(part.split(','))
             else:
                 value = value.split(',')
+
         return value
 
     def build_filters(self, filters=None):
@@ -1667,8 +1671,7 @@ class ModelResource(Resource):
                 filter_type = filter_bits.pop()
 
             lookup_bits = self.check_filtering(field_name, filter_type, filter_bits)
-            value = self.filter_value_to_python(value, field_name, filters,
-                filter_expr, filter_type)
+            value = self.filter_value_to_python(value, field_name, filters, filter_expr, filter_type)
 
             db_field_name = LOOKUP_SEP.join(lookup_bits)
             qs_filter = "%s%s%s" % (db_field_name, LOOKUP_SEP, filter_type)
