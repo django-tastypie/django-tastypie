@@ -1944,7 +1944,7 @@ class ModelResource(Resource):
 
                     resource = field_object.to_class()
                     # Need a failing test for this line
-#                    resource.save_related(related_bundle)
+                    resource.save_related(related_bundle)
 
                 related_obj.save()
                 setattr(bundle.obj, field_object.attribute, related_obj)
