@@ -23,6 +23,7 @@ from tastypie.throttle import BaseThrottle
 from tastypie.utils import is_valid_jsonp_callback_value, dict_strip_unicode_keys, trailing_slash
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.validation import Validation
+import itertools
 try:
     set
 except NameError:
@@ -1652,7 +1653,9 @@ class ModelResource(Resource):
             # Split on ',' if not empty string and either an in or range filter.
             if filter_type in ('in', 'range') and len(value):
                 if hasattr(filters, 'getlist'):
-                    value = filters.getlist(filter_expr)
+                    value = []
+                    for part in filters.getlist(filter_expr):
+                        value.extend(part.split(','))
                 else:
                     value = value.split(',')
 

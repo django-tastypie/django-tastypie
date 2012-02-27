@@ -1400,6 +1400,7 @@ class ModelResourceTestCase(TestCase):
 
         # Valid in (using multiple params).
         self.assertEqual(resource.build_filters(filters=QueryDict('title__in=foo&title__in=bar')), {'title__in': ['foo', 'bar']})
+        self.assertEqual(resource.build_filters(filters=QueryDict('title__in=foo,bar')), {'title__in': ['foo', 'bar']})
 
         # Valid simple (non-``__exact``).
         self.assertEqual(resource.build_filters(filters={'content__startswith': 'Hello'}), {'content__startswith': 'Hello'})
