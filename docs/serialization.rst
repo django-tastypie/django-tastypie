@@ -31,8 +31,8 @@ demonstrate how you could use your own serializer::
     from django.contrib.auth.models import User
     from tastypie.resources import ModelResource
     from tastypie.serializers import Serializer
-    
-    
+
+
     class UserResource(ModelResource):
         class Meta:
             queryset = User.objects.all()
@@ -40,6 +40,22 @@ demonstrate how you could use your own serializer::
             excludes = ['email', 'password', 'is_superuser']
             # Add it here.
             serializer = Serializer()
+
+Not everyone wants to install or support all the serialization options. To
+that end, you can limit the ones available by passing a ``formats=`` kwarg.
+For example, to provide only JSON & binary plist serialization::
+
+    from django.contrib.auth.models import User
+    from tastypie.resources import ModelResource
+    from tastypie.serializers import Serializer
+
+
+    class UserResource(ModelResource):
+        class Meta:
+            queryset = User.objects.all()
+            resource_name = 'auth/user'
+            excludes = ['email', 'password', 'is_superuser']
+            serializer = Serializer(formats=['json', 'plist'])
 
 
 Implementing Your Own Serializer
@@ -53,26 +69,26 @@ methods. So adding the server time to all output might look like so::
 
     import time
     from tastypie.serializers import Serializer
-    
-    
+
+
     class CustomJSONSerializer(Serializer):
         def to_json(self, data, options=None):
             options = options or {}
-            
+
             data = self.to_simple(data, options)
 
             # Add in the current time.
             data['requested_time'] = time.time()
 
             return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True)
-        
+
         def from_json(self, content):
             data = simplejson.loads(content)
-            
+
             if 'requested_time' in data:
                 # Log the request here...
                 pass
-            
+
             return data
 
 In the case of adding a different format, let's say you want to add a CSV
@@ -82,8 +98,8 @@ like::
     import csv
     import StringIO
     from tastypie.serializers import Serializer
-    
-    
+
+
     class CSVSerializer(Serializer):
         formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'plist', 'csv']
         content_types = {
@@ -95,7 +111,7 @@ like::
             'plist': 'application/x-plist',
             'csv': 'text/csv',
         }
-        
+
         def to_csv(self, data, options=None):
             options = options or {}
             data = self.to_simple(data, options)
@@ -105,7 +121,7 @@ like::
                 writer = csv.DictWriter(raw_data, item.keys(), extrasaction='ignore')
                 writer.write(item)
             return raw_data
-        
+
         def from_csv(self, content):
             raw_data = StringIO.StringIO(content)
             data = []

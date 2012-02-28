@@ -377,9 +377,10 @@ A simple example::
             queryset = Note.objects.all()
 
         def hydrate_title(self, bundle):
-            return bundle.data['title'].lower()
+            bundle.data['title'] = bundle.data['title'].lower()
+            return bundle
 
-The return value is updated in the ``bundle.obj``.
+The return value is the ``bundle``.
 
 Per-field ``hydrate``
 ~~~~~~~~~~~~~~~~~~~~~
@@ -481,7 +482,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 -------------------
 
   Controls which paginator class the ``Resource`` should use. Default is
-  ``tastypie.paginator.Paginator()``.
+  ``tastypie.paginator.Paginator``.
 
 .. note::
 
@@ -529,6 +530,13 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Controls what how many results the ``Resource`` will show at a time. Default
   is either the ``API_LIMIT_PER_PAGE`` setting (if provided) or ``20`` if not
   specified.
+
+``max_limit``
+-------------
+
+  Controls the maximum number of results the ``Resource`` will show at a time.
+  If the user-specified ``limit`` is higher than this, it will be capped to
+  this limit. Set to ``0`` or ``None`` to allow unlimited results.
 
 ``api_name``
 ------------
@@ -633,6 +641,12 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   If ``True``, ``HttpAccepted`` (202) is returned on ``POST/PUT``
   with a body containing all the data in a serialized form.
+
+``collection_name``
+------------~~~~~~~
+
+  Specifies the collection of objects returned in the ``GET`` list will be
+  named. Default is ``objects``.
 
 
 Basic Filtering
@@ -1371,6 +1385,9 @@ Calls ``obj_delete``.
 
 If the resource is deleted, return ``HttpNoContent`` (204 No Content).
 If the resource did not exist, return ``HttpNotFound`` (404 Not Found).
+
+
+.. _patch-list:
 
 ``patch_list``
 --------------
