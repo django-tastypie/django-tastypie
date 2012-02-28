@@ -23,6 +23,7 @@ class Api(object):
     """
     def __init__(self, api_name="v1"):
         self.api_name = api_name
+        self._api_name_accept_header = False
         self._registry = {}
         self._canonicals = {}
 
@@ -49,6 +50,7 @@ class Api(object):
             # TODO: This is messy, but makes URI resolution on FK/M2M fields
             #       work consistently.
             resource._meta.api_name = self.api_name
+            resource._meta._api_name_accept_header = self._api_name_accept_header
             resource.__class__.Meta.api_name = self.api_name
 
     def unregister(self, resource_name):
@@ -87,13 +89,18 @@ class Api(object):
         Provides URLconf details for the ``Api`` and all registered
         ``Resources`` beneath it.
         """
-        pattern_list = [
-            url(r"^(?P<api_name>%s)%s$" % (self.api_name, trailing_slash()), self.wrap_view('top_level'), name="api_%s_top_level" % self.api_name),
-        ]
+        pattern_list = []
+        if not self._api_name_accept_header:
+            pattern_list = [
+                url(r"^(?P<api_name>%s)%s$" % (self.api_name, trailing_slash()), self.wrap_view('top_level'), name="api_%s_top_level" % self.api_name),
+            ]
 
         for name in sorted(self._registry.keys()):
             self._registry[name].api_name = self.api_name
-            pattern_list.append((r"^(?P<api_name>%s)/" % self.api_name, include(self._registry[name].urls)))
+            if self._api_name_accept_header:
+                pattern_list.append(('', include(self._registry[name].urls)))
+            else:
+                pattern_list.append((r"^(?P<api_name>%s)/" % self.api_name, include(self._registry[name].urls)))
 
         urlpatterns = self.override_urls() + patterns('',
             *pattern_list
@@ -111,16 +118,16 @@ class Api(object):
         if api_name is None:
             api_name = self.api_name
 
+        kwargs = {'resource_name': name}
+        if not self._api_name_accept_header:
+            kwargs['api_name'] = api_name
+
         for name in sorted(self._registry.keys()):
             available_resources[name] = {
-                'list_endpoint': self._build_reverse_url("api_dispatch_list", kwargs={
-                    'api_name': api_name,
-                    'resource_name': name,
-                }),
-                'schema': self._build_reverse_url("api_get_schema", kwargs={
-                    'api_name': api_name,
-                    'resource_name': name,
-                }),
+                'list_endpoint': self._build_reverse_url("api_dispatch_list",
+                    kwargs=kwargs),
+                'schema': self._build_reverse_url("api_get_schema",
+                    kwargs=kwargs),
             }
 
         desired_format = determine_format(request, serializer)
@@ -164,3 +171,38 @@ class NamespacedApi(Api):
     def _build_reverse_url(self, name, args=None, kwargs=None):
         namespaced = "%s:%s" % (self.urlconf_namespace, name)
         return reverse(namespaced, args=args, kwargs=kwargs)
+
+
+class AcceptHeaderRouter(object):
+    """
+    """
+    # TODO write doc comment
+    def __init__(self):
+        self._registry = {}
+
+    def register(self, api):
+        """
+        Registers an instance of an ``API`` subclass.
+        """
+        api._api_name_accept_header = True
+        self._registry[api.api_name] = api
+
+    def unregister(self, api):
+        """
+        If present, unregisters an from the router.
+        """
+        self._registery.pop(api.api_name, None)
+
+    def _api_name_from_headers(self):
+        # XXX make this actually work.
+        return 'v1'
+
+    @property
+    def urls(self):
+        """
+        Provides URLconf details for the ``Api`` and all registered
+        ``Resources`` beneath it. Picks the correct ``Api`` based on
+        the provided Accept header.
+        """
+        api_name = self._api_name_from_headers()
+        return self._registry[api_name].urls
