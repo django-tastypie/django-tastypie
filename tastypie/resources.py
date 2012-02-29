@@ -1079,7 +1079,7 @@ class Resource(object):
         deserialized = self.alter_deserialized_list_data(request, deserialized)
 
         if not 'objects' in deserialized:
-            raise BadRequest("Invalid data sent.")
+            raise BadRequest("Bad request. PUT requires a dictionary with a key 'objects' containing a list of objects.")
 
         self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
         bundles_seen = []
