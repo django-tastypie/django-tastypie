@@ -24,6 +24,7 @@ class Api(object):
     def __init__(self, api_name="v1"):
         self.api_name = api_name
         self._api_name_accept_header = False
+        self._reverse_url_prefix = '/'
         self._registry = {}
         self._canonicals = {}
 
@@ -51,6 +52,7 @@ class Api(object):
             #       work consistently.
             resource._meta.api_name = self.api_name
             resource._meta._api_name_accept_header = self._api_name_accept_header
+            resource._meta._reverse_url_prefix = self._reverse_url_prefix
             resource.__class__.Meta.api_name = self.api_name
 
     def unregister(self, resource_name):
@@ -150,7 +152,8 @@ class Api(object):
 
         See ``NamespacedApi._build_reverse_url`` for an example.
         """
-        return reverse(name, args=args, kwargs=kwargs)
+        path = reverse(name, urlconf=tuple(self.urls), args=args, kwargs=kwargs)
+        return self._reverse_url_prefix + path[1:]
 
 
 class NamespacedApi(Api):
@@ -170,11 +173,14 @@ class NamespacedApi(Api):
 
     def _build_reverse_url(self, name, args=None, kwargs=None):
         namespaced = "%s:%s" % (self.urlconf_namespace, name)
-        return reverse(namespaced, args=args, kwargs=kwargs)
+        path = reverse(namespaced, args=args, kwargs=kwargs)
+        return self._reverse_url_prefix + path[1:]
 
 
 class AcceptHeaderRouter(object):
     """
+    Allows routing to different Api instances based on the HTTP Accept
+    header.
     """
     # TODO write doc comment
     def __init__(self):
@@ -182,20 +188,23 @@ class AcceptHeaderRouter(object):
 
     def register(self, api):
         """
-        Registers an instance of an ``API`` subclass.
+        Registers an instance of an ``Api`` subclass.
         """
         api._api_name_accept_header = True
         self._registry[api.api_name] = api
 
     def unregister(self, api):
         """
-        If present, unregisters an from the router.
+        If present, unregisters an ``Api`` from the router.
         """
         self._registery.pop(api.api_name, None)
 
     def _api_name_from_headers(self):
         # XXX make this actually work.
         return 'v1'
+    
+    def api_from_headers(self):
+        return self._registry[self._api_name_from_headers()]
 
     @property
     def urls(self):
@@ -206,3 +215,27 @@ class AcceptHeaderRouter(object):
         """
         api_name = self._api_name_from_headers()
         return self._registry[api_name].urls
+
+    def as_view(self):
+        def view(request, *args, **kwargs):
+            path = kwargs.values()[0]
+
+            #############################
+            ## This doesn't have to be in this method
+            kwargs['rest'] = ''
+            url_prefix = reverse(view, args=args, kwargs=kwargs)
+
+            api = self.api_from_headers()
+            api._reverse_url_prefix = url_prefix
+            # Set the URL prefix for all Resources in this API
+            for name in api._registry:
+                api._registry[name]._meta._reverse_url_prefix = url_prefix
+            #############################
+
+            urls = patterns('',
+                (r'', include(api.urls)))
+            resolver = urls[0]
+
+            func, args, kwargs = resolver.resolve(path)
+            return func(request, *args, **kwargs)
+        return view

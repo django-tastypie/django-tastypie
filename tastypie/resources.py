@@ -67,6 +67,7 @@ class ResourceOptions(object):
     max_limit = 1000
     api_name = None
     _api_name_accept_header = None
+    _reverse_url_prefix = '/'
     resource_name = None
     urlconf_namespace = None
     default_format = 'application/json'
@@ -273,7 +274,8 @@ class Resource(object):
 
         See ``NamespacedModelResource._build_reverse_url`` for an example.
         """
-        return reverse(name, args=args, kwargs=kwargs)
+        path = reverse(name, urlconf=tuple(self.urls), args=args, kwargs=kwargs)
+        return self._meta._reverse_url_prefix + path[1:]
 
     def base_urls(self):
         """
@@ -2001,7 +2003,8 @@ class NamespacedModelResource(ModelResource):
     """
     def _build_reverse_url(self, name, args=None, kwargs=None):
         namespaced = "%s:%s" % (self._meta.urlconf_namespace, name)
-        return reverse(namespaced, args=args, kwargs=kwargs)
+        path = reverse(namespaced, urlconf=tuple(self.urls), args=args, kwargs=kwargs)
+        return self._meta._reverse_url_prefix + path[1:]
 
 
 # Based off of ``piston.utils.coerce_put_post``. Similarly BSD-licensed.
