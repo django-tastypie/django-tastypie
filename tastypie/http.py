@@ -66,6 +66,10 @@ class HttpGone(HttpResponse):
     status_code = 410
 
 
+class HttpThrottled(HttpResponse):
+    status_code = 429
+
+
 class HttpApplicationError(HttpResponse):
     status_code = 500
 
