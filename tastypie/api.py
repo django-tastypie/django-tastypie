@@ -181,16 +181,28 @@ class NamespacedApi(Api):
 class AcceptHeaderRouter(object):
     """
     Allows routing to different Api instances based on the HTTP Accept
-    header.
+    header.  register() Api instances to allow routing.
+
+    Routes to a given API based on application/vnd.api.<apiname>+<type>
+
+    For instance, a request with:
+
+    Accept: application/vnd.api.philip-v2+json
+
+    would route to the API that's registered with the name "philip-v2".
+
+    For requests with no name specified, we route to the Api instance that's
+    registered with default=True
     """
-    # TODO write doc comment
     def __init__(self):
         self._registry = {}
         self._default_api_name = None
 
     def register(self, api, default=False):
         """
-        Registers an instance of an ``Api`` subclass.
+        Registers an instance of an ``Api`` subclass. If ``default`` is True
+        then we will route to this Api instance when there's no api name
+        specified.
         """
         api._api_name_accept_header = True
         self._registry[api.api_name] = api
@@ -209,10 +221,10 @@ class AcceptHeaderRouter(object):
         # text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
         # So we need to split it apart for use with parse_media_range.
         ranges = self._accept_range.split(',')
-        ranges = [ mimeparse.parse_media_range(m) for m in ranges ]
+        ranges = [mimeparse.parse_media_range(m) for m in ranges]
         # Then sort the accepted types by their quality, best first.
         ranges.sort(
-            lambda x,y:cmp(float(y[2].get('q')), float(x[2].get('q'))))
+            lambda x, y: cmp(float(y[2].get('q')), float(x[2].get('q'))))
         for range in ranges:
             subtype = range[1]
             for api_name in self._registry.keys():
