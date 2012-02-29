@@ -343,7 +343,10 @@ class Resource(object):
 
         Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
         """
-        deserialized = self._meta.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        try:
+            deserialized = self._meta.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        except ValueError, e:
+            raise ValueError("Unable to deserialize: %s: %s" % (e,data))
         return deserialized
 
     def alter_list_data_to_serialize(self, request, data):
