@@ -36,6 +36,8 @@ Contributors:
 * Ed Summers (edsu) for a setup.py patch.
 * Sébastien Fievet (zyegfryed) for the initial OAuth implementation.
 * Jacob Kaplan-Moss (jacobkm) for the PATCH patch.
+* jorgeecardona for a patch in renaming the ``objects`` name of the response.
+* vbabiy for a patch on improved use of ``bundle.request``.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.

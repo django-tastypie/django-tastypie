@@ -80,6 +80,7 @@ class ResourceOptions(object):
     include_resource_uri = True
     include_absolute_url = False
     always_return_data = False
+    collection_name = 'objects'
 
     def __new__(cls, meta=None):
         overrides = {}
@@ -1044,7 +1045,7 @@ class Resource(object):
         objects = self.obj_get_list(request=request, **self.remove_api_resource_names(kwargs))
         sorted_objects = self.apply_sorting(objects, options=request.GET)
 
-        paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri(), limit=self._meta.limit, max_limit=self._meta.max_limit)
+        paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri(), limit=self._meta.limit, max_limit=self._meta.max_limit, collection_name=self._meta.collection_name)
         to_be_serialized = paginator.page()
 
         # Dehydrate the bundles in preparation for serialization.
@@ -1814,7 +1815,7 @@ class ModelResource(Resource):
             # Attempt to hydrate data from kwargs before doing a lookup for the object.
             # This step is needed so certain values (like datetime) will pass model validation.
             try:
-                bundle.obj = self.get_object_list(request).model()
+                bundle.obj = self.get_object_list(bundle.request).model()
                 bundle.data.update(kwargs)
                 bundle = self.full_hydrate(bundle)
                 lookup_kwargs = kwargs.copy()
@@ -1833,7 +1834,7 @@ class ModelResource(Resource):
                 lookup_kwargs = kwargs
 
             try:
-                bundle.obj = self.obj_get(request, **lookup_kwargs)
+                bundle.obj = self.obj_get(bundle.request, **lookup_kwargs)
             except ObjectDoesNotExist:
                 raise NotFound("A model instance matching the provided arguments could not be found.")
 

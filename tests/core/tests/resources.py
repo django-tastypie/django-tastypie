@@ -749,6 +749,16 @@ class CustomPageNoteResource(NoteResource):
         queryset = Note.objects.all()
 
 
+class AlwaysUserNoteResource(NoteResource):
+    class Meta:
+        resource_name = 'noteish'
+        queryset = Note.objects.filter(is_active=True)
+        authorization = Authorization()
+
+    def get_object_list(self, request):
+        return super(AlwaysUserNoteResource, self).get_object_list(request).filter(author=request.user)
+
+
 class UserResource(ModelResource):
     class Meta:
         queryset = User.objects.all()
@@ -2436,6 +2446,26 @@ class ModelResourceTestCase(TestCase):
         })
         self.assertRaises(NotFound, note.obj_update, note_bundle, pk=1, created='2010-03-31T20:05:00')
         self.assertEqual(Note.objects.all().count(), 6)
+
+        # Assign based on the ``request.user``, which helps ensure that
+        # the correct ``request`` is being passed along.
+        request = HttpRequest()
+        request.user = User.objects.get(username='johndoe')
+        self.assertEqual(AlwaysUserNoteResource().get_object_list(request).count(), 2)
+        note = AlwaysUserNoteResource()
+        note_obj = note.obj_get(request, pk=1)
+        note_bundle = note.build_bundle(obj=note_obj)
+        note_bundle = note.full_dehydrate(note_bundle)
+        note_bundle.data['title'] = 'Whee!'
+        note_bundle.request = request
+        note.obj_update(note_bundle, pk=1)
+        self.assertEqual(Note.objects.all().count(), 6)
+        numero_uno = Note.objects.get(pk=1)
+        self.assertEqual(numero_uno.title, u'Whee!')
+        self.assertEqual(numero_uno.slug, u'yet-another-another-new-post')
+        self.assertEqual(numero_uno.content, u'WHEEEEEE!')
+        self.assertEqual(numero_uno.is_active, True)
+        self.assertEqual(numero_uno.author.pk, request.user.pk)
 
     def test_obj_delete(self):
         self.assertEqual(Note.objects.all().count(), 6)
