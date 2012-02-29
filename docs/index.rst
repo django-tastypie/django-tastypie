@@ -7,13 +7,15 @@ interfaces.
 
 .. toctree::
    :maxdepth: 2
-   
+
    tutorial
    interacting
    settings
    non_orm_data_sources
-   
+   tools
+
    resources
+   bundles
    api
    fields
    caching
@@ -21,10 +23,12 @@ interfaces.
    authentication_authorization
    serialization
    throttling
-   
+   paginator
+
    cookbook
    debugging
    who_uses
+   contributing
 
 
 Getting Help
@@ -48,21 +52,21 @@ Quick Start
 
     from tastypie.resources import ModelResource
     from my_app.models import MyModel
-    
-    
+
+
     class MyModelResource(ModelResource):
         class Meta:
             queryset = MyModel.objects.all()
             allowed_methods = ['get']
 
 4. In your root URLconf, add the following code (around where the admin code might be)::
-    
+
     from tastypie.api import Api
     from my_app.api.resources import MyModelResource
-    
+
     v1_api = Api(api_name='v1')
     v1_api.register(MyModelResource())
-    
+
     urlpatterns = patterns('',
       # ...more URLconf bits here...
       # Then add:
@@ -78,19 +82,46 @@ Requirements
 Tastypie requires the following modules. If you use Pip_, you can install
 the necessary bits via the included ``requirements.txt``:
 
-* Python 2.4+
-* Django 1.0+
+Required
+--------
+
+* Python 2.5+
+* Django 1.2+
 * mimeparse 0.1.3+ (http://code.google.com/p/mimeparse/)
 
   * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
 
-* dateutil (http://labix.org/python-dateutil)
-* lxml (http://codespeak.net/lxml/) if using the XML serializer
+* dateutil (http://labix.org/python-dateutil) >= 1.5, < 2.0
+
+Optional
+--------
+
+* python_digest (https://bitbucket.org/akoha/python-digest/)
+* lxml (http://lxml.de/) if using the XML serializer
 * pyyaml (http://pyyaml.org/) if using the YAML serializer
-
-If you choose to use Python 2.4, be warned that you will also need to grab the
-following modules:
-
-* uuid (present in 2.5+, downloadable from http://pypi.python.org/pypi/uuid/) if using the ``ApiKey`` authentication
+* biplist (http://explorapp.com/biplist/) if using the binary plist serializer
 
 .. _Pip: http://pip.openplans.org/
+
+
+Running The Tests
+=================
+
+The easiest way to get setup to run Tastypie's tests looks like::
+
+  $ git clone https://github.com/toastdriven/django-tastypie.git
+  $ cd django-tastypie
+  $ virtualenv env
+  $ . env/bin/activate
+  $ ./env/bin/pip install -U -r requirements.txt
+
+Then running the tests is as simple as::
+
+  # From the same directory as above:
+  $ cd tests
+  $ ./run_all_test.sh
+
+Tastypie is maintained with all tests passing at all times. If you find a
+failure, please `report it`_ along with the versions of the installed software.
+
+.. _`report it`: https://github.com/toastdriven/django-tastypie/issues

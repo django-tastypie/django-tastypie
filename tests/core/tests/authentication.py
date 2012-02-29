@@ -1,12 +1,23 @@
 import base64
-import python_digest
+import time
+import warnings
 from django.contrib.auth.models import User
 from django.core import mail
 from django.http import HttpRequest
 from django.test import TestCase
-from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, DigestAuthentication, MultiAuthentication
+from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, DigestAuthentication, OAuthAuthentication, MultiAuthentication
 from tastypie.http import HttpUnauthorized
 from tastypie.models import ApiKey, create_api_key
+
+
+# Be tricky.
+from tastypie.authentication import python_digest, oauth2, oauth_provider
+if python_digest is None:
+    warnings.warn("Running tests without python_digest! Bad news!")
+if oauth2 is None:
+    warnings.warn("Running tests without oauth2! Bad news!")
+if oauth_provider is None:
+    warnings.warn("Running tests without oauth_provider! Bad news!")
 
 
 class AuthenticationTestCase(TestCase):
@@ -67,6 +78,13 @@ class BasicAuthenticationTestCase(TestCase):
         request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass:word')
         self.assertEqual(auth.is_authenticated(request), True)
 
+        # Capitalization shouldn't matter.
+        john_doe = User.objects.get(username='johndoe')
+        john_doe.set_password('pass:word')
+        john_doe.save()
+        request.META['HTTP_AUTHORIZATION'] = 'bAsIc %s' % base64.b64encode('johndoe:pass:word')
+        self.assertEqual(auth.is_authenticated(request), True)
+
 
 class ApiKeyAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -75,7 +93,7 @@ class ApiKeyAuthenticationTestCase(TestCase):
         super(ApiKeyAuthenticationTestCase, self).setUp()
         ApiKey.objects.all().delete()
 
-    def test_is_authenticated(self):
+    def test_is_authenticated_get_params(self):
         auth = ApiKeyAuthentication()
         request = HttpRequest()
 
@@ -105,6 +123,39 @@ class ApiKeyAuthenticationTestCase(TestCase):
         request.GET['api_key'] = john_doe.api_key.key
         self.assertEqual(auth.is_authenticated(request), True)
         self.assertEqual(auth.get_identifier(request), 'johndoe')
+
+    def test_is_authenticated_header(self):
+        auth = ApiKeyAuthentication()
+        request = HttpRequest()
+
+        # Simulate sending the signal.
+        john_doe = User.objects.get(username='johndoe')
+        create_api_key(User, instance=john_doe, created=True)
+
+        # No username/api_key details should fail.
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+
+        # Wrong username details.
+        request.META['HTTP_AUTHORIZATION'] = 'foo'
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+
+        # No api_key.
+        request.META['HTTP_AUTHORIZATION'] = 'ApiKey daniel'
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+
+        # Wrong user/api_key.
+        request.META['HTTP_AUTHORIZATION'] = 'ApiKey daniel:pass'
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+
+        # Correct user/api_key.
+        john_doe = User.objects.get(username='johndoe')
+        request.META['HTTP_AUTHORIZATION'] = 'ApiKey johndoe:%s' % john_doe.api_key.key
+        self.assertEqual(auth.is_authenticated(request), True)
+
+        # Capitalization shouldn't matter.
+        john_doe = User.objects.get(username='johndoe')
+        request.META['HTTP_AUTHORIZATION'] = 'aPiKeY johndoe:%s' % john_doe.api_key.key
+        self.assertEqual(auth.is_authenticated(request), True)
 
 
 class DigestAuthenticationTestCase(TestCase):
@@ -159,6 +210,51 @@ class DigestAuthenticationTestCase(TestCase):
         )
         auth_request = auth.is_authenticated(request)
         self.assertEqual(auth_request, True)
+
+
+class OAuthAuthenticationTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+
+    def test_is_authenticated(self):
+        from oauth_provider.models import Consumer, Token, Resource
+        auth = OAuthAuthentication()
+        request = HttpRequest()
+        request.META['SERVER_NAME'] = 'testsuite'
+        request.META['SERVER_PORT'] = '8080'
+        request.REQUEST = request.GET = {}
+        request.method = "GET"
+
+        # Invalid request.
+        resp = auth.is_authenticated(request)
+        self.assertEqual(resp.status_code, 401)
+
+        # No username/api_key details should fail.
+        request.REQUEST = request.GET = {
+            'oauth_consumer_key': '123',
+            'oauth_nonce': 'abc',
+            'oauth_signature': '&',
+            'oauth_signature_method': 'PLAINTEXT',
+            'oauth_timestamp': str(int(time.time())),
+            'oauth_token': 'foo',
+        }
+        user = User.objects.create_user('daniel', 'test@example.com', 'password')
+        request.META['Authorization'] = 'OAuth ' + ','.join([key+'='+value for key, value in request.REQUEST.items()])
+        resource, _ = Resource.objects.get_or_create(url='test', defaults={
+            'name': 'Test Resource'
+        })
+        consumer, _ = Consumer.objects.get_or_create(key='123', defaults={
+            'name': 'Test',
+            'description': 'Testing...'
+        })
+        token, _ = Token.objects.get_or_create(key='foo', token_type=Token.ACCESS, defaults={
+            'consumer': consumer,
+            'resource': resource,
+            'secret': '',
+            'user': user,
+        })
+        resp = auth.is_authenticated(request)
+        self.assertEqual(resp, True)
+        self.assertEqual(request.user.pk, user.pk)
 
 class MultiAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -227,4 +323,5 @@ class MultiAuthenticationTestCase(TestCase):
         john_doe.save()
         request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass')
         self.assertEqual(auth.is_authenticated(request), True)
+
 

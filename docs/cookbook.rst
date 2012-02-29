@@ -22,6 +22,23 @@ provide additional values::
             return bundle
 
 
+Pre-Request Alterations To The Queryset
+---------------------------------------
+
+A common pattern is needing to limit a queryset by something that changes
+per-request, for instance the date/time. You can accomplish this by lightly
+modifying ``get_object_list``::
+
+    from tastypie.utils import now
+
+    class MyResource(ModelResource):
+        class Meta:
+            queryset = MyObject.objects.all()
+
+        def get_object_list(self, request):
+            return super(MyResource, self).get_object_list(request).filter(start_date__gte=now)
+
+
 Using Your ``Resource`` In Regular Views
 ----------------------------------------
 
@@ -33,14 +50,14 @@ Javascript's use, you could do the following::
     # views.py
     from django.shortcuts import render_to_response
     from myapp.api.resources import UserResource
-    
-    
+
+
     def user_detail(request, username):
         ur = UserResource()
         user = ur.obj_get(username=username)
-        
+
         # Other things get prepped to go into the context then...
-        
+
         ur_bundle = ur.build_bundle(obj=user, request=request)
         return render_to_response('myapp/user_detail.html', {
             # Other things here.
@@ -63,7 +80,7 @@ something like the following::
     class UserResource(ModelResource):
         class Meta:
             queryset = User.objects.all()
-        
+
         def override_urls(self):
             return [
                 url(r"^(?P<resource_name>%s)/(?P<username>[\w\d_.-]+)/$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
@@ -82,12 +99,12 @@ handle the children::
 
     class ParentResource(ModelResource):
         children = fields.ToManyField(ChildResource, 'children')
-        
+
         def override_urls(self):
             return [
                 url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/children%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_children'), name="api_get_children"),
             ]
-        
+
         def get_children(self, request, **kwargs):
             try:
                 obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
@@ -95,7 +112,7 @@ handle the children::
                 return HttpGone()
             except MultipleObjectsReturned:
                 return HttpMultipleChoices("More than one resource is found at this URI.")
-            
+
             child_resource = ChildResource()
             return child_resource.get_detail(request, parent_id=obj.pk)
 
@@ -104,16 +121,16 @@ Another alternative approach is to override the ``dispatch`` method::
     # myapp/api/resources.py
     class EntryResource(ModelResource):
         user = fields.ForeignKey(UserResource, 'user')
-        
+
         class Meta:
             queryset = Entry.objects.all()
             resource_name = 'entry'
-        
+
         def dispatch(self, request_type, request, **kwargs):
             username = kwargs.pop('username')
             kwargs['user'] = get_object_or_404(User, username=username)
             return super(EntryResource, self).dispatch(request_type, request, **kwargs)
-    
+
     # urls.py
     from django.conf.urls.defaults import *
     from myapp.api import EntryResource
@@ -141,43 +158,43 @@ at ``/api/v1/notes/search/``::
     from tastypie.resources import ModelResource
     from tastypie.utils import trailing_slash
     from notes.models import Note
-    
-    
+
+
     class NoteResource(ModelResource):
         class Meta:
             queryset = Note.objects.all()
             resource_name = 'notes'
-        
+
         def override_urls(self):
             return [
                 url(r"^(?P<resource_name>%s)/search%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_search'), name="api_get_search"),
             ]
-        
+
         def get_search(self, request, **kwargs):
             self.method_check(request, allowed=['get'])
             self.is_authenticated(request)
             self.throttle_check(request)
-            
+
             # Do the query.
             sqs = SearchQuerySet().models(Note).load_all().auto_query(request.GET.get('q', ''))
             paginator = Paginator(sqs, 20)
-            
+
             try:
                 page = paginator.page(int(request.GET.get('page', 1)))
             except InvalidPage:
                 raise Http404("Sorry, no results on that page.")
-            
+
             objects = []
-            
+
             for result in page.object_list:
                 bundle = self.build_bundle(obj=result.object, request=request)
                 bundle = self.full_dehydrate(bundle)
                 objects.append(bundle)
-            
+
             object_list = {
                 'objects': objects,
             }
-            
+
             self.log_throttled_access(request)
             return self.create_response(request, object_list)
 
@@ -188,11 +205,11 @@ Creating per-user resources
 ---------------------------
 
 One might want to create an API which will require every user to authenticate
-and every user will be working only with objects associated with him. Let's see
+and every user will be working only with objects associated with them. Let's see
 how to implement it for two basic operations: listing and creation of an object.
 
 For listing we want to list only objects for which 'user' field matches
-'request.user'. This could be done my applying filter in ``apply_authorization_limits``
+'request.user'. This could be done by applying a filter in the ``apply_authorization_limits``
 method of your resource.
 
 For creating we'd have to wrap ``obj_create`` method of ``ModelResource``. Then the
@@ -206,10 +223,10 @@ resulting code will look something like::
             list_allowed_methods = ['get', 'post']
             authentication = ApiKeyAuthentication()
             authorization = Authorization()
-        
+
         def obj_create(self, bundle, request=None, **kwargs):
             return super(EnvironmentResource, self).obj_create(bundle, request, user=request.user)
-        
+
         def apply_authorization_limits(self, request, object_list):
             return object_list.filter(user=request.user)
 
@@ -277,3 +294,44 @@ values in camelCase instead::
 
         return underscored_data
 
+Determining format via URL
+--------------------------
+
+Sometimes it's required to allow selecting the response format by
+specifying it in the API URL, for example ``/api/v1/users.json`` instead
+of ``/api/v1/users/?format=json``. The following snippet allows that kind
+of syntax additional to the default URL scheme::
+
+    # myapp/api/resources.py
+    class UserResource(ModelResource):
+        class Meta:
+            queryset = User.objects.all()
+
+        def override_urls(self):
+            """
+            Returns a URL scheme based on the default scheme to specify
+            the response format as a file extension, e.g. /api/v1/users.json
+            """
+            return [
+                url(r"^(?P<resource_name>%s)\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('dispatch_list'), name="api_dispatch_list"),
+                url(r"^(?P<resource_name>%s)/schema\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('get_schema'), name="api_get_schema"),
+                url(r"^(?P<resource_name>%s)/set/(?P<pk_list>\w[\w/;-]*)\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('get_multiple'), name="api_get_multiple"),
+                url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
+            ]
+
+        def determine_format(self, request):
+            """
+            Used to determine the desired format from the request.format
+            attribute.
+            """
+            if (hasattr(request, 'format') and
+                    request.format in self._meta.serializer.formats):
+                return self._meta.serializer.get_mime_for_format(request.format)
+            return super(UserResource, self).determine_format(request)
+
+        def wrap_view(self, view):
+            def wrapper(request, *args, **kwargs):
+                request.format = kwargs.pop('format', None)
+                wrapped_view = super(UserResource, self).wrap_view(view)
+                return wrapped_view(request, *args, **kwargs)
+            return wrapper

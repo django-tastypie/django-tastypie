@@ -15,8 +15,7 @@ Quick Start
 
 For the impatient::
 
-  import datetime
-  from tastypie import fields
+  from tastypie import fields, utils
   from tastypie.resources import Resource
   from myapp.api.resources import ProfileResource, NoteResource
 
@@ -24,7 +23,7 @@ For the impatient::
   class PersonResource(Resource):
       name = fields.CharField(attribute='name')
       age = fields.IntegerField(attribute='years_old', null=True)
-      created = fields.DateTimeField(readonly=True, help_text='When the person was created', default=datetime.datetime.now)
+      created = fields.DateTimeField(readonly=True, help_text='When the person was created', default=utils.now)
       is_active = fields.BooleanField(default=True)
       profile = fields.ToOneField(ProfileResource, 'profile')
       notes = fields.ToManyField(NoteResource, 'notes', full=True)
@@ -223,8 +222,28 @@ be included in full.
 
 .. attribute:: RelatedField.related_name
 
-Currently unused, as unlike Django's ORM layer, reverse relations between
-``Resource`` classes are not automatically created. Defaults to ``None``.
+Used to help automatically populate reverse relations when creating data.
+Defaults to ``None``.
+
+In order for this option to work correctly, there must be a field on the
+other ``Resource`` with this as an ``attribute/instance_name``. Usually this
+just means adding a reflecting ``ToOneField`` pointing back.
+
+Example::
+
+    class EntryResource(ModelResource):
+        authors = fields.ToManyField('path.to.api.resources.AuthorResource', 'author_set', related_name='entry')
+
+        class Meta:
+            queryset = Entry.objects.all()
+            resource_name = 'entry'
+
+    class AuthorResource(ModelResource):
+        entry = fields.ToOneField(EntryResource, 'entry')
+
+        class Meta:
+            queryset = Author.objects.all()
+            resource_name = 'author'
 
 
 Field Types

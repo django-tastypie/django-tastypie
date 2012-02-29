@@ -9,6 +9,8 @@ from tastypie.fields import *
 from tastypie.resources import ModelResource
 from core.models import Note, Subject, MediaBit
 
+from tastypie.utils import aware_datetime, aware_date
+
 
 class ApiFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -75,7 +77,7 @@ class ApiFieldTestCase(TestCase):
 
         # Correct callable attribute.
         field_6 = ApiField(attribute='what_time_is_it', default=True)
-        self.assertEqual(field_6.dehydrate(bundle), datetime.datetime(2010, 4, 1, 0, 48))
+        self.assertEqual(field_6.dehydrate(bundle), aware_datetime(2010, 4, 1, 0, 48))
 
     def test_convert(self):
         field_1 = ApiField()
@@ -390,7 +392,7 @@ class TimeFieldTestCase(TestCase):
         bundle = Bundle(obj=note)
 
         field_1 = TimeField(attribute='created')
-        self.assertEqual(field_1.dehydrate(bundle), datetime.datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(field_1.dehydrate(bundle), aware_datetime(2010, 3, 30, 20, 5))
 
         field_2 = TimeField(default=datetime.time(23, 5, 58))
         self.assertEqual(field_2.dehydrate(bundle), datetime.time(23, 5, 58))
@@ -452,7 +454,7 @@ class DateFieldTestCase(TestCase):
         bundle = Bundle(obj=note)
 
         field_1 = DateField(attribute='created')
-        self.assertEqual(field_1.dehydrate(bundle), datetime.datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(field_1.dehydrate(bundle), aware_datetime(2010, 3, 30, 20, 5))
 
         field_2 = DateField(default=datetime.date(2010, 4, 1))
         self.assertEqual(field_2.dehydrate(bundle), datetime.date(2010, 4, 1))
@@ -517,14 +519,14 @@ class DateTimeFieldTestCase(TestCase):
         bundle = Bundle(obj=note)
 
         field_1 = DateTimeField(attribute='created')
-        self.assertEqual(field_1.dehydrate(bundle), datetime.datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(field_1.dehydrate(bundle), aware_datetime(2010, 3, 30, 20, 5))
 
-        field_2 = DateTimeField(default=datetime.datetime(2010, 4, 1, 1, 7))
-        self.assertEqual(field_2.dehydrate(bundle), datetime.datetime(2010, 4, 1, 1, 7))
+        field_2 = DateTimeField(default=aware_datetime(2010, 4, 1, 1, 7))
+        self.assertEqual(field_2.dehydrate(bundle), aware_datetime(2010, 4, 1, 1, 7))
 
         note.created_string = '2010-04-02 01:11:00'
         field_3 = DateTimeField(attribute='created_string')
-        self.assertEqual(field_3.dehydrate(bundle), datetime.datetime(2010, 4, 2, 1, 11))
+        self.assertEqual(field_3.dehydrate(bundle), aware_datetime(2010, 4, 2, 1, 11))
 
     def test_hydrate(self):
         note = Note.objects.get(pk=1)
@@ -534,19 +536,19 @@ class DateTimeFieldTestCase(TestCase):
         })
         field_1 = DateTimeField(attribute='created')
         field_1.instance_name = 'datetime'
-        self.assertEqual(field_1.hydrate(bundle_1), datetime.datetime(2010, 5, 12, 10, 36, 28))
+        self.assertEqual(field_1.hydrate(bundle_1), aware_datetime(2010, 5, 12, 10, 36, 28))
 
         bundle_2 = Bundle()
-        field_2 = DateTimeField(default=datetime.datetime(2010, 4, 1, 2, 0))
+        field_2 = DateTimeField(default=aware_datetime(2010, 4, 1, 2, 0))
         field_2.instance_name = 'datetime'
-        self.assertEqual(field_2.hydrate(bundle_2), datetime.datetime(2010, 4, 1, 2, 0))
+        self.assertEqual(field_2.hydrate(bundle_2), aware_datetime(2010, 4, 1, 2, 0))
 
         bundle_3 = Bundle(data={
             'datetime': 'Tue, 30 Mar 2010 20:05:00 -0500',
         })
         field_3 = DateTimeField(attribute='created_string')
         field_3.instance_name = 'datetime'
-        self.assertEqual(field_3.hydrate(bundle_3), datetime.datetime(2010, 3, 30, 20, 5, tzinfo=tzoffset(None, -18000)))
+        self.assertEqual(field_3.hydrate(bundle_3), aware_datetime(2010, 3, 30, 20, 5, tzinfo=tzoffset(None, -18000)))
 
         bundle_4 = Bundle(data={
             'datetime': None,
@@ -757,6 +759,15 @@ class ToOneFieldTestCase(TestCase):
         field_12.instance_name = 'author'
         self.assertEqual(field_12.hydrate(bundle), None)
 
+        # A related object.
+        field_13 = ToOneField(UserResource, 'author')
+        field_13.instance_name = 'fk'
+        bundle.related_obj = User.objects.get(pk=1)
+        bundle.related_name = 'author'
+        fk_bundle = field_13.hydrate(bundle)
+        self.assertEqual(fk_bundle.obj.username, u'johndoe')
+        self.assertEqual(fk_bundle.obj.email, u'john@doe.com')
+
     def test_resource_from_uri(self):
         ur = UserResource()
         field_1 = ToOneField(UserResource, 'author')
@@ -765,6 +776,10 @@ class ToOneFieldTestCase(TestCase):
         self.assertEqual(fk_bundle.data['email'], u'john@doe.com')
         self.assertEqual(fk_bundle.obj.username, u'johndoe')
         self.assertEqual(fk_bundle.obj.email, u'john@doe.com')
+
+        fk_bundle = field_1.resource_from_uri(ur, '/api/v1/users/1/', related_obj='Foo', related_name='Bar')
+        self.assertEqual(fk_bundle.related_obj, None)
+        self.assertEqual(fk_bundle.related_name, None)
 
     def test_resource_from_data(self):
         ur = UserResource()
@@ -779,6 +794,14 @@ class ToOneFieldTestCase(TestCase):
         self.assertEqual(fk_bundle.obj.username, u'mistersmith')
         self.assertEqual(fk_bundle.obj.email, u'smith@example.com')
 
+        fk_bundle = field_1.resource_from_data(ur, {
+            'username': u'mistersmith',
+            'email': u'smith@example.com',
+            'password': u'foobar',
+        }, related_obj='Foo', related_name='Bar')
+        self.assertEqual(fk_bundle.related_obj, 'Foo')
+        self.assertEqual(fk_bundle.related_name, 'Bar')
+
     def test_resource_from_pk(self):
         user = User.objects.get(pk=1)
         ur = UserResource()
@@ -789,6 +812,23 @@ class ToOneFieldTestCase(TestCase):
         self.assertEqual(fk_bundle.obj.username, u'johndoe')
         self.assertEqual(fk_bundle.obj.email, u'john@doe.com')
 
+        fk_bundle = field_1.resource_from_pk(ur, user, related_obj='Foo', related_name='Bar')
+        self.assertEqual(fk_bundle.related_obj, None)
+        self.assertEqual(fk_bundle.related_name, None)
+
+    def test_traversed_attribute_dehydrate(self):
+        user = User.objects.get(pk=1)
+        mediabit = MediaBit(note=Note(author=user))
+        bundle = Bundle(obj=mediabit)
+        
+        field_1 = ToOneField(UserResource, 'note__author')
+        field_1.instance_name = 'fk'
+        self.assertEqual(field_1.dehydrate(bundle), '/api/v1/users/1/')
+
+        field_2 = ToOneField(UserResource, 'fakefield__author')
+        field_2.instance_name = 'fk'
+        self.assertRaises(ApiFieldError, field_2.hydrate, bundle)
+    
 
 class SubjectResource(ModelResource):
     class Meta:
@@ -797,6 +837,15 @@ class SubjectResource(ModelResource):
 
     def get_resource_uri(self, bundle):
         return '/api/v1/subjects/%s/' % bundle.obj.id
+
+
+class MediaBitResource(ModelResource):
+    class Meta:
+        resource_name = 'mediabits'
+        queryset = MediaBit.objects.all()
+
+    def get_resource_uri(self, bundle):
+        return '/api/v1/mediabits/%s/' % bundle.obj.id
 
 
 class ToManyFieldTestCase(TestCase):
@@ -1035,3 +1084,28 @@ class ToManyFieldTestCase(TestCase):
         field_9 = ToManyField(SubjectResource, 'subjects', readonly=True)
         field_9.instance_name = 'm2m'
         self.assertEqual(field_9.hydrate(bundle_6), None)
+
+        # A related object.
+        field_10 = ToManyField(MediaBitResource, 'media_bits', related_name='note')
+        field_10.instance_name = 'mbs'
+        note_1 = Note.objects.get(pk=1)
+        bundle_10 = Bundle(obj=note_1, data={'mbs': [
+            {
+                'title': 'Foo!',
+            },
+        ]})
+        media_bundle_list = field_10.hydrate_m2m(bundle_10)
+        self.assertEqual(len(media_bundle_list), 1)
+        self.assertEqual(media_bundle_list[0].obj.title, u'Foo!')
+
+    def test_traversed_attribute_dehydrate(self):
+        mediabit = MediaBit(id=1, note=self.note_1)
+        bundle = Bundle(obj=mediabit)
+        
+        field_1 = ToManyField(SubjectResource, 'note__subjects')
+        field_1.instance_name = 'm2m'
+        self.assertEqual(field_1.dehydrate(bundle), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
+    
+        field_2 = ToOneField(SubjectResource, 'fakefield__subjects')
+        field_2.instance_name = 'm2m'
+        self.assertRaises(ApiFieldError, field_2.hydrate, bundle)
