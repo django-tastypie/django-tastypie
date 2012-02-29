@@ -775,7 +775,12 @@ class Resource(object):
             data['ordering'] = self._meta.ordering
 
         if self._meta.filtering:
-            data['filtering'] = self._meta.filtering
+            filters = data['filtering'] = self._meta.filtering
+            for field in filters.iterkeys():
+                if filters[field] == ALL:
+                    filters[field] = 'ALL'
+                elif filters[field] == ALL_WITH_RELATIONS:
+                    filters[field] = 'ALL WITH RELATIONS'
 
         for field_name, field_object in self.fields.items():
             data['fields'][field_name] = {
