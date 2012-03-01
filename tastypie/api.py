@@ -9,6 +9,13 @@ from tastypie.serializers import Serializer
 from tastypie.utils import trailing_slash, is_valid_jsonp_callback_value
 from tastypie.utils.mime import determine_format, build_content_type
 
+# If ``csrf_exempt`` isn't present, stub it.
+try:
+    from django.views.decorators.csrf import csrf_exempt
+except ImportError:
+    def csrf_exempt(func):
+        return func
+
 
 class Api(object):
     """
@@ -267,6 +274,7 @@ class AcceptHeaderRouter(object):
         return self._registry[api_name].urls
 
     def as_view(self):
+        @csrf_exempt
         def view(request, *args, **kwargs):
             path = kwargs.values()[0]
 
