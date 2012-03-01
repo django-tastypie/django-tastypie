@@ -24,7 +24,7 @@ class Api(object):
     """
     def __init__(self, api_name="v1"):
         self.api_name = api_name
-        self._api_name_accept_header = False
+        self._accept_header_routing = False
         self._reverse_url_prefix = '/'
         self._registry = {}
         self._canonicals = {}
@@ -52,9 +52,10 @@ class Api(object):
             # TODO: This is messy, but makes URI resolution on FK/M2M fields
             #       work consistently.
             resource._meta.api_name = self.api_name
-            resource._meta._api_name_accept_header = self._api_name_accept_header
-            resource._meta._reverse_url_prefix = self._reverse_url_prefix
             resource.__class__.Meta.api_name = self.api_name
+            resource._meta._api = self
+
+        self._setup_accept_header(resource)
 
     def unregister(self, resource_name):
         """
@@ -93,14 +94,14 @@ class Api(object):
         ``Resources`` beneath it.
         """
         pattern_list = []
-        if not self._api_name_accept_header:
+        if not self._accept_header_routing:
             pattern_list = [
                 url(r"^(?P<api_name>%s)%s$" % (self.api_name, trailing_slash()), self.wrap_view('top_level'), name="api_%s_top_level" % self.api_name),
             ]
 
         for name in sorted(self._registry.keys()):
             self._registry[name].api_name = self.api_name
-            if self._api_name_accept_header:
+            if self._accept_header_routing:
                 pattern_list.append(('', include(self._registry[name].urls)))
             else:
                 pattern_list.append((r"^(?P<api_name>%s)/" % self.api_name, include(self._registry[name].urls)))
@@ -122,7 +123,7 @@ class Api(object):
             api_name = self.api_name
 
         kwargs = {'resource_name': name}
-        if not self._api_name_accept_header:
+        if not self._accept_header_routing:
             kwargs['api_name'] = api_name
 
         for name in sorted(self._registry.keys()):
@@ -155,6 +156,10 @@ class Api(object):
         """
         path = reverse(name, urlconf=tuple(self.urls), args=args, kwargs=kwargs)
         return self._reverse_url_prefix + path[1:]
+
+    def _setup_accept_header(self, resource):
+        resource._meta._accept_header_routing = self._accept_header_routing
+        resource._meta._reverse_url_prefix = self._reverse_url_prefix
 
 
 class NamespacedApi(Api):
@@ -204,7 +209,13 @@ class AcceptHeaderRouter(object):
         then we will route to this Api instance when there's no api name
         specified.
         """
-        api._api_name_accept_header = True
+        api._accept_header_routing = True
+        for api_name, resource in api._registry.iteritems():
+            # Because a resource can be registered with an Api after the Api
+            # has been registered with the AcceptHeaderRouter, we have
+            # to do this when the Api itself is registered *and* when
+            # the resource is registered with the Api.
+            api._setup_accept_header(resource)
         self._registry[api.api_name] = api
         if default:
             self._default_api_name = api.api_name
