@@ -39,3 +39,8 @@ echo
 echo
 echo "** Validation **"
 django-admin.py test validation --settings=settings_validation
+
+echo
+echo
+echo "** Accept Header routing **"
+django-admin.py test accept_header_routing --settings=settings_accept_header_routing

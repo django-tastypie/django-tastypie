@@ -275,7 +275,12 @@ class Resource(object):
 
         See ``NamespacedModelResource._build_reverse_url`` for an example.
         """
-        path = reverse(name, urlconf=tuple(self.urls), args=args, kwargs=kwargs)
+        urlconf = None
+        if self._meta._api and self._meta._api._accept_header_routing:
+            # We can't use the global urlconf for AcceptHeaderRouter
+            # lookups.
+            urlconf = tuple(self.urls)
+        path = reverse(name, urlconf=urlconf, args=args, kwargs=kwargs)
         return self._meta._reverse_url_prefix + path[1:]
 
     def base_urls(self):
@@ -640,17 +645,20 @@ class Resource(object):
         if prefix and chomped_uri.startswith(prefix):
             chomped_uri = chomped_uri[len(prefix)-1:]
         try:
-            # If we're doing Accept header routing, we resolve using the
-            # local urlconf because the global resolve() will give us the
-            # wildcard route into the AcceptHeaderRouter.
-            if self._meta._api._accept_header_routing:
+            if self._meta._api and self._meta._api._accept_header_routing:
+                # If we're doing Accept header routing, we resolve using the
+                # local urlconf because the global resolve() will give us the
+                # wildcard route into the AcceptHeaderRouter.
                 prefix = self._meta._reverse_url_prefix
+                # No "- 1" in this range because the prefix includes the
+                # trailing slash.
                 chomped_uri = chomped_uri[len(prefix):]
                 urls = patterns('',
                     (r'', include(self._meta._api.urls)))
                 resolver = urls[0]
-                resolve = resolver.resolve
-            view, args, kwargs = resolve(chomped_uri)
+                view, args, kwargs = resolver.resolve(chomped_uri)
+            else:
+                view, args, kwargs = resolve(chomped_uri)
         except Resolver404:
             raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
 
@@ -2013,7 +2021,12 @@ class NamespacedModelResource(ModelResource):
     """
     def _build_reverse_url(self, name, args=None, kwargs=None):
         namespaced = "%s:%s" % (self._meta.urlconf_namespace, name)
-        path = reverse(namespaced, urlconf=tuple(self.urls), args=args, kwargs=kwargs)
+        urlconf = None
+        if self._meta._api and self._meta._api._accept_header_routing:
+            # We can't use the global urlconf for AcceptHeaderRouter
+            # lookups.
+            urlconf = tuple(self.urls)
+        path = reverse(namespaced, urlconf=urlconf, args=args, kwargs=kwargs)
         return self._meta._reverse_url_prefix + path[1:]
 
 

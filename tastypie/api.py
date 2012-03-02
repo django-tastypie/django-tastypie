@@ -165,7 +165,12 @@ class Api(object):
 
         See ``NamespacedApi._build_reverse_url`` for an example.
         """
-        path = reverse(name, urlconf=tuple(self.urls), args=args, kwargs=kwargs)
+        urlconf = None
+        if self._accept_header_routing:
+            # We can't use the global urlconf for AcceptHeaderRouter
+            # lookups.
+            urlconf = tuple(self.urls)
+        path = reverse(name, urlconf=urlconf, args=args, kwargs=kwargs)
         return self._reverse_url_prefix + path[1:]
 
     def _setup_accept_header(self, resource):
