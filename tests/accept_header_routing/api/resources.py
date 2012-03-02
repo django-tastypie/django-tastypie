@@ -25,6 +25,6 @@ class BusinessResource(ModelResource):
     user = fields.ForeignKey(UserResource, 'user')
     
     class Meta:
-        resource_name = 'notes'
+        resource_name = 'businesses'
         queryset = Note.objects.all()
         authorization = Authorization()
