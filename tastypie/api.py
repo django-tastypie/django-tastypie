@@ -100,10 +100,13 @@ class Api(object):
         Provides URLconf details for the ``Api`` and all registered
         ``Resources`` beneath it.
         """
-        pattern_list = []
         if not self._accept_header_routing:
             pattern_list = [
                 url(r"^(?P<api_name>%s)%s$" % (self.api_name, trailing_slash()), self.wrap_view('top_level'), name="api_%s_top_level" % self.api_name),
+            ]
+        else:
+            pattern_list = [
+                url(r"^$", self.wrap_view('top_level'), name="api_%s_top_level" % self.api_name),
             ]
 
         for name in sorted(self._registry.keys()):
@@ -129,11 +132,12 @@ class Api(object):
         if api_name is None:
             api_name = self.api_name
 
-        kwargs = {'resource_name': name}
+        kwargs = {}
         if not self._accept_header_routing:
             kwargs['api_name'] = api_name
 
         for name in sorted(self._registry.keys()):
+            kwargs['resource_name'] = name
             available_resources[name] = {
                 'list_endpoint': self._build_reverse_url("api_dispatch_list",
                     kwargs=kwargs),
