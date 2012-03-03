@@ -288,8 +288,6 @@ class AcceptHeaderRouter(object):
         def view(request, *args, **kwargs):
             path = kwargs.values()[0]
 
-            #############################
-            ## This doesn't have to be in this method
             kwargs['rest'] = ''
             url_prefix = reverse(view, args=args, kwargs=kwargs)
 
@@ -298,9 +296,9 @@ class AcceptHeaderRouter(object):
             # Set the URL prefix for all Resources in this API
             for name in api._registry:
                 api._registry[name]._meta._reverse_url_prefix = url_prefix
-            #############################
 
-            # (We can maybe move this out too:)
+            # Is it slow to do this? If so, we can pull out to an
+            # instance variable.
             urls = patterns('',
                 (r'', include(api.urls)))
             resolver = urls[0]
