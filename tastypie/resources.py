@@ -21,7 +21,7 @@ from tastypie.paginator import Paginator
 from tastypie.serializers import Serializer
 from tastypie.throttle import BaseThrottle
 from tastypie.utils import is_valid_jsonp_callback_value, dict_strip_unicode_keys, trailing_slash
-from tastypie.utils.mime import determine_format, build_content_type
+from tastypie.utils.mime import determine_format, build_content_type, unwrap_content_type
 from tastypie.validation import Validation
 try:
     set
@@ -242,7 +242,8 @@ class Resource(object):
             }
             desired_format = self.determine_format(request)
             serialized = self.serialize(request, data, desired_format)
-            return response_class(content=serialized, content_type=build_content_type(desired_format))
+            content_type = build_content_type(desired_format, api=self._meta._api)
+            return response_class(content=serialized, content_type=content_type)
 
         # When DEBUG is False, send an error message to the admins (unless it's
         # a 404, in which case we check the setting).
@@ -267,7 +268,8 @@ class Resource(object):
         }
         desired_format = self.determine_format(request)
         serialized = self.serialize(request, data, desired_format)
-        return response_class(content=serialized, content_type=build_content_type(desired_format))
+        content_type = build_content_type(desired_format, api=self._meta._api)
+        return response_class(content=serialized, content_type=content_type)
 
     def _build_reverse_url(self, name, args=None, kwargs=None):
         """
@@ -355,7 +357,8 @@ class Resource(object):
 
         Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
         """
-        deserialized = self._meta.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        format = unwrap_content_type(request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self._meta.serializer.deserialize(data, format=format)
         return deserialized
 
     def alter_list_data_to_serialize(self, request, data):
@@ -1009,7 +1012,8 @@ class Resource(object):
         """
         desired_format = self.determine_format(request)
         serialized = self.serialize(request, data, desired_format)
-        return response_class(content=serialized, content_type=build_content_type(desired_format), **response_kwargs)
+        content_type = build_content_type(desired_format, api=self._meta._api)
+        return response_class(content=serialized, content_type=content_type, **response_kwargs)
 
     def is_valid(self, bundle, request=None):
         """
@@ -1030,7 +1034,8 @@ class Resource(object):
                 desired_format = self._meta.default_format
 
             serialized = self.serialize(request, errors, desired_format)
-            response = http.HttpBadRequest(content=serialized, content_type=build_content_type(desired_format))
+            content_type = build_content_type(desired_format, api=self._meta._api)
+            response = http.HttpBadRequest(content=serialized, content_type=content_type)
             raise ImmediateHttpResponse(response=response)
 
     def rollback(self, bundles):
@@ -1105,7 +1110,8 @@ class Resource(object):
         Return ``HttpAccepted`` (202 Accepted) if
         ``Meta.always_return_data = True``.
         """
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        format = unwrap_content_type(request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request.raw_post_data, format=format)
         deserialized = self.alter_deserialized_list_data(request, deserialized)
 
         if not 'objects' in deserialized:
@@ -1155,7 +1161,8 @@ class Resource(object):
         ``Meta.always_return_data = True``, return ``HttpAccepted`` (202
         Accepted).
         """
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        format = unwrap_content_type(request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request.raw_post_data, format=format)
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
         self.is_valid(bundle, request)
@@ -1191,7 +1198,8 @@ class Resource(object):
         If ``Meta.always_return_data = True``, there will be a populated body
         of serialized data.
         """
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        format = unwrap_content_type(request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request.raw_post_data, format=format)
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
         self.is_valid(bundle, request)
@@ -1285,7 +1293,8 @@ class Resource(object):
               entire request will fail and all resources will be rolled back.
         """
         request = convert_post_to_patch(request)
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        format = unwrap_content_type(request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request.raw_post_data, format=format)
 
         if "objects" not in deserialized:
             raise BadRequest("Invalid data sent.")
@@ -1361,7 +1370,8 @@ class Resource(object):
         bundle = self.alter_detail_data_to_serialize(request, bundle)
 
         # Now update the bundle in-place.
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        format = unwrap_content_type(request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request.raw_post_data, format=format)
         self.update_in_place(request, bundle, deserialized)
         return http.HttpAccepted()
 

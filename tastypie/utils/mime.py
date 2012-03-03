@@ -1,4 +1,5 @@
 import mimeparse
+import re
 
 
 def determine_format(request, serializer, default_format='application/json'):
@@ -39,11 +40,30 @@ def determine_format(request, serializer, default_format='application/json'):
     return default_format
 
 
-def build_content_type(format, encoding='utf-8'):
+def build_content_type(format, encoding='utf-8', api=None):
     """
-    Appends character encoding to the provided format if not already present.
+    Adds the vnd.api.<api_name> attribute to the content type
+    (if using AcceptHeaderRouter) and appends the character encoding.
     """
+    if api and api._accept_header_routing:
+        type, subtype, vars = mimeparse.parse_mime_type(format)
+        subtype = 'vnd.api.%s+%s' % (api.api_name, subtype)
+        attributes = ''
+        for k, v in vars.iteritems():
+            attributes += '; %s=%s' % (k, v)
+        format = '%s/%s%s' % (type, subtype, attributes)
     if 'charset' in format:
         return format
     
     return "%s; charset=%s" % (format, encoding)
+
+# Anything surrounded by pluses and vnd.api.<apiname>
+# will be removed.
+_unwrap_match = re.compile('\+?vnd\.api\.[^\+;]+\+?')
+
+
+def unwrap_content_type(format):
+    """
+    Removes the api name from the provided ``format``, if present.
+    """
+    return _unwrap_match.sub('', format)

@@ -28,6 +28,19 @@ class AnnotatedNote(models.Model):
 
 
 class Business(models.Model):
+    user = models.ForeignKey(User, related_name='businesses')
+    name = models.CharField(max_length=255)
+    slug = models.SlugField()
+    description = models.TextField()
+    is_active = models.BooleanField(default=True)
+    created = models.DateTimeField(default=now)
+    updated = models.DateTimeField(default=now)
+
+    def __unicode__(self):
+        return self.name
+
+
+class Organization(models.Model):
     name = models.CharField(max_length=255)
     slug = models.SlugField()
     description = models.TextField()

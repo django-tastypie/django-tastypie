@@ -157,7 +157,8 @@ class Api(object):
             options['callback'] = callback
 
         serialized = serializer.serialize(available_resources, desired_format, options)
-        return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
+        content_type = build_content_type(desired_format, api=self)
+        return HttpResponse(content=serialized, content_type=content_type)
 
     def _build_reverse_url(self, name, args=None, kwargs=None):
         """
@@ -260,7 +261,7 @@ class AcceptHeaderRouter(object):
                 # vnd.api.djangoappv3+xml
                 if subtype.startswith('vnd.api.%s+' % api_name):
                     # This is our match.
-                    # Temporarily rewrite the Accepts header, removing our
+                    # Rewrite the Accepts header, removing our
                     # vendor-specific api name so that the rest of our logic
                     # works the same way.
                     request.META['HTTP_ACCEPT'] = self._accept_range.replace(
