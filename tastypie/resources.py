@@ -1604,6 +1604,27 @@ class ModelResource(Resource):
 
         return [self.fields[field_name].attribute]
 
+    def filter_value_to_python(self, value, field_name, filters, filter_expr,
+            filter_type):
+        """
+        Turn the string ``value`` into a python object.
+        """
+        # Simple values
+        if value in ['true', 'True', True]:
+            value = True
+        elif value in ['false', 'False', False]:
+            value = False
+        elif value in ('nil', 'none', 'None', None):
+            value = None
+
+        # Split on ',' if not empty string and either an in or range filter.
+        if filter_type in ('in', 'range') and len(value):
+            if hasattr(filters, 'getlist'):
+                value = filters.getlist(filter_expr)
+            else:
+                value = value.split(',')
+        return value
+
     def build_filters(self, filters=None):
         """
         Given a dictionary of filters, create the necessary ORM-level filters.
@@ -1628,6 +1649,12 @@ class ModelResource(Resource):
 
         qs_filters = {}
 
+        if hasattr(self._meta, 'queryset'):
+            # Get the possible query terms from the current QuerySet.
+            query_terms = self._meta.queryset.query.query_terms.keys()
+        else:
+            query_terms = QUERY_TERMS.keys()
+
         for filter_expr, value in filters.items():
             filter_bits = filter_expr.split(LOOKUP_SEP)
             field_name = filter_bits.pop(0)
@@ -1637,24 +1664,12 @@ class ModelResource(Resource):
                 # It's not a field we know about. Move along citizen.
                 continue
 
-            if len(filter_bits) and filter_bits[-1] in QUERY_TERMS.keys():
+            if len(filter_bits) and filter_bits[-1] in query_terms:
                 filter_type = filter_bits.pop()
 
             lookup_bits = self.check_filtering(field_name, filter_type, filter_bits)
-
-            if value in ['true', 'True', True]:
-                value = True
-            elif value in ['false', 'False', False]:
-                value = False
-            elif value in ('nil', 'none', 'None', None):
-                value = None
-
-            # Split on ',' if not empty string and either an in or range filter.
-            if filter_type in ('in', 'range') and len(value):
-                if hasattr(filters, 'getlist'):
-                    value = filters.getlist(filter_expr)
-                else:
-                    value = value.split(',')
+            value = self.filter_value_to_python(value, field_name, filters,
+                filter_expr, filter_type)
 
             db_field_name = LOOKUP_SEP.join(lookup_bits)
             qs_filter = "%s%s%s" % (db_field_name, LOOKUP_SEP, filter_type)
