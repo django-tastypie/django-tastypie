@@ -1,6 +1,8 @@
 # See COPYING file in this directory.
 # Some code originally from django-boundaryservice
 
+from urllib import unquote
+
 from django.contrib.gis.db.models import GeometryField
 from django.utils import simplejson
 from django.contrib.gis.geos import GEOSGeometry
@@ -64,7 +66,7 @@ class GeoResource(ModelResource):
         # just return ``value`` as normal.
         if isinstance(self.fields[field_name], GeometryApiField):
             try:
-                value = GEOSGeometry(value)
+                value = GEOSGeometry(unquote(value))
             except ValueError:
                 pass
         return value
