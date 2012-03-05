@@ -1,11 +1,12 @@
 # See COPYING file in this directory.
-# Originally from django-boundaryservice
+# Some code originally from django-boundaryservice
 
 from django.contrib.gis.db.models import GeometryField
 from django.utils import simplejson
+from django.contrib.gis.geos import GEOSGeometry
 
 from tastypie.fields import ApiField, CharField
-from tastypie import resources
+from tastypie.resources import ModelResource
 
 
 class GeometryApiField(ApiField):
@@ -38,7 +39,7 @@ class GeometryApiField(ApiField):
         return simplejson.loads(value.geojson)
 
 
-class ModelResource(resources.ModelResource):
+class GeoResource(ModelResource):
     """
     ModelResource subclass that handles geometry fields as GeoJSON.
     """
@@ -50,4 +51,20 @@ class ModelResource(resources.ModelResource):
         if isinstance(f, GeometryField):
             return GeometryApiField
 
-        return super(ModelResource, cls).api_field_from_django_field(f, default)
+        return super(GeoResource, cls).api_field_from_django_field(f, default)
+
+    def filter_value_to_python(self, value, field_name, filters, filter_expr,
+            filter_type):
+        value = super(GeoResource, self).filter_value_to_python(
+            value, field_name, filters, filter_expr, filter_type)
+
+        # If we are filtering on a GeometryApiField then we should try
+        # and convert this to a GEOSGeometry object.  The conversion
+        # will fail if we don't have value JSON, so in that case we'll
+        # just return ``value`` as normal.
+        if isinstance(self.fields[field_name], GeometryApiField):
+            try:
+                value = GEOSGeometry(value)
+            except ValueError:
+                pass
+        return value
