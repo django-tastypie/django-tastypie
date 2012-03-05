@@ -6,7 +6,7 @@ from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, ValidationError
 from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404, get_script_prefix
 from django.db import transaction
-from django.db.models.sql.constants import LOOKUP_SEP
+from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.utils.cache import patch_cache_control
 from tastypie.authentication import Authentication
@@ -1649,8 +1649,12 @@ class ModelResource(Resource):
             filters = {}
 
         qs_filters = {}
-        # Get the possible query terms from the current QuerySet.
-        query_terms = self._meta.queryset.query.query_terms.keys()
+
+        if hasattr(self._meta, 'queryset'):
+            # Get the possible query terms from the current QuerySet.
+            query_terms = self._meta.queryset.query.query_terms.keys()
+        else:
+            query_terms = QUERY_TERMS.keys()
 
         for filter_expr, value in filters.items():
             filter_bits = filter_expr.split(LOOKUP_SEP)
