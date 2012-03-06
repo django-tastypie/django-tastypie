@@ -2,6 +2,7 @@ import datetime
 from django.contrib.auth.models import User
 from django.db import models
 from tastypie.utils import now
+from django import forms
 
 class Note(models.Model):
     user = models.ForeignKey(User, related_name='notes')
@@ -14,14 +15,21 @@ class Note(models.Model):
 
     def __unicode__(self):
         return self.title
-    
+
     def save(self, *args, **kwargs):
         self.updated = now()
         return super(Note, self).save(*args, **kwargs)
 
 class AnnotatedNote(models.Model):
-    note = models.OneToOneField(Note, related_name='annotated', null=True)
+    note = models.OneToOneField(Note, related_name='annotated')
     annotations = models.TextField()
-    
+
     def __unicode__(self):
         return u"Annotated %s" % self.note.title
+
+class UserForm(forms.ModelForm):
+    class Meta:
+        model = User
+    formats = ['%Y-%m-%dT%H:%M:%S.%f','%Y-%m-%dT%H:%M:%S'] 
+    date_joined = forms.DateTimeField(input_formats=formats) 
+    last_login = forms.DateTimeField(input_formats=formats) 
