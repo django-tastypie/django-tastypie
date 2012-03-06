@@ -1934,8 +1934,27 @@ class ModelResource(Resource):
 
             # Because sometimes it's ``None`` & that's OK.
             if related_obj:
+                related_data = bundle.data.get(field_object.attribute, None)
+
+                if not hasattr(related_data, 'get'):
+                    # We only care about data that is dict-like
+                    related_data = None
+
+                if related_data:
+                    related_bundle = Bundle(obj=related_obj, request=bundle.request, data=related_data)
+
+                    resource = field_object.to_class()
+                    # Need a failing test for this line
+                    resource.save_related(related_bundle)
+
                 related_obj.save()
                 setattr(bundle.obj, field_object.attribute, related_obj)
+
+                if related_data:
+                    m2m_bundle = resource.hydrate_m2m(related_bundle)
+                    resource.save_m2m(m2m_bundle)
+
+
 
     def save_m2m(self, bundle):
         """
@@ -1958,6 +1977,7 @@ class ModelResource(Resource):
                 continue
 
             # Get the manager.
+            resource = field_object.to_class()
             related_mngr = getattr(bundle.obj, field_object.attribute)
 
             if hasattr(related_mngr, 'clear'):
@@ -1967,7 +1987,13 @@ class ModelResource(Resource):
             related_objs = []
 
             for related_bundle in bundle.data[field_name]:
+                resource.save_related(related_bundle)
+
                 related_bundle.obj.save()
+                
+                m2m_bundle = resource.hydrate_m2m(related_bundle)
+                resource.save_m2m(m2m_bundle)
+
                 related_objs.append(related_bundle.obj)
 
             related_mngr.add(*related_objs)
