@@ -8,7 +8,7 @@ from django.utils import simplejson
 from django.contrib.gis.geos import GEOSGeometry
 
 from tastypie.fields import ApiField, CharField
-from tastypie.resources import ModelResource
+from tastypie import resources
 
 
 class GeometryApiField(ApiField):
@@ -41,7 +41,7 @@ class GeometryApiField(ApiField):
         return simplejson.loads(value.geojson)
 
 
-class GeoResource(ModelResource):
+class ModelResource(resources.ModelResource):
     """
     ModelResource subclass that handles geometry fields as GeoJSON.
     """
@@ -53,11 +53,11 @@ class GeoResource(ModelResource):
         if isinstance(f, GeometryField):
             return GeometryApiField
 
-        return super(GeoResource, cls).api_field_from_django_field(f, default)
+        return super(ModelResource, cls).api_field_from_django_field(f, default)
 
     def filter_value_to_python(self, value, field_name, filters, filter_expr,
             filter_type):
-        value = super(GeoResource, self).filter_value_to_python(
+        value = super(ModelResource, self).filter_value_to_python(
             value, field_name, filters, filter_expr, filter_type)
 
         # If we are filtering on a GeometryApiField then we should try
