@@ -63,3 +63,63 @@ class HTTPTestCase(TestServerTestCase):
         self.assertEqual(obj['content'], 'A new post.')
         self.assertEqual(obj['is_active'], True)
         self.assertEqual(obj['user'], '/api/v1/users/1/')
+
+    def test_post_geojson(self):
+        connection = self.get_connection()
+        post_data = """{
+            "content": "A new post.", "is_active": true, "title": "New Title2",
+            "slug": "new-title2", "user": "/api/v1/users/1/",
+            "polys": { "type": "MultiPolygon", "coordinates": [ [ [ [ -122.511067, 37.771276 ], [ -122.510037, 37.766391 ], [ -122.510037, 37.763813 ], [ -122.456822, 37.765848 ], [ -122.452960, 37.766459 ], [ -122.454848, 37.773990 ], [ -122.475362, 37.773040 ], [ -122.511067, 37.771276 ] ] ] ] }
+        }"""
+        connection.request('POST', '/api/v1/geonotes/', body=post_data, headers={'Accept': 'application/json', 'Content-type': 'application/json'})
+        response = connection.getresponse()
+        self.assertEqual(response.status, 201)
+        self.assertEqual(dict(response.getheaders())['location'], 'http://localhost:8001/api/v1/geonotes/4/')
+
+        # make sure posted object exists
+        connection.request('GET', '/api/v1/geonotes/4/', headers={'Accept': 'application/json'})
+        response = connection.getresponse()
+        connection.close()
+
+        self.assertEqual(response.status, 200)
+
+        data = response.read()
+        obj = json.loads(data)
+
+        self.assertEqual(obj['content'], 'A new post.')
+        self.assertEqual(obj['is_active'], True)
+        self.assertEqual(obj['user'], '/api/v1/users/1/')
+        self.assertEqual(obj['polys'], {u'type': u'MultiPolygon', u'coordinates': [[[[-122.511067, 37.771276], [-122.510037, 37.766390999999999], [-122.510037, 37.763812999999999], [-122.456822, 37.765847999999998], [-122.45296, 37.766458999999998], [-122.454848, 37.773989999999998], [-122.475362, 37.773040000000002], [-122.511067, 37.771276]]]]})
+
+    def test_post_xml(self):
+        connection = self.get_connection()
+        post_data = """<object><created>2010-03-30T20:05:00</created><polys type="null"/><is_active type="boolean">True</is_active><title>Points inside Golden Gate Park note 2</title><lines type="null"/><slug>points-inside-golden-gate-park-note-2</slug><content>A new post.</content><points type="hash"><type>MultiPoint</type><coordinates type="list"><objects><value type="float">-122.475233</value><value type="float">37.768617</value></objects><objects><value type="float">-122.470416</value><value type="float">37.767382</value></objects></coordinates></points><user>/api/v1/users/1/</user></object>"""
+        connection.request('POST', '/api/v1/geonotes/', body=post_data, headers={'Accept': 'application/xml', 'Content-type': 'application/xml'})
+        response = connection.getresponse()
+        self.assertEqual(response.status, 201)
+        self.assertEqual(dict(response.getheaders())['location'], 'http://localhost:8001/api/v1/geonotes/4/')
+
+        # make sure posted object exists
+        connection.request('GET', '/api/v1/geonotes/4/', headers={'Accept': 'application/json'})
+        response = connection.getresponse()
+        connection.close()
+
+        self.assertEqual(response.status, 200)
+
+        data = response.read()
+        obj = json.loads(data)
+
+        self.assertEqual(obj['content'], 'A new post.')
+        self.assertEqual(obj['is_active'], True)
+        self.assertEqual(obj['user'], '/api/v1/users/1/')
+        # Weeeee!  GeoJSON returned!
+        self.assertEqual(obj['points'], {"coordinates": [[-122.475233, 37.768616999999999], [-122.470416, 37.767381999999998]], "type": "MultiPoint"})
+
+        # Or we can ask for XML
+        connection.request('GET', '/api/v1/geonotes/4/', headers={'Accept': 'application/xml'})
+        response = connection.getresponse()
+        connection.close()
+
+        self.assertEqual(response.status, 200)
+        data = response.read()
+        self.assertTrue('<points type="hash"><type>MultiPoint</type><coordinates type="list"><objects><value type="float">-122.475233</value><value type="float">37.768617</value></objects><objects><value type="float">-122.470416</value><value type="float">37.767382</value></objects></coordinates></points>' in data)
