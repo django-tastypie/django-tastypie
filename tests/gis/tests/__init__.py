@@ -1,2 +1,2 @@
 from gis.tests.http import *
-#from gis.tests.views import *
+from gis.tests.views import *
