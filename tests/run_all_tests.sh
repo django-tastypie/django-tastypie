@@ -39,3 +39,8 @@ echo
 echo
 echo "** Validation **"
 django-admin.py test validation --settings=settings_validation
+
+echo
+echo
+echo "** GIS **"
+django-admin.py test gis --settings=settings_gis
