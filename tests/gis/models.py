@@ -17,6 +17,8 @@ class GeoNote(models.Model):
     lines = models.MultiLineStringField(null=True, blank=True)
     polys = models.MultiPolygonField(null=True, blank=True)
 
+    objects = models.GeoManager()
+
     def __unicode__(self):
         return self.title
 
