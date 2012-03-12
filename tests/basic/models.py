@@ -30,6 +30,3 @@ class AnnotatedNote(models.Model):
 class UserForm(forms.ModelForm):
     class Meta:
         model = User
-    formats = ['%Y-%m-%dT%H:%M:%S.%f','%Y-%m-%dT%H:%M:%S'] 
-    date_joined = forms.DateTimeField(input_formats=formats) 
-    last_login = forms.DateTimeField(input_formats=formats) 
