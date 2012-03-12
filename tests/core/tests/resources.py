@@ -2535,19 +2535,8 @@ class ModelResourceTestCase(TestCase):
 
         # Test empty data.
         bundle = Bundle(data={})
-        self.assertRaises(ImmediateHttpResponse, validated.is_valid, bundle)
-
-        try:
-            validated.is_valid(bundle)
-            self.fail("This just passed above, but fails here? WRONG!")
-        except ImmediateHttpResponse, e:
-            self.assertEqual(e.response.content, '{"__all__": ["Having no content makes for a very boring note."], "is_active": ["This field is required."], "slug": ["This field is required."], "title": ["This field is required."]}')
-
-        try:
-            validated_xml.is_valid(bundle)
-            self.fail("The XML variant is no different & is_valid should have still failed.")
-        except ImmediateHttpResponse, e:
-            self.assertEqual(e.response.content, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><is_active type="list"><value>This field is required.</value></is_active><slug type="list"><value>This field is required.</value></slug><__all__ type="list"><value>Having no content makes for a very boring note.</value></__all__><title type="list"><value>This field is required.</value></title></response>')
+        self.assertFalse(validated.is_valid(bundle))
+        self.assertEqual(bundle.errors, {'validated': {'is_active': [u'This field is required.'], 'slug': [u'This field is required.'], '__all__': [u'Having no content makes for a very boring note.'], 'title': [u'This field is required.']}})
 
         # Test something that fails validation.
         bundle = Bundle(data={
@@ -2556,13 +2545,8 @@ class ModelResourceTestCase(TestCase):
             'content': '',
             'is_active': True,
         })
-        self.assertRaises(ImmediateHttpResponse, validated.is_valid, bundle)
-
-        try:
-            validated.is_valid(bundle)
-            self.fail("This just passed above, but fails here? WRONG AGAIN!")
-        except ImmediateHttpResponse, e:
-            self.assertEqual(e.response.content, '{"__all__": ["Having no content makes for a very boring note."], "slug": ["Ensure this value has at most 50 characters (it has 60)."]}')
+        self.assertFalse(validated.is_valid(bundle))
+        self.assertEqual(bundle.errors, {'validated': {'slug': [u'Ensure this value has at most 50 characters (it has 60).'], '__all__': [u'Having no content makes for a very boring note.']}})
 
         # Test something that passes validation.
         bundle = Bundle(data={
@@ -2572,10 +2556,7 @@ class ModelResourceTestCase(TestCase):
             'is_active': True,
         })
 
-        try:
-            validated.is_valid(bundle)
-        except ImmediateHttpResponse, e:
-            self.fail("Valid data was provided, yet still somehow errored. Why?")
+        self.assertTrue(validated.is_valid(bundle))
 
     def test_self_referential(self):
         class SelfResource(ModelResource):
