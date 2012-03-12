@@ -42,7 +42,7 @@ class UnsupportedFormat(TastypieError):
 class BadRequest(TastypieError):
     """
     A generalized exception for indicating incorrect request parameters.
-    
+
     Handled specially in that the message tossed by this exception will be
     presented to the end user.
     """
@@ -73,14 +73,14 @@ class ImmediateHttpResponse(TastypieError):
     """
     This exception is used to interrupt the flow of processing to immediately
     return a custom HttpResponse.
-    
+
     Common uses include::
-    
+
         * for authentication (like digest/OAuth)
         * for throttling
-    
+
     """
     response = HttpResponse("Nothing provided.")
-    
+
     def __init__(self, response):
         self.response = response

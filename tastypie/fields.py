@@ -141,14 +141,12 @@ class ApiField(object):
         """
         if self.readonly:
             return None
-
         if not bundle.data.has_key(self.instance_name):
             if getattr(self, 'is_related', False) and not getattr(self, 'is_m2m', False):
                 # We've got an FK (or alike field) & a possible parent object.
                 # Check for it.
                 if bundle.related_obj and bundle.related_name in (self.attribute, self.instance_name):
                     return bundle.related_obj
-
             if self.blank:
                 return None
             elif self.attribute and getattr(bundle.obj, self.attribute, None):
@@ -545,7 +543,7 @@ class RelatedField(ApiField):
             return fk_resource.full_hydrate(fk_bundle)
 
         try:
-            return fk_resource.obj_update(fk_bundle, **data)
+            return fk_resource.obj_update(fk_bundle, skip_errors=True, **data)
         except NotFound:
             try:
                 # Attempt lookup by primary key
@@ -553,10 +551,11 @@ class RelatedField(ApiField):
 
                 if not lookup_kwargs:
                     raise NotFound()
-
-                return fk_resource.obj_update(fk_bundle, **lookup_kwargs)
+                return fk_resource.obj_update(fk_bundle, skip_errors=True, **lookup_kwargs)
             except NotFound:
-                return fk_resource.full_hydrate(fk_bundle)
+                fk_bundle = fk_resource.full_hydrate(fk_bundle)
+                fk_resource.is_valid(fk_bundle, request)
+                return fk_bundle
         except MultipleObjectsReturned:
             return fk_resource.full_hydrate(fk_bundle)
 
