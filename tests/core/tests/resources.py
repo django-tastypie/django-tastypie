@@ -1726,6 +1726,23 @@ class ModelResourceTestCase(TestCase):
         self.assertTrue("title" in data)
         self.assertTrue("is_active" in data)
 
+        # Now make sure we can null-out a relation.
+        # Associate some data first.
+        new_note = Note.objects.get(slug='cat-is-back')
+        new_note.author = User.objects.get(username='johndoe')
+        new_note.save()
+        nullable_resource = NullableRelatedNoteResource()
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": null}'
+
+        resp = nullable_resource.put_detail(request, pk=10)
+        self.assertEqual(resp.status_code, 204)
+        self.assertEqual(Note.objects.count(), 7)
+        new_note = Note.objects.get(slug='cat-is-back')
+        self.assertEqual(new_note.author, None)
+
     def test_post_list(self):
         self.assertEqual(Note.objects.count(), 6)
         resource = NoteResource()
