@@ -25,7 +25,7 @@ of the code that are Tastypie-specific in any kind of depth.
 For example purposes, we'll be adding an API to a simple blog application.
 Here is ``myapp/models.py``::
 
-    from tastypie.utils import now
+    from tastypie.utils.timezone import now
     from django.contrib.auth.models import User
     from django.db import models
     from django.template.defaultfilters import slugify
