@@ -1,11 +1,12 @@
 import base64
+import os
 import time
 import warnings
-from django.contrib.auth.models import User
-from django.core import mail
+from django.conf import settings
+from django.contrib.auth.models import AnonymousUser, User
 from django.http import HttpRequest
 from django.test import TestCase
-from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, DigestAuthentication, OAuthAuthentication, MultiAuthentication
+from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, SessionAuthentication, DigestAuthentication, OAuthAuthentication, MultiAuthentication
 from tastypie.http import HttpUnauthorized
 from tastypie.models import ApiKey, create_api_key
 
@@ -219,6 +220,62 @@ class ApiKeyAuthenticationTestCase(TestCase):
         create_api_key(User, instance=bob_doe, created=True)
         request.META['HTTP_AUTHORIZATION'] = 'ApiKey bobdoe:%s' % bob_doe.api_key.key
         self.assertTrue(auth.is_authenticated(request))
+
+
+class SessionAuthenticationTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+
+    def test_is_authenticated(self):
+        auth = SessionAuthentication()
+        request = HttpRequest()
+        request.COOKIES = {
+            settings.CSRF_COOKIE_NAME: 'abcdef1234567890abcdef1234567890'
+        }
+
+        # No CSRF token.
+        request.META = {}
+        self.assertFalse(auth.is_authenticated(request))
+
+        # Invalid CSRF token.
+        request.META = {
+            'HTTP_X_CSRFTOKEN': 'abc123'
+        }
+        self.assertFalse(auth.is_authenticated(request))
+
+        # Not logged in.
+        request.META = {
+            'HTTP_X_CSRFTOKEN': 'abcdef1234567890abcdef1234567890'
+        }
+        request.user = AnonymousUser()
+        self.assertFalse(auth.is_authenticated(request))
+
+        # Logged in.
+        request.user = User.objects.get(username='johndoe')
+        self.assertTrue(auth.is_authenticated(request))
+
+        # Secure & wrong referrer.
+        os.environ["HTTPS"] = "on"
+        request.META['HTTP_HOST'] = 'example.com'
+        request.META['HTTP_REFERER'] = ''
+        self.assertFalse(auth.is_authenticated(request))
+
+        # Secure & correct referrer.
+        request.META['HTTP_REFERER'] = 'https://example.com/'
+        self.assertTrue(auth.is_authenticated(request))
+
+        os.environ["HTTPS"] = "off"
+
+    def test_get_identifier(self):
+        auth = SessionAuthentication()
+        request = HttpRequest()
+
+        # Not logged in.
+        request.user = AnonymousUser()
+        self.assertEqual(auth.get_identifier(request), '')
+
+        # Logged in.
+        request.user = User.objects.get(username='johndoe')
+        self.assertEqual(auth.get_identifier(request), 'johndoe')
 
 
 class DigestAuthenticationTestCase(TestCase):

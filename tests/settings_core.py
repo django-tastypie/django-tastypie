@@ -1,4 +1,5 @@
 from settings import *
+INSTALLED_APPS.append('django.contrib.sessions')
 INSTALLED_APPS.append('core')
 INSTALLED_APPS.append('oauth_provider')
 
