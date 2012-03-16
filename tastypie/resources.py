@@ -1652,7 +1652,9 @@ class ModelResource(Resource):
             # Split on ',' if not empty string and either an in or range filter.
             if filter_type in ('in', 'range') and len(value):
                 if hasattr(filters, 'getlist'):
-                    value = filters.getlist(filter_expr)
+                    value = []
+                    for part in filters.getlist(filter_expr):
+                        value.extend(part.split(','))
                 else:
                     value = value.split(',')
 
