@@ -1831,7 +1831,7 @@ class ModelResource(Resource):
                 lookup_kwargs = kwargs
 
             try:
-                bundle.obj = self.obj_get(request, **lookup_kwargs)
+                bundle.obj = self.obj_get(bundle.request, **lookup_kwargs)
             except ObjectDoesNotExist:
                 raise NotFound("A model instance matching the provided arguments could not be found.")
 
