@@ -582,7 +582,10 @@ class RelatedField(ApiField):
             'related_name': related_name,
         }
 
-        if isinstance(value, basestring):
+        if isinstance(value, Bundle):
+            # We got Bundle already so return it.
+            return value
+        elif isinstance(value, basestring):
             # We got a URI. Load the object and assign it.
             return self.resource_from_uri(self.fk_resource, value, **kwargs)
         elif hasattr(value, 'items'):
