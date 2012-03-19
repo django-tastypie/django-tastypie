@@ -539,97 +539,97 @@ class Resource(object):
     def unauthorized_result(self, exception):
         raise ImmediateHttpResponse(response=http.HttpUnauthorized())
 
-    def authorized_read_list(self, bundle):
+    def authorized_read_list(self, object_list, bundle):
         """
         Handles checking of permissions to see if the user has authorization
         to GET this resource.
         """
         try:
-            auth_result = self._meta.authorization.read_list(bundle)
+            auth_result = self._meta.authorization.read_list(object_list, bundle)
         except Unauthorized, e:
             self.unauthorized_result(e)
 
         return auth_result
 
-    def authorized_read_detail(self, bundle):
+    def authorized_read_detail(self, object_list, bundle):
         """
         Handles checking of permissions to see if the user has authorization
         to GET this resource.
         """
         try:
-            auth_result = self._meta.authorization.read_detail(bundle)
+            auth_result = self._meta.authorization.read_detail(object_list, bundle)
         except Unauthorized, e:
             self.unauthorized_result(e)
 
         return auth_result
 
-    def authorized_create_list(self, bundle):
+    def authorized_create_list(self, object_list, bundle):
         """
         Handles checking of permissions to see if the user has authorization
         to POST this resource.
         """
         try:
-            auth_result = self._meta.authorization.create_list(bundle)
+            auth_result = self._meta.authorization.create_list(object_list, bundle)
         except Unauthorized, e:
             self.unauthorized_result(e)
 
         return auth_result
 
-    def authorized_create_detail(self, bundle):
+    def authorized_create_detail(self, object_list, bundle):
         """
         Handles checking of permissions to see if the user has authorization
         to POST this resource.
         """
         try:
-            auth_result = self._meta.authorization.create_detail(bundle)
+            auth_result = self._meta.authorization.create_detail(object_list, bundle)
         except Unauthorized, e:
             self.unauthorized_result(e)
 
         return auth_result
 
-    def authorized_update_list(self, bundle):
+    def authorized_update_list(self, object_list, bundle):
         """
         Handles checking of permissions to see if the user has authorization
         to PUT this resource.
         """
         try:
-            auth_result = self._meta.authorization.update_list(bundle)
+            auth_result = self._meta.authorization.update_list(object_list, bundle)
         except Unauthorized, e:
             self.unauthorized_result(e)
 
         return auth_result
 
-    def authorized_update_detail(self, bundle):
+    def authorized_update_detail(self, object_list, bundle):
         """
         Handles checking of permissions to see if the user has authorization
         to PUT this resource.
         """
         try:
-            auth_result = self._meta.authorization.update_detail(bundle)
+            auth_result = self._meta.authorization.update_detail(object_list, bundle)
         except Unauthorized, e:
             self.unauthorized_result(e)
 
         return auth_result
 
-    def authorized_delete_list(self, bundle):
+    def authorized_delete_list(self, object_list, bundle):
         """
         Handles checking of permissions to see if the user has authorization
         to DELETE this resource.
         """
         try:
-            auth_result = self._meta.authorization.delete_list(bundle)
+            auth_result = self._meta.authorization.delete_list(object_list, bundle)
         except Unauthorized, e:
             self.unauthorized_result(e)
 
         return auth_result
 
-    def authorized_delete_detail(self, bundle):
+    def authorized_delete_detail(self, object_list, bundle):
         """
         Handles checking of permissions to see if the user has authorization
         to DELETE this resource.
         """
         try:
-            auth_result = self._meta.authorization.delete_detail(bundle)
+            auth_result = self._meta.authorization.delete_detail(object_list, bundle)
         except Unauthorized, e:
             self.unauthorized_result(e)
 
@@ -924,8 +924,9 @@ class Resource(object):
 
     def apply_authorization_limits(self, request, object_list):
         """
-        Allows the ``Authorization`` class to further limit the object list.
-        Also a hook to customize per ``Resource``.
+        Deprecated.
+
+        REMOVE BEFORE 1.0
         """
         return self._meta.authorization.apply_limits(request, object_list)
 
@@ -1472,7 +1473,7 @@ class Resource(object):
         self.throttle_check(request)
         self.log_throttled_access(request)
         bundle = self.build_bundle(request=request)
-        self.authorized_to_read(bundle)
+        self.authorized_read_detail(self.get_object_list(request), bundle)
         return self.create_response(request, self.build_schema())
 
     def get_multiple(self, request, **kwargs):
@@ -1860,8 +1861,7 @@ class ModelResource(Resource):
         applicable_filters = self.build_filters(filters=filters)
 
         try:
-            base_object_list = self.apply_filters(request, applicable_filters)
-            return self.apply_authorization_limits(request, base_object_list)
+            return self.apply_filters(request, applicable_filters)
         except ValueError:
             raise BadRequest("Invalid resource lookup data provided (mismatched type).")
 
@@ -1873,8 +1873,7 @@ class ModelResource(Resource):
         the instance.
         """
         try:
-            base_object_list = self.get_object_list(request).filter(**kwargs)
-            object_list = self.apply_authorization_limits(request, base_object_list)
+            object_list = self.get_object_list(request).filter(**kwargs)
             stringified_kwargs = ', '.join(["%s=%s" % (k, v) for k, v in kwargs.items()])
 
             if len(object_list) <= 0:
@@ -1896,17 +1895,7 @@ class ModelResource(Resource):
             setattr(bundle.obj, key, value)
 
         bundle = self.full_hydrate(bundle)
-
-        # Save FKs just in case.
-        self.save_related(bundle)
-
-        # Save the main object.
-        bundle.obj.save()
-
-        # Now pick up the M2M bits.
-        m2m_bundle = self.hydrate_m2m(bundle)
-        self.save_m2m(m2m_bundle)
-        return bundle
+        return self.save(bundle)
 
     def obj_update(self, bundle, request=None, **kwargs):
         """
@@ -1940,17 +1929,7 @@ class ModelResource(Resource):
                 raise NotFound("A model instance matching the provided arguments could not be found.")
 
         bundle = self.full_hydrate(bundle)
-
-        # Save FKs just in case.
-        self.save_related(bundle)
-
-        # Save the main object.
-        bundle.obj.save()
-
-        # Now pick up the M2M bits.
-        m2m_bundle = self.hydrate_m2m(bundle)
-        self.save_m2m(m2m_bundle)
-        return bundle
+        return self.save(bundle)
 
     def obj_delete_list(self, request=None, **kwargs):
         """
@@ -1959,13 +1938,12 @@ class ModelResource(Resource):
         Takes optional ``kwargs``, which can be used to narrow the query.
         """
         base_object_list = self.get_object_list(request).filter(**kwargs)
-        authed_object_list = self.apply_authorization_limits(request, base_object_list)
 
-        if hasattr(authed_object_list, 'delete'):
+        if hasattr(base_object_list, 'delete'):
             # It's likely a ``QuerySet``. Call ``.delete()`` for efficiency.
-            authed_object_list.delete()
+            base_object_list.delete()
         else:
-            for authed_obj in authed_object_list:
+            for authed_obj in base_object_list:
                 authed_obj.delete()
 
     def obj_delete(self, request=None, **kwargs):
@@ -2006,6 +1984,24 @@ class ModelResource(Resource):
             if bundle.obj and getattr(bundle.obj, 'pk', None):
                 bundle.obj.delete()
 
+    def save(self, bundle):
+        # Check if they're authorized.
+        if bundle.obj.pk:
+            self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
+        else:
+            self.authorized_create_detail(self.get_object_list(bundle.request), bundle)
+
+        # Save FKs just in case.
+        self.save_related(bundle)
+
+        # Save the main object.
+        bundle.obj.save()
+
+        # Now pick up the M2M bits.
+        m2m_bundle = self.hydrate_m2m(bundle)
+        self.save_m2m(m2m_bundle)
+        return bundle
+
     def save_related(self, bundle):
         """
         Handles the saving of related non-M2M data.
@@ -2042,10 +2038,9 @@ class ModelResource(Resource):
                 related_resource = field_object.get_related_resource(related_obj)
                 related_bundle = related_resource.build_bundle(obj=related_obj, request=bundle.request)
 
-                # Check if they're authorized.
-                related_resource.authorized_to_change(related_bundle)
-
-                related_obj.save()
+                # FIXME: To avoid excessive saves, we may need to pass along a
+                #        set of objects/pks seens so as not to resave.
+                related_resource.save(related_bundle)
                 setattr(bundle.obj, field_object.attribute, related_obj)
 
     def save_m2m(self, bundle):
@@ -2073,7 +2068,7 @@ class ModelResource(Resource):
 
             if hasattr(related_mngr, 'clear'):
                 # FIXME: Dupe the original bundle, copy in the new object &
-                #        check the perms on that (usin the related resource)?
+                #        check the perms on that (using the related resource)?
 
                 # Clear it out, just to be safe.
                 related_mngr.clear()
@@ -2083,8 +2078,12 @@ class ModelResource(Resource):
             for related_bundle in bundle.data[field_name]:
                 # FIXME: Dupe the original bundle, copy in the new object &
                 #        check the perms on that (usin the related resource)?
+                related_resource = field_object.get_related_resource(bundle.obj)
+                related_bundle = related_resource.build_bundle(obj=bundle.obj, request=bundle.request)
 
-                related_bundle.obj.save()
+                # FIXME: To avoid excessive saves, we may need to pass along a
+                #        set of objects/pks seens so as not to resave.
+                related_resource.save(related_bundle)
                 related_objs.append(related_bundle.obj)
 
             related_mngr.add(*related_objs)

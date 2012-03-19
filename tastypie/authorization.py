@@ -17,6 +17,8 @@ class Authorization(object):
     def apply_limits(self, request, object_list):
         """
         Deprecated.
+
+        REMOVE BEFORE 1.0
         """
         raise TastypieError("Authorization classes no longer support `apply_limits`. Please update to using `read_list`.")
 
@@ -30,7 +32,7 @@ class Authorization(object):
         """
         return object_list
 
-    def read_single(self, object_list, bundle):
+    def read_detail(self, object_list, bundle):
         """
         Returns either ``True`` if the user is allowed to read the object in
         question or throw ``Unauthorized`` if they are not.
@@ -46,7 +48,7 @@ class Authorization(object):
         """
         raise NotImplementedError("Tastypie has not way to determine if all objects should be allowed to be created.")
 
-    def create_single(self, object_list, bundle):
+    def create_detail(self, object_list, bundle):
         """
         Returns either ``True`` if the user is allowed to create the object in
         question or throw ``Unauthorized`` if they are not.
@@ -65,7 +67,7 @@ class Authorization(object):
         """
         return object_list
 
-    def update_single(self, object_list, bundle):
+    def update_detail(self, object_list, bundle):
         """
         Returns either ``True`` if the user is allowed to update the object in
         question or throw ``Unauthorized`` if they are not.
@@ -84,7 +86,7 @@ class Authorization(object):
         """
         return object_list
 
-    def delete_single(self, object_list, bundle):
+    def delete_detail(self, object_list, bundle):
         """
         Returns either ``True`` if the user is allowed to delete the object in
         question or throw ``Unauthorized`` if they are not.
