@@ -621,10 +621,18 @@ class ToOneField(RelatedField):
 
         for attr in attrs:
             previous_obj = foreign_obj
-            try:
-                foreign_obj = getattr(foreign_obj, attr, None)
-            except ObjectDoesNotExist:
-                foreign_obj = None
+            if self.full:
+                # accessing the foreign attribute causes a query to happen -
+                # only do this if full=True and we're going to use the data later
+                try:
+                    foreign_obj = getattr(foreign_obj, attr, None)
+                except ObjectDoesNotExist:
+                    foreign_obj = None
+            else:
+                # to avoid doing the extra query we exploit the fact that
+                # (ultimately...) get_resource_uri just needs an id
+                field = bundle.obj._meta.get_field(attr)
+                foreign_obj = getattr(bundle.obj, field.get_attname())
 
             if not foreign_obj:
                 if not self.null:
@@ -633,7 +641,11 @@ class ToOneField(RelatedField):
                 return None
 
         self.fk_resource = self.get_related_resource(foreign_obj)
-        fk_bundle = Bundle(obj=foreign_obj, request=bundle.request)
+        if self.full:
+            fk_bundle = Bundle(obj=foreign_obj, request=bundle.request)
+        else:
+            # make a fake obj to satisfy get_resource_uri
+            fk_bundle = type("", (), {'id':foreign_obj})()
         return self.dehydrate_related(fk_bundle, self.fk_resource)
 
     def hydrate(self, bundle):
