@@ -585,6 +585,9 @@ class RelatedField(ApiField):
         if isinstance(value, basestring):
             # We got a URI. Load the object and assign it.
             return self.resource_from_uri(self.fk_resource, value, **kwargs)
+        elif isinstance(value, Bundle):
+            # We got a valid bundle object, the RelatedField had full=True
+            return value
         elif hasattr(value, 'items'):
             # We've got a data dictionary.
             # Since this leads to creation, this is the only one of these
