@@ -1,6 +1,7 @@
 import json
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.http import HttpRequest
 from django.test import TestCase
 from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
@@ -76,7 +77,7 @@ class CategoryResourceTest(TestCase):
 
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
-        self.assertEqual(data['parent'], '/v1/category/2/')
+        self.assertEqual(data['parent'], {u'resource_uri': u'/v1/category/2/', u'id': u'2', u'parent': None, u'name': u'Mom'})
         self.assertEqual(data['name'], 'Daughter')
 
     def test_put_null(self):
@@ -195,3 +196,25 @@ class OneToManySetupTestCase(TestCase):
         note = Note.objects.latest('created')
         self.assertEqual(note.media_bits.count(), 1)
         self.assertEqual(note.media_bits.all()[0].title, u'Picture #1')
+
+class RelatedPatchTestCase(TestCase):
+    def test_patch_to_one(self):
+        resource = api.canonical_resource_for('category')
+        cat1 = Category.objects.create(name='Dad')
+        cat2 = Category.objects.create(parent=cat1, name='Child')
+
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PATCH'
+        request._read_started = False
+
+        data = {
+            'name': 'Kid'
+        }
+
+        request._raw_post_data = request._body = json.dumps(data)
+        self.assertEqual(cat2.name, 'Child')
+        resp = resource.patch_detail(request, pk=cat2.pk)
+        self.assertEqual(resp.status_code, 202)
+        cat2 = Category.objects.get(pk=2)
+        self.assertEqual(cat2.name, 'Kid')
