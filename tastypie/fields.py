@@ -585,6 +585,9 @@ class RelatedField(ApiField):
         if isinstance(value, basestring):
             # We got a URI. Load the object and assign it.
             return self.resource_from_uri(self.fk_resource, value, **kwargs)
+        elif isinstance(value, Bundle):
+            # We got a valid bundle object, the RelatedField had full=True
+            return value
         elif hasattr(value, 'items'):
             # We've got a data dictionary.
             # Since this leads to creation, this is the only one of these
@@ -594,7 +597,7 @@ class RelatedField(ApiField):
             # We've got an object with a primary key.
             return self.resource_from_pk(self.fk_resource, value, **kwargs)
         else:
-            raise ApiFieldError("The '%s' field has was given data that was not a URI, not a dictionary-alike and does not have a 'pk' attribute: %s." % (self.instance_name, value))
+            raise ApiFieldError("The '%s' field was given data that was not a URI, not a dictionary-alike and does not have a 'pk' attribute: %s." % (self.instance_name, value))
 
 
 class ToOneField(RelatedField):

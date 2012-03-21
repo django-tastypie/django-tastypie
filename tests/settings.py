@@ -11,6 +11,7 @@ MEDIA_ROOT = os.path.normpath(os.path.join(BASE_PATH, 'media'))
 DATABASE_ENGINE = 'sqlite3'
 DATABASE_NAME = 'tastypie.db'
 TEST_DATABASE_NAME = 'tastypie-test.db'
+SECRET_KEY = 'verysecret'
 
 # for forwards compatibility
 DATABASES = {

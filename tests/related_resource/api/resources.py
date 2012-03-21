@@ -23,7 +23,7 @@ class NoteResource(ModelResource):
 
 
 class CategoryResource(ModelResource):
-    parent = fields.ToOneField('self', 'parent', null=True)
+    parent = fields.ToOneField('self', 'parent', null=True, full=True)
 
     class Meta:
         resource_name = 'category'
