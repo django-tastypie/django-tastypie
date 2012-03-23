@@ -6,6 +6,23 @@ from tastypie.authorization import Authorization, ReadOnlyAuthorization, DjangoA
 from tastypie import fields
 from tastypie.resources import Resource, ModelResource
 
+authorization_detail_map = {
+    'GET': 'read_detail',
+    'HEAD': 'read_detail',
+    'POST': 'create_detail',
+    'PUT': 'update_detail',
+    'PATCH': 'update_detail',
+    'DELETE': 'delete_detail',
+}
+
+authorization_list_map = {
+    'GET': 'read_list',
+    'HEAD': 'read_list',
+    'POST': 'create_list',
+    'PUT': 'update_list',
+    'PATCH': 'update_list',
+    'DELETE': 'delete_list',
+}
 
 class NoRulesNoteResource(ModelResource):
     class Meta:
@@ -43,22 +60,84 @@ class NotAModelResource(Resource):
 
 class AuthorizationTestCase(TestCase):
     fixtures = ['note_testdata']
+    def setUp(self):
+        self.no_rules_note_resource = NoRulesNoteResource()
+        self.read_only_note_resource = ReadOnlyNoteResource()
 
-    def test_no_rules(self):
+    def test_no_rules_details(self):
         request = HttpRequest()
+        obj_list = self.no_rules_note_resource.get_object_list(request)
+        #any object will do
+        obj = obj_list[0]
+        bundle = self.no_rules_note_resource.build_bundle(request=request, obj=obj)
         for method in ('GET', 'POST', 'PUT', 'DELETE'):
             request.method = method
-            self.assertTrue(NoRulesNoteResource()._meta.authorization.is_authorized(request))
+            self.assertTrue(getattr(self.no_rules_note_resource._meta.authorization, \
+                authorization_detail_map[method])(obj_list, bundle))
 
-    def test_read_only(self):
+    def test_no_rules_list_post(self):
         request = HttpRequest()
+        bundle = self.no_rules_note_resource.build_bundle(request=request)
+        obj_list = self.no_rules_note_resource.get_object_list(request)
+
+        self.assertRaises(NotImplementedError, self.no_rules_note_resource._meta.authorization.create_list, \
+            obj_list, bundle)
+
+    def test_no_rules_list(self):
+        request = HttpRequest()
+        bundle = self.no_rules_note_resource.build_bundle(request=request)
+        for method in ('GET', 'PUT', 'DELETE'):
+            request.method = method
+
+            #get a fresh list of objects each time
+            obj_list = self.no_rules_note_resource.get_object_list(request)
+            authorized_obj_list = getattr(self.no_rules_note_resource._meta.authorization, \
+                authorization_list_map[method])(obj_list, bundle)
+
+            self.assertTrue(authorized_obj_list is obj_list)
+
+    def test_read_only_details(self):
+        request = HttpRequest()
+        obj_list = self.read_only_note_resource.get_object_list(request)
+        #any object will do
+        obj = obj_list[0]
+        bundle = self.read_only_note_resource.build_bundle(request=request, obj=obj)
+
+
         request.method = 'GET'
-        self.assertTrue(ReadOnlyNoteResource()._meta.authorization.is_authorized(request))
+        self.assertTrue(self.read_only_note_resource._meta.authorization.read_detail(obj_list, bundle))
 
         for method in ('POST', 'PUT', 'DELETE'):
-            request = HttpRequest()
             request.method = method
-            self.assertFalse(ReadOnlyNoteResource()._meta.authorization.is_authorized(request))
+            self.assertFalse(getattr(self.read_only_note_resource._meta.authorization, \
+                authorization_detail_map[method])(obj_list, bundle))
+
+
+    def test_read_only_list_get(self):
+        request = HttpRequest()
+        bundle = self.read_only_note_resource.build_bundle(request=request)
+        request.method = 'GET'
+
+        #get a fresh list of objects each time
+        obj_list = self.read_only_note_resource.get_object_list(request)
+        authorized_obj_list = getattr(self.read_only_note_resource._meta.authorization, \
+            authorization_list_map['GET'])(obj_list, bundle)
+
+        self.assertTrue(authorized_obj_list is obj_list)
+
+    def test_read_only_list(self):
+        request = HttpRequest()
+        bundle = self.read_only_note_resource.build_bundle(request=request)
+        for method in ('POST', 'PUT', 'DELETE'):
+            request.method = method
+
+            #get a fresh list of objects each time
+            obj_list = self.read_only_note_resource.get_object_list(request)
+            authorized_obj_list = getattr(self.read_only_note_resource._meta.authorization, \
+                authorization_list_map[method])(obj_list, bundle)
+
+            self.assertEqual(len(authorized_obj_list), 0)
+
 
 class DjangoAuthorizationTestCase(TestCase):
     fixtures = ['note_testdata']
@@ -69,88 +148,241 @@ class DjangoAuthorizationTestCase(TestCase):
         self.delete = Permission.objects.get_by_natural_key('delete_note', 'core', 'note')
         self.user = User.objects.all()[0]
         self.user.user_permissions.clear()
+        self.django_note_resource = DjangoNoteResource()
+        self.not_a_model_resource = NotAModelResource()
 
-    def test_no_perms(self):
+    def test_no_perms_details(self):
         # sanity check: user has no permissions
         self.assertFalse(self.user.get_all_permissions())
 
         request = HttpRequest()
-        request.method = 'GET'
         request.user = self.user
-        # with no permissions, api is read-only
-        self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
+        obj_list = self.django_note_resource.get_object_list(request)
+        #any object will do
+        obj = obj_list[0]
+        bundle = self.django_note_resource.build_bundle(request=request, obj=obj)
+
+
+        request.method = 'GET'
+        self.assertTrue(getattr(self.django_note_resource._meta.authorization, \
+            authorization_detail_map['GET'])(obj_list, bundle))
 
         for method in ('POST', 'PUT', 'DELETE'):
             request.method = method
-            self.assertFalse(DjangoNoteResource()._meta.authorization.is_authorized(request))
+            self.assertFalse(getattr(self.django_note_resource._meta.authorization, \
+                authorization_detail_map[method])(obj_list, bundle))
 
-    def test_add_perm(self):
+    def test_no_perms_list_get(self):
         request = HttpRequest()
         request.user = self.user
+        bundle = self.django_note_resource.build_bundle(request=request)
+        request.method = 'GET'
+
+        #get a fresh list of objects each time
+        obj_list = self.django_note_resource.get_object_list(request)
+        authorized_obj_list = getattr(self.django_note_resource._meta.authorization, \
+            authorization_list_map['GET'])(obj_list, bundle)
+
+        self.assertTrue(authorized_obj_list is obj_list)
+
+    def test_no_perms_list(self):
+        request = HttpRequest()
+        request.user = self.user
+        bundle = self.django_note_resource.build_bundle(request=request)
+
+        for method in ('POST', 'PUT', 'DELETE'):
+            request.method = method
+
+            #get a fresh list of objects each time
+            obj_list = self.django_note_resource.get_object_list(request)
+            authorized_obj_list = getattr(self.django_note_resource._meta.authorization, \
+                authorization_list_map[method])(obj_list, bundle)
+
+            self.assertEqual(len(authorized_obj_list), 0)
+
+    def test_add_perm_details(self):
+        request = HttpRequest()
+        request.user = self.user
+        obj_list = self.django_note_resource.get_object_list(request)
+        bundle = self.django_note_resource.build_bundle(request=request)
 
         # give add permission
         request.user.user_permissions.add(self.add)
         request.method = 'POST'
-        self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
 
-    def test_change_perm(self):
+        self.assertTrue(getattr(self.django_note_resource._meta.authorization, \
+            authorization_detail_map['POST'])(obj_list, bundle))
+
+    def test_add_perm_list(self):
         request = HttpRequest()
         request.user = self.user
+        bundle = self.django_note_resource.build_bundle(request=request)
 
-        # give change permission
+        request.user.user_permissions.add(self.add)
+        request.method = 'POST'
+
+        #get a fresh list of objects each time
+        obj_list = self.django_note_resource.get_object_list(request)
+        authorized_obj_list = getattr(self.django_note_resource._meta.authorization, \
+            authorization_list_map['POST'])(obj_list, bundle)
+
+        self.assertTrue(authorized_obj_list is obj_list)
+
+
+    def test_add_perm_details(self):
+        request = HttpRequest()
+        request.user = self.user
+        obj_list = self.django_note_resource.get_object_list(request)
+        bundle = self.django_note_resource.build_bundle(request=request)
+
+        # give add permission
+        request.user.user_permissions.add(self.add)
+        request.method = 'POST'
+
+        self.assertTrue(getattr(self.django_note_resource._meta.authorization, \
+            authorization_detail_map['POST'])(obj_list, bundle))
+
+    def test_add_perm_list(self):
+        request = HttpRequest()
+        request.user = self.user
+        bundle = self.django_note_resource.build_bundle(request=request)
+
+        request.user.user_permissions.add(self.add)
+        request.method = 'POST'
+
+        #get a fresh list of objects each time
+        obj_list = self.django_note_resource.get_object_list(request)
+        authorized_obj_list = getattr(self.django_note_resource._meta.authorization, \
+            authorization_list_map['POST'])(obj_list, bundle)
+
+        self.assertTrue(authorized_obj_list is obj_list)
+
+    def test_change_perm_details(self):
+        request = HttpRequest()
+        request.user = self.user
+        obj_list = self.django_note_resource.get_object_list(request)
+        bundle = self.django_note_resource.build_bundle(request=request)
+
+        # give add permission
         request.user.user_permissions.add(self.change)
         request.method = 'PUT'
-        self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
 
-    def test_delete_perm(self):
+        self.assertTrue(getattr(self.django_note_resource._meta.authorization, \
+            authorization_detail_map['PUT'])(obj_list, bundle))
+
+    def test_change_perm_list(self):
         request = HttpRequest()
         request.user = self.user
+        bundle = self.django_note_resource.build_bundle(request=request)
 
-        # give delete permission
+        request.user.user_permissions.add(self.change)
+        request.method = 'PUT'
+
+        #get a fresh list of objects each time
+        obj_list = self.django_note_resource.get_object_list(request)
+        authorized_obj_list = getattr(self.django_note_resource._meta.authorization, \
+            authorization_list_map['PUT'])(obj_list, bundle)
+
+        self.assertTrue(authorized_obj_list is obj_list)
+
+
+    def test_change_delete_details(self):
+        request = HttpRequest()
+        request.user = self.user
+        obj_list = self.django_note_resource.get_object_list(request)
+        bundle = self.django_note_resource.build_bundle(request=request)
+
+        # give add permission
         request.user.user_permissions.add(self.delete)
         request.method = 'DELETE'
-        self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
 
-    def test_all(self):
+        self.assertTrue(getattr(self.django_note_resource._meta.authorization, \
+            authorization_detail_map['DELETE'])(obj_list, bundle))
+
+    def test_change_delete_list(self):
         request = HttpRequest()
         request.user = self.user
+        bundle = self.django_note_resource.build_bundle(request=request)
+
+        request.user.user_permissions.add(self.delete)
+        request.method = 'DELETE'
+
+        #get a fresh list of objects each time
+        obj_list = self.django_note_resource.get_object_list(request)
+        authorized_obj_list = getattr(self.django_note_resource._meta.authorization, \
+            authorization_list_map['DELETE'])(obj_list, bundle)
+
+        self.assertTrue(authorized_obj_list is obj_list)
+
+    def test_all_details(self):
+        request = HttpRequest()
+        request.user = self.user
+        obj_list = self.django_note_resource.get_object_list(request)
+        bundle = self.django_note_resource.build_bundle(request=request)
 
         request.user.user_permissions.add(self.add)
         request.user.user_permissions.add(self.change)
         request.user.user_permissions.add(self.delete)
 
-        for method in ('GET', 'OPTIONS', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH'):
-            request.method = method
-            self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
 
-    def test_not_a_model(self):
+        #not sure what to do about 'OPTIONS'
+        for method in ('GET', 'POST', 'HEAD', 'PUT', 'DELETE', 'PATCH'):
+            request.method = method
+            self.assertTrue(getattr(self.django_note_resource._meta.authorization, \
+                authorization_detail_map[method])(obj_list, bundle))
+
+    def test_all_list(self):
         request = HttpRequest()
         request.user = self.user
+        bundle = self.django_note_resource.build_bundle(request=request)
+
+
+        request.user.user_permissions.add(self.add)
+        request.user.user_permissions.add(self.change)
+        request.user.user_permissions.add(self.delete)
+
+
+        #not sure what to do about 'OPTIONS'
+        for method in ('GET', 'POST', 'HEAD', 'PUT', 'DELETE', 'PATCH'):
+
+            request.method = method
+
+            #get a fresh list of objects each time
+            obj_list = self.django_note_resource.get_object_list(request)
+            authorized_obj_list = getattr(self.django_note_resource._meta.authorization, \
+                authorization_list_map[method])(obj_list, bundle)
+
+            self.assertTrue(authorized_obj_list is obj_list)
+
+    def test_not_a_model_post_perm_details(self):
+        request = HttpRequest()
+        request.user = self.user
+        obj_list = []
+        bundle = self.not_a_model_resource.build_bundle(request=request)
 
         # give add permission
         request.user.user_permissions.add(self.add)
         request.method = 'POST'
-        self.assertTrue(NotAModelResource()._meta.authorization.is_authorized(request))
 
-    def test_patch_perms(self):
+        self.assertTrue(getattr(self.not_a_model_resource._meta.authorization, \
+            authorization_detail_map['POST'])(obj_list, bundle))
+
+    def test_not_a_model_post_perm_list(self):
         request = HttpRequest()
         request.user = self.user
-        request.method = 'PATCH'
+        bundle = self.not_a_model_resource.build_bundle(request=request)
 
-        # Not enough.
         request.user.user_permissions.add(self.add)
-        self.assertFalse(DjangoNoteResource()._meta.authorization.is_authorized(request))
+        request.method = 'POST'
 
-        # Still not enough.
-        request.user.user_permissions.add(self.change)
-        self.assertFalse(DjangoNoteResource()._meta.authorization.is_authorized(request))
+        #get a fresh list of objects each time
+        obj_list = []
+        authorized_obj_list = getattr(self.not_a_model_resource._meta.authorization, \
+            authorization_list_map['POST'])(obj_list, bundle)
 
-        # Much better.
-        request.user.user_permissions.add(self.delete)
-        # Nuke the perm cache. :/
-        del request.user._perm_cache
-        self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
+        self.assertTrue(authorized_obj_list is obj_list)
 
+    #Not sure if this is a valid use case anymore
     def test_unrecognized_method(self):
         request = HttpRequest()
         request.user = self.user
