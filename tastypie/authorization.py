@@ -105,25 +105,25 @@ class ReadOnlyAuthorization(Authorization):
     def read_list(self, object_list, bundle):
         return object_list
 
-    def read_single(self, object_list, bundle):
+    def read_detail(self, object_list, bundle):
         return True
 
     def create_list(self, object_list, bundle):
         return []
 
-    def create_single(self, object_list, bundle):
+    def create_detail(self, object_list, bundle):
         return False
 
     def update_list(self, object_list, bundle):
         return []
 
-    def update_single(self, object_list, bundle):
+    def update_detail(self, object_list, bundle):
         return False
 
     def delete_list(self, object_list, bundle):
         return []
 
-    def delete_single(self, object_list, bundle):
+    def delete_detail(self, object_list, bundle):
         return False
 
 
@@ -136,85 +136,97 @@ class DjangoAuthorization(Authorization):
     Both the list & detail variants simply check the model they're based
     on, as that's all the more granular Django's permission setup gets.
     """
-    def base_checks(self, model_klass):
+    def base_checks(self, request):
+        model_klass = self.resource_meta.object_class
+
         # If it doesn't look like a model, we can't check permissions.
         if not model_klass or not getattr(model_klass, '_meta', None):
-            return False
+            return True
 
         # User must be logged in to check permissions.
-        if not hasattr(bundle.request, 'user'):
+        if not hasattr(request, 'user'):
             return False
 
         return model_klass
 
     def read_list(self, object_list, bundle):
-        klass = self.base_checks(object_list.model)
+        klass = self.base_checks(bundle.request)
 
         if klass is False:
-            return False
+            return []
+        elif klass is True:
+            return object_list
 
         # GET-style methods are always allowed.
-        return True
+        return object_list
 
-    def read_single(self, object_list, bundle):
-        klass = self.base_checks(bundle.obj.__class__)
+    def read_detail(self, object_list, bundle):
+        klass = self.base_checks(bundle.request)
 
-        if klass is False:
-            return False
+        if klass is False or klass is True:
+            return klass
 
         # GET-style methods are always allowed.
         return True
 
     def create_list(self, object_list, bundle):
-        klass = self.base_checks(object_list.model)
+        klass = self.base_checks(bundle.request)
 
         if klass is False:
-            return False
+            return []
+        elif klass is True:
+            return object_list
 
         permission = '%s.add_%s' % (klass._meta.app_label, klass._meta.module_name)
-        return bundle.request.user.has_perm(permission)
+        return object_list if bundle.request.user.has_perm(permission) else []
 
-    def create_single(self, object_list, bundle):
-        klass = self.base_checks(bundle.obj.__class__)
+    def create_detail(self, object_list, bundle):
+        klass = self.base_checks(bundle.request)
 
-        if klass is False:
-            return False
+        if klass is False or klass is True:
+            return klass
 
         permission = '%s.add_%s' % (klass._meta.app_label, klass._meta.module_name)
         return bundle.request.user.has_perm(permission)
 
     def update_list(self, object_list, bundle):
-        klass = self.base_checks(object_list.model)
+        klass = self.base_checks(bundle.request)
 
         if klass is False:
-            return False
+            return []
+        elif klass is True:
+            return object_list
 
         permission = '%s.change_%s' % (klass._meta.app_label, klass._meta.module_name)
-        return bundle.request.user.has_perm(permission)
+        return object_list if bundle.request.user.has_perm(permission) else []
 
-    def update_single(self, object_list, bundle):
-        klass = self.base_checks(bundle.obj.__class__)
+    def update_detail(self, object_list, bundle):
+        klass = self.base_checks(bundle.request)
 
-        if klass is False:
-            return False
+        if klass is False or klass is True:
+            return klass
+        elif klass is True:
+            return object_list
 
         permission = '%s.change_%s' % (klass._meta.app_label, klass._meta.module_name)
         return bundle.request.user.has_perm(permission)
 
     def delete_list(self, object_list, bundle):
-        klass = self.base_checks(object_list.model)
+        klass = self.base_checks(bundle.request)
 
         if klass is False:
-            return False
+            return []
+        elif klass is True:
+            return object_list
 
         permission = '%s.delete_%s' % (klass._meta.app_label, klass._meta.module_name)
-        return bundle.request.user.has_perm(permission)
+        return object_list if bundle.request.user.has_perm(permission) else []
 
-    def delete_single(self, object_list, bundle):
-        klass = self.base_checks(bundle.obj.__class__)
+    def delete_detail(self, object_list, bundle):
+        klass = self.base_checks(bundle.request)
 
-        if klass is False:
-            return False
+        if klass is False or klass is True:
+            return klass
 
         permission = '%s.delete_%s' % (klass._meta.app_label, klass._meta.module_name)
         return bundle.request.user.has_perm(permission)
