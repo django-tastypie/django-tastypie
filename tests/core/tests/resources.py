@@ -24,7 +24,7 @@ from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
 from tastypie.utils import aware_datetime, make_naive, now
 from tastypie.validation import Validation, FormValidation
-from core.models import Note, Subject, MediaBit, AutoNowNote
+from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote
 from core.tests.mocks import MockRequest
 from core.utils import SimpleHandler
 try:
@@ -785,6 +785,13 @@ class DetailedNoteResource(ModelResource):
 
     def get_resource_uri(self, bundle_or_obj):
         return '/api/v1/notes/%s/' % bundle_or_obj.obj.id
+
+class RequiredFKNoteResource(ModelResource):
+    editor = fields.ForeignKey(UserResource, 'editor')
+
+    class Meta:
+        resource_name = 'requiredfknotes'
+        queryset = NoteWithEditor.objects.all()
 
 
 class ThrottledNoteResource(NoteResource):
@@ -2366,6 +2373,18 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(latest.is_active, True)
         self.assertEqual(latest.author.username, u'snerble')
         self.assertEqual(latest.subjects.all().count(), 0)
+
+        note = RequiredFKNoteResource()
+        related_bundle = Bundle(data={
+            'slug': 'note-with-editor',
+            'editor': {
+                'username': 'zeus',
+                'password': 'apollo',
+            },
+        })
+        note.obj_create(related_bundle)
+        latest = NoteWithEditor.objects.get(slug='note-with-editor')
+        self.assertEqual(latest.editor.username, u'zeus')
 
     def test_obj_update(self):
         self.assertEqual(Note.objects.all().count(), 6)

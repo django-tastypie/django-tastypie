@@ -1810,12 +1810,10 @@ class ModelResource(Resource):
         if bundle.errors:
             self.error_response(bundle.errors, request)
 
-        bundle.obj.save()
-
         # Save FKs just in case.
         self.save_related(bundle)
 
-        # After saving related object, we may need to update the parent again.
+        # Save parent
         bundle.obj.save()
 
         # Now pick up the M2M bits.
@@ -1959,6 +1957,8 @@ class ModelResource(Resource):
             # Because sometimes it's ``None`` & that's OK.
             if related_obj:
                 if field_object.related_name:
+                    if not bundle.obj.pk:
+                        bundle.obj.save()
                     setattr(related_obj, field_object.related_name, bundle.obj)
 
                 related_obj.save()
