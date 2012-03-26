@@ -38,7 +38,8 @@ Contributors:
 * Jacob Kaplan-Moss (jacobkm) for the PATCH patch.
 * jorgeecardona for a patch in renaming the ``objects`` name of the response.
 * vbabiy for a patch on improved use of ``bundle.request`` & related resource validation.
-* philipn (Philip Neustrom) & dgerzo (Daniel Gerzo) for GeoDjango integration.
+* philipn (Philip Neustrom) for GeoDjango integration.
+* dgerzo (Daniel Gerzo) for GeoDjango integration and work on PATCH and related fields.
 * ipmb (Peter Baumgartner) for a patch regarding the order of object saves.
 
 
