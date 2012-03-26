@@ -39,6 +39,7 @@ Contributors:
 * jorgeecardona for a patch in renaming the ``objects`` name of the response.
 * vbabiy for a patch on improved use of ``bundle.request`` & related resource validation.
 * philipn (Philip Neustrom) & dgerzo (Daniel Gerzo) for GeoDjango integration.
+* ipmb (Peter Baumgartner) for a patch regarding the order of object saves.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
