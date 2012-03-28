@@ -78,6 +78,13 @@ class BasicAuthenticationTestCase(TestCase):
         request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass:word')
         self.assertEqual(auth.is_authenticated(request), True)
 
+        # Capitalization shouldn't matter.
+        john_doe = User.objects.get(username='johndoe')
+        john_doe.set_password('pass:word')
+        john_doe.save()
+        request.META['HTTP_AUTHORIZATION'] = 'bAsIc %s' % base64.b64encode('johndoe:pass:word')
+        self.assertEqual(auth.is_authenticated(request), True)
+
 
 class ApiKeyAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -86,7 +93,7 @@ class ApiKeyAuthenticationTestCase(TestCase):
         super(ApiKeyAuthenticationTestCase, self).setUp()
         ApiKey.objects.all().delete()
 
-    def test_is_authenticated(self):
+    def test_is_authenticated_get_params(self):
         auth = ApiKeyAuthentication()
         request = HttpRequest()
 
@@ -114,6 +121,39 @@ class ApiKeyAuthenticationTestCase(TestCase):
         john_doe = User.objects.get(username='johndoe')
         request.GET['username'] = 'johndoe'
         request.GET['api_key'] = john_doe.api_key.key
+        self.assertEqual(auth.is_authenticated(request), True)
+
+    def test_is_authenticated_header(self):
+        auth = ApiKeyAuthentication()
+        request = HttpRequest()
+
+        # Simulate sending the signal.
+        john_doe = User.objects.get(username='johndoe')
+        create_api_key(User, instance=john_doe, created=True)
+
+        # No username/api_key details should fail.
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+
+        # Wrong username details.
+        request.META['HTTP_AUTHORIZATION'] = 'foo'
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+
+        # No api_key.
+        request.META['HTTP_AUTHORIZATION'] = 'ApiKey daniel'
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+
+        # Wrong user/api_key.
+        request.META['HTTP_AUTHORIZATION'] = 'ApiKey daniel:pass'
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+
+        # Correct user/api_key.
+        john_doe = User.objects.get(username='johndoe')
+        request.META['HTTP_AUTHORIZATION'] = 'ApiKey johndoe:%s' % john_doe.api_key.key
+        self.assertEqual(auth.is_authenticated(request), True)
+
+        # Capitalization shouldn't matter.
+        john_doe = User.objects.get(username='johndoe')
+        request.META['HTTP_AUTHORIZATION'] = 'aPiKeY johndoe:%s' % john_doe.api_key.key
         self.assertEqual(auth.is_authenticated(request), True)
 
 
