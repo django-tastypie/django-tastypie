@@ -68,7 +68,7 @@ Javascript's use, you could do the following::
 Using Non-PK Data For Your URLs
 -------------------------------
 
-By convention, ``ModelResource``s usually expose the detail endpoints utilizing
+By convention, ``ModelResource``'s usually expose the detail endpoints utilizing
 the primary key of the ``Model`` they represent. However, this is not a strict
 requirement. Each URL can take other named URLconf parameters that can be used
 for the lookup.
