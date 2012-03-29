@@ -1352,6 +1352,7 @@ class Resource(object):
         Update the object in original_bundle in-place using new_data.
         """
         original_bundle.data.update(**dict_strip_unicode_keys(new_data))
+        original_bundle = self.full_dehydrate( original_bundle )
 
         # Now we've got a bundle with the new data sitting in it and we're
         # we're basically in the same spot as a PUT request. SO the rest of this
