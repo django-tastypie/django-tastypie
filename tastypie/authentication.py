@@ -394,14 +394,17 @@ class MultiAuthentication(object):
         ``HttpResponse`` if you need something custom.
         """
         unauthorized = False
+
         for backend in self.backends:
             check = backend.is_authenticated(request, **kwargs)
+
             if check:
                 if isinstance(check, HttpUnauthorized):
                     unauthorized = unauthorized or check
                 else:
                     request._authentication_backend = backend
                     return check
+
         return unauthorized
 
     def get_identifier(self, request):
