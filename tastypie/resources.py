@@ -721,7 +721,7 @@ class Resource(object):
 
     def hydrate(self, bundle):
         """
-        A hook to allow a final manipulation of data once all fields/methods
+        A hook to allow an initial manipulation of data before all methods/fields
         have built out the hydrated data.
 
         Useful if you need to access more than one hydrated field or want

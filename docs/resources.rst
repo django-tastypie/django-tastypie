@@ -329,7 +329,7 @@ how the data from the client is interpreted & placed on the data model.
 ``hydrate``
 ~~~~~~~~~~~
 
-The ``hydrate`` method allows you to make final changes to the ``bundle.obj``.
+The ``hydrate`` method allows you to make initial changes to the ``bundle.obj``.
 This includes things like prepopulating fields you don't expose over the API,
 recalculating related data or mangling data.
 
