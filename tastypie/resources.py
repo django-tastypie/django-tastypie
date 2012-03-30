@@ -717,7 +717,28 @@ class Resource(object):
                         elif field_object.blank:
                             continue
                         elif field_object.null:
-                            setattr(bundle.obj, field_object.attribute, value)
+
+                            # Figure out if we're setting the reverse side of a 1:1 relationship
+                            orm_field, _, direct, _ = \
+                                bundle.obj._meta.get_field_by_name( field_object.attribute )
+
+                            is_setting_rev_1to1 = not direct and \
+                                                  orm_field.field.rel and \
+                                                  not orm_field.field.rel.multiple
+
+                            try:
+                                setattr(bundle.obj, field_object.attribute, value)
+
+                            # When you're setting the reverse 1:1 rel, Django internally tries to
+                            # null out the forward relationship without checking if there was any
+                            # relationship there to begin with, potentially causing an
+                            # AttributeError.  We have to suppress these if we were trying to set it
+                            # to None (which means it should have been a no-op in the first place).
+                            except AttributeError:
+                                if is_setting_rev_1to1 and value is None:
+                                    pass
+                                else:
+                                    raise
 
         return bundle
 
