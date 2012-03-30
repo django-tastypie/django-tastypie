@@ -41,6 +41,7 @@ Contributors:
 * philipn (Philip Neustrom) for GeoDjango integration.
 * dgerzo (Daniel Gerzo) for GeoDjango integration and work on PATCH and related fields.
 * ipmb (Peter Baumgartner) for a patch regarding the order of object saves.
+* easel for a documentation patch on failing syncdbs.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
