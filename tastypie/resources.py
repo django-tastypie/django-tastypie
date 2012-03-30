@@ -1275,6 +1275,17 @@ class Resource(object):
         if len(deserialized["objects"]) and 'put' not in self._meta.detail_allowed_methods:
             raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
 
+        # Process deletions before updates to avoid validation errors that might be caused
+        # by doing it the other way around.  For example, deleting a customer and then creating
+        # another one with the same customer ID in the same PATCH might cause a validation
+        # error if you have logic that prevents duplicate customer IDs.
+        if len(deserialized.get('deleted_objects', [])) and 'delete' not in self._meta.detail_allowed_methods:
+            raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
+
+        for uri in deserialized.get('deleted_objects', []):
+            obj = self.get_via_uri(uri, request=request)
+            self.obj_delete(request=request, _obj=obj)
+
         bundles_seen = []
 
         for data in deserialized["objects"]:
@@ -1308,13 +1319,6 @@ class Resource(object):
                 self.obj_create(bundle, request=request)
 
             bundles_seen.append( bundle )
-
-        if len(deserialized.get('deleted_objects', [])) and 'delete' not in self._meta.detail_allowed_methods:
-            raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
-
-        for uri in deserialized.get('deleted_objects', []):
-            obj = self.get_via_uri(uri, request=request)
-            self.obj_delete(request=request, _obj=obj)
 
         if not self._meta.always_return_data:
             return http.HttpAccepted()
