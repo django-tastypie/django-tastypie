@@ -3,17 +3,20 @@ The various HTTP responses for use in returning proper HTTP codes.
 """
 from django.http import HttpResponse
 
+class HttpErrorResponse(HttpResponse):
+    pass
+
 
 class HttpCreated(HttpResponse):
     status_code = 201
-    
+
     def __init__(self, *args, **kwargs):
         location = ''
 
         if 'location' in kwargs:
             location = kwargs['location']
             del(kwargs['location'])
-        
+
         super(HttpCreated, self).__init__(*args, **kwargs)
         self['Location'] = location
 
@@ -66,10 +69,10 @@ class HttpGone(HttpResponse):
     status_code = 410
 
 
-class HttpApplicationError(HttpResponse):
+class HttpApplicationError(HttpErrorResponse):
     status_code = 500
 
 
-class HttpNotImplemented(HttpResponse):
+class HttpNotImplemented(HttpErrorResponse):
     status_code = 501
 
