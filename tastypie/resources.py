@@ -722,7 +722,7 @@ class Resource(object):
 
     def hydrate(self, bundle):
         """
-        A hook to allow a final manipulation of data once all fields/methods
+        A hook to allow an initial manipulation of data before all methods/fields
         have built out the hydrated data.
 
         Useful if you need to access more than one hydrated field or want
@@ -1296,7 +1296,6 @@ class Resource(object):
                     # so this is a create-by-PUT equivalent.
                     data = self.alter_deserialized_detail_data(request, data)
                     bundle = self.build_bundle(data=dict_strip_unicode_keys(data))
-                    bundle.obj.pk = obj.pk
                     self.obj_create(bundle, request=request)
             else:
                 # There's no resource URI, so this is a create call just
@@ -1623,9 +1622,13 @@ class ModelResource(Resource):
         # Split on ',' if not empty string and either an in or range filter.
         if filter_type in ('in', 'range') and len(value):
             if hasattr(filters, 'getlist'):
-                value = filters.getlist(filter_expr)
+                value = []
+
+                for part in filters.getlist(filter_expr):
+                    value.extend(part.split(','))
             else:
                 value = value.split(',')
+
         return value
 
     def build_filters(self, filters=None):
@@ -1671,8 +1674,7 @@ class ModelResource(Resource):
                 filter_type = filter_bits.pop()
 
             lookup_bits = self.check_filtering(field_name, filter_type, filter_bits)
-            value = self.filter_value_to_python(value, field_name, filters,
-                filter_expr, filter_type)
+            value = self.filter_value_to_python(value, field_name, filters, filter_expr, filter_type)
 
             db_field_name = LOOKUP_SEP.join(lookup_bits)
             qs_filter = "%s%s%s" % (db_field_name, LOOKUP_SEP, filter_type)
@@ -1813,12 +1815,10 @@ class ModelResource(Resource):
         if bundle.errors:
             self.error_response(bundle.errors, request)
 
-        bundle.obj.save()
-
         # Save FKs just in case.
         self.save_related(bundle)
 
-        # After saving related object, we may need to update the parent again.
+        # Save parent
         bundle.obj.save()
 
         # Now pick up the M2M bits.
@@ -1962,6 +1962,8 @@ class ModelResource(Resource):
             # Because sometimes it's ``None`` & that's OK.
             if related_obj:
                 if field_object.related_name:
+                    if not bundle.obj.pk:
+                        bundle.obj.save()
                     setattr(related_obj, field_object.related_name, bundle.obj)
 
                 related_obj.save()

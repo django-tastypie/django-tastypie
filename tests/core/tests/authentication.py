@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.core import mail
 from django.http import HttpRequest
 from django.test import TestCase
-from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, DigestAuthentication, OAuthAuthentication
+from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, DigestAuthentication, OAuthAuthentication, MultiAuthentication
 from tastypie.http import HttpUnauthorized
 from tastypie.models import ApiKey, create_api_key
 
@@ -122,6 +122,7 @@ class ApiKeyAuthenticationTestCase(TestCase):
         request.GET['username'] = 'johndoe'
         request.GET['api_key'] = john_doe.api_key.key
         self.assertEqual(auth.is_authenticated(request), True)
+        self.assertEqual(auth.get_identifier(request), 'johndoe')
 
     def test_is_authenticated_header(self):
         auth = ApiKeyAuthentication()
@@ -254,3 +255,73 @@ class OAuthAuthenticationTestCase(TestCase):
         resp = auth.is_authenticated(request)
         self.assertEqual(resp, True)
         self.assertEqual(request.user.pk, user.pk)
+
+class MultiAuthenticationTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+
+    def test_apikey_and_authentication(self):
+        auth = MultiAuthentication(ApiKeyAuthentication(), Authentication())
+        request = HttpRequest()
+
+        john_doe = User.objects.get(username='johndoe')
+
+        # No username/api_key details should pass.
+        self.assertEqual(auth.is_authenticated(request), True)
+
+        # The identifier should be the basic auth stock.
+        self.assertEqual(auth.get_identifier(request), 'noaddr_nohost')
+
+        # Wrong username details.
+        request = HttpRequest()
+        request.GET['username'] = 'foo'
+        self.assertEqual(auth.is_authenticated(request), True)
+        self.assertEqual(auth.get_identifier(request), 'noaddr_nohost')
+
+        # No api_key.
+        request = HttpRequest()
+        request.GET['username'] = 'daniel'
+        self.assertEqual(auth.is_authenticated(request), True)
+        self.assertEqual(auth.get_identifier(request), 'noaddr_nohost')
+
+        # Wrong user/api_key.
+        request = HttpRequest()
+        request.GET['username'] = 'daniel'
+        request.GET['api_key'] = 'foo'
+        self.assertEqual(auth.is_authenticated(request), True)
+        self.assertEqual(auth.get_identifier(request), 'noaddr_nohost')
+
+        request = HttpRequest()
+        request.GET['username'] = 'johndoe'
+        request.GET['api_key'] = john_doe.api_key.key
+        self.assertEqual(auth.is_authenticated(request), True)
+        self.assertEqual(auth.get_identifier(request), 'johndoe')
+
+ 
+    def test_apikey_and_basic_auth(self):
+        auth = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+        request = HttpRequest()
+        john_doe = User.objects.get(username='johndoe')
+
+        # No API Key or HTTP Basic auth details should fail.
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+
+        # Basic Auth still returns appropriately.
+        self.assertEqual(auth.is_authenticated(request)['WWW-Authenticate'], 'Basic Realm="django-tastypie"')
+
+        # API Key Auth works.
+        request = HttpRequest()
+        request.GET['username'] = 'johndoe'
+        request.GET['api_key'] = john_doe.api_key.key
+        self.assertEqual(auth.is_authenticated(request), True)
+        self.assertEqual(auth.get_identifier(request), 'johndoe')
+
+
+        # Basic Auth works.
+        request = HttpRequest()
+        john_doe = User.objects.get(username='johndoe')
+        john_doe.set_password('pass')
+        john_doe.save()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass')
+        self.assertEqual(auth.is_authenticated(request), True)
+
+

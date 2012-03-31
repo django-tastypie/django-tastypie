@@ -128,6 +128,28 @@ consumption.
 
 .. _mechanize: http://pypi.python.org/pypi/mechanize/
 
+``MultiAuthentication``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+This authentication class actually wraps any number of other authentication classes,
+attempting each until successfully authenticating. For example::
+
+    from django.contrib.auth.models import User
+    from tastypie.authentication import BasicAuthentication, ApiKeyAuthentication, MultiAuthentication
+    from tastypie.authorization import DjangoAuthorization
+    from tastypie.resources import ModelResource
+
+    class UserResource(ModelResource):
+        class Meta:
+            queryset = User.objects.all()
+            resource_name = 'auth/user'
+            excludes = ['email', 'password', 'is_superuser']
+
+            authentication = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+            authorization = DjangoAuthorization()
+
+
+In the case of an authentication returning a customized HttpUnauthorized, MultiAuthentication defaults to the first returned one. Authentication schemes that need to control the response, such as the included BasicAuthentication and DigestAuthentication, should be placed first.
 
 Authorization Options
 =====================
