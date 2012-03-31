@@ -22,7 +22,8 @@ class TransactionMiddleware(object):
     def process_response(self, request, response):
         """Commits and leaves transaction management."""
         if isinstance(response, HttpErrorResponse):
-            return self.process_exception(request, None)
+            self.process_exception(request, None)
+            return response
 
         if transaction.is_managed():
             if transaction.is_dirty():
