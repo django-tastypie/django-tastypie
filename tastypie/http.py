@@ -41,31 +41,31 @@ class HttpNotModified(HttpResponse):
     status_code = 304
 
 
-class HttpBadRequest(HttpResponse):
+class HttpBadRequest(HttpErrorResponse):
     status_code = 400
 
 
-class HttpUnauthorized(HttpResponse):
+class HttpUnauthorized(HttpErrorResponse):
     status_code = 401
 
 
-class HttpForbidden(HttpResponse):
+class HttpForbidden(HttpErrorResponse):
     status_code = 403
 
 
-class HttpNotFound(HttpResponse):
+class HttpNotFound(HttpErrorResponse):
     status_code = 404
 
 
-class HttpMethodNotAllowed(HttpResponse):
+class HttpMethodNotAllowed(HttpErrorResponse):
     status_code = 405
 
 
-class HttpConflict(HttpResponse):
+class HttpConflict(HttpErrorResponse):
     status_code = 409
 
 
-class HttpGone(HttpResponse):
+class HttpGone(HttpErrorResponse):
     status_code = 410
 
 
