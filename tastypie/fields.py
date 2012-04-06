@@ -851,14 +851,12 @@ class ToManyField(RelatedField):
                 except ObjectDoesNotExist:
                     the_m2ms = None
 
-                if not the_m2ms:
+                if the_m2ms is None:
                     break
 
-        if not the_m2ms:
+        if the_m2ms is None:
             if not self.null:
                 raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
-
-            return []
 
         if isinstance(the_m2ms, models.Manager):
             the_m2ms = the_m2ms.all()
