@@ -24,6 +24,7 @@ interfaces.
    serialization
    throttling
    paginator
+   geodjango
 
    cookbook
    debugging

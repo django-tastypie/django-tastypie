@@ -1,3 +1,4 @@
+from __future__ import with_statement
 import logging
 import warnings
 import django
@@ -416,7 +417,6 @@ class Resource(object):
         """
         allowed_methods = getattr(self._meta, "%s_allowed_methods" % request_type, None)
         request_method = self.method_check(request, allowed=allowed_methods)
-
         method = getattr(self, "%s_%s" % (request_method, request_type), None)
 
         if method is None:
@@ -690,9 +690,7 @@ class Resource(object):
         """
         if bundle.obj is None:
             bundle.obj = self._meta.object_class()
-
         bundle = self.hydrate(bundle)
-
         for field_name, field_object in self.fields.items():
             if field_object.readonly is True:
                 continue
@@ -702,9 +700,12 @@ class Resource(object):
 
             if method:
                 bundle = method(bundle)
-
             if field_object.attribute:
                 value = field_object.hydrate(bundle)
+
+                # NOTE: We only get back a bundle when it is related field.
+                if isinstance(value, Bundle) and value.errors.get(field_name):
+                    bundle.errors[field_name] = value.errors[field_name]
 
                 if value is not None or field_object.null:
                     # We need to avoid populating M2M data here as that will
@@ -744,7 +745,7 @@ class Resource(object):
 
     def hydrate(self, bundle):
         """
-        A hook to allow a final manipulation of data once all fields/methods
+        A hook to allow an initial manipulation of data before all methods/fields
         have built out the hydrated data.
 
         Useful if you need to access more than one hydrated field or want
@@ -1014,6 +1015,16 @@ class Resource(object):
         serialized = self.serialize(request, data, desired_format)
         return response_class(content=serialized, content_type=build_content_type(desired_format), **response_kwargs)
 
+    def error_response(self, errors, request):
+        if request:
+            desired_format = self.determine_format(request)
+        else:
+            desired_format = self._meta.default_format
+
+        serialized = self.serialize(request, errors, desired_format)
+        response = http.HttpBadRequest(content=serialized, content_type=build_content_type(desired_format))
+        raise ImmediateHttpResponse(response=response)
+
     def is_valid(self, bundle, request=None):
         """
         Handles checking if the data provided by the user is valid.
@@ -1026,15 +1037,11 @@ class Resource(object):
         """
         errors = self._meta.validation.is_valid(bundle, request)
 
-        if len(errors):
-            if request:
-                desired_format = self.determine_format(request)
-            else:
-                desired_format = self._meta.default_format
+        if errors:
+            bundle.errors[self._meta.resource_name] = errors
+            return False
 
-            serialized = self.serialize(request, errors, desired_format)
-            response = http.HttpBadRequest(content=serialized, content_type=build_content_type(desired_format))
-            raise ImmediateHttpResponse(response=response)
+        return True
 
     def rollback(self, bundles):
         """
@@ -1113,7 +1120,6 @@ class Resource(object):
 
         if not 'objects' in deserialized:
             raise BadRequest("Invalid data sent.")
-
         self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
         bundles_seen = []
 
@@ -1123,13 +1129,11 @@ class Resource(object):
             # Attempt to be transactional, deleting any previously created
             # objects if validation fails.
             try:
-                self.is_valid(bundle, request)
+                self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
+                bundles_seen.append(bundle)
             except ImmediateHttpResponse:
                 self.rollback(bundles_seen)
                 raise
-
-            self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
-            bundles_seen.append(bundle)
 
         if not self._meta.always_return_data:
             return http.HttpNoContent()
@@ -1161,7 +1165,6 @@ class Resource(object):
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
-        self.is_valid(bundle, request)
 
         try:
             updated_bundle = self.obj_update(bundle, request=request, **self.remove_api_resource_names(kwargs))
@@ -1197,7 +1200,6 @@ class Resource(object):
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
-        self.is_valid(bundle, request)
         updated_bundle = self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
         location = self.get_resource_uri(updated_bundle)
 
@@ -1328,15 +1330,12 @@ class Resource(object):
                     # so this is a create-by-PUT equivalent.
                     data = self.alter_deserialized_detail_data(request, data)
                     bundle = self.build_bundle(data=dict_strip_unicode_keys(data))
-                    bundle.obj.pk = obj.pk
-                    self.is_valid(bundle, request)
                     self.obj_create(bundle, request=request)
             else:
                 # There's no resource URI, so this is a create call just
                 # like a POST to the list resource.
                 data = self.alter_deserialized_detail_data(request, data)
                 bundle = self.build_bundle(data=dict_strip_unicode_keys(data))
-                self.is_valid(bundle, request)
                 self.obj_create(bundle, request=request)
 
             bundles_seen.append( bundle )
@@ -1399,7 +1398,6 @@ class Resource(object):
         # we're basically in the same spot as a PUT request. SO the rest of this
         # function is cribbed from put_detail.
         self.alter_deserialized_detail_data(request, original_bundle.data)
-        self.is_valid(original_bundle, request)
         return self.obj_update(original_bundle, request=request, pk=original_bundle.obj.pk)
 
     def get_schema(self, request, **kwargs):
@@ -1650,6 +1648,31 @@ class ModelResource(Resource):
 
         return [self.fields[field_name].attribute]
 
+    def filter_value_to_python(self, value, field_name, filters, filter_expr,
+            filter_type):
+        """
+        Turn the string ``value`` into a python object.
+        """
+        # Simple values
+        if value in ['true', 'True', True]:
+            value = True
+        elif value in ['false', 'False', False]:
+            value = False
+        elif value in ('nil', 'none', 'None', None):
+            value = None
+
+        # Split on ',' if not empty string and either an in or range filter.
+        if filter_type in ('in', 'range') and len(value):
+            if hasattr(filters, 'getlist'):
+                value = []
+
+                for part in filters.getlist(filter_expr):
+                    value.extend(part.split(','))
+            else:
+                value = value.split(',')
+
+        return value
+
     def build_filters(self, filters=None):
         """
         Given a dictionary of filters, create the necessary ORM-level filters.
@@ -1674,6 +1697,12 @@ class ModelResource(Resource):
 
         qs_filters = {}
 
+        if hasattr(self._meta, 'queryset'):
+            # Get the possible query terms from the current QuerySet.
+            query_terms = self._meta.queryset.query.query_terms.keys()
+        else:
+            query_terms = QUERY_TERMS.keys()
+
         for filter_expr, value in filters.items():
             filter_bits = filter_expr.split(LOOKUP_SEP)
             field_name = filter_bits.pop(0)
@@ -1683,24 +1712,11 @@ class ModelResource(Resource):
                 # It's not a field we know about. Move along citizen.
                 continue
 
-            if len(filter_bits) and filter_bits[-1] in QUERY_TERMS.keys():
+            if len(filter_bits) and filter_bits[-1] in query_terms:
                 filter_type = filter_bits.pop()
 
             lookup_bits = self.check_filtering(field_name, filter_type, filter_bits)
-
-            if value in ['true', 'True', True]:
-                value = True
-            elif value in ['false', 'False', False]:
-                value = False
-            elif value in ('nil', 'none', 'None', None):
-                value = None
-
-            # Split on ',' if not empty string and either an in or range filter.
-            if filter_type in ('in', 'range') and len(value):
-                if hasattr(filters, 'getlist'):
-                    value = filters.getlist(filter_expr)
-                else:
-                    value = value.split(',')
+            value = self.filter_value_to_python(value, field_name, filters, filter_expr, filter_type)
 
             db_field_name = LOOKUP_SEP.join(lookup_bits)
             qs_filter = "%s%s%s" % (db_field_name, LOOKUP_SEP, filter_type)
@@ -1830,17 +1846,21 @@ class ModelResource(Resource):
         """
         A ORM-specific implementation of ``obj_create``.
         """
+
         bundle.obj = self._meta.object_class()
 
         for key, value in kwargs.items():
             setattr(bundle.obj, key, value)
-
         bundle = self.full_hydrate(bundle)
+        self.is_valid(bundle,request)
+
+        if bundle.errors:
+            self.error_response(bundle.errors, request)
 
         # Save FKs just in case.
         self.save_related(bundle)
 
-        # Save the main object.
+        # Save parent
         bundle.obj.save()
 
         # Now pick up the M2M bits.
@@ -1848,7 +1868,7 @@ class ModelResource(Resource):
         self.save_m2m(m2m_bundle)
         return bundle
 
-    def obj_update(self, bundle, request=None, **kwargs):
+    def obj_update(self, bundle, request=None, skip_errors=False, **kwargs):
         """
         A ORM-specific implementation of ``obj_update``.
         """
@@ -1880,6 +1900,10 @@ class ModelResource(Resource):
                 raise NotFound("A model instance matching the provided arguments could not be found.")
 
         bundle = self.full_hydrate(bundle)
+        self.is_valid(bundle,request)
+
+        if bundle.errors and not skip_errors:
+            self.error_response(bundle.errors, request)
 
         # Save FKs just in case.
         self.save_related(bundle)
@@ -1968,7 +1992,7 @@ class ModelResource(Resource):
             if not field_object.attribute:
                 continue
 
-            if field_object.blank:
+            if field_object.blank and not bundle.data.has_key(field_name):
                 continue
 
             # Get the object.
@@ -1979,6 +2003,11 @@ class ModelResource(Resource):
 
             # Because sometimes it's ``None`` & that's OK.
             if related_obj:
+                if field_object.related_name:
+                    if not bundle.obj.pk:
+                        bundle.obj.save()
+                    setattr(related_obj, field_object.related_name, bundle.obj)
+
                 related_obj.save()
                 setattr(bundle.obj, field_object.attribute, related_obj)
 

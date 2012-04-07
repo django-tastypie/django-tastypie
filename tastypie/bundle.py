@@ -17,6 +17,7 @@ class Bundle(object):
         self.related_obj = related_obj
         self.related_name = related_name
         self.obj_is_new = obj_is_new
+        self.errors = {}
 
     def __repr__(self):
         return "<Bundle for obj: '%s' and with data: '%s'>" % (self.obj, self.data)
