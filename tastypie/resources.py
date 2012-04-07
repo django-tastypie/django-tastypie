@@ -689,7 +689,7 @@ class Resource(object):
         a full-fledged object instance.
         """
         if bundle.obj is None:
-            bundle.obj = self._meta.object_class()
+            bundle.install_new_obj_from_class(self._meta.object_class)
         bundle = self.hydrate(bundle)
         for field_name, field_object in self.fields.items():
             if field_object.readonly is True:
@@ -1847,7 +1847,7 @@ class ModelResource(Resource):
         A ORM-specific implementation of ``obj_create``.
         """
 
-        bundle.obj = self._meta.object_class()
+        bundle.install_new_obj_from_class(self._meta.object_class)
 
         for key, value in kwargs.items():
             setattr(bundle.obj, key, value)
@@ -1861,7 +1861,7 @@ class ModelResource(Resource):
         self.save_related(bundle)
 
         # Save parent
-        bundle.obj.save()
+        bundle.save_obj()
 
         # Now pick up the M2M bits.
         m2m_bundle = self.hydrate_m2m(bundle)
@@ -1876,7 +1876,7 @@ class ModelResource(Resource):
             # Attempt to hydrate data from kwargs before doing a lookup for the object.
             # This step is needed so certain values (like datetime) will pass model validation.
             try:
-                bundle.obj = self.get_object_list(bundle.request).model()
+                bundle.install_new_obj_from_class(self.get_object_list(bundle.request).model)
                 bundle.data.update(kwargs)
                 bundle = self.full_hydrate(bundle)
                 lookup_kwargs = kwargs.copy()
@@ -1896,6 +1896,7 @@ class ModelResource(Resource):
 
             try:
                 bundle.obj = self.obj_get(bundle.request, **lookup_kwargs)
+                bundle.obj_is_new = False
             except ObjectDoesNotExist:
                 raise NotFound("A model instance matching the provided arguments could not be found.")
 
@@ -1909,7 +1910,7 @@ class ModelResource(Resource):
         self.save_related(bundle)
 
         # Save the main object.
-        bundle.obj.save()
+        bundle.save_obj()
 
         # Now pick up the M2M bits.
         m2m_bundle = self.hydrate_m2m(bundle)
@@ -1967,7 +1968,7 @@ class ModelResource(Resource):
         bundles.
         """
         for bundle in bundles:
-            if bundle.obj and getattr(bundle.obj, 'pk', None):
+            if bundle.obj and not bundle.obj_is_new:
                 bundle.obj.delete()
 
     def save_related(self, bundle):
@@ -2007,8 +2008,8 @@ class ModelResource(Resource):
             # Because sometimes it's ``None`` & that's OK.
             if related_obj:
                 if field_object.related_name:
-                    if not bundle.obj.pk:
-                        bundle.obj.save()
+                    if bundle.obj_is_new:
+                        bundle.save_obj()
                     setattr(related_obj, field_object.related_name, bundle.obj)
 
                 related_obj.save()
@@ -2044,7 +2045,7 @@ class ModelResource(Resource):
             related_objs = []
 
             for related_bundle in bundle.data[field_name]:
-                related_bundle.obj.save()
+                related_bundle.save_obj()
                 related_objs.append(related_bundle.obj)
 
             related_mngr.add(*related_objs)

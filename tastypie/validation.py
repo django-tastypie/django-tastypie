@@ -51,7 +51,7 @@ class FormValidation(Validation):
 
         kwargs = {'data': {}}
 
-        if hasattr(bundle.obj, 'pk'):
+        if not bundle.obj_is_new:
             if issubclass(self.form_class, ModelForm):
                 kwargs['instance'] = bundle.obj
 
