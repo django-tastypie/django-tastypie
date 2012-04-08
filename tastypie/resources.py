@@ -1055,9 +1055,10 @@ class Resource(object):
         # Dehydrate the bundles in preparation for serialization.
         bundles = [self.build_bundle(obj=obj, request=request) for obj in to_be_serialized['objects']]
         to_be_serialized['objects'] = [self.full_dehydrate(bundle) for bundle in bundles]
+        length = len(to_be_serialized['objects'])
         to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
         response = self.create_response(request, to_be_serialized)
-        response['Content-Range'] = 'items %d-%d/%d' % (paginator.offset, paginator.offset+len(to_be_serialized['objects'])-1, len(sorted_objects))
+        response['Content-Range'] = 'items %d-%d/%d' % (paginator.offset, paginator.offset+length-1, len(sorted_objects))
         return response
 
     def get_detail(self, request, **kwargs):
