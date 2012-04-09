@@ -640,7 +640,10 @@ class ToOneField(RelatedField):
         return self.dehydrate_related(fk_bundle, self.fk_resource)
 
     def hydrate(self, bundle):
-        value = super(ToOneField, self).hydrate(bundle)
+        try:
+            value = super(ToOneField, self).hydrate(bundle)
+        except self.to.Meta.object_class.DoesNotExist:
+            return None
 
         if value is None:
             return value
