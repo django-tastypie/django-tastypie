@@ -5,7 +5,7 @@ try:
     from django.utils import timezone
 
     def make_aware(value):
-        if getattr(settings, "USE_TZ", False):
+        if getattr(settings, "USE_TZ", False) and timezone.is_naive(value):
             default_tz = timezone.get_default_timezone()
             value = timezone.make_aware(value, default_tz)
         return value

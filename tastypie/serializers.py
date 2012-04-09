@@ -283,10 +283,16 @@ class Serializer(object):
             element = Element(name or 'value')
             simple_data = self.to_simple(data, options)
             data_type = get_type_string(simple_data)
+
             if data_type != 'string':
                 element.set('type', get_type_string(simple_data))
+
             if data_type != 'null':
-                element.text = force_unicode(simple_data)
+                if isinstance(simple_data, unicode):
+                    element.text = simple_data
+                else:
+                    element.text = force_unicode(simple_data)
+
         return element
 
     def from_etree(self, data):
@@ -329,7 +335,7 @@ class Serializer(object):
         """
         options = options or {}
         data = self.to_simple(data, options)
-        return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True)
+        return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
 
     def from_json(self, content):
         """

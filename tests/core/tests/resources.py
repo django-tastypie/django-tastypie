@@ -10,7 +10,7 @@ from django.core.exceptions import FieldError, MultipleObjectsReturned
 from django.core import mail
 from django.core.urlresolvers import reverse
 from django import forms
-from django.http import HttpRequest, QueryDict
+from django.http import HttpRequest, QueryDict, Http404
 from django.test import TestCase
 from django.utils import dateformat
 from tastypie.authentication import BasicAuthentication
@@ -22,9 +22,9 @@ from tastypie.paginator import Paginator
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS, convert_post_to_put, convert_post_to_patch
 from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
-from tastypie.utils import aware_datetime, make_naive
+from tastypie.utils import aware_datetime, make_naive, now
 from tastypie.validation import Validation, FormValidation
-from core.models import Note, Subject, MediaBit
+from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote
 from core.tests.mocks import MockRequest
 from core.utils import SimpleHandler
 try:
@@ -725,6 +725,15 @@ class VeryCustomNoteResource(NoteResource):
         fields = ['title', 'content', 'created', 'is_active']
 
 
+class AutoNowNoteResource(ModelResource):
+    class Meta:
+        resource_name = 'autonownotes'
+        queryset = AutoNowNote.objects.filter(is_active=True)
+
+    def get_resource_uri(self, bundle_or_obj):
+        return '/api/v1/autonownotes/%s/' % bundle_or_obj.obj.id
+
+
 class CustomPaginator(Paginator):
     def page(self):
         data = super(CustomPaginator, self).page()
@@ -738,6 +747,16 @@ class CustomPageNoteResource(NoteResource):
         resource_name = 'pagey'
         paginator_class = CustomPaginator
         queryset = Note.objects.all()
+
+
+class AlwaysUserNoteResource(NoteResource):
+    class Meta:
+        resource_name = 'noteish'
+        queryset = Note.objects.filter(is_active=True)
+        authorization = Authorization()
+
+    def get_object_list(self, request):
+        return super(AlwaysUserNoteResource, self).get_object_list(request).filter(author=request.user)
 
 
 class UserResource(ModelResource):
@@ -766,6 +785,13 @@ class DetailedNoteResource(ModelResource):
 
     def get_resource_uri(self, bundle_or_obj):
         return '/api/v1/notes/%s/' % bundle_or_obj.obj.id
+
+class RequiredFKNoteResource(ModelResource):
+    editor = fields.ForeignKey(UserResource, 'editor')
+
+    class Meta:
+        resource_name = 'requiredfknotes'
+        queryset = NoteWithEditor.objects.all()
 
 
 class ThrottledNoteResource(NoteResource):
@@ -1082,6 +1108,91 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resource_1.fields['subjects']._resource, resource_1.__class__)
         self.assertEqual(resource_1.fields['subjects'].instance_name, 'subjects')
 
+        # Sanity check the other introspected fields.
+        annr = AutoNowNoteResource()
+        self.assertEqual(len(annr.fields), 8)
+        self.assertEqual(sorted(annr.fields.keys()), ['content', 'created', 'id', 'is_active', 'resource_uri', 'slug', 'title', 'updated'])
+
+        self.assertTrue(isinstance(annr.fields['content'], fields.CharField))
+        self.assertEqual(annr.fields['content'].attribute, 'content')
+        self.assertEqual(annr.fields['content'].blank, True)
+        self.assertEqual(annr.fields['content']._default, '')
+        self.assertEqual(annr.fields['content'].instance_name, 'content')
+        self.assertEqual(annr.fields['content'].null, False)
+        self.assertEqual(annr.fields['content'].readonly, False)
+        self.assertEqual(annr.fields['content'].unique, False)
+        self.assertEqual(annr.fields['content'].value, None)
+
+        self.assertTrue(isinstance(annr.fields['created'], fields.DateTimeField))
+        self.assertEqual(annr.fields['created'].attribute, 'created')
+        self.assertEqual(annr.fields['created'].blank, False)
+        self.assertTrue(isinstance(annr.fields['created']._default(), datetime.datetime))
+        self.assertEqual(annr.fields['created'].instance_name, 'created')
+        self.assertEqual(annr.fields['created'].null, True)
+        self.assertEqual(annr.fields['created'].readonly, False)
+        self.assertEqual(annr.fields['created'].unique, False)
+        self.assertEqual(annr.fields['created'].value, None)
+
+        self.assertTrue(isinstance(annr.fields['id'], fields.CharField))
+        self.assertEqual(annr.fields['id'].attribute, 'id')
+        self.assertEqual(annr.fields['id'].blank, True)
+        self.assertEqual(annr.fields['id']._default, '')
+        self.assertEqual(annr.fields['id'].instance_name, 'id')
+        self.assertEqual(annr.fields['id'].null, False)
+        self.assertEqual(annr.fields['id'].readonly, False)
+        self.assertEqual(annr.fields['id'].unique, True)
+        self.assertEqual(annr.fields['id'].value, None)
+
+        self.assertTrue(isinstance(annr.fields['is_active'], fields.BooleanField))
+        self.assertEqual(annr.fields['is_active'].attribute, 'is_active')
+        self.assertEqual(annr.fields['is_active'].blank, True)
+        self.assertEqual(annr.fields['is_active']._default, True)
+        self.assertEqual(annr.fields['is_active'].instance_name, 'is_active')
+        self.assertEqual(annr.fields['is_active'].null, False)
+        self.assertEqual(annr.fields['is_active'].readonly, False)
+        self.assertEqual(annr.fields['is_active'].unique, False)
+        self.assertEqual(annr.fields['is_active'].value, None)
+
+        self.assertTrue(isinstance(annr.fields['resource_uri'], fields.CharField))
+        self.assertEqual(annr.fields['resource_uri'].attribute, None)
+        self.assertEqual(annr.fields['resource_uri'].blank, False)
+        self.assertEqual(annr.fields['resource_uri']._default, fields.NOT_PROVIDED)
+        self.assertEqual(annr.fields['resource_uri'].instance_name, 'resource_uri')
+        self.assertEqual(annr.fields['resource_uri'].null, False)
+        self.assertEqual(annr.fields['resource_uri'].readonly, True)
+        self.assertEqual(annr.fields['resource_uri'].unique, False)
+        self.assertEqual(annr.fields['resource_uri'].value, None)
+
+        self.assertTrue(isinstance(annr.fields['slug'], fields.CharField))
+        self.assertEqual(annr.fields['slug'].attribute, 'slug')
+        self.assertEqual(annr.fields['slug'].blank, False)
+        self.assertEqual(annr.fields['slug']._default, fields.NOT_PROVIDED)
+        self.assertEqual(annr.fields['slug'].instance_name, 'slug')
+        self.assertEqual(annr.fields['slug'].null, False)
+        self.assertEqual(annr.fields['slug'].readonly, False)
+        self.assertEqual(annr.fields['slug'].unique, True)
+        self.assertEqual(annr.fields['slug'].value, None)
+
+        self.assertTrue(isinstance(annr.fields['title'], fields.CharField))
+        self.assertEqual(annr.fields['title'].attribute, 'title')
+        self.assertEqual(annr.fields['title'].blank, False)
+        self.assertEqual(annr.fields['title']._default, fields.NOT_PROVIDED)
+        self.assertEqual(annr.fields['title'].instance_name, 'title')
+        self.assertEqual(annr.fields['title'].null, False)
+        self.assertEqual(annr.fields['title'].readonly, False)
+        self.assertEqual(annr.fields['title'].unique, False)
+        self.assertEqual(annr.fields['title'].value, None)
+
+        self.assertTrue(isinstance(annr.fields['updated'], fields.DateTimeField))
+        self.assertEqual(annr.fields['updated'].attribute, 'updated')
+        self.assertEqual(annr.fields['updated'].blank, True)
+        self.assertTrue(isinstance(annr.fields['updated']._default(), datetime.datetime))
+        self.assertEqual(annr.fields['updated'].instance_name, 'updated')
+        self.assertEqual(annr.fields['updated'].null, False)
+        self.assertEqual(annr.fields['updated'].readonly, False)
+        self.assertEqual(annr.fields['updated'].unique, False)
+        self.assertEqual(annr.fields['updated'].value, None)
+
     def test_urls(self):
         # The common case, where the ``Api`` specifies the name.
         resource = NoteResource(api_name='v1')
@@ -1229,7 +1340,7 @@ class ModelResourceTestCase(TestCase):
                     'nullable': False,
                     'default': True,
                     'readonly': False,
-                    'blank': False,
+                    'blank': True,
                     'help_text': 'Boolean data. Ex: True',
                     'unique': False,
                     'type': 'boolean'
@@ -1238,7 +1349,7 @@ class ModelResourceTestCase(TestCase):
                     'nullable': False,
                     'default': '',
                     'readonly': False,
-                    'blank': False,
+                    'blank': True,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
                     'unique': False,
                     'type': 'string'
@@ -1306,6 +1417,7 @@ class ModelResourceTestCase(TestCase):
 
         # Valid in (using multiple params).
         self.assertEqual(resource.build_filters(filters=QueryDict('title__in=foo&title__in=bar')), {'title__in': ['foo', 'bar']})
+        self.assertEqual(resource.build_filters(filters=QueryDict('title__in=foo,bar')), {'title__in': ['foo', 'bar']})
 
         # Valid simple (non-``__exact``).
         self.assertEqual(resource.build_filters(filters={'content__startswith': 'Hello'}), {'content__startswith': 'Hello'})
@@ -1622,6 +1734,23 @@ class ModelResourceTestCase(TestCase):
         self.assertTrue("title" in data)
         self.assertTrue("is_active" in data)
 
+        # Now make sure we can null-out a relation.
+        # Associate some data first.
+        new_note = Note.objects.get(slug='cat-is-back')
+        new_note.author = User.objects.get(username='johndoe')
+        new_note.save()
+        nullable_resource = NullableRelatedNoteResource()
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": null}'
+
+        resp = nullable_resource.put_detail(request, pk=10)
+        self.assertEqual(resp.status_code, 204)
+        self.assertEqual(Note.objects.count(), 7)
+        new_note = Note.objects.get(slug='cat-is-back')
+        self.assertEqual(new_note.author, None)
+
     def test_post_list(self):
         self.assertEqual(Note.objects.count(), 6)
         resource = NoteResource()
@@ -1688,7 +1817,7 @@ class ModelResourceTestCase(TestCase):
         request._read_started = False
 
         self.assertEqual(Note.objects.count(), 6)
-        request._raw_post_data = request._body = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}], "deleted_objects": ["/api/v1/notes/1/"]}'
+        request._raw_post_data = request._body = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}, {"resource_uri": "/api/v1/notes/2/", "content": "This is note 2."}], "deleted_objects": ["/api/v1/notes/1/"]}'
 
         resp = resource.patch_list(request)
         self.assertEqual(resp.status_code, 202)
@@ -1697,6 +1826,25 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(Note.objects.filter(is_active=True).count(), 4)
         new_note = Note.objects.get(slug='cat-is-back-again')
         self.assertEqual(new_note.content, "The cat is back. The dog coughed him up out back.")
+        updated_note = Note.objects.get(pk=2)
+        self.assertEqual(updated_note.content, "This is note 2.")
+
+    def test_patch_list_bad_resource_uri(self):
+        resource = NoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PATCH'
+        request._read_started = False
+
+        self.assertEqual(Note.objects.count(), 6)
+        request._raw_post_data = request._body = '{"objects": [{"resource_uri": "/api/v1/notes/99999/", "content": "This is an invalid resource_uri", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "invalid-uri", "title": "Invalid URI", "updated": "2010-04-03 20:05:00"}]}'
+
+        resp = resource.patch_list(request)
+        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(resp.content, '')
+        self.assertEqual(Note.objects.count(), 7)
+        new_note = Note.objects.get(slug='invalid-uri')
+        self.assertEqual(new_note.content, "This is an invalid resource_uri")
 
     def test_patch_detail(self):
         self.assertEqual(Note.objects.count(), 6)
@@ -1946,7 +2094,7 @@ class ModelResourceTestCase(TestCase):
             "default_limit": 20,
             "fields": {
                 "content": {
-                    "blank": False,
+                    "blank": True,
                     "default": "",
                     "help_text": "Unicode string data. Ex: \"Hello World\"",
                     "nullable": False,
@@ -1964,7 +2112,7 @@ class ModelResourceTestCase(TestCase):
                     "unique": False
                 },
                 "id": {
-                    "blank": False,
+                    "blank": True,
                     "default": "",
                     "help_text": "Unicode string data. Ex: \"Hello World\"",
                     "nullable": False,
@@ -1973,7 +2121,7 @@ class ModelResourceTestCase(TestCase):
                     "unique": True
                 },
                 "is_active": {
-                    "blank": False,
+                    "blank": True,
                     "default": True,
                     "help_text": "Boolean data. Ex: True",
                     "nullable": False,
@@ -2246,6 +2394,18 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(latest.author.username, u'snerble')
         self.assertEqual(latest.subjects.all().count(), 0)
 
+        note = RequiredFKNoteResource()
+        related_bundle = Bundle(data={
+            'slug': 'note-with-editor',
+            'editor': {
+                'username': 'zeus',
+                'password': 'apollo',
+            },
+        })
+        note.obj_create(related_bundle)
+        latest = NoteWithEditor.objects.get(slug='note-with-editor')
+        self.assertEqual(latest.editor.username, u'zeus')
+
     def test_obj_update(self):
         self.assertEqual(Note.objects.all().count(), 6)
         note = NoteResource()
@@ -2343,6 +2503,26 @@ class ModelResourceTestCase(TestCase):
         self.assertRaises(NotFound, note.obj_update, note_bundle, pk=1, created='2010-03-31T20:05:00')
         self.assertEqual(Note.objects.all().count(), 6)
 
+        # Assign based on the ``request.user``, which helps ensure that
+        # the correct ``request`` is being passed along.
+        request = HttpRequest()
+        request.user = User.objects.get(username='johndoe')
+        self.assertEqual(AlwaysUserNoteResource().get_object_list(request).count(), 2)
+        note = AlwaysUserNoteResource()
+        note_obj = note.obj_get(request, pk=1)
+        note_bundle = note.build_bundle(obj=note_obj)
+        note_bundle = note.full_dehydrate(note_bundle)
+        note_bundle.data['title'] = 'Whee!'
+        note_bundle.request = request
+        note.obj_update(note_bundle, pk=1)
+        self.assertEqual(Note.objects.all().count(), 6)
+        numero_uno = Note.objects.get(pk=1)
+        self.assertEqual(numero_uno.title, u'Whee!')
+        self.assertEqual(numero_uno.slug, u'yet-another-another-new-post')
+        self.assertEqual(numero_uno.content, u'WHEEEEEE!')
+        self.assertEqual(numero_uno.is_active, True)
+        self.assertEqual(numero_uno.author.pk, request.user.pk)
+
     def test_obj_delete(self):
         self.assertEqual(Note.objects.all().count(), 6)
         note = NoteResource()
@@ -2411,19 +2591,8 @@ class ModelResourceTestCase(TestCase):
 
         # Test empty data.
         bundle = Bundle(data={})
-        self.assertRaises(ImmediateHttpResponse, validated.is_valid, bundle)
-
-        try:
-            validated.is_valid(bundle)
-            self.fail("This just passed above, but fails here? WRONG!")
-        except ImmediateHttpResponse, e:
-            self.assertEqual(e.response.content, '{"__all__": ["Having no content makes for a very boring note."], "is_active": ["This field is required."], "slug": ["This field is required."], "title": ["This field is required."]}')
-
-        try:
-            validated_xml.is_valid(bundle)
-            self.fail("The XML variant is no different & is_valid should have still failed.")
-        except ImmediateHttpResponse, e:
-            self.assertEqual(e.response.content, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><is_active type="list"><value>This field is required.</value></is_active><slug type="list"><value>This field is required.</value></slug><__all__ type="list"><value>Having no content makes for a very boring note.</value></__all__><title type="list"><value>This field is required.</value></title></response>')
+        self.assertFalse(validated.is_valid(bundle))
+        self.assertEqual(bundle.errors, {'validated': {'is_active': [u'This field is required.'], 'slug': [u'This field is required.'], '__all__': [u'Having no content makes for a very boring note.'], 'title': [u'This field is required.']}})
 
         # Test something that fails validation.
         bundle = Bundle(data={
@@ -2432,13 +2601,8 @@ class ModelResourceTestCase(TestCase):
             'content': '',
             'is_active': True,
         })
-        self.assertRaises(ImmediateHttpResponse, validated.is_valid, bundle)
-
-        try:
-            validated.is_valid(bundle)
-            self.fail("This just passed above, but fails here? WRONG AGAIN!")
-        except ImmediateHttpResponse, e:
-            self.assertEqual(e.response.content, '{"__all__": ["Having no content makes for a very boring note."], "slug": ["Ensure this value has at most 50 characters (it has 60)."]}')
+        self.assertFalse(validated.is_valid(bundle))
+        self.assertEqual(bundle.errors, {'validated': {'slug': [u'Ensure this value has at most 50 characters (it has 60).'], '__all__': [u'Having no content makes for a very boring note.']}})
 
         # Test something that passes validation.
         bundle = Bundle(data={
@@ -2448,10 +2612,7 @@ class ModelResourceTestCase(TestCase):
             'is_active': True,
         })
 
-        try:
-            validated.is_valid(bundle)
-        except ImmediateHttpResponse, e:
-            self.fail("Valid data was provided, yet still somehow errored. Why?")
+        self.assertTrue(validated.is_valid(bundle))
 
     def test_self_referential(self):
         class SelfResource(ModelResource):
@@ -2794,6 +2955,9 @@ class BustedResource(BasicResource):
     def get_detail(self, request, **kwargs):
         raise NotFound("It's just not there.")
 
+    def post_list(self, request, **kwargs):
+        raise Http404("Not here either")
+
 
 class BustedResourceTestCase(TestCase):
     def setUp(self):
@@ -2893,3 +3057,8 @@ class BustedResourceTestCase(TestCase):
             self.assertEqual(resp.content, '{"error_message": "Oops, you bwoke it."}')
             self.assertEqual(len(mail.outbox), 3)
             mail.outbox = []
+
+    def test_http404_raises_404(self):
+        self.request.method = 'POST'
+        resp = self.resource.wrap_view('post_list')(self.request, pk=1)
+        self.assertEqual(resp.status_code, 404)

@@ -1,4 +1,6 @@
 from django.core.exceptions import ImproperlyConfigured
+from django.forms import ModelForm
+from django.forms.models import model_to_dict
 
 
 class Validation(object):
@@ -40,6 +42,24 @@ class FormValidation(Validation):
         self.form_class = kwargs.pop('form_class')
         super(FormValidation, self).__init__(**kwargs)
 
+    def form_args(self, bundle):
+        data = bundle.data
+
+        # Ensure we get a bound Form, regardless of the state of the bundle.
+        if data is None:
+            data = {}
+
+        kwargs = {'data': {}}
+
+        if hasattr(bundle.obj, 'pk'):
+            if issubclass(self.form_class, ModelForm):
+                kwargs['instance'] = bundle.obj
+
+            kwargs['data'] = model_to_dict(bundle.obj)
+
+        kwargs['data'].update(data)
+        return kwargs
+
     def is_valid(self, bundle, request=None):
         """
         Performs a check on ``bundle.data``to ensure it is valid.
@@ -47,13 +67,8 @@ class FormValidation(Validation):
         If the form is valid, an empty list (all valid) will be returned. If
         not, a list of errors will be returned.
         """
-        data = bundle.data
 
-        # Ensure we get a bound Form, regardless of the state of the bundle.
-        if data is None:
-            data = {}
-
-        form = self.form_class(data)
+        form = self.form_class(**self.form_args(bundle))
 
         if form.is_valid():
             return {}
@@ -81,13 +96,7 @@ class CleanedDataFormValidation(FormValidation):
         If the form is valid, an empty list (all valid) will be returned. If
         not, a list of errors will be returned.
         """
-        data = bundle.data
-
-        # Ensure we get a bound Form, regardless of the state of the bundle.
-        if data is None:
-            data = {}
-
-        form = self.form_class(data)
+        form = self.form_class(**self.form_args(bundle))
 
         if form.is_valid():
             # We're different here & relying on having a reference to the same
