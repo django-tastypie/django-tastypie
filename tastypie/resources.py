@@ -229,7 +229,7 @@ class Resource(object):
         the_trace = '\n'.join(traceback.format_exception(*(sys.exc_info())))
         response_class = http.HttpApplicationError
 
-        NOT_FOUND_EXCEPTIONS = (NotFound, ObjectDoesNotExist, Http404)
+        NOT_FOUND_EXCEPTIONS = (NotFound, Http404)
 
         if isinstance(exception, NOT_FOUND_EXCEPTIONS):
             response_class = HttpResponseNotFound
