@@ -546,14 +546,14 @@ class RelatedField(ApiField):
 
         try:
             return fk_resource.obj_update(fk_bundle, **data)
-        except NotFound:
+        except (NotFound, TypeError):
             try:
                 # Attempt lookup by primary key
                 lookup_kwargs = dict((k, v) for k, v in data.iteritems() if getattr(fk_resource, k).unique)
 
                 if not lookup_kwargs:
                     raise NotFound()
-
+                
                 return fk_resource.obj_update(fk_bundle, **lookup_kwargs)
             except NotFound:
                 return fk_resource.full_hydrate(fk_bundle)
@@ -582,8 +582,11 @@ class RelatedField(ApiField):
             'related_obj': related_obj,
             'related_name': related_name,
         }
-
-        if isinstance(value, basestring):
+        
+        if isinstance(value, Bundle):
+            # Already hydrated, probably nested bundles. Just return.
+            return value
+        elif isinstance(value, basestring):
             # We got a URI. Load the object and assign it.
             return self.resource_from_uri(self.fk_resource, value, **kwargs)
         elif hasattr(value, 'items'):
@@ -617,16 +620,21 @@ class ToOneField(RelatedField):
         self.fk_resource = None
 
     def dehydrate(self, bundle):
-        try:
-            foreign_obj = getattr(bundle.obj, self.attribute)
-        except ObjectDoesNotExist:
-            foreign_obj = None
+        attrs = self.attribute.split('__')
+        foreign_obj = bundle.obj
 
-        if not foreign_obj:
-            if not self.null:
-                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (bundle.obj, self.attribute))
+        for attr in attrs:
+            previous_obj = foreign_obj
+            try:
+                foreign_obj = getattr(foreign_obj, attr, None)
+            except ObjectDoesNotExist:
+                foreign_obj = None
 
-            return None
+            if not foreign_obj:
+                if not self.null:
+                    raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
+
+                return None
 
         self.fk_resource = self.get_related_resource(foreign_obj)
         fk_bundle = Bundle(obj=foreign_obj, request=bundle.request)
@@ -685,15 +693,29 @@ class ToManyField(RelatedField):
             return []
 
         the_m2ms = None
+        previous_obj = bundle.obj
+        attr = self.attribute
 
         if isinstance(self.attribute, basestring):
-            the_m2ms = getattr(bundle.obj, self.attribute)
+            attrs = self.attribute.split('__')
+            the_m2ms = bundle.obj
+
+            for attr in attrs:
+                previous_obj = the_m2ms
+                try:
+                    the_m2ms = getattr(the_m2ms, attr, None)
+                except ObjectDoesNotExist:
+                    the_m2ms = None
+
+                if not the_m2ms:
+                    break
+
         elif callable(self.attribute):
             the_m2ms = self.attribute(bundle)
 
         if not the_m2ms:
             if not self.null:
-                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (bundle.obj, self.attribute))
+                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
 
             return []
 
