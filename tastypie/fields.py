@@ -546,14 +546,14 @@ class RelatedField(ApiField):
 
         try:
             return fk_resource.obj_update(fk_bundle, **data)
-        except NotFound:
+        except (NotFound, TypeError):
             try:
                 # Attempt lookup by primary key
                 lookup_kwargs = dict((k, v) for k, v in data.iteritems() if getattr(fk_resource, k).unique)
 
                 if not lookup_kwargs:
                     raise NotFound()
-
+                
                 return fk_resource.obj_update(fk_bundle, **lookup_kwargs)
             except NotFound:
                 return fk_resource.full_hydrate(fk_bundle)
@@ -582,8 +582,11 @@ class RelatedField(ApiField):
             'related_obj': related_obj,
             'related_name': related_name,
         }
-
-        if isinstance(value, basestring):
+        
+        if isinstance(value, Bundle):
+            # Already hydrated, probably nested bundles. Just return.
+            return value
+        elif isinstance(value, basestring):
             # We got a URI. Load the object and assign it.
             return self.resource_from_uri(self.fk_resource, value, **kwargs)
         elif hasattr(value, 'items'):
