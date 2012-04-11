@@ -1274,6 +1274,8 @@ class Resource(object):
         if len(deserialized["objects"]) and 'put' not in self._meta.detail_allowed_methods:
             raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
 
+        bundles_seen = []
+
         for data in deserialized["objects"]:
             # If there's a resource_uri then this is either an
             # update-in-place or a create-via-PUT.
@@ -1288,18 +1290,21 @@ class Resource(object):
                     bundle = self.full_dehydrate(bundle)
                     bundle = self.alter_detail_data_to_serialize(request, bundle)
                     self.update_in_place(request, bundle, data)
+                    bundles_seen.append(bundle)
                 except (ObjectDoesNotExist, MultipleObjectsReturned):
                     # The object referenced by resource_uri doesn't exist,
                     # so this is a create-by-PUT equivalent.
                     data = self.alter_deserialized_detail_data(request, data)
                     bundle = self.build_bundle(data=dict_strip_unicode_keys(data))
                     self.obj_create(bundle, request=request)
+                    bundles_seen.append(bundle)
             else:
                 # There's no resource URI, so this is a create call just
                 # like a POST to the list resource.
                 data = self.alter_deserialized_detail_data(request, data)
                 bundle = self.build_bundle(data=dict_strip_unicode_keys(data))
                 self.obj_create(bundle, request=request)
+                bundles_seen.append(bundle)     
 
         if len(deserialized.get('deleted_objects', [])) and 'delete' not in self._meta.detail_allowed_methods:
             raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
@@ -1308,7 +1313,13 @@ class Resource(object):
             obj = self.get_via_uri(uri, request=request)
             self.obj_delete(request=request, _obj=obj)
 
-        return http.HttpAccepted()
+        if not self._meta.always_return_data:
+            return http.HttpAccepted()
+        else:
+            to_be_serialized = {}
+            to_be_serialized['objects'] = [self.full_dehydrate(bundle) for bundle in bundles_seen]
+            to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
+            return self.create_response(request, to_be_serialized, response_class=http.HttpAccepted)
 
     def patch_detail(self, request, **kwargs):
         """
@@ -1327,7 +1338,7 @@ class Resource(object):
         # original data and updating it in-place.
         # So first pull out the original object. This is essentially
         # ``get_detail``.
-        try:
+        try:	
             obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
         except ObjectDoesNotExist:
             return http.HttpNotFound()
@@ -1341,7 +1352,13 @@ class Resource(object):
         # Now update the bundle in-place.
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         self.update_in_place(request, bundle, deserialized)
-        return http.HttpAccepted()
+        
+        if not self._meta.always_return_data:
+            return http.HttpAccepted()
+        else:
+            bundle = self.full_dehydrate(bundle)
+            bundle = self.alter_detail_data_to_serialize(request, bundle)
+            return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
     def update_in_place(self, request, original_bundle, new_data):
         """
