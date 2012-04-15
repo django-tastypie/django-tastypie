@@ -7,7 +7,8 @@ from django.utils import datetime_safe, importlib
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.utils import dict_strip_unicode_keys, make_aware
-
+from django.conf import settings
+from django.db import DEFAULT_DB_ALIAS
 
 class NOT_PROVIDED:
     def __str__(self):
@@ -17,6 +18,7 @@ class NOT_PROVIDED:
 DATE_REGEX = re.compile('^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2}).*?$')
 DATETIME_REGEX = re.compile('^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})(T|\s+)(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2}).*?$')
 
+DATABASE_IS_MYSQL = settings.DATABASES[DEFAULT_DB_ALIAS]['ENGINE'].rsplit('.')[-1] == 'mysql'
 
 # All the ApiField variants.
 
@@ -349,6 +351,11 @@ class DateTimeField(ApiField):
                 return make_aware(datetime_safe.datetime(int(data['year']), int(data['month']), int(data['day']), int(data['hour']), int(data['minute']), int(data['second'])))
             else:
                 raise ApiFieldError("Datetime provided to '%s' field doesn't appear to be a valid datetime string: '%s'" % (self.instance_name, value))
+
+        if isinstance(value, datetime.datetime):
+            if DATABASE_IS_MYSQL:
+                # MySQL does not store fractions of seconds; create a new datetime with microseconds set to 0
+                return datetime.datetime(year=value.year, month=value.month, day=value.day, hour=value.hour, minute=value.minute, second=value.second)
 
         return value
 
@@ -789,6 +796,10 @@ class TimeField(ApiField):
     def convert(self, value):
         if isinstance(value, basestring):
             return self.to_time(value)
+        if isinstance(value, datetime.time):
+            if DATABASE_IS_MYSQL:
+                # MySQL does not store fractions of seconds; create a new datetime with microseconds set to 0
+                return datetime.time(hour=value.hour, minute=value.minute, second=value.second)
         return value
 
     def to_time(self, s):
