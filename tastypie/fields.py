@@ -163,7 +163,12 @@ class ApiField(object):
             else:
                 raise ApiFieldError("The '%s' field has no data and doesn't allow a default or null value." % self.instance_name)
 
-        return bundle.data[self.instance_name]
+        bundle_val = bundle.data[self.instance_name]
+
+        if bundle_val is None and not self.null:
+            raise ApiFieldError("The '%s' field doesn't allow a null value." % self.instance_name)
+        else:
+            return bundle_val
 
 
 class CharField(ApiField):
