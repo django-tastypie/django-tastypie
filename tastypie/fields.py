@@ -364,11 +364,15 @@ class DateTimeField(ApiField):
         value = super(DateTimeField, self).hydrate(bundle)
 
         if value and not hasattr(value, 'year'):
-            try:
-                # Try to rip a date/datetime out of it.
-                value = make_aware(parse(value))
-            except ValueError:
-                pass
+            if isinstance(value, basestring):
+                try:
+                    # Try to rip a date/datetime out of it.
+                    value = make_aware(parse(value))
+                except ValueError:
+                    raise ApiFieldError("Datetime provided to '%s' field doesn't appear to be a valid datetime string: '%s'" % (self.instance_name, value))
+
+            else:
+                raise ApiFieldError("Datetime provided to '%s' field must be a string: %s" % (self.instance_name, value))
 
         return value
 
