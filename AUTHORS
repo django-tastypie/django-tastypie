@@ -43,6 +43,7 @@ Contributors:
 * ipmb (Peter Baumgartner) for a patch regarding the order of object saves.
 * easel for a documentation patch on failing syncdbs.
 * gaftech (Gabriel) for a patch regarding the ``__in`` filter syntax.
+* Christopher Groskopf (onyxfish) for a patch regarding PATCH & ``always_return_data``.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
