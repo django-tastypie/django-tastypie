@@ -50,6 +50,16 @@ class RelatedResourceTest(TestCase):
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(User.objects.get(id=self.user.id).username, 'foobar')
 
+    def test_related_resource_fk_lookup(self):
+        resource = api.canonical_resource_for('tag')
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.raw_post_data = '{"extradata": {"non_existent_field": "foobar"}, "taggabletags": [ ]}'
+        response = resource.post_list(request)
+
+        self.assertEqual(response.status_code, 201)
+
 
 class CategoryResourceTest(TestCase):
     urls = 'related_resource.api.urls'
