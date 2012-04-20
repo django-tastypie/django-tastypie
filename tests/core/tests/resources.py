@@ -1873,6 +1873,19 @@ class ModelResourceTestCase(TestCase):
         new_note = Note.objects.get(pk=1)
         self.assertEqual(new_note.content, u'The cat is gone again. I think it was the rabbits that ate him this time.')
 
+        always_resource = AlwaysDataNoteResource()
+        request._raw_post_data = request._body = '{"content": "Wait, now the cat is back."}'
+        resp = always_resource.patch_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 202)
+        data = json.loads(resp.content)
+        self.assertTrue("id" in data)
+        self.assertEqual(data["id"], "1")
+        self.assertTrue("content" in data)
+        self.assertEqual(data["content"], u'Wait, now the cat is back.')
+        self.assertTrue("resource_uri" in data)
+        self.assertTrue("title" in data)
+        self.assertTrue("is_active" in data)
+
     def test_dispatch_list(self):
         resource = NoteResource()
         request = HttpRequest()

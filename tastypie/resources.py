@@ -1346,7 +1346,13 @@ class Resource(object):
         # Now update the bundle in-place.
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         self.update_in_place(request, bundle, deserialized)
-        return http.HttpAccepted()
+
+        if not self._meta.always_return_data:
+            return http.HttpAccepted()
+        else:
+            bundle = self.full_dehydrate(bundle)
+            bundle = self.alter_detail_data_to_serialize(request, bundle)
+            return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
     def update_in_place(self, request, original_bundle, new_data):
         """
