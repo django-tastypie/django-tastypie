@@ -28,6 +28,7 @@ A sample resource definition might look something like::
         class Meta:
             queryset = User.objects.all()
             resource_name = 'auth/user'
+	    uri_fieldname = 'username'
             excludes = ['email', 'password', 'is_superuser']
 
 
@@ -633,6 +634,12 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   If ``True``, ``HttpAccepted`` (202) is returned on ``POST/PUT``
   with a body containing all the data in a serialized form.
+
+``uri_fieldname``
+-----------------
+
+  Specifies which field use to create the uri of the resource. You should ensure
+  that this field is unique. Default is ``pk``.
 
 
 Basic Filtering

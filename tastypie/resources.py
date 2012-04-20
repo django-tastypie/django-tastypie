@@ -77,7 +77,7 @@ class ResourceOptions(object):
     include_resource_uri = True
     include_absolute_url = False
     always_return_data = False
-    resource_uri_fieldname = 'pk'
+    uri_fieldname = 'pk'
 
     def __new__(cls, meta=None):
         overrides = {}
@@ -282,8 +282,8 @@ class Resource(object):
         return [
             url(r"^(?P<resource_name>%s)%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_list'), name="api_dispatch_list"),
             url(r"^(?P<resource_name>%s)/schema%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_schema'), name="api_get_schema"),
-            url(r"^(?P<resource_name>%s)/set/(?P<%s_list>\w[\w/;-]*)/$" % (self._meta.resource_name, self._meta.resource_uri_fieldname), self.wrap_view('get_multiple'), name="api_get_multiple"),
-            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)%s$" % (self._meta.resource_name, self._meta.resource_uri_fieldname, trailing_slash()), self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
+            url(r"^(?P<resource_name>%s)/set/(?P<%s_list>\w[\w/;-]*)/$" % (self._meta.resource_name, self._meta.uri_fieldname), self.wrap_view('get_multiple'), name="api_get_multiple"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)%s$" % (self._meta.resource_name, self._meta.uri_fieldname, trailing_slash()), self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
         ]
 
     def override_urls(self):
@@ -1377,13 +1377,13 @@ class Resource(object):
         self.throttle_check(request)
 
         # Rip apart the list then iterate.
-        obj_pks = kwargs.get('%s_list' % (self._meta.resource_uri_fieldname, ), '').split(';')
+        obj_pks = kwargs.get('%s_list' % (self._meta.uri_fieldname, ), '').split(';')
         objects = []
         not_found = []
 
         for pk in obj_pks:
             try:
-                obj = self.obj_get(request, **{self._meta.resource_uri_fieldname: pk})
+                obj = self.obj_get(request, **{self._meta.uri_fieldname: pk})
                 bundle = self.build_bundle(obj=obj, request=request)
                 bundle = self.full_dehydrate(bundle)
                 objects.append(bundle)
@@ -1800,7 +1800,7 @@ class ModelResource(Resource):
                 lookup_kwargs = kwargs.copy()
 
                 for key in kwargs.keys():
-                    if key == self._meta.resource_uri_fieldname:
+                    if key == self._meta.uri_fieldname:
                         continue
                     elif getattr(bundle.obj, key, NOT_AVAILABLE) is not NOT_AVAILABLE:
                         lookup_kwargs[key] = getattr(bundle.obj, key)
@@ -1966,9 +1966,9 @@ class ModelResource(Resource):
         }
 
         if isinstance(bundle_or_obj, Bundle):
-            kwargs[self._meta.resource_uri_fieldname] = getattr(bundle_or_obj.obj, self._meta.resource_uri_fieldname)
+            kwargs[self._meta.uri_fieldname] = getattr(bundle_or_obj.obj, self._meta.uri_fieldname)
         else:
-            kwargs[self._meta.resource_uri_fieldname] = getattr(bundle_or_obj, self._meta.resource_uri_fieldname)
+            kwargs[self._meta.uri_fieldname] = getattr(bundle_or_obj, self._meta.uri_fieldname)
 
         if self._meta.api_name is not None:
             kwargs['api_name'] = self._meta.api_name

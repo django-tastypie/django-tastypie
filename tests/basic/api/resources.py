@@ -10,14 +10,13 @@ class UserResource(ModelResource):
         resource_name = 'users'
         queryset = User.objects.all()
         authorization = Authorization()
-        resource_uri_fieldname = 'username'
+        uri_fieldname = 'username'
 
 
 class NoteResource(ModelResource):
     user = fields.ForeignKey(UserResource, 'user')
-    
+
     class Meta:
         resource_name = 'notes'
         queryset = Note.objects.all()
         authorization = Authorization()
-        
