@@ -68,6 +68,17 @@ As an alternative to requiring sensitive data like a password, the
 machine-generated api key. Tastypie ships with a special ``Model`` just for
 this purpose, so you'll need to ensure ``tastypie`` is in ``INSTALLED_APPS``.
 
+To use this mechanism, the end user can either specify an ``Authorization``
+header or pass the ``username/api_key`` combination as ``GET/POST`` parameters.
+Examples::
+
+  # As a header
+  # Format is ``Authorization: ApiKey <username>:<api_key>
+  Authorization: ApiKey daniel:204db7bcfafb2deb7506b89eb3b9b715b09905c8
+
+  # As GET params
+  http://127.0.0.1:8000/api/v1/entries/?username=daniel&api_key=204db7bcfafb2deb7506b89eb3b9b715b09905c8
+
 Tastypie includes a signal function you can use to auto-create ``ApiKey``
 objects. Hooking it up looks like::
 
@@ -115,6 +126,30 @@ consumption.
   It merely checks that the credentials are valid. No requests are made
   to remote services as part of this authentication class.
 
+.. _mechanize: http://pypi.python.org/pypi/mechanize/
+
+``MultiAuthentication``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+This authentication class actually wraps any number of other authentication classes,
+attempting each until successfully authenticating. For example::
+
+    from django.contrib.auth.models import User
+    from tastypie.authentication import BasicAuthentication, ApiKeyAuthentication, MultiAuthentication
+    from tastypie.authorization import DjangoAuthorization
+    from tastypie.resources import ModelResource
+
+    class UserResource(ModelResource):
+        class Meta:
+            queryset = User.objects.all()
+            resource_name = 'auth/user'
+            excludes = ['email', 'password', 'is_superuser']
+
+            authentication = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+            authorization = DjangoAuthorization()
+
+
+In the case of an authentication returning a customized HttpUnauthorized, MultiAuthentication defaults to the first returned one. Authentication schemes that need to control the response, such as the included BasicAuthentication and DigestAuthentication, should be placed first.
 
 Authorization Options
 =====================

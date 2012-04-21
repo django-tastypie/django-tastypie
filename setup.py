@@ -21,6 +21,8 @@ setup(
         'tastypie.management',
         'tastypie.management.commands',
         'tastypie.migrations',
+        'tastypie.contrib',
+        'tastypie.contrib.gis',
     ],
     package_data={
         'tastypie': ['templates/tastypie/*'],

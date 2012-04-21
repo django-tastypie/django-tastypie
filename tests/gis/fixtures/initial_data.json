@@ -1,0 +1,59 @@
+[
+    {
+        "fields": {
+            "username": "johndoe",
+            "email": "john@doe.com",
+            "password": "this_is_not_a_valid_password_string"
+        },
+        "model": "auth.user",
+        "pk": 1
+    },
+    {
+        "fields": {
+            "content": "Wooo two points inside Golden Gate park", 
+            "created": "2010-03-30 20:05:00", 
+            "is_active": true, 
+            "lines": null, 
+            "points": "MULTIPOINT (-122.4752327727999983 37.7686172428039981, -122.4704155326000006 37.7673818328299973)", 
+            "polys": null, 
+            "slug": "points-inside-golden-gate-park-note", 
+            "title": "Points inside Golden Gate Park note", 
+            "updated": "2012-03-07 21:47:37", 
+            "user": 1
+        }, 
+        "model": "gis.geonote", 
+        "pk": 1
+    }, 
+    {
+        "fields": {
+            "content": "This is a note about Golden Gate Park. It contains Golden Gate Park's polygon", 
+            "created": "2010-03-31 20:05:00", 
+            "is_active": true, 
+            "lines": null, 
+            "points": null, 
+            "polys": "MULTIPOLYGON (((-122.5110670852699997 37.7712760364340028, -122.5100371170100004 37.7663909693299971, -122.5100371170100004 37.7638126093670010, -122.4568220901600029 37.7658481641770010, -122.4529597091700026 37.7664588196950035, -122.4548479843199971 37.7739898231570024, -122.4753615188599980 37.7730400091340002, -122.5110670852699997 37.7712760364340028)))", 
+            "slug": "another-post", 
+            "title": "Golden Gate Park", 
+            "updated": "2012-03-07 21:48:48", 
+            "user": 1
+        }, 
+        "model": "gis.geonote", 
+        "pk": 2
+    }, 
+    {
+        "fields": {
+            "content": "A path inside Golden Gate Park! Huzzah!", 
+            "created": "2012-03-07 21:51:52", 
+            "is_active": true, 
+            "lines": "MULTILINESTRING ((-122.5045439385699950 37.7670016534969974, -122.4999949120799982 37.7682229404420013, -122.4959608697199940 37.7691728163430014, -122.4950167321500061 37.7692406641549994, -122.4916693353000028 37.7709368392189972, -122.4849745415900060 37.7707333002660022))", 
+            "points": null, 
+            "polys": null, 
+            "slug": "line-inside-golden-gate-park", 
+            "title": "Line inside Golden Gate Park", 
+            "updated": "2012-03-07 21:52:21", 
+            "user": 1
+        }, 
+        "model": "gis.geonote", 
+        "pk": 3
+    }
+]

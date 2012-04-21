@@ -70,3 +70,18 @@ You can do this over an entire collection as well::
     curl -H 'Content-Type: application/json' -X PUT --data @- "http://localhost:8000/api/v1/entry/"
 
 .. _Requests: http://python-requests.org
+
+
+"Why is my syncdb with superuser failing with a DatabaseError?"
+===============================================================
+
+More specifically, this specific ``DatabaseError``::
+
+    django.db.utils.DatabaseError: no such table: tastypie_apikey
+
+This is a side effect of the (disabled by default) ``create_api_key`` signal
+as described in the :ref:`authentication_authorization` section of the
+documentation when used in conjunction with South.
+
+To work around this issue, you can disable the ``create_api_key`` signal
+until you have completed running ``syncdb --migrate`` for the first time.

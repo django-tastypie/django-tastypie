@@ -94,7 +94,7 @@ class BasicAuthentication(Authentication):
 
         try:
             (auth_type, data) = request.META['HTTP_AUTHORIZATION'].split()
-            if auth_type != 'Basic':
+            if auth_type.lower() != 'basic':
                 return self._unauthorized()
             user_pass = base64.b64decode(data)
         except:
@@ -180,6 +180,20 @@ class ApiKeyAuthentication(Authentication):
     def _unauthorized(self):
         return HttpUnauthorized()
 
+    def extract_credentials(self, request):
+        if request.META.get('HTTP_AUTHORIZATION') and request.META['HTTP_AUTHORIZATION'].lower().startswith('apikey '):
+            (auth_type, data) = request.META['HTTP_AUTHORIZATION'].split()
+
+            if auth_type.lower() != 'apikey':
+                raise ValueError("Incorrect authorization header.")
+
+            username, api_key = data.split(':', 1)
+        else:
+            username = request.GET.get('username') or request.POST.get('username')
+            api_key = request.GET.get('api_key') or request.POST.get('api_key')
+
+        return username, api_key
+
     def is_authenticated(self, request, **kwargs):
         """
         Finds the user and checks their API key.
@@ -189,8 +203,10 @@ class ApiKeyAuthentication(Authentication):
         """
         from django.contrib.auth.models import User
 
-        username = request.GET.get('username') or request.POST.get('username')
-        api_key = request.GET.get('api_key') or request.POST.get('api_key')
+        try:
+            username, api_key = self.extract_credentials(request)
+        except ValueError:
+            return self._unauthorized()
 
         if not username or not api_key:
             return self._unauthorized()
@@ -223,7 +239,8 @@ class ApiKeyAuthentication(Authentication):
 
         This implementation returns the user's username.
         """
-        return request.REQUEST.get('username', 'nouser')
+        username, api_key = self.extract_credentials(request)
+        return username or 'nouser'
 
 
 class DigestAuthentication(Authentication):
@@ -270,7 +287,7 @@ class DigestAuthentication(Authentication):
         try:
             (auth_type, data) = request.META['HTTP_AUTHORIZATION'].split(' ', 1)
 
-            if auth_type != 'Digest':
+            if auth_type.lower() != 'digest':
                 return self._unauthorized()
         except:
             return self._unauthorized()
@@ -404,3 +421,43 @@ class OAuthAuthentication(Authentication):
     def validate_token(self, request, consumer, token):
         oauth_server, oauth_request = oauth_provider.utils.initialize_server_request(request)
         return oauth_server.verify_request(oauth_request, consumer, token)
+
+
+class MultiAuthentication(object):
+    """
+    An authentication backend that tries a number of backends in order.
+    """
+    def __init__(self, *backends):
+        self.backends = backends
+
+    def is_authenticated(self, request, **kwargs):
+        """
+        Identifies if the user is authenticated to continue or not.
+
+        Should return either ``True`` if allowed, ``False`` if not or an
+        ``HttpResponse`` if you need something custom.
+        """
+        unauthorized = False
+
+        for backend in self.backends:
+            check = backend.is_authenticated(request, **kwargs)
+
+            if check:
+                if isinstance(check, HttpUnauthorized):
+                    unauthorized = unauthorized or check
+                else:
+                    request._authentication_backend = backend
+                    return check
+
+        return unauthorized
+
+    def get_identifier(self, request):
+        """
+        Provides a unique string identifier for the requestor.
+
+        This implementation returns a combination of IP address and hostname.
+        """
+        try:
+            return request._authentication_backend.get_identifier(request)
+        except AttributeError:
+            return 'nouser'
