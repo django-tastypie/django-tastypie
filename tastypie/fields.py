@@ -676,13 +676,14 @@ class ToManyField(RelatedField):
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
                  null=False, blank=False, readonly=False, full=False,
-                 unique=False, help_text=None):
+                 unique=False, help_text=None, limit=None):
         super(ToManyField, self).__init__(
             to, attribute, related_name=related_name, default=default,
             null=null, blank=blank, readonly=readonly, full=full,
             unique=unique, help_text=help_text
         )
         self.m2m_bundles = []
+        self.limit = limit
 
     def dehydrate(self, bundle):
         if not bundle.obj or not bundle.obj.pk:
@@ -723,6 +724,9 @@ class ToManyField(RelatedField):
 
         # TODO: Also model-specific and leaky. Relies on there being a
         #       ``Manager`` there.
+        if self.limit:
+            the_m2ms = the_m2ms[:self.limit]
+
         for m2m in the_m2ms.all():
             m2m_resource = self.get_related_resource(m2m)
             m2m_bundle = Bundle(obj=m2m, request=bundle.request)
