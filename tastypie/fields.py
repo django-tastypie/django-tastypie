@@ -725,7 +725,7 @@ class ToManyField(RelatedField):
         # TODO: Also model-specific and leaky. Relies on there being a
         #       ``Manager`` there.
         if self.limit:
-            the_m2ms = the_m2ms[:self.limit]
+            the_m2ms = the_m2ms.all()[:self.limit]
 
         for m2m in the_m2ms.all():
             m2m_resource = self.get_related_resource(m2m)
