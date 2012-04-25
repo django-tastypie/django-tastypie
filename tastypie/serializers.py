@@ -124,7 +124,12 @@ class Serializer(object):
         if self.datetime_formatting == 'rfc-2822':
             return format_datetime(data)
 
-        return data.isoformat()
+        r = data.isoformat()
+        if data.microsecond:
+            r = r[:23] + r[26:]
+        if r.endswith('+00:00'):
+            r = r[:-6] + 'Z'
+        return r
 
     def format_date(self, data):
         """
