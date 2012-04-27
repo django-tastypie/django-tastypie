@@ -44,6 +44,7 @@ Contributors:
 * easel for a documentation patch on failing syncdbs.
 * gaftech (Gabriel) for a patch regarding the ``__in`` filter syntax.
 * Christopher Groskopf (onyxfish) for a patch regarding PATCH & ``always_return_data``.
+* dgerzo (Daniel Gerzo) for improving the ``run_all_tests.sh`` script & several smaller patches.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
