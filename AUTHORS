@@ -39,12 +39,11 @@ Contributors:
 * jorgeecardona for a patch in renaming the ``objects`` name of the response.
 * vbabiy for a patch on improved use of ``bundle.request`` & related resource validation.
 * philipn (Philip Neustrom) for GeoDjango integration.
-* dgerzo (Daniel Gerzo) for GeoDjango integration and work on PATCH and related fields.
+* dgerzo (Daniel Gerzo) for GeoDjango integration, work on PATCH and related fields, improving the ``run_all_tests.sh`` script & several smaller patches..
 * ipmb (Peter Baumgartner) for a patch regarding the order of object saves.
 * easel for a documentation patch on failing syncdbs.
 * gaftech (Gabriel) for a patch regarding the ``__in`` filter syntax.
 * Christopher Groskopf (onyxfish) for a patch regarding PATCH & ``always_return_data``.
-* dgerzo (Daniel Gerzo) for improving the ``run_all_tests.sh`` script & several smaller patches.
 * dericcrago (Deric Crago) for documentation patches.
 
 
