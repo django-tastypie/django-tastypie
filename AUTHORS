@@ -46,6 +46,7 @@ Contributors:
 * Christopher Groskopf (onyxfish) for a patch regarding PATCH & ``always_return_data``.
 * dericcrago (Deric Crago) for documentation patches.
 * gwrtheyrn (Danilo Bargen) for a documentation patch.
+* panta (Marco Pantaleoni) for a patch to ``setup.py``.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
