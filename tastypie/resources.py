@@ -713,7 +713,12 @@ class Resource(object):
             if method:
                 bundle = method(bundle)
             if field_object.attribute:
-                value = field_object.hydrate(bundle)
+
+                try:
+                    value = field_object.hydrate(bundle)
+                except NotFound, e:
+                    bundle.errors[field_name] = e.message
+                    continue
 
                 # NOTE: We only get back a bundle when it is related field.
                 if isinstance(value, Bundle) and value.errors.get(field_name):
@@ -731,6 +736,10 @@ class Resource(object):
                             continue
                         elif field_object.null:
                             setattr(bundle.obj, field_object.attribute, value)
+
+        # Compatibility with errors in validation.
+        if bundle.errors:
+            bundle.errors = {self._meta.resource_name: bundle.errors}
 
         return bundle
 
@@ -1827,8 +1836,13 @@ class ModelResource(Resource):
 
         for key, value in kwargs.items():
             setattr(bundle.obj, key, value)
+
         bundle = self.full_hydrate(bundle)
-        self.is_valid(bundle,request)
+
+        if bundle.errors:
+            self.error_response(bundle.errors, request)
+
+        self.is_valid(bundle, request)
 
         if bundle.errors:
             self.error_response(bundle.errors, request)

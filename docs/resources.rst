@@ -1051,7 +1051,8 @@ Must return the modified bundle.
 .. method:: Resource.full_hydrate(self, bundle)
 
 Given a populated bundle, distill it and turn it back into
-a full-fledged object instance.
+a full-fledged object instance. If encounter any error in the process it will
+put it in the ``errors`` attribute of the bundle, inner the ``resource_name``.
 
 ``hydrate``
 -----------
