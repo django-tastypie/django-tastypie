@@ -334,6 +334,17 @@ class ResourceTestCase(TestCase):
         self.assertEqual(another_bundle_1.data['owed'], Decimal('102.57'))
         self.assertEqual(another_bundle_1.data['bar'], "But sometimes I'm not ignored!")
 
+    def test_full_hydrate_errors(self):
+        note = RequiredFKNoteResource()
+        related_bundle = Bundle(data={
+            'slug': 'note-with-editor',
+            'editor': 'nonvalidapi',
+            })
+
+        bundle_with_errors = note.full_hydrate(related_bundle)
+        self.assertTrue('requiredfknotes' in bundle_with_errors.errors)
+        self.assertTrue('editor' in bundle_with_errors.errors['requiredfknotes'])
+
     def test_full_hydrate(self):
         basic = BasicResource()
         basic_bundle_1 = Bundle(data={
@@ -412,6 +423,8 @@ class ResourceTestCase(TestCase):
         hydrated = nullable.full_hydrate(empty_null_bundle)
 
         self.assertEquals(hydrated.obj.name, "Daniel")
+
+        # 
 
     def test_obj_get_list(self):
         basic = BasicResource()
