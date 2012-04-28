@@ -31,6 +31,7 @@ INSTALLED_APPS = [
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 CACHE_BACKEND = 'locmem://'
+SECRET_KEY = 'verysecret'
 
 # to make sure timezones are handled correctly in Django>=1.4
 USE_TZ = True
