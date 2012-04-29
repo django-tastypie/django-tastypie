@@ -1261,7 +1261,7 @@ Mostly a useful shortcut/hook.
 ``is_valid``
 ------------
 
-.. method:: Resource.is_valid(self, bundle, request=None)
+.. method:: Resource.is_valid(self, bundle, request=None, purpose=None)
 
 Handles checking if the data provided by the user is valid.
 
@@ -1270,6 +1270,9 @@ Mostly a hook, this uses class assigned to ``validation`` from
 
 If validation fails, an error is raised with the error messages
 serialized inside it.
+
+``purpose`` parameter is used to separate the validation process if needed,
+``obj_create`` called it with ``create`` and ``obj_update`` called with ``update``.
 
 ``rollback``
 ------------
