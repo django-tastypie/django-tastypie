@@ -1016,7 +1016,7 @@ class Resource(object):
         response = http.HttpBadRequest(content=serialized, content_type=build_content_type(desired_format))
         raise ImmediateHttpResponse(response=response)
 
-    def is_valid(self, bundle, request=None):
+    def is_valid(self, bundle, request=None, purpose=None):
         """
         Handles checking if the data provided by the user is valid.
 
@@ -1026,7 +1026,8 @@ class Resource(object):
         If validation fails, an error is raised with the error messages
         serialized inside it.
         """
-        errors = self._meta.validation.is_valid(bundle, request)
+        errors = self._meta.validation.is_valid(
+            bundle, request, purpose=purpose)
 
         if errors:
             bundle.errors[self._meta.resource_name] = errors
@@ -1828,7 +1829,7 @@ class ModelResource(Resource):
         for key, value in kwargs.items():
             setattr(bundle.obj, key, value)
         bundle = self.full_hydrate(bundle)
-        self.is_valid(bundle,request)
+        self.is_valid(bundle, request, purpose='create')
 
         if bundle.errors:
             self.error_response(bundle.errors, request)
@@ -1876,7 +1877,7 @@ class ModelResource(Resource):
                 raise NotFound("A model instance matching the provided arguments could not be found.")
 
         bundle = self.full_hydrate(bundle)
-        self.is_valid(bundle,request)
+        self.is_valid(bundle, request, purpose='update')
 
         if bundle.errors and not skip_errors:
             self.error_response(bundle.errors, request)
