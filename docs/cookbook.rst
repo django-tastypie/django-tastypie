@@ -74,7 +74,8 @@ Using Your ``Resource`` In Regular Views
 In addition to using your resource classes to power the API, you can also use
 them to write other parts of your application, such as your views. For
 instance, if you wanted to encode user information in the page for some
-Javascript's use, you could do the following::
+Javascript's use, you could do the following. In this case, ``user_json`` will
+not include a valid ``resource_uri``::
 
     # views.py
     from django.shortcuts import render_to_response
@@ -83,6 +84,47 @@ Javascript's use, you could do the following::
 
     def user_detail(request, username):
         ur = UserResource()
+        user = ur.obj_get(username=username)
+
+        # Other things get prepped to go into the context then...
+
+        ur_bundle = ur.build_bundle(obj=user, request=request)
+        return render_to_response('myapp/user_detail.html', {
+            # Other things here.
+            "user_json": ur.serialize(None, ur.full_dehydrate(ur_bundle), 'application/json'),
+        })
+
+To include a valid ``resource_uri``, the resource must be associated
+with an ``tastypie.Api`` instance, as below::
+
+    # urls.py
+    from tastypie.api import Api
+    from myapp.api.resources import UserResource
+
+
+    my_api = Api(api_name='v1')
+    my_api.register(UserResource())
+
+::
+
+    # views.py
+    from myapp.urls import my_api
+
+
+    def user_detail(request, username):
+        ur = my_api.canonical_resource_for('user')
+        # continue as above...
+
+Alternatively, to get a valid ``resource_uri`` you may pass in the ``api_name``
+parameter directly to the Resource::
+
+    # views.py
+    from django.shortcuts import render_to_response
+    from myapp.api.resources import UserResource
+
+
+    def user_detail(request, username):
+        ur = UserResource(api_name='v1')
         user = ur.obj_get(username=username)
 
         # Other things get prepped to go into the context then...
