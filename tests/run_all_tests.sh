@@ -1,41 +1,29 @@
 #!/bin/bash
+
 PYTHONPATH=$PWD:$PWD/..${PYTHONPATH:+:$PYTHONPATH}
 export PYTHONPATH
 
-echo "** Core **"
-django-admin.py test core --settings=settings_core
+# complex
+ALL="core basic alphanumeric slashless namespaced related validation gis"
 
-echo
-echo
-echo "** Basic **"
-django-admin.py test basic --settings=settings_basic
+if [ $# -eq 0 ]; then
+	TYPES=$ALL
+elif [ $1 == '-h' ]; then
+	echo "Valid arguments are: $ALL"
+else
+	TYPES=$@
+fi
 
-#echo
-#echo
-#echo "** Complex **"
-#django-admin.py test complex --settings=settings_complex
+for type in $TYPES; do
+	echo "** $type **"
 
-echo
-echo
-echo "** Alphanumeric Primary Keys **"
-django-admin.py test alphanumeric --settings=settings_alphanumeric
+	if [ $type == 'related' ]; then
+		django-admin.py test ${type}_resource --settings=settings_$type
+		continue
+	elif [ $type == 'gis' ]; then
+		createdb -T template_postgis tastypie.db
+	fi
 
-echo
-echo
-echo "** Slashless **"
-django-admin.py test slashless --settings=settings_slashless
-
-echo
-echo
-echo "** Namespaced **"
-django-admin.py test namespaced --settings=settings_namespaced
-
-echo
-echo
-echo "** Related Resource **"
-django-admin.py test related_resource --settings=settings_related
-
-echo
-echo
-echo "** Validation **"
-django-admin.py test validation --settings=settings_validation
+	django-admin.py test $type --settings=settings_$type
+	echo; echo
+done

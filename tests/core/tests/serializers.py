@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import datetime
 from decimal import Decimal
 from django.conf import settings
@@ -60,6 +61,7 @@ class SerializerTestCase(TestCase):
             'name': 'Daniel',
             'age': 27,
             'date_joined': datetime.date(2010, 3, 27),
+            'snowman': u'☃',
         }
 
     def get_sample2(self):
@@ -167,7 +169,14 @@ class SerializerTestCase(TestCase):
     def test_to_xml(self):
         serializer = Serializer()
         sample_1 = self.get_sample1()
-        self.assertEqual(serializer.to_xml(sample_1), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><age type="integer">27</age><name>Daniel</name><date_joined>2010-03-27</date_joined></response>')
+        # This needs a little explanation.
+        # From http://lxml.de/parsing.html, what comes out of ``tostring``
+        # (despite encoding as UTF-8) is a bytestring. This is because that's
+        # what other libraries expect (& will do the decode). We decode here
+        # so we can make extra special sure it looks right.
+        binary_xml = serializer.to_xml(sample_1)
+        unicode_xml = binary_xml.decode('utf-8')
+        self.assertEqual(unicode_xml, u'<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><snowman>☃</snowman><age type="integer">27</age><name>Daniel</name><date_joined>2010-03-27</date_joined></response>')
 
     def test_to_xml2(self):
         serializer = Serializer()
@@ -176,8 +185,8 @@ class SerializerTestCase(TestCase):
 
     def test_from_xml(self):
         serializer = Serializer()
-        data = '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><age type="integer">27</age><name>Daniel</name><date_joined>2010-03-27</date_joined><rocksdahouse type="boolean">True</rocksdahouse></request>'
-        self.assertEqual(serializer.from_xml(data), {'rocksdahouse': True, 'age': 27, 'name': 'Daniel', 'date_joined': '2010-03-27'})
+        data = '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><snowman>☃</snowman><age type="integer">27</age><name>Daniel</name><date_joined>2010-03-27</date_joined><rocksdahouse type="boolean">True</rocksdahouse></request>'
+        self.assertEqual(serializer.from_xml(data), {'rocksdahouse': True, 'age': 27, 'name': 'Daniel', 'date_joined': '2010-03-27', 'snowman': u'☃'})
 
     def test_from_xml2(self):
         serializer = Serializer()
@@ -188,16 +197,17 @@ class SerializerTestCase(TestCase):
         serializer = Serializer()
 
         sample_1 = self.get_sample1()
-        self.assertEqual(serializer.to_json(sample_1), '{"age": 27, "date_joined": "2010-03-27", "name": "Daniel"}')
+        self.assertEqual(serializer.to_json(sample_1), u'{"age": 27, "date_joined": "2010-03-27", "name": "Daniel", "snowman": "☃"}')
 
     def test_from_json(self):
         serializer = Serializer()
 
-        sample_1 = serializer.from_json('{"age": 27, "date_joined": "2010-03-27", "name": "Daniel"}')
-        self.assertEqual(len(sample_1), 3)
+        sample_1 = serializer.from_json(u'{"age": 27, "date_joined": "2010-03-27", "name": "Daniel", "snowman": "☃"}')
+        self.assertEqual(len(sample_1), 4)
         self.assertEqual(sample_1['name'], 'Daniel')
         self.assertEqual(sample_1['age'], 27)
         self.assertEqual(sample_1['date_joined'], u'2010-03-27')
+        self.assertEqual(sample_1['snowman'], u'☃')
 
     def test_round_trip_xml(self):
         serializer = Serializer()
@@ -233,16 +243,17 @@ class SerializerTestCase(TestCase):
         serializer = Serializer()
 
         sample_1 = self.get_sample1()
-        self.assertEqual(serializer.to_plist(sample_1), 'bplist00bybiplist1.0\x00\xd3\x01\x02\x03\x04\x05\x06SageTname[date_joined\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1c %13@\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00K')
+        self.assertEqual(serializer.to_plist(sample_1), 'bplist00bybiplist1.0\x00\xd4\x01\x02\x03\x04\x05\x06\x07\x08WsnowmanSageTname[date_joineda&\x03\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1e&*/;>@M\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\t\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00X')
 
     def test_from_plist(self):
         serializer = Serializer()
 
-        sample_1 = serializer.from_plist('bplist00bybiplist1.0\x00\xd3\x01\x02\x03\x04\x05\x06SageTname[date_joined\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1c %13@\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00K')
-        self.assertEqual(len(sample_1), 3)
+        sample_1 = serializer.from_plist('bplist00bybiplist1.0\x00\xd4\x01\x02\x03\x04\x05\x06\x07\x08WsnowmanSageTname[date_joineda&\x03\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1e&*/;>@M\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\t\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00X')
+        self.assertEqual(len(sample_1), 4)
         self.assertEqual(sample_1['name'], 'Daniel')
         self.assertEqual(sample_1['age'], 27)
         self.assertEqual(sample_1['date_joined'], u'2010-03-27')
+        self.assertEqual(sample_1['snowman'], u'☃')
 
 class ResourceSerializationTestCase(TestCase):
     fixtures = ['note_testdata.json']

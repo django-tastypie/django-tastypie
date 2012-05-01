@@ -20,10 +20,12 @@ Table Of Contents
    caching
    serialization
    throttling
+   paginator
 
    cookbook
    debugging
    who_uses
+   contributing
 
 
 Indices and tables
