@@ -216,6 +216,11 @@ class Resource(object):
                 if settings.DEBUG and getattr(settings, 'TASTYPIE_FULL_DEBUG', False):
                     raise
 
+                # Re-raise the error to get a proper traceback when the error
+                # happend during a test case
+                if request.META.get('SERVER_NAME') == 'testserver':
+                    raise
+
                 # Rather than re-raising, we're going to things similar to
                 # what Django does. The difference is returning a serialized
                 # error message.
@@ -598,9 +603,19 @@ class Resource(object):
         """
         This needs to be implemented at the user level.
 
-        A ``return reverse("api_dispatch_detail", kwargs={'resource_name':
-        self.resource_name, 'pk': object.id})`` should be all that would
-        be needed.
+        A call to ``reverse()`` should be all that would be needed::
+
+            from django.core.urlresolvers import reverse
+
+            def get_resource_uri(self, bundle):
+                return reverse("api_dispatch_detail", kwargs={
+                    'resource_name': self._meta.resource_name,
+                    'pk': bundle.data['id'],
+                })
+
+        If you're using the :class:`~tastypie.api.Api` class to group your
+        URLs, you also need to pass the ``api_name`` together with the other
+        kwargs.
 
         ``ModelResource`` includes a full working version specific to Django's
         ``Models``.
@@ -1379,14 +1394,14 @@ class Resource(object):
 
         # Now update the bundle in-place.
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
-        bundle = self.update_in_place(request, bundle, deserialized)
+        self.update_in_place(request, bundle, deserialized)
 
         if not self._meta.always_return_data:
             return http.HttpAccepted()
         else:
             bundle = self.full_dehydrate(bundle)
             bundle = self.alter_detail_data_to_serialize(request, bundle)
-            return self.create_response(request, bundle, response_class = http.HttpAccepted)
+            return self.create_response(request, bundle, response_class=http.HttpAccepted)
 
     def update_in_place(self, request, original_bundle, new_data):
         """

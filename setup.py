@@ -21,10 +21,13 @@ setup(
         'tastypie.management',
         'tastypie.management.commands',
         'tastypie.migrations',
+        'tastypie.contrib',
+        'tastypie.contrib.gis',
     ],
     package_data={
         'tastypie': ['templates/tastypie/*'],
     },
+    zip_safe=False,
     requires=[
         'mimeparse',
         'python_dateutil(>=1.5, < 2.0)',
