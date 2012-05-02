@@ -2239,7 +2239,7 @@ class ModelResourceTestCase(TestCase):
             resp = resource.dispatch('list', request)
             self.fail()
         except ImmediateHttpResponse, e:
-            self.assertEqual(e.response.status_code, 403)
+            self.assertEqual(e.response.status_code, 429)
             self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
         # Throttled.
@@ -2247,12 +2247,12 @@ class ModelResourceTestCase(TestCase):
             resp = resource.dispatch('list', request)
             self.fail()
         except ImmediateHttpResponse, e:
-            self.assertEqual(e.response.status_code, 403)
+            self.assertEqual(e.response.status_code, 429)
             self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
         # Check the ``wrap_view``.
         resp = resource.wrap_view('dispatch_list')(request)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 429)
         self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
         # Restore.

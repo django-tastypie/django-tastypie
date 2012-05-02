@@ -381,6 +381,12 @@ class ResourceTestCase(TestCase):
         """
         return self.assertEqual(resp.status_code, 410)
 
+    def assertHttpTooManyRequests(self, resp):
+        """
+        Ensures the response is returning a HTTP 429.
+        """
+        return self.assertEqual(resp.status_code, 429)
+
     def assertHttpApplicationError(self, resp):
         """
         Ensures the response is returning a HTTP 500.

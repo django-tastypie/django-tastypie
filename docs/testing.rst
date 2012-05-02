@@ -304,6 +304,13 @@ Ensures the response is returning a HTTP 409.
 
 Ensures the response is returning a HTTP 410.
 
+``assertHttpTooManyRequests``
+~~~~~~~~~~~~~~~~~~~
+
+.. method:: ResourceTestCase.assertHttpTooManyRequests(self, resp)
+
+Ensures the response is returning a HTTP 429.
+
 ``assertHttpApplicationError``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
