@@ -138,7 +138,7 @@ class DeclarativeMetaclass(type):
         if not getattr(new_class._meta, 'resource_name', None):
             # No ``resource_name`` provided. Attempt to auto-name the resource.
             class_name = new_class.__name__
-            name_bits = [bit for bit in class_name.split('Resource') if bit]
+            name_bits = (bit for bit in class_name.split('Resource') if bit)
             resource_name = ''.join(name_bits).lower()
             new_class._meta.resource_name = resource_name
 
