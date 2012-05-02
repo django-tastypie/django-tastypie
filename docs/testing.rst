@@ -69,7 +69,7 @@ An example usage might look like::
 
             # We also build a detail URI, since we will be using it all over.
             # DRY, baby. DRY.
-            self.detail_url = '/api/v1/event/{0}/'.format(self.active_1.pk)
+            self.detail_url = '/api/v1/entry/{0}/'.format(self.entry_1.pk)
 
             # The data we'll send on POST requests. Again, because we'll use it
             # frequently (enough).
@@ -114,7 +114,7 @@ An example usage might look like::
 
             # We use ``assertKeys`` here to just verify the keys, not all the data.
             self.assertKeys(self.deserialize(resp), ['created', 'slug', 'title', 'user'])
-            self.assertEqual(self.deserialize(resp)['name'], 'Active One')
+            self.assertEqual(self.deserialize(resp)['name'], 'First post')
 
         def test_get_detail_xml(self):
             self.assertValidXMLResponse(self.api_client.get(self.detail_url, format='xml', authentication=self.get_credentials()))
