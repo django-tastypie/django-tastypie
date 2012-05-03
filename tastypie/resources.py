@@ -1858,12 +1858,12 @@ class ModelResource(Resource):
                 lookup_kwargs = kwargs.copy()
 
                 for key in kwargs.keys():
-                    if key == 'pk':
-                        continue
-                    elif getattr(bundle.obj, key, NOT_AVAILABLE) is not NOT_AVAILABLE:
-                        lookup_kwargs[key] = getattr(bundle.obj, key)
-                    else:
-                        del lookup_kwargs[key]
+                    if key != 'pk':
+                        attr = getattr(bundle.obj, key, NOT_AVAILABLE)
+                        if attr is not NOT_AVAILABLE:
+                            lookup_kwargs[key] = attr
+                        else:
+                            del lookup_kwargs[key]
             except:
                 # if there is trouble hydrating the data, fall back to just
                 # using kwargs by itself (usually it only contains a "pk" key
