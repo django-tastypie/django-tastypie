@@ -329,7 +329,7 @@ how the data from the client is interpreted & placed on the data model.
 ``hydrate``
 ~~~~~~~~~~~
 
-The ``hydrate`` method allows you to make final changes to the ``bundle.obj``.
+The ``hydrate`` method allows you to make initial changes to the ``bundle.obj``.
 This includes things like prepopulating fields you don't expose over the API,
 recalculating related data or mangling data.
 
@@ -987,9 +987,19 @@ Allows for the sorting of objects being returned.
 
 *This needs to be implemented at the user level.*
 
-A ``return reverse("api_dispatch_detail", kwargs={'resource_name':
-self.resource_name, 'pk': object.id})`` should be all that would
-be needed.
+A call to ``reverse()`` should be all that would be needed::
+
+    from django.core.urlresolvers import reverse
+
+    def get_resource_uri(self, bundle):
+        return reverse("api_dispatch_detail", kwargs={
+            'resource_name': self._meta.resource_name,
+            'pk': bundle.data['id'],
+        })
+
+If you're using the :class:`~tastypie.api.Api` class to group your
+URLs, you also need to pass the ``api_name`` together with the other
+kwargs.
 
 ``ModelResource`` includes a full working version specific to Django's
 ``Models``.

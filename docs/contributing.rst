@@ -119,7 +119,7 @@ If you've been granted the commit bit, here's how to shepherd the changes in:
 
     """Added a new way to do per-object authorization."""
     """Fixed a bug in ``Serializer.to_xml``. Thanks to joeschmoe for the report!"""
-    """BACKWARD-INCOMPATIBLE: Altered the arguments passed to ``Bundle.__init__.
+    """BACKWARD-INCOMPATIBLE: Altered the arguments passed to ``Bundle.__init__``.
 
     Further description appears here if the change warrants an explanation
     as to why it was done."""

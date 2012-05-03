@@ -68,8 +68,9 @@ To tweak a format, simply override it's ``to_<format>`` & ``from_<format>``
 methods. So adding the server time to all output might look like so::
 
     import time
+    from django.utils import simplejson
+    from django.core.serializers import json
     from tastypie.serializers import Serializer
-
 
     class CustomJSONSerializer(Serializer):
         def to_json(self, data, options=None):

@@ -13,6 +13,7 @@ interfaces.
    settings
    non_orm_data_sources
    tools
+   testing
 
    resources
    bundles
@@ -24,6 +25,7 @@ interfaces.
    serialization
    throttling
    paginator
+   geodjango
 
    cookbook
    debugging
@@ -118,6 +120,7 @@ The easiest way to get setup to run Tastypie's tests looks like::
 Then running the tests is as simple as::
 
   # From the same directory as above:
+  $ ./env/bin/pip install -U -r tests/requirements.txt
   $ cd tests
   $ ./run_all_test.sh
 

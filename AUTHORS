@@ -37,7 +37,18 @@ Contributors:
 * Sébastien Fievet (zyegfryed) for the initial OAuth implementation.
 * Jacob Kaplan-Moss (jacobkm) for the PATCH patch.
 * jorgeecardona for a patch in renaming the ``objects`` name of the response.
-* vbabiy for a patch on improved use of ``bundle.request``.
+* vbabiy for a patch on improved use of ``bundle.request`` & related resource validation.
+* philipn (Philip Neustrom) for GeoDjango integration.
+* dgerzo (Daniel Gerzo) for GeoDjango integration, work on PATCH and related fields, improving the ``run_all_tests.sh`` script & several smaller patches..
+* ipmb (Peter Baumgartner) for a patch regarding the order of object saves.
+* easel for a documentation patch on failing syncdbs.
+* gaftech (Gabriel) for a patch regarding the ``__in`` filter syntax.
+* Christopher Groskopf (onyxfish) for a patch regarding PATCH & ``always_return_data``.
+* dericcrago (Deric Crago) for documentation patches.
+* gwrtheyrn (Danilo Bargen) for a documentation patch.
+* panta (Marco Pantaleoni) for a patch to ``setup.py``.
+* pelme (Andreas Pelme) for a patch involving re-raising exceptions during testing.
+* Rue La La for funding the development & documentation on the testing bits.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
