@@ -138,7 +138,7 @@ class DeclarativeMetaclass(type):
         if not getattr(new_class._meta, 'resource_name', None):
             # No ``resource_name`` provided. Attempt to auto-name the resource.
             class_name = new_class.__name__
-            name_bits = [bit for bit in class_name.split('Resource') if bit]
+            name_bits = (bit for bit in class_name.split('Resource') if bit)
             resource_name = ''.join(name_bits).lower()
             new_class._meta.resource_name = resource_name
 
@@ -1067,8 +1067,10 @@ class Resource(object):
         to_be_serialized = paginator.page()
 
         # Dehydrate the bundles in preparation for serialization.
-        bundles = [self.build_bundle(obj=obj, request=request) for obj in to_be_serialized['objects']]
-        to_be_serialized['objects'] = [self.full_dehydrate(bundle) for bundle in bundles]
+        to_be_serialized['objects'] = [
+            self.full_dehydrate(self.build_bundle(obj=obj, request=request))
+            for obj in to_be_serialized['objects']
+        ]
         to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
         return self.create_response(request, to_be_serialized)
 
@@ -1630,9 +1632,9 @@ class ModelResource(Resource):
         Turn the string ``value`` into a python object.
         """
         # Simple values
-        if value in ['true', 'True', True]:
+        if value in ('true', 'True', True):
             value = True
-        elif value in ['false', 'False', False]:
+        elif value in ('false', 'False', False):
             value = False
         elif value in ('nil', 'none', 'None', None):
             value = None
@@ -1807,7 +1809,7 @@ class ModelResource(Resource):
         try:
             base_object_list = self.get_object_list(request).filter(**kwargs)
             object_list = self.apply_authorization_limits(request, base_object_list)
-            stringified_kwargs = ', '.join(["%s=%s" % (k, v) for k, v in kwargs.items()])
+            stringified_kwargs = ', '.join("%s=%s" % (k, v) for k, v in kwargs.items())
 
             if len(object_list) <= 0:
                 raise self._meta.object_class.DoesNotExist("Couldn't find an instance of '%s' which matched '%s'." % (self._meta.object_class.__name__, stringified_kwargs))

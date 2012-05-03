@@ -49,6 +49,7 @@ Contributors:
 * panta (Marco Pantaleoni) for a patch to ``setup.py``.
 * pelme (Andreas Pelme) for a patch involving re-raising exceptions during testing.
 * Rue La La for funding the development & documentation on the testing bits.
+* Alexis Svinartchouk (zvin) for various patches.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
