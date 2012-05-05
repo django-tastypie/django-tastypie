@@ -1503,27 +1503,28 @@ class ModelResource(Resource):
         Django type.
         """
         result = default
+        internal_type = f.get_internal_type()
 
-        if f.get_internal_type() in ('DateField', 'DateTimeField'):
+        if internal_type in ('DateField', 'DateTimeField'):
             result = fields.DateTimeField
-        elif f.get_internal_type() in ('BooleanField', 'NullBooleanField'):
+        elif internal_type in ('BooleanField', 'NullBooleanField'):
             result = fields.BooleanField
-        elif f.get_internal_type() in ('FloatField',):
+        elif internal_type in ('FloatField',):
             result = fields.FloatField
-        elif f.get_internal_type() in ('DecimalField',):
+        elif internal_type in ('DecimalField',):
             result = fields.DecimalField
-        elif f.get_internal_type() in ('IntegerField', 'PositiveIntegerField', 'PositiveSmallIntegerField', 'SmallIntegerField'):
+        elif internal_type in ('IntegerField', 'PositiveIntegerField', 'PositiveSmallIntegerField', 'SmallIntegerField', 'AutoField'):
             result = fields.IntegerField
-        elif f.get_internal_type() in ('FileField', 'ImageField'):
+        elif internal_type in ('FileField', 'ImageField'):
             result = fields.FileField
-        elif f.get_internal_type() == 'TimeField':
+        elif internal_type == 'TimeField':
             result = fields.TimeField
         # TODO: Perhaps enable these via introspection. The reason they're not enabled
         #       by default is the very different ``__init__`` they have over
         #       the other fields.
-        # elif f.get_internal_type() == 'ForeignKey':
+        # elif internal_type == 'ForeignKey':
         #     result = ForeignKey
-        # elif f.get_internal_type() == 'ManyToManyField':
+        # elif internal_type == 'ManyToManyField':
         #     result = ManyToManyField
 
         return result
