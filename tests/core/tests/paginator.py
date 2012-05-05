@@ -114,10 +114,22 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(paginator.get_limit(), 10)
 
         paginator.limit = -10
-        self.assertRaises(BadRequest, paginator.get_limit)
+        raised = False
+        try:
+            paginator.get_limit()
+        except BadRequest, e:
+            raised = e
+        self.assertTrue(raised)
+        self.assertEqual(str(raised), "Invalid limit '-10' provided. Please provide a positive integer >= 0.")
 
         paginator.limit = 'hAI!'
-        self.assertRaises(BadRequest, paginator.get_limit)
+        raised = False
+        try:
+            paginator.get_limit()
+        except BadRequest, e:
+            raised = e
+        self.assertTrue(raised)
+        self.assertEqual(str(raised), "Invalid limit 'hAI!' provided. Please provide a positive integer.")
 
         # Test the max_limit.
         paginator.limit = 1000
@@ -142,10 +154,22 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(paginator.get_offset(), 10)
 
         paginator.offset= -10
-        self.assertRaises(BadRequest, paginator.get_offset)
+        raised = False
+        try:
+            paginator.get_offset()
+        except BadRequest, e:
+            raised = e
+        self.assertTrue(raised)
+        self.assertEqual(str(raised), "Invalid offset '-10' provided. Please provide a positive integer >= 0.")
 
         paginator.offset = 'hAI!'
-        self.assertRaises(BadRequest, paginator.get_offset)
+        raised = False
+        try:
+            paginator.get_offset()
+        except BadRequest, e:
+            raised = e
+        self.assertTrue(raised)
+        self.assertEqual(str(raised), "Invalid offset 'hAI!' provided. Please provide an integer.")
 
     def test_regression_nonqueryset(self):
         paginator = Paginator({}, ['foo', 'bar', 'baz'], limit=2, offset=0)
