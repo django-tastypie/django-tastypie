@@ -518,6 +518,9 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Controls what list REST methods the ``Resource`` should respond to. Default
   is ``['get', 'post', 'put', 'delete', 'patch']``.
 
+
+.. _detail-allowed-methods:
+
 ``detail_allowed_methods``
 --------------------------
 
@@ -1443,6 +1446,10 @@ In any case:
 
   * ``PATCH`` is all or nothing. If a single sub-operation fails, the
     entire request will fail and all resources will be rolled back.
+
+  * For ``PATCH`` to work, you **must** have both ``put`` and ``delete`` in
+    your :ref:`detail-allowed-methods` setting.
+
 
 ``patch_detail``
 ----------------
