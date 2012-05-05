@@ -50,7 +50,7 @@ might look like::
     class PageNumberPaginator(Paginator):
         def page(self):
             output = super(PageNumberPaginator, self).page()
-            output['page_number'] = int(offset / limit) + 1
+            output['page_number'] = int(self.offset / self.limit) + 1
             return output
 
 Another common request is to alter the structure Tastypie uses in the
