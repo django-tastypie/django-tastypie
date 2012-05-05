@@ -50,7 +50,7 @@ Contributors:
 * pelme (Andreas Pelme) for a patch involving re-raising exceptions during testing.
 * Rue La La for funding the development & documentation on the testing bits.
 * Aaron Elliot Ross for a patch to invalid pagination.
-
+* Randall Degges for patch_list method documentation patch.
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 

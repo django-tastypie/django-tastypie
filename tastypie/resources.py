@@ -1279,6 +1279,14 @@ class Resource(object):
 
             * ``PATCH`` is all or nothing. If a single sub-operation fails, the
               entire request will fail and all resources will be rolled back.
+
+          * For ``PATCH`` to work, you **must** have ``put`` in your
+            :ref:`detail-allowed-methods` setting.
+
+          * To delete objects via ``deleted_objects`` in a ``PATCH`` request you
+            **must** have ``delete`` in your :ref:`detail-allowed-methods`
+            setting.
+
         """
         request = convert_post_to_patch(request)
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
