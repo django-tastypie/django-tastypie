@@ -1279,6 +1279,9 @@ class Resource(object):
 
             * ``PATCH`` is all or nothing. If a single sub-operation fails, the
               entire request will fail and all resources will be rolled back.
+
+            * For ``PATCH`` to work, you **must** have both ``put`` and
+              ``delete`` in your ``detail_allowed_methods`` setting.
         """
         request = convert_post_to_patch(request)
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
