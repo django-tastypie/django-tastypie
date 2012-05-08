@@ -72,6 +72,23 @@ class ViewsTestCase(TestCase):
         self.assertEqual(obj['is_active'], True)
         self.assertEqual(obj['user'], '/api/v1/users/1/')
 
+    def test_negative_pk(self):
+        # Test single result
+        resp = self.client.get('/api/v1/users/-1/')
+        self.assertEqual(resp.status_code, 200)
+        obj = json.loads(resp.content)
+        self.assertEqual(obj['username'], 'johndoes')
+        self.assertEqual(obj['resource_uri'], '/api/v1/users/-1/')
+
+        # Test set of results
+        resp = self.client.get('/api/v1/users/set/-1;1/')
+        self.assertEqual(resp.status_code, 200)
+        obj = json.loads(resp.content)['objects']
+        self.assertEqual(len(obj), 2)
+        self.assertTrue(obj[0]['id'] in ("-1", "1"))
+        self.assertTrue(obj[1]['id'] in ("-1", "1"))
+
+
     def test_api_field_error(self):
         # When a field error is encountered, we should be presenting the message
         # back to the user.
