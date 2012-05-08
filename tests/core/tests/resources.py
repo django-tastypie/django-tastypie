@@ -824,6 +824,12 @@ class WithAbsoluteURLNoteResource(ModelResource):
         return '/api/v1/withabsoluteurlnote/%s/' % bundle_or_obj.obj.id
 
 
+class AlternativeCollectionNameNoteResource(ModelResource):
+    class Meta:
+        queryset = Note.objects.filter(is_active=True)
+        collection_name = 'alt_objects'
+
+
 class SubjectResource(ModelResource):
     class Meta:
         queryset = Subject.objects.all()
@@ -2902,6 +2908,13 @@ class ModelResourceTestCase(TestCase):
         })
         hydrated_2 = rornr.full_hydrate(hbundle_2)
         self.assertEqual(hydrated_2.obj.author.username, 'johndoe')
+
+    def test_collection_name(self):
+        resource = AlternativeCollectionNameNoteResource()
+        request = HttpRequest()
+        response = resource.get_list(request)
+        response_data = json.loads(response.content)
+        self.assertTrue('alt_objects' in response_data)
 
 
 class BasicAuthResourceTestCase(TestCase):
