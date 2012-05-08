@@ -2111,6 +2111,20 @@ class ModelResourceTestCase(TestCase):
         updated_note = Note.objects.get(pk=2)
         self.assertEqual(updated_note.content, "This is note 2.")
 
+    def test_patch_list_return_data(self):
+        always_resource = AlwaysDataNoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PATCH'
+        request._read_started = False
+        
+        self.assertEqual(Note.objects.count(), 6)
+        request._raw_post_data = request._body = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}, {"resource_uri": "/api/v1/notes/2/", "content": "This is note 2."}], "deleted_objects": ["/api/v1/notes/1/"]}'
+
+        resp = always_resource.patch_list(request)
+        self.assertEqual(resp.status_code, 202)
+        self.assertTrue(resp.content.startswith('{"objects": ['))
+
     def test_patch_list_bad_resource_uri(self):
         resource = NoteResource()
         request = HttpRequest()

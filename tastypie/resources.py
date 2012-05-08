@@ -1512,6 +1512,8 @@ class Resource(object):
         if len(deserialized[collection_name]) and 'put' not in self._meta.detail_allowed_methods:
             raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
 
+        bundles_seen = []
+
         for data in deserialized[collection_name]:
             # If there's a resource_uri then this is either an
             # update-in-place or a create-via-PUT.
@@ -1539,7 +1541,10 @@ class Resource(object):
                 bundle = self.build_bundle(data=dict_strip_unicode_keys(data), request=request)
                 self.obj_create(bundle=bundle)
 
+            bundles_seen.append(bundle)
+
         deleted_collection = deserialized.get(deleted_collection_name, [])
+
         if deleted_collection:
             if 'delete' not in self._meta.detail_allowed_methods:
                 raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
@@ -1549,7 +1554,13 @@ class Resource(object):
                 bundle = self.build_bundle(obj=obj, request=request)
                 self.obj_delete(bundle=bundle)
 
-        return http.HttpAccepted()
+        if not self._meta.always_return_data:
+            return http.HttpAccepted()
+        else:
+            to_be_serialized = {}
+            to_be_serialized['objects'] = [self.full_dehydrate(bundle) for bundle in bundles_seen]
+            to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
+            return self.create_response(request, to_be_serialized, response_class=http.HttpAccepted)
 
     def patch_detail(self, request, **kwargs):
         """
