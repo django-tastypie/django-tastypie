@@ -547,7 +547,7 @@ class Resource(object):
         # Check to see if they should be throttled.
         if self._meta.throttle.should_be_throttled(identifier):
             # Throttle limit exceeded.
-            raise ImmediateHttpResponse(response=http.HttpForbidden())
+            raise ImmediateHttpResponse(response=http.HttpTooManyRequests())
 
     def log_throttled_access(self, request):
         """
@@ -1283,6 +1283,14 @@ class Resource(object):
 
             * ``PATCH`` is all or nothing. If a single sub-operation fails, the
               entire request will fail and all resources will be rolled back.
+
+          * For ``PATCH`` to work, you **must** have ``put`` in your
+            :ref:`detail-allowed-methods` setting.
+
+          * To delete objects via ``deleted_objects`` in a ``PATCH`` request you
+            **must** have ``delete`` in your :ref:`detail-allowed-methods`
+            setting.
+
         """
         request = convert_post_to_patch(request)
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
@@ -1499,27 +1507,28 @@ class ModelResource(Resource):
         Django type.
         """
         result = default
+        internal_type = f.get_internal_type()
 
-        if f.get_internal_type() in ('DateField', 'DateTimeField'):
+        if internal_type in ('DateField', 'DateTimeField'):
             result = fields.DateTimeField
-        elif f.get_internal_type() in ('BooleanField', 'NullBooleanField'):
+        elif internal_type in ('BooleanField', 'NullBooleanField'):
             result = fields.BooleanField
-        elif f.get_internal_type() in ('FloatField',):
+        elif internal_type in ('FloatField',):
             result = fields.FloatField
-        elif f.get_internal_type() in ('DecimalField',):
+        elif internal_type in ('DecimalField',):
             result = fields.DecimalField
-        elif f.get_internal_type() in ('IntegerField', 'PositiveIntegerField', 'PositiveSmallIntegerField', 'SmallIntegerField'):
+        elif internal_type in ('IntegerField', 'PositiveIntegerField', 'PositiveSmallIntegerField', 'SmallIntegerField', 'AutoField'):
             result = fields.IntegerField
-        elif f.get_internal_type() in ('FileField', 'ImageField'):
+        elif internal_type in ('FileField', 'ImageField'):
             result = fields.FileField
-        elif f.get_internal_type() == 'TimeField':
+        elif internal_type == 'TimeField':
             result = fields.TimeField
         # TODO: Perhaps enable these via introspection. The reason they're not enabled
         #       by default is the very different ``__init__`` they have over
         #       the other fields.
-        # elif f.get_internal_type() == 'ForeignKey':
+        # elif internal_type == 'ForeignKey':
         #     result = ForeignKey
-        # elif f.get_internal_type() == 'ManyToManyField':
+        # elif internal_type == 'ManyToManyField':
         #     result = ManyToManyField
 
         return result

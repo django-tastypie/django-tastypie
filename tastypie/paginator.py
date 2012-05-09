@@ -78,10 +78,10 @@ class Paginator(object):
         try:
             limit = int(limit)
         except ValueError:
-            raise BadRequest("Invalid limit '%s' provided. Please provide a positive integer.")
+            raise BadRequest("Invalid limit '%s' provided. Please provide a positive integer." % limit)
 
         if limit < 0:
-            raise BadRequest("Invalid limit '%s' provided. Please provide an integer >= 0.")
+            raise BadRequest("Invalid limit '%s' provided. Please provide a positive integer >= 0." % limit)
 
         if self.max_limit and limit > self.max_limit:
             # If it's more than the max, we're only going to return the max.
@@ -107,10 +107,10 @@ class Paginator(object):
         try:
             offset = int(offset)
         except ValueError:
-            raise BadRequest("Invalid offset '%s' provided. Please provide an integer.")
+            raise BadRequest("Invalid offset '%s' provided. Please provide an integer." % offset)
 
         if offset < 0:
-            raise BadRequest("Invalid offset '%s' provided. Please provide an integer >= 0.")
+            raise BadRequest("Invalid offset '%s' provided. Please provide a positive integer >= 0." % offset)
 
         return offset
 

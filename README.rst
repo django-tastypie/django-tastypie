@@ -4,7 +4,7 @@ django-tastypie
 
 Creating delicious APIs for Django apps since 2010.
 
-Currently in beta (v1.0.0-beta) but being used actively in production on several
+Currently in beta (v0.9.11) but being used actively in production on several
 sites.
 
 
@@ -15,7 +15,7 @@ Required
 --------
 
 * Python 2.5+
-* Django 1.2+ (May work on Django 1.1)
+* Django 1.2+
 * mimeparse 0.1.3+ (http://code.google.com/p/mimeparse/)
 
   * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
@@ -69,7 +69,7 @@ You can find more in the documentation at
 http://django-tastypie.readthedocs.org/.
 
 
-Why tastypie?
+Why Tastypie?
 =============
 
 There are other, better known API frameworks out there for Django. You need to
@@ -97,5 +97,18 @@ Reference Material
 * http://www.ietf.org/rfc/rfc2616.txt
 * http://jacobian.org/writing/rest-worst-practices/
 
-:author: Daniel Lindsley
-:date: 2011/09/16
+
+Commercial Support
+==================
+
+If you're using Tastypie in a commercial environment, paid support is available
+from `Toast Driven`_. Services offered include:
+
+* Advice/help with setup
+* Implementation in your project
+* Bugfixes in Tastypie itself
+* Features in Tastypie itself
+
+If you're interested, please contact Daniel Lindsley (daniel@toastdriven.com).
+
+.. _`Toast Driven`: http://toastdriven.com/

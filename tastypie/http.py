@@ -6,14 +6,14 @@ from django.http import HttpResponse
 
 class HttpCreated(HttpResponse):
     status_code = 201
-    
+
     def __init__(self, *args, **kwargs):
         location = ''
 
         if 'location' in kwargs:
             location = kwargs['location']
             del(kwargs['location'])
-        
+
         super(HttpCreated, self).__init__(*args, **kwargs)
         self['Location'] = location
 
@@ -64,6 +64,10 @@ class HttpConflict(HttpResponse):
 
 class HttpGone(HttpResponse):
     status_code = 410
+
+
+class HttpTooManyRequests(HttpResponse):
+    status_code = 429
 
 
 class HttpApplicationError(HttpResponse):
