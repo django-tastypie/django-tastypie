@@ -1888,29 +1888,37 @@ class ModelResource(Resource):
         A ORM-specific implementation of ``obj_update``.
         """
         if not bundle.obj or bundle.obj_is_new:
-            # Attempt to hydrate data from kwargs before doing a lookup for the object.
-            # This step is needed so certain values (like datetime) will pass model validation.
-            try:
-                bundle.install_new_obj_from_class(self.get_object_list(bundle.request).model)
-                bundle.data.update(kwargs)
-                bundle = self.full_hydrate(bundle)
-                lookup_kwargs = kwargs.copy()
 
-                for key in kwargs.keys():
-                    if key == 'pk':
-                        continue
-                    elif getattr(bundle.obj, key, NOT_AVAILABLE) is not NOT_AVAILABLE:
-                        lookup_kwargs[key] = getattr(bundle.obj, key)
-                    else:
-                        del lookup_kwargs[key]
-            except:
-                # if there is trouble hydrating the data, fall back to just
-                # using kwargs by itself (usually it only contains a "pk" key
-                # and this will work fine.
-                lookup_kwargs = kwargs
+            # If the 'resource_uri' was provided in the data, use that for lookup
+            if "resource_uri" in bundle.data:
+                do_lookup = lambda: self.get_via_uri(bundle.data["resource_uri"])
+
+            else:
+                # Attempt to hydrate data from kwargs before doing a lookup for the object.
+                # This step is needed so certain values (like datetime) will pass model validation.
+                try:
+                    bundle.install_new_obj_from_class(self.get_object_list(bundle.request).model)
+                    bundle.data.update(kwargs)
+                    bundle = self.full_hydrate(bundle)
+                    lookup_kwargs = kwargs.copy()
+
+                    for key in kwargs.keys():
+                        if key == 'pk':
+                            continue
+                        elif getattr(bundle.obj, key, NOT_AVAILABLE) is not NOT_AVAILABLE:
+                            lookup_kwargs[key] = getattr(bundle.obj, key)
+                        else:
+                            del lookup_kwargs[key]
+                except:
+                    # if there is trouble hydrating the data, fall back to just
+                    # using kwargs by itself (usually it only contains a "pk" key
+                    # and this will work fine.
+                    lookup_kwargs = kwargs
+
+                do_lookup = lambda: self.obj_get(bundle.request, **lookup_kwargs)
 
             try:
-                bundle.obj = self.obj_get(bundle.request, **lookup_kwargs)
+                bundle.obj = do_lookup()
                 bundle.obj_is_new = False
             except ObjectDoesNotExist:
                 raise NotFound("A model instance matching the provided arguments could not be found.")
