@@ -7,6 +7,7 @@ from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, ValidationError
 from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404, get_script_prefix
 from django.db import transaction
+from django.db.models.fields import FieldDoesNotExist
 from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.utils.cache import patch_cache_control
@@ -1897,18 +1898,40 @@ class ModelResource(Resource):
                 # Attempt to hydrate data from kwargs before doing a lookup for the object.
                 # This step is needed so certain values (like datetime) will pass model validation.
                 try:
-                    bundle.install_new_obj_from_class(self.get_object_list(bundle.request).model)
+                    orm_model = self.get_object_list(bundle.request).model
+                    bundle.install_new_obj_from_class(orm_model)
                     bundle.data.update(kwargs)
                     bundle = self.full_hydrate(bundle)
-                    lookup_kwargs = kwargs.copy()
+                    lookup_kwargs = {}
+
+                    import pdb; pdb.set_trace()
 
                     for key in kwargs.keys():
-                        if key == 'pk':
+
+                        # Figure out which API field this key in the payload is for
+                        try:
+                            api_field = self.fields[key]
+                            attribute = api_field.attribute
+                        except KeyError:
+                            bundle.errors.append("Unknown field '%s=%s' on resource %s" %
+                                                 (key, kwargs[key], self))
+                            self.error_response(bundle.errors, request)
+
+                        # Figure out which field on the ORM model this key in payload is for
+                        try:
+                            orm_field = orm_model._meta.get_field(attribute)
+                        except FieldDoesNotExist:
                             continue
-                        elif getattr(bundle.obj, key, NOT_AVAILABLE) is not NOT_AVAILABLE:
-                            lookup_kwargs[key] = getattr(bundle.obj, key)
-                        else:
-                            del lookup_kwargs[key]
+
+                        # If it's the PK then use that as the sole lookup
+                        if getattr(orm_field, "primary_key", False):
+                            lookup_kwargs = {attribute: api_field.convert(kwargs[key])}
+                            break
+
+                        # Otherwise just include it in the lookup
+                        elif getattr(bundle.obj, attribute, NOT_AVAILABLE ) is not NOT_AVAILABLE:
+                            lookup_kwargs[attribute] = getattr(bundle.obj, attribute)
+
                 except:
                     # if there is trouble hydrating the data, fall back to just
                     # using kwargs by itself (usually it only contains a "pk" key
