@@ -1904,8 +1904,6 @@ class ModelResource(Resource):
                     bundle = self.full_hydrate(bundle)
                     lookup_kwargs = {}
 
-                    import pdb; pdb.set_trace()
-
                     for key in kwargs.keys():
 
                         # Figure out which API field this key in the payload is for
