@@ -61,8 +61,6 @@ class AuthTestCase(TestCase):
         list_url = self.get_list_url(resource_name='notes')
         note = Note.objects.filter(user__username='testuser')[0]
         detail_url = self.get_detail_url(resource_name='notes', pk=note.pk)
-        logger.debug(list_url)
-        print list_url
         ## Anonymous User shouldn't access any notes.
         self.client.logout()
         resp, content = self.parse_response(self.client.get(list_url, **headers))
@@ -98,7 +96,7 @@ class AuthTestCase(TestCase):
                 detail_url,
                 data=json.dumps({'content': 'New content for existing note.'}),
                 **headers),
-            status_code=202)
+            status_code=204)
         resp, content = self.parse_response(
             self.client.delete(detail_url, **headers),
             status_code=204)
@@ -109,8 +107,8 @@ class AuthTestCase(TestCase):
                 **headers),
             status_code=201)
 
-        ## User cannot retrieve or modify assets they don't own.
-        other_note = Note.objects.filter(owner__username='otheruser')[0]
+        ## User cannot retrieve or modify notes they don't own.
+        other_note = Note.objects.filter(user__username='otheruser')[0]
         other_detail_url = self.get_detail_url(resource_name='notes', pk=other_note.pk)
         resp, content = self.parse_response(
             self.client.get(other_detail_url, **headers),

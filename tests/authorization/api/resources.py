@@ -63,7 +63,8 @@ class UserObjectAuthorization(object):
 
         if klass is False:
             return False
-
+        if bundle.request.user.is_anonymous():
+            raise Unauthorized()
         return True
 
     def update_list(self, object_list, bundle):
@@ -81,7 +82,6 @@ class UserObjectAuthorization(object):
         if klass is False:
             return False
 
-        print bundle.obj.pk
         if bundle.request.user == bundle.obj.user:
             return True
         else:
@@ -123,3 +123,11 @@ class NoteResource(ModelResource):
         resource_name = 'notes'
         queryset = Note.objects.all()
         authorization = UserObjectAuthorization()
+
+    def obj_create(self, bundle, request=None, **kwargs):
+        """
+        Making request.user owner of the new note.
+        """
+        bundle = super(NoteResource, self).obj_create(bundle, request, user=request.user, **kwargs)
+
+        return bundle
