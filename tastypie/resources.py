@@ -1262,6 +1262,13 @@ class Resource(object):
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+        try:
+            obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
+        except ObjectDoesNotExist:
+            return http.HttpNotFound()
+        except MultipleObjectsReturned:
+            return http.HttpMultipleChoices("More than one resource is found at this URI.")
+        bundle.obj = obj
         self.is_valid(bundle, request)
         self.authorized_update_detail(self.get_object_list(request), bundle)
 
@@ -1309,7 +1316,14 @@ class Resource(object):
         If the resource is deleted, return ``HttpNoContent`` (204 No Content).
         If the resource did not exist, return ``Http404`` (404 Not Found).
         """
+        try:
+            obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
+        except ObjectDoesNotExist:
+            return http.HttpNotFound()
+        except MultipleObjectsReturned:
+            return http.HttpMultipleChoices("More than one resource is found at this URI.")
         bundle = self.build_bundle(request=request)
+        bundle.obj = obj
         self.authorized_delete_detail(self.get_object_list(request), bundle)
 
         try:
