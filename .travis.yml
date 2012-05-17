@@ -2,19 +2,17 @@ language: python
 
 python:
   - "2.6"
-  - "2.7"
 
 env:
-  - DJANGO=1.3
-  - DJANGO=1.4
+  - TOXENV=py26-1.4,py27-1.4
+  - TOXENV=py26-1.3,py27-1.3
+  - TOXENV=py26,py27
+  - TOXENV=docs
 
 # command to install dependencies
-install: 
-    - pip install -q Django==$DJANGO --use-mirrors
-    - pip install -qr tests/requirements.txt --use-mirrors
+install:
+    - pip install tox
 
 # command to run tests
 script:
-    - cd tests
-    - ./run_all_tests.sh core basic alphanumeric slashless namespaced related validation
-
+    - tox
