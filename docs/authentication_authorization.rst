@@ -1,4 +1,4 @@
-.. _ref-authentication_authorization:
+.. _authentication_authorization:
 
 ==============================
 Authentication / Authorization
