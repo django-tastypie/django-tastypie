@@ -11,16 +11,10 @@ env:
 # command to install dependencies
 install: 
     - pip install -q Django==$DJANGO --use-mirrors
-    - pip install -r tests/requirements.txt --use-mirrors
+    - pip install -qr tests/requirements.txt --use-mirrors
 
 # command to run tests
 script:
-    - cd tests && django-admin.py test core --settings=settings_core
-    - cd tests && django-admin.py test basic --settings=settings_basic
-    - cd tests && django-admin.py test complex --settings=settings_complex
-    - cd tests && django-admin.py test alphanumeric --settings=settings_alphanumeric
-    - cd tests && django-admin.py test slashless --settings=settings_slashless
-    - cd tests && django-admin.py test namespaced --settings=settings_namespaced
-    - cd tests && django-admin.py test related_resource --settings=settings_related
-    - cd tests && django-admin.py test validation --settings=settings_validation
+    - cd tests
+    - ./run_all_tests.sh core basic alphanumeric slashless namespaced related validation
 
