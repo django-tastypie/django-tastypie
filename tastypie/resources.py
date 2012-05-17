@@ -2044,7 +2044,7 @@ class ModelResource(Resource):
         if isinstance(bundle_or_obj, Bundle):
             kwargs['pk'] = bundle_or_obj.obj.pk
         else:
-            kwargs['pk'] = bundle_or_obj.id
+            kwargs['pk'] = bundle_or_obj.pk
 
         if self._meta.api_name is not None:
             kwargs['api_name'] = self._meta.api_name
