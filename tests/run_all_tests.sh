@@ -27,5 +27,3 @@ for type in $TYPES; do
 	django-admin.py test $type --settings=settings_$type || exit $?
 	echo; echo
 done
-
-exit $STATUS
