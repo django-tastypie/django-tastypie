@@ -1,13 +1,11 @@
 language: python
 
 python:
-  - "2.5"
   - "2.6"
   - "2.7"
 
 env:
-  - DJANGO=1.2.7
-  - DJANGO=1.3.1
+  - DJANGO=1.3
   - DJANGO=1.4
 
 # command to install dependencies
@@ -16,10 +14,14 @@ install:
     - pip install -r tests/requirements.txt --use-mirrors
 
 # command to run tests
-script: cd tests && ./run_all_tests.sh core basic alphanumeric slashless namespaced related validation
+script:
+    - cd tests
+    - django-admin.py test core --settings=settings_core
+    - django-admin.py test basic --settings=settings_basic
+    - django-admin.py test complex --settings=settings_complex
+    - django-admin.py test alphanumeric --settings=settings_alphanumeric
+    - django-admin.py test slashless --settings=settings_slashless
+    - django-admin.py test namespaced --settings=settings_namespaced
+    - django-admin.py test related_resource --settings=settings_related
+    - django-admin.py test validation --settings=settings_validation
 
-notifications:
-  irc:
-    channels: "irc.freenode.org#tastypie"
-    on_success: change
-    on_failure: change
