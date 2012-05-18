@@ -1,4 +1,3 @@
-import json
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.http import HttpRequest
@@ -9,6 +8,11 @@ from tastypie import fields
 from related_resource.api.resources import FreshNoteResource, CategoryResource
 from related_resource.api.urls import api
 from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData
+
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 
 class RelatedResourceTest(TestCase):
