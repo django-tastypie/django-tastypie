@@ -37,7 +37,7 @@ Using these classes is simple. Simply provide them (or your own class) as a
             resource_name = 'auth/user'
             excludes = ['email', 'password', 'is_superuser']
             # Add it here.
-            cache = SimpleCache()
+            cache = SimpleCache(timeout=10)
 
 
 Caching Options
@@ -56,7 +56,8 @@ plug. Very useful for development.
 
 This option does basic object caching, attempting to find the object in the
 cache & writing the object to the cache. It uses Django's current
-``CACHE_BACKEND`` to store cached data.
+``CACHE_BACKEND`` to store cached data. The constructor receive a `timeout`
+parameter to control per-resource the default timeout for the cache.
 
 
 Implementing Your Own Cache
