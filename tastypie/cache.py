@@ -26,6 +26,10 @@ class SimpleCache(NoCache):
     """
 
     def __init__(self, timeout=60):
+        """
+        Optionally accepts a ``timeout`` in seconds for the resource's cache.
+        Defaults to ``60`` seconds.
+        """
         self.timeout = timeout
 
     def get(self, key):
@@ -38,7 +42,8 @@ class SimpleCache(NoCache):
         """
         Sets a key-value in the cache.
 
-        Optionally accepts a ``timeout`` in seconds. Defaults to ``60`` seconds.
+        Optionally accepts a ``timeout`` in seconds. Defaults to ``None`` which
+        uses the resource's default timeout.
         """
 
         if timeout == None:
