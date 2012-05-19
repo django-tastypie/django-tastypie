@@ -13,6 +13,7 @@ from django import forms
 from django.http import HttpRequest, QueryDict, Http404
 from django.test import TestCase
 from django.utils import dateformat
+from django.utils import simplejson as json
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
 from tastypie.bundle import Bundle
@@ -27,11 +28,6 @@ from tastypie.validation import Validation, FormValidation
 from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote
 from core.tests.mocks import MockRequest
 from core.utils import SimpleHandler
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
 
 class CustomSerializer(Serializer):
     pass

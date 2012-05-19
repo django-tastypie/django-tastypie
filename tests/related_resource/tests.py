@@ -1,14 +1,15 @@
-import json
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.test import TestCase
+from django.utils import simplejson as json
 from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
 from tastypie import fields
 from related_resource.api.resources import FreshNoteResource, CategoryResource
 from related_resource.api.urls import api
 from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData
+
 
 
 class RelatedResourceTest(TestCase):
