@@ -413,7 +413,8 @@ class RelatedField(ApiField):
         ``Resource`` will appear post-``dehydrate``. If ``False``, the
         related ``Resource`` will appear as a URL to the endpoint of that
         resource. If ``True``, the result of the sub-resource's
-        ``dehydrate`` will be included in full.
+        ``dehydrate`` will be included in full. If ``id`` or ``pk``, the 
+        primary key of the related ``Resource`` will be returned.
 
         Optionally accepts a ``unique``, which indicates if the field is a
         unique identifier for the object.
@@ -500,12 +501,15 @@ class RelatedField(ApiField):
 
     def dehydrate_related(self, bundle, related_resource):
         """
-        Based on the ``full_resource``, returns either the endpoint or the data
+        Based on the ``full_resource``, returns either the endpoint, the primary key, or the data
         from ``full_dehydrate`` for the related resource.
         """
         if not self.full:
             # Be a good netizen.
             return related_resource.get_resource_uri(bundle)
+        elif self.full in ['pk', 'id', ]:
+            # Play nice with clients that fail to utilize related URIs.
+            return related_resource.instance.pk
         else:
             # ZOMG extra data and big payloads.
             bundle = related_resource.build_bundle(obj=related_resource.instance, request=bundle.request)
