@@ -674,6 +674,17 @@ class Resource(object):
 
             bundle.data[field_name] = field_object.dehydrate(bundle)
 
+            # When models.CharField has a 'choices' attribute, then
+            # get_FOO_display() is most likely what the user wants so
+            # add that field to the bundle.  See the django docs for
+            # details:
+            # https://docs.djangoproject.com/en/dev/ref/models/instances/#django.db.models.Model.get_FOO_display
+            get_foo_display = 'get_{0}_display'.format(field_name)
+            if (hasattr(bundle.obj, get_foo_display) and
+                callable(getattr(bundle.obj, get_foo_display))):
+                bundle.data[get_foo_display] = getattr(bundle.obj,
+                                                       get_foo_display)()
+
             # Check for an optional method to do further dehydration.
             method = getattr(self, "dehydrate_%s" % field_name, None)
 

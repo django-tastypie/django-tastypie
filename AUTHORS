@@ -54,6 +54,7 @@ Contributors:
 * Alexis Svinartchouk (zvin) for patching field type fix for AutoFields.
 * Mike W (mik3y) for a cookbook entry on pretty-printed JSON serialization.
 * Taylor Mitchell (tmitchell) for finding and patching a bug in the paginator query encoding.
+* Matt Belisle for adding ``CharField`` ``choices`` selection using ``Model.get_FOO_display()``.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
