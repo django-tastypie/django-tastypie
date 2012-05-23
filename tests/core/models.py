@@ -37,7 +37,6 @@ RATING_CHOICES = (('P', 'Poor'),
                   ('F', 'Fair'),
                   ('E', 'Excellent'))
 
-
 class NoteWithRating(Note):
     rating = models.CharField(max_length=1, choices=RATING_CHOICES)
 
