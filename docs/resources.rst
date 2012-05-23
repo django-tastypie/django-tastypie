@@ -1703,3 +1703,49 @@ relation and recreate the related data as needed.
 Handles generating a resource URI for a single resource.
 
 Uses the model's ``pk`` in order to create the URI.
+
+``full_dehydrate``
+------------------
+
+.. method:: ModelResource.full_dehydrate(self, bundle)
+
+Performs a normal Resource.full_dehydrate(bundle) first and then
+applies extra fields specific to the django Model that the user might
+want.  For example, when a ``CharField`` has the ``choices`` parameter
+specified, django adds a ``get_FOO_display()`` function to the
+``Model`` instance as described in the docs here:
+
+https://docs.djangoproject.com/en/dev/ref/models/instances/#django.db.models.Model.get_FOO_display
+
+and ``ModelResource.full_dehydrate()`` adds the same thing.
+
+```
+>>> from django.db import models
+>>>
+>>> GENDER_CHOICES = (
+>>>     ('M', 'Male'),
+>>>     ('F', 'Female'),
+>>> )
+>>>
+>>> class Person(models.Model):
+>>>     name = models.CharField(max_length=20)
+>>>     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
+>>>
+>>> john = Person(name='John Doe', gender='M')
+>>> john.get_gender_display()
+u'Male'
+>>>
+>>> from tastypie.resources import ModelResource 
+>>> from tastypie.bundle import Bundle
+>>>
+>>> class PersonResource(ModelResource):
+...     class Meta:
+...         queryset = Person.objects.all()
+...
+>>> person_resource = PersonResource()
+>>> john_bundle = person_resource.full_dehydrate(Bundle(obj=john))
+>>> john_bundle.data['gender']
+u'M'
+>>> john_bundle.data['get_gender_display']
+u'Male'
+```
