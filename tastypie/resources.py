@@ -2050,6 +2050,28 @@ class ModelResource(Resource):
 
         return self._build_reverse_url("api_dispatch_detail", kwargs=kwargs)
 
+    def full_dehydrate(self, bundle):
+        """
+        An ORM specific version of full_dehydrate() which adds extra
+        Model fields that the user might want.
+        """
+        bundle = super(ModelResource, self).full_dehydrate(bundle)
+
+        # When models.CharField has a 'choices' attribute, then
+        # get_FOO_display() is most likely what the user wants so
+        # add that field to the bundle.  See the django docs for
+        # details:
+        # https://docs.djangoproject.com/en/dev/ref/models/instances/#django.db.models.Model.get_FOO_display
+        for field_name, field_object in self.fields.items():
+            get_foo_display = 'get_{0}_display'.format(field_name)
+            if (hasattr(bundle.obj, get_foo_display) and
+                callable(getattr(bundle.obj, get_foo_display))):
+                bundle.data[get_foo_display] = getattr(bundle.obj,
+                                                       get_foo_display)()
+
+        return bundle
+
+
 
 class NamespacedModelResource(ModelResource):
     """

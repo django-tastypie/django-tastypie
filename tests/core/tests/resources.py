@@ -25,7 +25,7 @@ from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
 from tastypie.utils import aware_datetime, make_naive, now
 from tastypie.validation import Validation, FormValidation
-from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote
+from core.models import Note, NoteWithEditor, NoteWithRating, RATING_CHOICES, Subject, MediaBit, AutoNowNote
 from core.tests.mocks import MockRequest
 from core.utils import SimpleHandler
 
@@ -728,6 +728,11 @@ class AutoNowNoteResource(ModelResource):
 
     def get_resource_uri(self, bundle_or_obj):
         return '/api/v1/autonownotes/%s/' % bundle_or_obj.obj.id
+
+
+class NoteWithRatingResource(ModelResource):
+    class Meta:
+        queryset = NoteWithRating.objects.all()
 
 
 class CustomPaginator(Paginator):
@@ -2898,6 +2903,15 @@ class ModelResourceTestCase(TestCase):
         })
         hydrated_2 = rornr.full_hydrate(hbundle_2)
         self.assertEqual(hydrated_2.obj.author.username, 'johndoe')
+
+    def test_full_dehydrate(self):
+        # Test when models.CharField has a choices attribute
+        note_with_rating = NoteWithRating.objects.create(rating=RATING_CHOICES[0][0])
+        note_with_rating_resource = NoteWithRatingResource()
+        bundle = Bundle(obj=note_with_rating)
+        bundle = note_with_rating_resource.full_dehydrate(bundle)
+        self.assertEqual(bundle.data['rating'], RATING_CHOICES[0][0])
+        self.assertEqual(bundle.data['get_rating_display'], RATING_CHOICES[0][1])
 
 
 class BasicAuthResourceTestCase(TestCase):
