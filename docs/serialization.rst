@@ -38,8 +38,8 @@ demonstrate how you could use your own serializer::
             queryset = User.objects.all()
             resource_name = 'auth/user'
             excludes = ['email', 'password', 'is_superuser']
-            # Add it here.
-            serializer = Serializer()
+            # Add it here. you may also restrict available formats
+            serializer = Serializer(formats=['json'])
 
 Not everyone wants to install or support all the serialization options. To
 that end, you can limit the ones available by passing a ``formats=`` kwarg.
