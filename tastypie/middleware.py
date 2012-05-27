@@ -1,5 +1,4 @@
 from django.db import transaction
-from tastypie.http import HttpErrorResponse
 
 class TransactionMiddleware(object):
     """
@@ -21,7 +20,7 @@ class TransactionMiddleware(object):
 
     def process_response(self, request, response):
         """Commits and leaves transaction management."""
-        if isinstance(response, HttpErrorResponse):
+        if response.status_code in [400, 401, 403, 404, 405, 409, 410, 500, 501]:
             self.process_exception(request, None)
             return response
 
