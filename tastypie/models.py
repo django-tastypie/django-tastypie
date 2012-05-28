@@ -15,12 +15,12 @@ except ImportError:
 class ApiAccess(models.Model):
     """A simple model for use with the ``CacheDBThrottle`` behaviors."""
     identifier = models.CharField(max_length=255)
-    url = models.CharField(max_length=255, blank=True, default='')
+    url = models.TextField(blank=True, default='')
     request_method = models.CharField(max_length=10, blank=True, default='')
     accessed = models.PositiveIntegerField()
     
     def __unicode__(self):
-        return u"%s @ %s" % (self.identifer, self.accessed)
+        return u"%s @ %s" % (self.identifier, self.accessed)
     
     def save(self, *args, **kwargs):
         self.accessed = int(time.time())

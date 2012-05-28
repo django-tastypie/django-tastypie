@@ -9,3 +9,6 @@ MANIFEST
 tests/tastypie.db
 .buildinfo
 .tox
+.settings
+.project
+.pydevproject
