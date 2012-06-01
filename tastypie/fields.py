@@ -355,7 +355,7 @@ class DateTimeField(ApiField):
         if isinstance(value, datetime.datetime):
             if DATABASE_IS_MYSQL:
                 # MySQL does not store fractions of seconds; create a new datetime with microseconds set to 0
-                return datetime.datetime(year=value.year, month=value.month, day=value.day, hour=value.hour, minute=value.minute, second=value.second)
+                return datetime.datetime(year=value.year, month=value.month, day=value.day, hour=value.hour, minute=value.minute, second=value.second, tzinfo=value.tzinfo)
 
         return value
 
@@ -799,7 +799,7 @@ class TimeField(ApiField):
         if isinstance(value, datetime.time):
             if DATABASE_IS_MYSQL:
                 # MySQL does not store fractions of seconds; create a new datetime with microseconds set to 0
-                return datetime.time(hour=value.hour, minute=value.minute, second=value.second)
+                return datetime.time(hour=value.hour, minute=value.minute, second=value.second, tzinfo=value.tzinfo)
         return value
 
     def to_time(self, s):
