@@ -81,7 +81,7 @@ something like the following::
         class Meta:
             queryset = User.objects.all()
 
-        def override_urls(self):
+        def prepend_urls(self):
             return [
                 url(r"^(?P<resource_name>%s)/(?P<username>[\w\d_.-]+)/$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
             ]
@@ -94,13 +94,13 @@ Nested Resources
 ----------------
 
 You can also do "nested resources" (resources within another related resource)
-by lightly overriding the ``override_urls`` method & adding on a new method to
+by lightly overriding the ``prepend_urls`` method & adding on a new method to
 handle the children::
 
     class ParentResource(ModelResource):
         children = fields.ToManyField(ChildResource, 'children')
 
-        def override_urls(self):
+        def prepend_urls(self):
             return [
                 url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/children%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_children'), name="api_get_children"),
             ]
@@ -165,7 +165,7 @@ at ``/api/v1/notes/search/``::
             queryset = Note.objects.all()
             resource_name = 'notes'
 
-        def override_urls(self):
+        def prepend_urls(self):
             return [
                 url(r"^(?P<resource_name>%s)/search%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_search'), name="api_get_search"),
             ]
@@ -327,7 +327,7 @@ of syntax additional to the default URL scheme::
         class Meta:
             queryset = User.objects.all()
 
-        def override_urls(self):
+        def prepend_urls(self):
             """
             Returns a URL scheme based on the default scheme to specify
             the response format as a file extension, e.g. /api/v1/users.json

@@ -747,7 +747,15 @@ Should return a list of individual URLconf lines (**NOT** wrapped in
 
 .. method:: Resource.override_urls(self)
 
-A hook for adding your own URLs or overriding the default URLs. Useful for
+Deprecated. Will be removed by v1.0.0. Please use ``Resource.prepend_urls``
+instead.
+
+``prepend_urls``
+----------------
+
+.. method:: Resource.prepend_urls(self)
+
+A hook for adding your own URLs or matching before the default URLs. Useful for
 adding custom endpoints or overriding the built-in ones (from ``base_urls``).
 
 Should return a list of individual URLconf lines (**NOT** wrapped in

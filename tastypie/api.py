@@ -77,7 +77,14 @@ class Api(object):
 
     def override_urls(self):
         """
-        A hook for adding your own URLs or overriding the default URLs.
+        Deprecated. Will be removed by v1.0.0. Please use ``prepend_urls`` instead.
+        """
+        warnings.warn("'override_urls' is a deprecated method & will be removed by v1.0.0. Please use ``prepend_urls`` instead.")
+        return self.prepend_urls()
+
+    def prepend_urls(self):
+        """
+        A hook for adding your own URLs or matching before the default URLs.
         """
         return []
 
