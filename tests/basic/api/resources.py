@@ -1,4 +1,6 @@
+from django.conf.urls.defaults import url
 from django.contrib.auth.models import User
+from tastypie.bundle import Bundle
 from tastypie import fields
 from tastypie.resources import ModelResource
 from tastypie.authorization import Authorization
@@ -40,3 +42,10 @@ class BustedResource(ModelResource):
 
     def get_list(self, *args, **kwargs):
         raise Exception("It's broke.")
+
+
+class SlugBasedNoteResource(ModelResource):
+    class Meta:
+        queryset = Note.objects.all()
+        resource_name = 'slugbased'
+        detail_uri_name = 'slug'

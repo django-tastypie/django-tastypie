@@ -153,7 +153,14 @@ class Paginator(object):
             request_params.update({'limit': limit, 'offset': offset})
             encoded_params = request_params.urlencode()
         except AttributeError:
-            request_params = dict([k, v.encode('utf-8')] for k, v in self.request_data.items())
+            request_params = {}
+
+            for k, v in self.request_data.items():
+                if isinstance(v, unicode):
+                    request_params[k] = v.encode('utf-8')
+                else:
+                    request_params[k] = v
+
             request_params.update({'limit': limit, 'offset': offset})
             encoded_params = urlencode(request_params)
 

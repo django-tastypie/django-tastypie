@@ -11,7 +11,6 @@ from related_resource.api.urls import api
 from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData
 
 
-
 class RelatedResourceTest(TestCase):
     urls = 'related_resource.api.urls'
 
@@ -45,7 +44,7 @@ class RelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": {"id": %s, "username": "foobar"}}' % self.user.id
+        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-2", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": {"id": %s, "username": "foobar"}}' % self.user.id
 
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)

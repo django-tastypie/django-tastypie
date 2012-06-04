@@ -563,8 +563,11 @@ class UserResource(ModelResource):
         resource_name = 'users'
         queryset = User.objects.all()
 
-    def get_resource_uri(self, bundle):
-        return '/api/v1/users/%s/' % bundle.obj.id
+    def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
+        if bundle_or_obj is None:
+            return '/api/v1/users/'
+
+        return '/api/v1/users/%s/' % bundle_or_obj.obj.id
 
 
 class ToOneFieldTestCase(TestCase):
@@ -820,7 +823,7 @@ class ToOneFieldTestCase(TestCase):
         user = User.objects.get(pk=1)
         mediabit = MediaBit(note=Note(author=user))
         bundle = Bundle(obj=mediabit)
-        
+
         field_1 = ToOneField(UserResource, 'note__author')
         field_1.instance_name = 'fk'
         self.assertEqual(field_1.dehydrate(bundle), '/api/v1/users/1/')
@@ -828,15 +831,18 @@ class ToOneFieldTestCase(TestCase):
         field_2 = ToOneField(UserResource, 'fakefield__author')
         field_2.instance_name = 'fk'
         self.assertRaises(ApiFieldError, field_2.hydrate, bundle)
-    
+
 
 class SubjectResource(ModelResource):
     class Meta:
         resource_name = 'subjects'
         queryset = Subject.objects.all()
 
-    def get_resource_uri(self, bundle):
-        return '/api/v1/subjects/%s/' % bundle.obj.id
+    def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
+        if bundle_or_obj is None:
+            return '/api/v1/subjects/'
+
+        return '/api/v1/subjects/%s/' % bundle_or_obj.obj.id
 
 
 class MediaBitResource(ModelResource):
@@ -844,8 +850,11 @@ class MediaBitResource(ModelResource):
         resource_name = 'mediabits'
         queryset = MediaBit.objects.all()
 
-    def get_resource_uri(self, bundle):
-        return '/api/v1/mediabits/%s/' % bundle.obj.id
+    def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
+        if bundle_or_obj is None:
+            return '/api/v1/mediabits/'
+
+        return '/api/v1/mediabits/%s/' % bundle_or_obj.obj.id
 
 
 class ToManyFieldTestCase(TestCase):
@@ -1101,11 +1110,11 @@ class ToManyFieldTestCase(TestCase):
     def test_traversed_attribute_dehydrate(self):
         mediabit = MediaBit(id=1, note=self.note_1)
         bundle = Bundle(obj=mediabit)
-        
+
         field_1 = ToManyField(SubjectResource, 'note__subjects')
         field_1.instance_name = 'm2m'
         self.assertEqual(field_1.dehydrate(bundle), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
-    
+
         field_2 = ToOneField(SubjectResource, 'fakefield__subjects')
         field_2.instance_name = 'm2m'
         self.assertRaises(ApiFieldError, field_2.hydrate, bundle)

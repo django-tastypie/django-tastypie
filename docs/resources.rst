@@ -651,6 +651,12 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Specifies the collection of objects returned in the ``GET`` list will be
   named. Default is ``objects``.
 
+``detail_uri_name``
+~~~~~~~~~~~~~~~~~~~
+
+  Specifies the name for the regex group that matches on detail views. Defaults
+  to ``pk``.
+
 
 Basic Filtering
 ===============
@@ -994,33 +1000,47 @@ Allows for the sorting of objects being returned.
 ``get_resource_uri``
 --------------------
 
-.. method:: Resource.get_resource_uri(self, bundle_or_obj)
+.. method:: Resource.get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list')
 
-*This needs to be implemented at the user level.*
+Handles generating a resource URI.
 
-A call to ``reverse()`` should be all that would be needed::
+If the ``bundle_or_obj`` argument is not provided, it builds the URI
+for the list endpoint.
 
-    from django.core.urlresolvers import reverse
+If the ``bundle_or_obj`` argument is provided, it builds the URI for
+the detail endpoint.
 
-    def get_resource_uri(self, bundle):
-        return reverse("api_dispatch_detail", kwargs={
-            'resource_name': self._meta.resource_name,
-            'pk': bundle.data['id'],
-        })
+Return the generated URI. If that URI can not be reversed (not found
+in the URLconf), it will return an empty string.
 
-If you're using the :class:`~tastypie.api.Api` class to group your
-URLs, you also need to pass the ``api_name`` together with the other
-kwargs.
+``resource_uri_kwargs``
+-----------------------
+
+.. method:: Resource.resource_uri_kwargs(self, bundle_or_obj=None)
+
+Handles generating a resource URI.
+
+If the ``bundle_or_obj`` argument is not provided, it builds the URI
+for the list endpoint.
+
+If the ``bundle_or_obj`` argument is provided, it builds the URI for
+the detail endpoint.
+
+Return the generated URI. If that URI can not be reversed (not found
+in the URLconf), it will return ``None``.
+
+``detail_uri_kwargs``
+---------------------
+
+.. method:: Resource.detail_uri_kwargs(self, bundle_or_obj)
+
+This needs to be implemented at the user level.
+
+Given a ``Bundle`` or an object, it returns the extra kwargs needed to
+generate a detail URI.
 
 ``ModelResource`` includes a full working version specific to Django's
 ``Models``.
-
-``get_resource_list_uri``
--------------------------
-
-.. method:: Resource.get_resource_list_uri(self)
-
-Returns a URL specific to this resource's list endpoint.
 
 ``get_via_uri``
 ---------------
