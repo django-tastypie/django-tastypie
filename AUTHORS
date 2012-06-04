@@ -23,7 +23,7 @@ Contributors:
 * Vincent Driessen (nvie) for FileField related patches.
 * Christopher Grebs (EnTeQuAk) for various patches.
 * Roman Bogorodskiy (novel) for documentation fixes.
-* D. Hageman (dhageman) for a patch adding default values to RelatedFields.
+* D. Hageman (dhageman) for a patch adding default values to Relatedields.
 * James Hsiao (thepeopleseason) for finishing the DigestAuthentication bits.
 * jesperp for a patch adding TimeField.
 * Marcel van den Elst (MacMaru) for testing regarding ``blank=True``.
@@ -57,6 +57,7 @@ Contributors:
 * D.B. Tsai (dbtsai) & DuJour for funding:
     * The work to make non-pk URIs work better
 * Ryan West (ryanisnan) for finding and patching a bug in patch_list where requests were not included in the bundle.
+* Julien Bouquillon (revolunet) for authentication and authorization docs fixes.
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
