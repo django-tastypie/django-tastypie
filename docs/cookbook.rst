@@ -355,3 +355,26 @@ of syntax additional to the default URL scheme::
                 wrapped_view = super(UserResource, self).wrap_view(view)
                 return wrapped_view(request, *args, **kwargs)
             return wrapper
+
+Adding to the Django Admin
+--------------------------
+
+If you're using the django admin and ApiKeyAuthentication, you may want to see
+or edit ApiKeys next to users. To do this, you need to unregister the built-in
+UserAdmin, alter the inlines, and re-register it. This could go in any of your
+admin.py files. You may also want to register ApiAccess and ApiKey models on
+their own.::
+
+    from tastypie.admin import ApiKeyInline
+    from tastypie.models import ApiAccess, ApiKey
+    from django.contrib.auth.admin import UserAdmin
+    from django.contrib.auth.models import User
+
+    admin.site.register(ApiKey)
+    admin.site.register(ApiAccess)
+
+    class UserModelAdmin(UserAdmin):
+        inlines = UserAdmin.inlines + [ApiKeyInline]
+
+    admin.site.unregister(User)
+    admin.site.register(User,UserModelAdmin)
