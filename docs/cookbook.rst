@@ -355,3 +355,61 @@ of syntax additional to the default URL scheme::
                 wrapped_view = super(UserResource, self).wrap_view(view)
                 return wrapped_view(request, *args, **kwargs)
             return wrapper
+
+
+Creating a Django UserResource
+------------------------------
+
+Often times, you'll want to expose your Django ``User`` models using tastypie.
+The recipe below allows you to easily provide access to your user data::
+
+    # myapp/api.py
+    from django.contrib.auth.hashers import make_password
+    from django.core.exceptions import ObjectDoesNotExist
+
+    class UserResource(ModelResource):
+
+        class Meta:
+            queryset = User.objects.all()
+
+        def hydrate_password(self, bundle):
+            """Turn our password into a hash usable by Django."""
+            bundle.data['password'] = make_password(bundle.data['password'])
+            return bundle
+
+        def obj_update(self, bundle, request=None, skip_errors=False, **kwargs):
+            """ A ORM-specific implementation of ``obj_update``--monkey patched
+            to prevent multiple calls to hydrate.
+            """
+            if not bundle.obj or not bundle.obj.pk:
+                try:
+                    bundle.obj = self.obj_get(bundle.request, **kwargs)
+                except ObjectDoesNotExist:
+                    raise NotFound("A model instance matching the provided arguments could not be found.")
+
+            bundle = self.full_hydrate(bundle)
+            self.is_valid(bundle,request)
+
+            if bundle.errors and not skip_errors:
+                self.error_response(bundle.errors, request)
+
+            # Save FKs just in case.
+            self.save_related(bundle)
+
+            # Save the main object.
+            bundle.obj.save()
+
+            # Now pick up the M2M bits.
+            m2m_bundle = self.hydrate_m2m(bundle)
+            self.save_m2m(m2m_bundle)
+            return bundle
+
+The above ``UserResource`` allows you to get, create, update, and delete Django
+users via tastypie. The pattern above also handles password hashing for you, so
+that you can simply pass in a plain-text password when creating (or updating)
+your users, and the custom ``hydrate_password`` method will automatically
+ensure the password is safely hashed for storage.
+
+.. note::
+    You should always take extreme caution when adding a ``UserResource`` to
+    your API, as you can easily leak sensitive user data if you aren't careful.
