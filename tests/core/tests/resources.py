@@ -794,6 +794,11 @@ class DetailedNoteResource(ModelResource):
 
         return '/api/v1/notes/%s/' % bundle_or_obj.obj.id
 
+class DetailedNoteResourceWithHydrate(DetailedNoteResource):
+    def hydrate(self, bundle):
+        bundle.data['user'] = bundle.request.user  # This should fail using TastyPie 0.9.11 if triggered in patch_list
+        return bundle
+
 class RequiredFKNoteResource(ModelResource):
     editor = fields.ForeignKey(UserResource, 'editor')
 
@@ -1856,6 +1861,23 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(Note.objects.count(), 7)
         new_note = Note.objects.get(slug='invalid-uri')
         self.assertEqual(new_note.content, "This is an invalid resource_uri")
+
+    def test_patch_list_with_request_data(self):
+        """
+        Verify that request data is accessible in a Resource's hydrate method after patch_list.
+        """
+        resource = DetailedNoteResourceWithHydrate()
+        request = HttpRequest()
+        request.user = User.objects.get(username='johndoe')
+        request.GET = {'format': 'json'}
+        request.method = 'PATCH'
+        request._read_started = False  # Not sure what this line does, copied from above
+
+        request._raw_post_data = request._body = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-again-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}'
+        resp = resource.patch_list(request)
+        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(resp.content, '')
+        self.assertEqual(Note.objects.filter(author=request.user, slug="cat-again-again").count(), 1)  # Validate that request.user was successfully passed in
 
     def test_patch_detail(self):
         self.assertEqual(Note.objects.count(), 6)

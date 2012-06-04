@@ -56,7 +56,7 @@ Contributors:
 * Taylor Mitchell (tmitchell) for finding and patching a bug in the paginator query encoding.
 * D.B. Tsai (dbtsai) & DuJour for funding:
     * The work to make non-pk URIs work better
-
+* Ryan West (ryanisnan) for finding and patching a bug in patch_list where requests were not included in the bundle.
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
