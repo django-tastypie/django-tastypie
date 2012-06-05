@@ -1926,9 +1926,15 @@ class ModelResource(Resource):
                             lookup_kwargs = {attribute: api_field.convert(kwargs[key])}
                             break
 
-                        # Otherwise just include it in the lookup
-                        elif getattr(bundle.obj, attribute, NOT_AVAILABLE ) is not NOT_AVAILABLE:
-                            lookup_kwargs[attribute] = getattr(bundle.obj, attribute)
+                        # Disabled the code below because it basically assumes that even if
+                        # 'resource_uri' was absent and the PK was not provided, we can infer that
+                        # the inbound data actually refers to an existing object simply because they
+                        # have a bunch of fields that match.  A common example that breaks this is
+                        # two addresses with the same street, city, state etc.
+
+                        # # Otherwise just include it in the lookup
+                        # elif getattr(bundle.obj, attribute, NOT_AVAILABLE ) is not NOT_AVAILABLE:
+                        #     lookup_kwargs[attribute] = getattr(bundle.obj, attribute)
 
                 except:
                     # if there is trouble hydrating the data, fall back to just
