@@ -593,10 +593,16 @@ class RelatedField(ApiField):
             # We got a valid bundle object, the RelatedField had full=True
             return value
         elif hasattr(value, 'items'):
+            # If the related resource was passed as a dict but with a 'resource_uri' key, then this
+            # should be interpreted as meaning 'look up an existing resource', the same as if they
+            # just passed value as the resource_uri itself (e.g. the basestring branch above).
+            if isinstance( value, dict ) and ("resource_uri" in value):
+                return self.resource_from_uri(self.fk_resource, value[ "resource_uri" ], **kwargs)
             # We've got a data dictionary.
             # Since this leads to creation, this is the only one of these
             # methods that might care about "parent" data.
-            return self.resource_from_data(self.fk_resource, value, **kwargs)
+            else:
+                return self.resource_from_data(self.fk_resource, value, **kwargs)
         elif hasattr(value, 'pk'):
             # We've got an object with a primary key.
             return self.resource_from_pk(self.fk_resource, value, **kwargs)
