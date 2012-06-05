@@ -239,16 +239,12 @@ class OAuthAuthenticationTestCase(TestCase):
         }
         user = User.objects.create_user('daniel', 'test@example.com', 'password')
         request.META['Authorization'] = 'OAuth ' + ','.join([key+'='+value for key, value in request.REQUEST.items()])
-        resource, _ = Resource.objects.get_or_create(url='test', defaults={
-            'name': 'Test Resource'
-        })
         consumer, _ = Consumer.objects.get_or_create(key='123', defaults={
             'name': 'Test',
             'description': 'Testing...'
         })
         token, _ = Token.objects.get_or_create(key='foo', token_type=Token.ACCESS, defaults={
             'consumer': consumer,
-            'resource': resource,
             'secret': '',
             'user': user,
         })
