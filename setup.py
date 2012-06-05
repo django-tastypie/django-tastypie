@@ -30,7 +30,7 @@ setup(
     zip_safe=False,
     requires=[
         'mimeparse',
-        'python_dateutil(>=1.5, < 2.0)',
+        'dateutil(>=1.5, < 2.0)',
     ],
     install_requires=[
         'mimeparse',
