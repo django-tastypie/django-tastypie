@@ -316,7 +316,7 @@ class Resource(object):
         when registered with an ``Api`` class or for including directly in
         a URLconf should you choose to.
         """
-        urls = self.override_urls() + self.base_urls()
+        urls = self.prepend_urls() + self.base_urls()
         urlpatterns = patterns('',
             *urls
         )
