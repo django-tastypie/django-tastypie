@@ -25,7 +25,7 @@ class ApiField(object):
     dehydrated_type = 'string'
     help_text = ''
 
-    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, unique=False, help_text=None):
+    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, unique=False, help_text=None, extras=None):
         """
         Sets up the field. This is generally called when the containing
         ``Resource`` is initialized.
@@ -65,6 +65,7 @@ class ApiField(object):
         self.readonly = readonly
         self.value = None
         self.unique = unique
+        self.extras = extras
 
         if help_text:
             self.help_text = help_text
@@ -386,7 +387,7 @@ class RelatedField(ApiField):
     self_referential = False
     help_text = 'A related resource. Can be either a URI or set of nested resource data.'
 
-    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None):
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, extras=None):
         """
         Builds the field and prepares it to access to related data.
 
@@ -436,6 +437,7 @@ class RelatedField(ApiField):
         self.resource_name = None
         self.unique = unique
         self._to_class = None
+        self.extras = extras
 
         if self.to == 'self':
             self.self_referential = True
@@ -610,11 +612,11 @@ class ToOneField(RelatedField):
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
                  null=False, blank=False, readonly=False, full=False,
-                 unique=False, help_text=None):
+                 unique=False, help_text=None, extras=None):
         super(ToOneField, self).__init__(
             to, attribute, related_name=related_name, default=default,
             null=null, blank=blank, readonly=readonly, full=full,
-            unique=unique, help_text=help_text
+            unique=unique, help_text=help_text, extras=extras
         )
         self.fk_resource = None
 
@@ -676,11 +678,11 @@ class ToManyField(RelatedField):
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
                  null=False, blank=False, readonly=False, full=False,
-                 unique=False, help_text=None):
+                 unique=False, help_text=None, extras=None):
         super(ToManyField, self).__init__(
             to, attribute, related_name=related_name, default=default,
             null=null, blank=blank, readonly=readonly, full=full,
-            unique=unique, help_text=help_text
+            unique=unique, help_text=help_text, extras=extras
         )
         self.m2m_bundles = []
 
