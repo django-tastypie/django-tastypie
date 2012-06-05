@@ -298,8 +298,7 @@ class Resource(object):
         """
         Deprecated. Will be removed by v1.0.0. Please use ``prepend_urls`` instead.
         """
-        warnings.warn("'override_urls' is a deprecated method & will be removed by v1.0.0. Please use ``prepend_urls`` instead.")
-        return self.prepend_urls()
+        return []
 
     def prepend_urls(self):
         """
@@ -316,7 +315,13 @@ class Resource(object):
         when registered with an ``Api`` class or for including directly in
         a URLconf should you choose to.
         """
-        urls = self.override_urls() + self.base_urls()
+        urls = self.prepend_urls()
+
+        if self.override_urls():
+            warnings.warn("'override_urls' is a deprecated method & will be removed by v1.0.0. Please rename your method to ``prepend_urls``.")
+            urls += self.override_urls()
+
+        urls += self.base_urls()
         urlpatterns = patterns('',
             *urls
         )

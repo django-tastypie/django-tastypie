@@ -102,7 +102,13 @@ class Api(object):
             self._registry[name].api_name = self.api_name
             pattern_list.append((r"^(?P<api_name>%s)/" % self.api_name, include(self._registry[name].urls)))
 
-        urlpatterns = self.override_urls() + patterns('',
+        urlpatterns = self.prepend_urls()
+
+        if self.override_urls():
+            warnings.warn("'override_urls' is a deprecated method & will be removed by v1.0.0. Please rename your method to ``prepend_urls``.")
+            urlpatterns += self.override_urls()
+
+        urlpatterns += patterns('',
             *pattern_list
         )
         return urlpatterns
