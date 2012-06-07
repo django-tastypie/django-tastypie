@@ -2,7 +2,7 @@ import warnings
 from django.conf.urls.defaults import *
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import reverse
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
 from tastypie.exceptions import NotRegistered, BadRequest
 from tastypie.serializers import Serializer
 from tastypie.utils import trailing_slash, is_valid_jsonp_callback_value
@@ -72,7 +72,10 @@ class Api(object):
 
     def wrap_view(self, view):
         def wrapper(request, *args, **kwargs):
-            return getattr(self, view)(request, *args, **kwargs)
+            try:
+                return getattr(self, view)(request, *args, **kwargs)
+            except BadRequest:
+                return HttpResponseBadRequest()
         return wrapper
 
     def override_urls(self):
@@ -137,6 +140,7 @@ class Api(object):
             }
 
         desired_format = determine_format(request, serializer)
+
         options = {}
 
         if 'text/javascript' in desired_format:
