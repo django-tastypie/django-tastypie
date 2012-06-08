@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
+import yaml
 from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -13,6 +14,10 @@ try:
     import biplist
 except ImportError:
     biplist = None
+
+
+class UnsafeObject(object):
+    pass
 
 
 class NoteResource(ModelResource):
@@ -237,6 +242,14 @@ class SerializerTestCase(TestCase):
         serialized = serializer.to_yaml(sample_data)
         unserialized = serializer.from_yaml(serialized)
         self.assertEqual(sample_data, unserialized)
+
+    def test_unsafe_yaml(self):
+        serializer = Serializer()
+        evil_data = UnsafeObject()
+        serialized = yaml.dump(evil_data)
+        self.assertRaises(yaml.constructor.ConstructorError,
+                          serializer.from_yaml,
+                          serialized)
 
     def test_to_jsonp(self):
         serializer = Serializer()
