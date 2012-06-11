@@ -2071,9 +2071,9 @@ class ModelResource(Resource):
         kwargs = {}
 
         if isinstance(bundle_or_obj, Bundle):
-            kwargs[self._meta.detail_uri_name] = bundle_or_obj.obj.pk
+            kwargs[self._meta.detail_uri_name] = getattr(bundle_or_obj.obj, self._meta.detail_uri_name)
         else:
-            kwargs[self._meta.detail_uri_name] = bundle_or_obj.id
+            kwargs[self._meta.detail_uri_name] = getattr(bundle_or_obj, self._meta.detail_uri_name)
 
         return kwargs
 
