@@ -534,7 +534,13 @@ class RelatedField(ApiField):
         """
         # Try to hydrate the data provided.
         data = dict_strip_unicode_keys(data)
-        fk_bundle = fk_resource.build_bundle(data=data, request=request)
+
+    if "resource_uri" in data:
+        obj = fk_resource.get_via_uri(data[ "resource_uri"], request=request)
+    else:
+        obj = None
+
+        fk_bundle = fk_resource.build_bundle(obj=obj, data=data, request=request)
 
         if related_obj:
             fk_bundle.related_obj = related_obj
@@ -593,16 +599,20 @@ class RelatedField(ApiField):
             # We got a valid bundle object, the RelatedField had full=True
             return value
         elif hasattr(value, 'items'):
-            # If the related resource was passed as a dict but with a 'resource_uri' key, then this
-            # should be interpreted as meaning 'look up an existing resource', the same as if they
-            # just passed value as the resource_uri itself (e.g. the basestring branch above).
-            if isinstance( value, dict ) and ("resource_uri" in value):
-                return self.resource_from_uri(self.fk_resource, value[ "resource_uri" ], **kwargs)
+
+        # TODO (Angel):
+        # This feels like overloading the method resource_from_data(). The
+        # method was originally designed to provision a fresh resource, given a
+        # payload of data. However, how it is also responsible for retrieving
+        # a resource via uri if the 'resource_uri' is present. I don't know that
+        # I like this, but for now it works.
+
+            #return self.resource_from_uri(self.fk_resource, value[ "resource_uri" ], **kwargs)
+
             # We've got a data dictionary.
             # Since this leads to creation, this is the only one of these
             # methods that might care about "parent" data.
-            else:
-                return self.resource_from_data(self.fk_resource, value, **kwargs)
+            return self.resource_from_data(self.fk_resource, value, **kwargs)
         elif hasattr(value, 'pk'):
             # We've got an object with a primary key.
             return self.resource_from_pk(self.fk_resource, value, **kwargs)
