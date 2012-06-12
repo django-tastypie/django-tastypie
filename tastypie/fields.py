@@ -535,12 +535,12 @@ class RelatedField(ApiField):
         # Try to hydrate the data provided.
         data = dict_strip_unicode_keys(data)
 
-    if "resource_uri" in data:
-        obj = fk_resource.get_via_uri(data[ "resource_uri"], request=request)
-    else:
-        obj = None
+        if "resource_uri" in data:
+            obj = fk_resource.get_via_uri(data[ "resource_uri"], request=request)
+        else:
+            obj = None
 
-        fk_bundle = fk_resource.build_bundle(obj=obj, data=data, request=request)
+            fk_bundle = fk_resource.build_bundle(obj=obj, data=data, request=request)
 
         if related_obj:
             fk_bundle.related_obj = related_obj
