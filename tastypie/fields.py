@@ -540,7 +540,7 @@ class RelatedField(ApiField):
         else:
             obj = None
 
-            fk_bundle = fk_resource.build_bundle(obj=obj, data=data, request=request)
+        fk_bundle = fk_resource.build_bundle(obj=obj, data=data, request=request)
 
         if related_obj:
             fk_bundle.related_obj = related_obj
