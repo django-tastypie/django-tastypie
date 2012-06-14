@@ -534,13 +534,7 @@ class RelatedField(ApiField):
         """
         # Try to hydrate the data provided.
         data = dict_strip_unicode_keys(data)
-
-        if "resource_uri" in data:
-            obj = fk_resource.get_via_uri(data[ "resource_uri"], request=request)
-        else:
-            obj = None
-
-        fk_bundle = fk_resource.build_bundle(obj=obj, data=data, request=request)
+        fk_bundle = fk_resource.build_bundle(data=data, request=request)
 
         if related_obj:
             fk_bundle.related_obj = related_obj
@@ -550,7 +544,20 @@ class RelatedField(ApiField):
         # resource. If not, we'll just return a populated bundle instead
         # of mistakenly updating something that should be read-only.
         if not fk_resource.can_update():
-            return fk_resource.full_hydrate(fk_bundle)
+
+            # If the resource already exists and the client specified where to find it, we look it up.
+            if 'resource_uri' in data:
+                obj = fk_resource.get_via_uri(data['resource_uri'], request=request)
+                fk_bundle.install_existing_obj( obj )
+                return fk_bundle
+
+            # If the resource supports creation, then we can full_hydrate() and create a new instance.
+            elif fk_resource.can_create():
+                return fk_resource.full_hydrate(fk_bundle)
+
+            else:
+                raise ApiFieldError("Resource %s does not support being created via POST" %
+                                    fk_resource._meta.resource_name)
 
         try:
             return fk_resource.obj_update(fk_bundle, skip_errors=True, **data)
@@ -599,16 +606,6 @@ class RelatedField(ApiField):
             # We got a valid bundle object, the RelatedField had full=True
             return value
         elif hasattr(value, 'items'):
-
-        # TODO (Angel):
-        # This feels like overloading the method resource_from_data(). The
-        # method was originally designed to provision a fresh resource, given a
-        # payload of data. However, how it is also responsible for retrieving
-        # a resource via uri if the 'resource_uri' is present. I don't know that
-        # I like this, but for now it works.
-
-            #return self.resource_from_uri(self.fk_resource, value[ "resource_uri" ], **kwargs)
-
             # We've got a data dictionary.
             # Since this leads to creation, this is the only one of these
             # methods that might care about "parent" data.
