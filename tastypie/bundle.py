@@ -28,6 +28,13 @@ class Bundle(object):
         self.obj = cls()
         self.obj_is_new = True
 
+
+    # Should be called to install an existing object into the bundle.
+    def install_existing_obj(self, obj):
+        self.obj = obj
+        self.obj_is_new = False
+
+
     # Should be called to save the object and update the obj_is_new flag to indicate that the
     # object now actually exists in the database.
     def save_obj(self):

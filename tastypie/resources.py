@@ -1945,8 +1945,7 @@ class ModelResource(Resource):
                 do_lookup = lambda: self.obj_get(bundle.request, **lookup_kwargs)
 
             try:
-                bundle.obj = do_lookup()
-                bundle.obj_is_new = False
+                bundle.install_existing_obj( do_lookup() )
             except ObjectDoesNotExist:
                 raise NotFound("A model instance matching the provided arguments could not be found.")
 
