@@ -1955,7 +1955,9 @@ class ModelResource(Resource):
         bundle = self.full_hydrate(bundle)
         self.is_valid(bundle,request)
 
-        if bundle.errors and not skip_errors:
+        # (glencoates) Suppress previous behaviour of skipping errors, which is lame and allows
+        # busted inner resources to be saved even when is_valid() has flagged them as bad.
+        if bundle.errors: # and not skip_errors:
             self.error_response(bundle.errors, request)
 
         # Save FKs just in case.
