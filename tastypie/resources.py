@@ -1866,8 +1866,10 @@ class ModelResource(Resource):
 
         for key, value in kwargs.items():
             setattr(bundle.obj, key, value)
-        bundle = self.full_hydrate(bundle)
+        # first - check whether bundle is valid, 
+        # because validation might change bundle
         self.is_valid(bundle,request)
+        bundle = self.full_hydrate(bundle)
 
         if bundle.errors:
             self.error_response(bundle.errors, request)
