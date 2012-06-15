@@ -151,7 +151,7 @@ class ApiField(object):
                 return None
             elif self.attribute and getattr(bundle.obj, self.attribute, None):
                 return getattr(bundle.obj, self.attribute)
-            elif self.instance_name and hasattr(bundle.obj, self.instance_name):
+            elif self.instance_name and getattr(bundle.obj, self.instance_name, None):
                 return getattr(bundle.obj, self.instance_name)
             elif self.has_default():
                 if callable(self._default):
@@ -163,7 +163,12 @@ class ApiField(object):
             else:
                 raise ApiFieldError("The '%s' field has no data and doesn't allow a default or null value." % self.instance_name)
 
-        return bundle.data[self.instance_name]
+        bundle_val = bundle.data[self.instance_name]
+
+        if bundle_val is None and not self.null:
+            raise ApiFieldError("The '%s' field doesn't allow a null value." % self.instance_name)
+        else:
+            return bundle_val
 
 
 class CharField(ApiField):
@@ -453,10 +458,11 @@ class RelatedField(ApiField):
         if self.self_referential or self.to == 'self':
             self._to_class = cls
 
-    def get_related_resource(self, related_instance):
+    def get_related_resource(self):
         """
         Instaniates the related resource.
         """
+
         related_resource = self.to_class()
 
         # Fix the ``api_name`` if it's not present.
@@ -464,8 +470,6 @@ class RelatedField(ApiField):
             if self._resource and not self._resource._meta.api_name is None:
                 related_resource._meta.api_name = self._resource._meta.api_name
 
-        # Try to be efficient about DB queries.
-        related_resource.instance = related_instance
         return related_resource
 
     @property
@@ -498,7 +502,7 @@ class RelatedField(ApiField):
 
         return self._to_class
 
-    def dehydrate_related(self, bundle, related_resource):
+    def dehydrate_related(self, bundle, related_resource, related_instance):
         """
         Based on the ``full_resource``, returns either the endpoint or the data
         from ``full_dehydrate`` for the related resource.
@@ -508,7 +512,7 @@ class RelatedField(ApiField):
             return related_resource.get_resource_uri(bundle)
         else:
             # ZOMG extra data and big payloads.
-            bundle = related_resource.build_bundle(obj=related_resource.instance, request=bundle.request)
+            bundle = related_resource.build_bundle(obj=related_instance, request=bundle.request)
             return related_resource.full_dehydrate(bundle)
 
     def resource_from_uri(self, fk_resource, uri, request=None, related_obj=None, related_name=None):
@@ -540,7 +544,20 @@ class RelatedField(ApiField):
         # resource. If not, we'll just return a populated bundle instead
         # of mistakenly updating something that should be read-only.
         if not fk_resource.can_update():
-            return fk_resource.full_hydrate(fk_bundle)
+
+            # If the resource already exists and the client specified where to find it, we look it up.
+            if 'resource_uri' in data:
+                obj = fk_resource.get_via_uri(data['resource_uri'], request=request)
+                fk_bundle.install_existing_obj( obj )
+                return fk_bundle
+
+            # If the resource supports creation, then we can full_hydrate() and create a new instance.
+            elif fk_resource.can_create():
+                return fk_resource.full_hydrate(fk_bundle)
+
+            else:
+                raise ApiFieldError("Resource %s does not support being created via POST" %
+                                    fk_resource._meta.resource_name)
 
         try:
             return fk_resource.obj_update(fk_bundle, skip_errors=True, **data)
@@ -635,9 +652,9 @@ class ToOneField(RelatedField):
 
                 return None
 
-        self.fk_resource = self.get_related_resource(foreign_obj)
+        self.fk_resource = self.get_related_resource()
         fk_bundle = Bundle(obj=foreign_obj, request=bundle.request)
-        return self.dehydrate_related(fk_bundle, self.fk_resource)
+        return self.dehydrate_related(fk_bundle, self.fk_resource, foreign_obj)
 
     def hydrate(self, bundle):
         value = super(ToOneField, self).hydrate(bundle)
@@ -685,7 +702,7 @@ class ToManyField(RelatedField):
         self.m2m_bundles = []
 
     def dehydrate(self, bundle):
-        if not bundle.obj or not bundle.obj.pk:
+        if not bundle.obj or bundle.obj_is_new:
             if not self.null:
                 raise ApiFieldError("The model '%r' does not have a primary key and can not be used in a ToMany context." % bundle.obj)
 
@@ -724,10 +741,10 @@ class ToManyField(RelatedField):
         # TODO: Also model-specific and leaky. Relies on there being a
         #       ``Manager`` there.
         for m2m in the_m2ms.all():
-            m2m_resource = self.get_related_resource(m2m)
+            m2m_resource = self.get_related_resource()
             m2m_bundle = Bundle(obj=m2m, request=bundle.request)
             self.m2m_resources.append(m2m_resource)
-            m2m_dehydrated.append(self.dehydrate_related(m2m_bundle, m2m_resource))
+            m2m_dehydrated.append(self.dehydrate_related(m2m_bundle, m2m_resource, m2m))
 
         return m2m_dehydrated
 

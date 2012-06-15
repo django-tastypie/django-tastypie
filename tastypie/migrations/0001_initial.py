@@ -8,7 +8,7 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+
         # Adding model 'ApiAccess'
         db.create_table('tastypie_apiaccess', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
@@ -23,14 +23,14 @@ class Migration(SchemaMigration):
         db.create_table('tastypie_apikey', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('user', self.gf('django.db.models.fields.related.OneToOneField')(related_name='api_key', unique=True, to=orm['auth.User'])),
-            ('key', self.gf('django.db.models.fields.CharField')(default='', max_length=256, blank=True)),
+            ('key', self.gf('django.db.models.fields.CharField')(default='', max_length=256, db_index=True, blank=True)),
             ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
         ))
         db.send_create_signal('tastypie', ['ApiKey'])
 
 
     def backwards(self, orm):
-        
+
         # Deleting model 'ApiAccess'
         db.delete_table('tastypie_apiaccess')
 
@@ -87,7 +87,7 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'ApiKey'},
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'key': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '256', 'blank': 'True'}),
+            'key': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '256', 'db_index': 'True', 'blank': 'True'}),
             'user': ('django.db.models.fields.related.OneToOneField', [], {'related_name': "'api_key'", 'unique': 'True', 'to': "orm['auth.User']"})
         }
     }

@@ -7,6 +7,7 @@ from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, ValidationError
 from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404, get_script_prefix
 from django.db import transaction
+from django.db.models.fields import FieldDoesNotExist
 from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.utils.cache import patch_cache_control
@@ -581,8 +582,11 @@ class Resource(object):
         """
         if obj is None:
             obj = self._meta.object_class()
+            obj_is_new = True
+        else:
+            obj_is_new = False
 
-        return Bundle(obj=obj, data=data, request=request)
+        return Bundle(obj=obj, data=data, request=request, obj_is_new=obj_is_new)
 
     def build_filters(self, filters=None):
         """
@@ -730,7 +734,7 @@ class Resource(object):
         a full-fledged object instance.
         """
         if bundle.obj is None:
-            bundle.obj = self._meta.object_class()
+            bundle.install_new_obj_from_class(self._meta.object_class)
         bundle = self.hydrate(bundle)
         for field_name, field_object in self.fields.items():
             if field_object.readonly is True:
@@ -759,7 +763,28 @@ class Resource(object):
                         elif field_object.blank:
                             continue
                         elif field_object.null:
-                            setattr(bundle.obj, field_object.attribute, value)
+
+                            # Figure out if we're setting the reverse side of a 1:1 relationship
+                            orm_field, _, direct, _ = \
+                                bundle.obj._meta.get_field_by_name( field_object.attribute )
+
+                            is_setting_rev_1to1 = not direct and \
+                                                  orm_field.field.rel and \
+                                                  not orm_field.field.rel.multiple
+
+                            try:
+                                setattr(bundle.obj, field_object.attribute, value)
+
+                            # When you're setting the reverse 1:1 rel, Django internally tries to
+                            # null out the forward relationship without checking if there was any
+                            # relationship there to begin with, potentially causing an
+                            # AttributeError.  We have to suppress these if we were trying to set it
+                            # to None (which means it should have been a no-op in the first place).
+                            except AttributeError:
+                                if is_setting_rev_1to1 and value is None:
+                                    pass
+                                else:
+                                    raise
 
         return bundle
 
@@ -1326,6 +1351,19 @@ class Resource(object):
         if len(deserialized["objects"]) and 'put' not in self._meta.detail_allowed_methods:
             raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
 
+        # Process deletions before updates to avoid validation errors that might be caused
+        # by doing it the other way around.  For example, deleting a customer and then creating
+        # another one with the same customer ID in the same PATCH might cause a validation
+        # error if you have logic that prevents duplicate customer IDs.
+        if len(deserialized.get('deleted_objects', [])) and 'delete' not in self._meta.detail_allowed_methods:
+            raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
+
+        for uri in deserialized.get('deleted_objects', []):
+            obj = self.get_via_uri(uri, request=request)
+            self.obj_delete(request=request, _obj=obj)
+
+        bundles_seen = []
+
         for data in deserialized["objects"]:
             # If there's a resource_uri then this is either an
             # update-in-place or a create-via-PUT.
@@ -1353,14 +1391,16 @@ class Resource(object):
                 bundle = self.build_bundle(data=dict_strip_unicode_keys(data), request=request)
                 self.obj_create(bundle, request=request)
 
-        if len(deserialized.get('deleted_objects', [])) and 'delete' not in self._meta.detail_allowed_methods:
-            raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
+            bundles_seen.append( bundle )
 
-        for uri in deserialized.get('deleted_objects', []):
-            obj = self.get_via_uri(uri, request=request)
-            self.obj_delete(request=request, _obj=obj)
+        if not self._meta.always_return_data:
+            return http.HttpAccepted()
+        else:
+            to_be_serialized = {}
+            to_be_serialized['objects'] = [self.full_dehydrate(bundle) for bundle in bundles_seen]
+            to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
+            return self.create_response(request, to_be_serialized, response_class=http.HttpAccepted)
 
-        return http.HttpAccepted()
 
     def patch_detail(self, request, **kwargs):
         """
@@ -1862,7 +1902,7 @@ class ModelResource(Resource):
         A ORM-specific implementation of ``obj_create``.
         """
 
-        bundle.obj = self._meta.object_class()
+        bundle.install_new_obj_from_class(self._meta.object_class)
 
         for key, value in kwargs.items():
             setattr(bundle.obj, key, value)
@@ -1876,7 +1916,7 @@ class ModelResource(Resource):
         self.save_related(bundle)
 
         # Save parent
-        bundle.obj.save()
+        bundle.save_obj()
 
         # Now pick up the M2M bits.
         m2m_bundle = self.hydrate_m2m(bundle)
@@ -1887,44 +1927,83 @@ class ModelResource(Resource):
         """
         A ORM-specific implementation of ``obj_update``.
         """
-        if not bundle.obj or not bundle.obj.pk:
-            # Attempt to hydrate data from kwargs before doing a lookup for the object.
-            # This step is needed so certain values (like datetime) will pass model validation.
-            try:
-                bundle.obj = self.get_object_list(bundle.request).model()
-                bundle.data.update(kwargs)
-                bundle = self.full_hydrate(bundle)
-                lookup_kwargs = kwargs.copy()
+        if not bundle.obj or bundle.obj_is_new:
 
-                for key in kwargs.keys():
-                    if key == 'pk':
-                        continue
-                    elif getattr(bundle.obj, key, NOT_AVAILABLE) is not NOT_AVAILABLE:
-                        lookup_kwargs[key] = getattr(bundle.obj, key)
-                    else:
-                        del lookup_kwargs[key]
-            except:
-                # if there is trouble hydrating the data, fall back to just
-                # using kwargs by itself (usually it only contains a "pk" key
-                # and this will work fine.
-                lookup_kwargs = kwargs
+            # If the 'resource_uri' was provided in the data, use that for lookup
+            if "resource_uri" in bundle.data:
+                do_lookup = lambda: self.get_via_uri(bundle.data["resource_uri"])
+
+            else:
+                # Attempt to hydrate data from kwargs before doing a lookup for the object.
+                # This step is needed so certain values (like datetime) will pass model validation.
+                try:
+                    orm_model = self.get_object_list(bundle.request).model
+                    bundle.install_new_obj_from_class(orm_model)
+                    bundle.data.update(kwargs)
+                    bundle = self.full_hydrate(bundle)
+                    lookup_kwargs = {}
+
+                    for key in kwargs.keys():
+
+                        # Figure out which API field this key in the payload is for
+                        try:
+                            api_field = self.fields[key]
+                            attribute = api_field.attribute
+                        except KeyError:
+                            bundle.errors.append("Unknown field '%s=%s' on resource %s" %
+                                                 (key, kwargs[key], self))
+                            self.error_response(bundle.errors, request)
+
+                        # Figure out which field on the ORM model this key in payload is for
+                        try:
+                            orm_field = orm_model._meta.get_field(attribute)
+                        except FieldDoesNotExist:
+                            continue
+
+                        # If it's the PK then use that as the sole lookup
+                        if getattr(orm_field, "primary_key", False):
+                            lookup_kwargs = {attribute: api_field.convert(kwargs[key])}
+                            break
+
+                        # Disabled the code below because it basically assumes that even if
+                        # 'resource_uri' was absent and the PK was not provided, we can infer that
+                        # the inbound data actually refers to an existing object simply because they
+                        # have a bunch of fields that match.  A common example that breaks this is
+                        # two addresses with the same street, city, state etc.
+
+                        # # Otherwise just include it in the lookup
+                        # elif getattr(bundle.obj, attribute, NOT_AVAILABLE ) is not NOT_AVAILABLE:
+                        #     lookup_kwargs[attribute] = getattr(bundle.obj, attribute)
+
+                except:
+                    # if there is trouble hydrating the data, fall back to just
+                    # using kwargs by itself (usually it only contains a "pk" key
+                    # and this will work fine.
+                    lookup_kwargs = kwargs
+
+		if lookup_kwargs:
+                    do_lookup = lambda: self.obj_get(bundle.request, **lookup_kwargs)
+	        else:
+	            raise NotFound
 
             try:
-                bundle.obj = self.obj_get(bundle.request, **lookup_kwargs)
+                bundle.install_existing_obj( do_lookup() )
             except ObjectDoesNotExist:
                 raise NotFound("A model instance matching the provided arguments could not be found.")
 
         bundle = self.full_hydrate(bundle)
         self.is_valid(bundle,request)
 
-        if bundle.errors and not skip_errors:
+        # (glencoates) Suppress previous behaviour of skipping errors, which is lame and allows
+        # busted inner resources to be saved even when is_valid() has flagged them as bad.
+        if bundle.errors: # and not skip_errors:
             self.error_response(bundle.errors, request)
 
         # Save FKs just in case.
         self.save_related(bundle)
 
         # Save the main object.
-        bundle.obj.save()
+        bundle.save_obj()
 
         # Now pick up the M2M bits.
         m2m_bundle = self.hydrate_m2m(bundle)
@@ -1982,7 +2061,7 @@ class ModelResource(Resource):
         bundles.
         """
         for bundle in bundles:
-            if bundle.obj and getattr(bundle.obj, 'pk', None):
+            if bundle.obj and not bundle.obj_is_new:
                 bundle.obj.delete()
 
     def save_related(self, bundle):
@@ -2007,6 +2086,9 @@ class ModelResource(Resource):
             if not field_object.attribute:
                 continue
 
+            if field_object.readonly:
+                continue
+
             if field_object.blank and not bundle.data.has_key(field_name):
                 continue
 
@@ -2019,11 +2101,17 @@ class ModelResource(Resource):
             # Because sometimes it's ``None`` & that's OK.
             if related_obj:
                 if field_object.related_name:
-                    if not bundle.obj.pk:
-                        bundle.obj.save()
+                    if bundle.obj_is_new:
+                        bundle.save_obj()
                     setattr(related_obj, field_object.related_name, bundle.obj)
 
-                related_obj.save()
+                # Don't try to save the related object unless the resource for that object is
+                # actually allowed to update.  There are some smarts in
+                # RelatedField.resource_from_data() that attempt to protect against doing this but
+                # it all falls apart if you just blindly save here in the end.
+                if field_object.fk_resource.can_update():
+                    related_obj.save()
+
                 setattr(bundle.obj, field_object.attribute, related_obj)
 
     def save_m2m(self, bundle):
@@ -2056,7 +2144,7 @@ class ModelResource(Resource):
             related_objs = []
 
             for related_bundle in bundle.data[field_name]:
-                related_bundle.obj.save()
+                related_bundle.save_obj()
                 related_objs.append(related_bundle.obj)
 
             related_mngr.add(*related_objs)
