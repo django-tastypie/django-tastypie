@@ -1003,6 +1003,11 @@ class ToManyFieldTestCase(TestCase):
         except ApiFieldError:
             pass
 
+        field_8 = ToManyField(SubjectResource, 'subjects', limit=1)
+        field_8.instance_name = 'm2m'
+        bundle_8 = Bundle(obj=self.note_1)
+        self.assertEqual(field_8.dehydrate(bundle_8), ['/api/v1/subjects/1/'])
+
     def test_dehydrate_with_callable(self):
         note = Note()
         bundle_1 = Bundle(obj=self.note_2)

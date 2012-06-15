@@ -283,6 +283,11 @@ Note that the ``hydrate`` portions of this field are quite different than
 any other field. ``hydrate_m2m`` actually handles the data and relations.
 This is due to the way Django implements M2M relationships.
 
+.. attribute:: ToManyField.limit
+
+Attribute specific to ToManyField, that allows to apply a limit to ORM request, that get's fetched.
+Defaults to ``None``, which means all the related objects will be fetched
+
 ``ManyToManyField``
 ~~~~~~~~~~~~~~~~~~~
 
