@@ -1942,7 +1942,10 @@ class ModelResource(Resource):
                     # and this will work fine.
                     lookup_kwargs = kwargs
 
-                do_lookup = lambda: self.obj_get(bundle.request, **lookup_kwargs)
+		if lookup_kwargs:
+                    do_lookup = lambda: self.obj_get(bundle.request, **lookup_kwargs)
+	        else:
+	            raise NotFound
 
             try:
                 bundle.install_existing_obj( do_lookup() )
