@@ -813,13 +813,24 @@ class Resource(object):
 
     # Data preparation.
 
-    def full_dehydrate(self, bundle):
+    def full_dehydrate(self, bundle, for_list=False):
         """
         Given a bundle with an object instance, extract the information from it
         to populate the resource.
         """
+        use_in = ['all', 'list' if for_list else 'detail']
+
         # Dehydrate each field.
         for field_name, field_object in self.fields.items():
+            # If it's not for use in this mode, skip
+            field_use_in = getattr(field_object, 'use_in', 'all')
+            if callable(field_use_in):
+                if not field_use_in(bundle):
+                    continue
+            else:
+                if field_use_in not in use_in:
+                    continue
+
             # A touch leaky but it makes URI resolution work.
             if getattr(field_object, 'dehydrated_type', None) == 'related':
                 field_object.api_name = self._meta.api_name

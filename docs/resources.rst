@@ -1096,10 +1096,12 @@ simply override this method.
 ``full_dehydrate``
 ------------------
 
-.. method:: Resource.full_dehydrate(self, bundle)
+.. method:: Resource.full_dehydrate(self, bundle, for_list=False)
 
 Given a bundle with an object instance, extract the information from it to
 populate the resource.
+
+The for_list flag is used to control which fields are excluded by the ``use_in`` attribute.
 
 ``dehydrate``
 -------------
