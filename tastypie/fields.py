@@ -54,6 +54,10 @@ class ApiField(object):
         Optionally accepts ``help_text``, which lets you provide a
         human-readable description of the field exposed at the schema level.
         Defaults to the per-Field definition.
+
+        Optionally accepts a ``use_in``. This may be one of ``list``, ``detail``
+        ``all``. Indicates wheather this field will be included during dehydration
+        or a list of object or a single object.
         """
         # Track what the index thinks this field is called.
         self.instance_name = None
