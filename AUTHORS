@@ -59,6 +59,7 @@ Contributors:
 * Ryan West (ryanisnan) for finding and patching a bug in patch_list where requests were not included in the bundle.
 * Julien Bouquillon (revolunet) for authentication and authorization docs fixes.
 * Andrey Voronov (eyvoro) for fixing a typo in the AUTHORS file.
+* D.B. Tsai (dbtsai) for a fix relating to ``detail_uri_kwargs``.
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
