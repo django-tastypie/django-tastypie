@@ -1710,11 +1710,17 @@ class ModelResource(Resource):
 
         qs_filters = {}
 
-        if hasattr(self._meta, 'queryset'):
-            # Get the possible query terms from the current QuerySet.
-            query_terms = self._meta.queryset.query.query_terms.keys()
+        if django.get_version() >= '1.5':
+            if hasattr(self._meta, 'queryset'):
+                # Get the possible query terms from the current QuerySet.
+                query_terms = self._meta.queryset.query.query_terms
+            else:
+                query_terms = QUERY_TERMS
         else:
-            query_terms = QUERY_TERMS.keys()
+            if hasattr(self._meta, 'queryset'):
+                query_terms = self._meta.queryset.query.query_terms.keys()
+            else:
+                query_terms = QUERY_TERMS.keys()
 
         for filter_expr, value in filters.items():
             filter_bits = filter_expr.split(LOOKUP_SEP)
