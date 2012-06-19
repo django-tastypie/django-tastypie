@@ -25,7 +25,7 @@ class ApiField(object):
     dehydrated_type = 'string'
     help_text = ''
 
-    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, unique=False, help_text=None):
+    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, unique=False, help_text=None, use_in='all'):
         """
         Sets up the field. This is generally called when the containing
         ``Resource`` is initialized.
@@ -65,6 +65,7 @@ class ApiField(object):
         self.readonly = readonly
         self.value = None
         self.unique = unique
+        self.use_in = use_in
 
         if help_text:
             self.help_text = help_text
