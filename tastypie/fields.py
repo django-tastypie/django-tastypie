@@ -7,6 +7,7 @@ from decimal import Decimal
 import importlib
 
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
+from django.db import models
 try:
     from django.db.models.fields.related import\
         SingleRelatedObjectDescriptor as ReverseOneToOneDescriptor
@@ -859,15 +860,16 @@ class ToManyField(RelatedField):
 
             return []
 
-        # TODO: Also model-specific and leaky. Relies on there being a
-        #       ``Manager`` there.
+        if isinstance(the_m2ms, models.Manager):
+            the_m2ms = the_m2ms.all()
+
         m2m_dehydrated = [
             self.dehydrate_related(
                 Bundle(obj=m2m, request=bundle.request),
                 self.get_related_resource(m2m),
                 for_list=for_list
             )
-            for m2m in the_m2ms.all()
+            for m2m in the_m2ms
         ]
 
         return m2m_dehydrated
