@@ -8,6 +8,7 @@ from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.fields import *
 from tastypie.resources import ModelResource
 from core.models import Note, Subject, MediaBit
+from core.tests.mocks import MockRequest
 
 from tastypie.utils import aware_datetime, aware_date
 
@@ -645,7 +646,9 @@ class ToOneFieldTestCase(TestCase):
         self.assertEqual(field_2.dehydrate(bundle), None)
 
         note = Note.objects.get(pk=1)
-        bundle = Bundle(obj=note)
+        request = MockRequest()
+        request.path = "/api/v1/notes/1/"
+        bundle = Bundle(obj=note, request=request)
 
         field_3 = ToOneField(UserResource, 'author')
         self.assertEqual(field_3.dehydrate(bundle), '/api/v1/users/1/')
@@ -969,7 +972,9 @@ class ToManyFieldTestCase(TestCase):
 
         field_4 = ToManyField(SubjectResource, 'subjects', full=True)
         field_4.instance_name = 'm2m'
-        bundle_4 = Bundle(obj=self.note_1)
+        request = MockRequest()
+        request.path = "/api/v1/subjects/1/"
+        bundle_4 = Bundle(obj=self.note_1, request=request)
         subject_bundle_list = field_4.dehydrate(bundle_4)
         self.assertEqual(len(subject_bundle_list), 2)
         self.assertEqual(isinstance(subject_bundle_list[0], Bundle), True)
