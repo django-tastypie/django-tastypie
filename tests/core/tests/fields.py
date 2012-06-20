@@ -23,8 +23,9 @@ class ApiFieldTestCase(TestCase):
         self.assertEqual(field_1.null, False)
         self.assertEqual(field_1.value, None)
         self.assertEqual(field_1.help_text, '')
+        self.assertEqual(field_1.use_in, 'all')
 
-        field_2 = ApiField(attribute='foo', default=True, null=True, readonly=True, help_text='Foo.')
+        field_2 = ApiField(attribute='foo', default=True, null=True, readonly=True, help_text='Foo.', use_in="foo")
         self.assertEqual(field_2.instance_name, None)
         self.assertEqual(field_2.attribute, 'foo')
         self.assertEqual(field_2._default, True)
@@ -32,6 +33,13 @@ class ApiFieldTestCase(TestCase):
         self.assertEqual(field_2.value, None)
         self.assertEqual(field_2.readonly, True)
         self.assertEqual(field_2.help_text, 'Foo.')
+        self.assertEqual(field_1.use_in, 'all')
+
+        field_3 = ApiField(use_in="list")
+        self.assertEqual(field_3.use_in, 'list')
+
+        field_4 = ApiField(use_in="detail")
+        self.assertEqual(field_4.use_in, 'detail')
 
     def test_dehydrated_type(self):
         field_1 = ApiField()
