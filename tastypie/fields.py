@@ -56,8 +56,10 @@ class ApiField(object):
         Defaults to the per-Field definition.
 
         Optionally accepts a ``use_in``. This may be one of ``list``, ``detail``
-        ``all``. Indicates wheather this field will be included during dehydration
-        or a list of object or a single object.
+        ``all`` or a callable which accepts a bundle object and returns
+        ``True`` or ``False``. Indicates wheather this field will be included
+        during dehydration or a list of object or a single object.
+        Defaults to ``all``.
         """
         # Track what the index thinks this field is called.
         self.instance_name = None
@@ -69,7 +71,7 @@ class ApiField(object):
         self.readonly = readonly
         self.value = None
         self.unique = unique
-        self.use_in = use_in
+        self.use_in = use_in if use_in in ['all', 'detail', 'list'] or callable(use_in) else 'all'
 
         if help_text:
             self.help_text = help_text

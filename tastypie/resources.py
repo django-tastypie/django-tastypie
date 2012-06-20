@@ -697,7 +697,10 @@ class Resource(object):
         # Dehydrate each field.
         for field_name, field_object in self.fields.items():
             # If it's not for use in this mode, skip
-            if getattr(field_object, 'use_in', 'all') not in use_in:
+            field_use_in = getattr(field_object, 'use_in', 'all')
+            if callable(field_use_in) and not field_use_in(bundle):
+                continue
+            elif field_use_in not in use_in:
                 continue
 
             # A touch leaky but it makes URI resolution work.
