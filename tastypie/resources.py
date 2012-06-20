@@ -698,10 +698,12 @@ class Resource(object):
         for field_name, field_object in self.fields.items():
             # If it's not for use in this mode, skip
             field_use_in = getattr(field_object, 'use_in', 'all')
-            if callable(field_use_in) and not field_use_in(bundle):
-                continue
-            elif field_use_in not in use_in:
-                continue
+            if callable(field_use_in):
+                if not field_use_in(bundle):
+                    continue
+            else:
+                if field_use_in not in use_in:
+                    continue
 
             # A touch leaky but it makes URI resolution work.
             if getattr(field_object, 'dehydrated_type', None) == 'related':
