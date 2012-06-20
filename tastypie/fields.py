@@ -4,6 +4,7 @@ from decimal import Decimal
 import re
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.utils import datetime_safe, importlib
+from django.core.urlresolvers import resolve
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.utils import dict_strip_unicode_keys, make_aware
@@ -406,7 +407,7 @@ class RelatedField(ApiField):
     self_referential = False
     help_text = 'A related resource. Can be either a URI or set of nested resource data.'
 
-    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, use_in='all'):
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, use_in='all', full_list=True, full_detail=True):
         """
         Builds the field and prepares it to access to related data.
 
@@ -449,7 +450,18 @@ class RelatedField(ApiField):
         is a callable, and returns ``True``, the field will be included during
         dehydration.
         Defaults to ``all``.
+        
+        Optionally accepts a ``full_list``, which indicated whether or not
+        data should be fully dehydrated when the request is for a list of
+        resources. Accepts ``True``, ``False`` or a callable that accepts
+        a bundle and returns ``True`` or ``False``. Depends on ``full``
+        being ``True``. Defaults to ``True``.
 
+        Optionally accepts a ``full_detail``, which indicated whether or not
+        data should be fully dehydrated when then request is for a single
+        resource. Accepts ``True``, ``False`` or a callable that accepts a
+        bundle and returns ``True`` or ``False``.Depends on ``full``
+        being ``True``. Defaults to ``True``.
         """
         self.instance_name = None
         self._resource = None
@@ -466,6 +478,8 @@ class RelatedField(ApiField):
         self.unique = unique
         self._to_class = None
         self.use_in = 'all'
+        self.full_list = full_list
+        self.full_detail = full_detail
 
         if use_in in ['all', 'detail', 'list'] or callable(use_in):
             self.use_in = use_in
@@ -536,7 +550,9 @@ class RelatedField(ApiField):
         Based on the ``full_resource``, returns either the endpoint or the data
         from ``full_dehydrate`` for the related resource.
         """
-        if not self.full:
+        should_dehydrate_full_resource = self.should_full_dehydrate(bundle)
+
+        if not should_dehydrate_full_resource:
             # Be a good netizen.
             return related_resource.get_resource_uri(bundle)
         else:
@@ -649,6 +665,23 @@ class RelatedField(ApiField):
         else:
             raise ApiFieldError("The '%s' field was given data that was not a URI, not a dictionary-alike and does not have a 'pk' attribute: %s." % (self.instance_name, value))
 
+    def should_full_dehydrate(self, bundle):
+        """
+        Based on the ``full``, ``list_full`` and ``detail_full`` returns ``True`` or ``False``
+        indicating weather the resource should be fully dehydrated.
+        """
+        should_dehydrate_full_resource = False
+        if self.full:
+            is_details_view = resolve(bundle.request.path).url_name == "api_dispatch_detail"
+            if is_details_view:
+                if (not callable(self.full_detail) and self.full_detail) or (callable(self.full_detail) and self.full_detail(bundle)):
+                    should_dehydrate_full_resource = True
+            else:
+                if (not callable(self.full_list) and self.full_list) or (callable(self.full_list) and self.full_list(bundle)):
+                    should_dehydrate_full_resource = True
+
+        return should_dehydrate_full_resource
+
 
 class ToOneField(RelatedField):
     """
@@ -660,11 +693,12 @@ class ToOneField(RelatedField):
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
                  null=False, blank=False, readonly=False, full=False,
-                 unique=False, help_text=None, use_in='all'):
+                 unique=False, help_text=None, use_in='all', full_list=True, full_detail=True):
         super(ToOneField, self).__init__(
             to, attribute, related_name=related_name, default=default,
             null=null, blank=blank, readonly=readonly, full=full,
-            unique=unique, help_text=help_text, use_in=use_in
+            unique=unique, help_text=help_text, use_in=use_in,
+            full_list=full_list, full_detail=full_detail
         )
         self.fk_resource = None
 
@@ -731,11 +765,12 @@ class ToManyField(RelatedField):
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
                  null=False, blank=False, readonly=False, full=False,
-                 unique=False, help_text=None, use_in='all'):
+                 unique=False, help_text=None, use_in='all', full_list=True, full_detail=True):
         super(ToManyField, self).__init__(
             to, attribute, related_name=related_name, default=default,
             null=null, blank=blank, readonly=readonly, full=full,
-            unique=unique, help_text=help_text, use_in=use_in
+            unique=unique, help_text=help_text, use_in=use_in,
+            full_list=full_list, full_detail=full_detail
         )
         self.m2m_bundles = []
 

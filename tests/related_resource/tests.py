@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import simplejson as json
+from django.core.urlresolvers import reverse
 from core.models import Note, MediaBit
 from core.tests.resources import HttpRequest
 from core.tests.mocks import MockRequest
@@ -132,6 +133,7 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         self.assertEqual(data['name'], 'exam')
 
         resource = api.canonical_resource_for('tag')
+        request.path = "/v1/tag/%(pk)s/" % {'pk': self.tag_1.pk}
         resp = resource.wrap_view('dispatch_detail')(request, pk=self.tag_1.pk)
         data = json.loads(resp.content)
         self.assertEqual(resp.status_code, 200)
@@ -204,6 +206,8 @@ class FullCategoryResource(CategoryResource):
 
 
 class RelatedPatchTestCase(TestCase):
+    urls = 'related_resource.api.urls'
+
     def test_patch_to_one(self):
         resource = FullCategoryResource()
         cat1 = Category.objects.create(name='Dad')
@@ -212,6 +216,7 @@ class RelatedPatchTestCase(TestCase):
         request = HttpRequest()
         request.GET = {'format': 'json'}
         request.method = 'PATCH'
+        request.path = "/v1/category/%(pk)s/" % {'pk': cat2.pk}
         request._read_started = False
 
         data = {
@@ -259,6 +264,7 @@ class NestedRelatedResourceTest(TestCase):
         pk = Person.objects.all()[0].pk
         request = MockRequest()
         request.method = 'GET'
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
         resp = pr.get_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 200)
 
@@ -274,6 +280,7 @@ class NestedRelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
         request.raw_post_data = resp.content
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
@@ -313,6 +320,7 @@ class NestedRelatedResourceTest(TestCase):
         pk = Person.objects.all()[0].pk
         request = MockRequest()
         request.method = 'GET'
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
         resp = pr.get_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 200)
 
@@ -329,6 +337,7 @@ class NestedRelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
         request.raw_post_data = json.dumps(person)
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
@@ -368,6 +377,7 @@ class NestedRelatedResourceTest(TestCase):
         pk = Person.objects.all()[0].pk
         request = MockRequest()
         request.method = 'GET'
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
         resp = pr.get_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 200)
 
@@ -385,6 +395,7 @@ class NestedRelatedResourceTest(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'PUT'
         request.raw_post_data = json.dumps(person)
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
 
@@ -415,6 +426,7 @@ class NestedRelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
+        request.path = reverse('api_dispatch_list', kwargs={'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
         request.raw_post_data = json.dumps(data)
         resp = pr.post_list(request)
         self.assertEqual(resp.status_code, 201)
@@ -425,6 +437,7 @@ class NestedRelatedResourceTest(TestCase):
         pk = Person.objects.all()[0].pk
         request = MockRequest()
         request.method = 'GET'
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
         resp = pr.get_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 200)
 
@@ -443,5 +456,6 @@ class NestedRelatedResourceTest(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'PUT'
         request.raw_post_data = json.dumps(person)
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
