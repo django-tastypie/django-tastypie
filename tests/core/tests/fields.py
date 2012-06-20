@@ -41,6 +41,10 @@ class ApiFieldTestCase(TestCase):
         field_4 = ApiField(use_in="detail")
         self.assertEqual(field_4.use_in, 'detail')
 
+        use_in_callable = lambda x: True
+        field_5 = ApiField(use_in=use_in_callable)
+        self.assertTrue(field_5.use_in is use_in_callable)
+
     def test_dehydrated_type(self):
         field_1 = ApiField()
         self.assertEqual(field_1.dehydrated_type, 'string')
