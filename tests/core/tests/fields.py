@@ -659,6 +659,21 @@ class ToOneFieldTestCase(TestCase):
         self.assertEqual(user_bundle.data['username'], u'johndoe')
         self.assertEqual(user_bundle.data['email'], u'john@doe.com')
 
+    def test_dehydrate_full_detail_list(self):
+        note = Note.objects.get(pk=1)
+        request = MockRequest()
+        bundle = Bundle(obj=note, request=request)
+
+        #details path with full_list=False
+        request.path = "/api/v1/notes/"
+        field_1 = ToOneField(UserResource, 'author', full=True, full_list=False)
+        self.assertEqual(field_1.dehydrate(bundle), '/api/v1/users/1/')
+
+        #list path with full_detail=False
+        request.path = "/api/v1/notes/1/"
+        field_1 = ToOneField(UserResource, 'author', full=True, full_detail=False)
+        self.assertEqual(field_1.dehydrate(bundle), '/api/v1/users/1/')
+
     def test_hydrate(self):
         note = Note()
         bundle = Bundle(obj=note)
@@ -973,7 +988,7 @@ class ToManyFieldTestCase(TestCase):
         field_4 = ToManyField(SubjectResource, 'subjects', full=True)
         field_4.instance_name = 'm2m'
         request = MockRequest()
-        request.path = "/api/v1/subjects/1/"
+        request.path = "/api/v1/subjects/%(pk)s/" % {'pk': self.note_1.pk}
         bundle_4 = Bundle(obj=self.note_1, request=request)
         subject_bundle_list = field_4.dehydrate(bundle_4)
         self.assertEqual(len(subject_bundle_list), 2)
@@ -1007,6 +1022,115 @@ class ToManyFieldTestCase(TestCase):
             self.fail('ToManyField requires an attribute of some type.')
         except ApiFieldError:
             pass
+
+    def test_dehydrate_full_detail_list(self):
+        #details path with full_detail=False
+        field_1 = ToManyField(SubjectResource, 'subjects', full=True, full_detail=False)
+        field_1.instance_name = 'm2m'
+        request = MockRequest()
+        request.path = "/api/v1/subjects/%(pk)s/" % {'pk': self.note_1.pk}
+        bundle_1 = Bundle(obj=self.note_1, request=request)
+        self.assertEqual(field_1.dehydrate(bundle_1), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
+
+        #list path with full_detail=False
+        field_2 = ToManyField(SubjectResource, 'subjects', full=True, full_detail=False)
+        field_2.instance_name = 'm2m'
+        request = MockRequest()
+        request.path = "/api/v1/subjects/"
+        bundle_2 = Bundle(obj=self.note_1, request=request)
+        subject_bundle_list = field_2.dehydrate(bundle_2)
+        self.assertEqual(len(subject_bundle_list), 2)
+        self.assertEqual(isinstance(subject_bundle_list[0], Bundle), True)
+        self.assertEqual(subject_bundle_list[0].data['name'], u'News')
+        self.assertEqual(subject_bundle_list[0].data['url'], u'/news/')
+        self.assertEqual(subject_bundle_list[0].obj.name, u'News')
+        self.assertEqual(subject_bundle_list[0].obj.url, u'/news/')
+        self.assertEqual(isinstance(subject_bundle_list[1], Bundle), True)
+        self.assertEqual(subject_bundle_list[1].data['name'], u'Photos')
+        self.assertEqual(subject_bundle_list[1].data['url'], u'/photos/')
+        self.assertEqual(subject_bundle_list[1].obj.name, u'Photos')
+        self.assertEqual(subject_bundle_list[1].obj.url, u'/photos/')
+
+        #list path with full_list=False
+        field_3 = ToManyField(SubjectResource, 'subjects', full=True, full_list=False)
+        field_3.instance_name = 'm2m'
+        request = MockRequest()
+        request.path = "/api/v1/subjects/"
+        bundle_3 = Bundle(obj=self.note_1, request=request)
+        self.assertEqual(field_3.dehydrate(bundle_3), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
+
+        #detail path with full_list=False
+        field_4 = ToManyField(SubjectResource, 'subjects', full=True, full_list=False)
+        field_4.instance_name = 'm2m'
+        request = MockRequest()
+        request.path = "/api/v1/subjects/%(pk)s/" % {'pk': self.note_1.pk}
+        bundle_4 = Bundle(obj=self.note_1, request=request)
+        subject_bundle_list = field_4.dehydrate(bundle_4)
+        self.assertEqual(len(subject_bundle_list), 2)
+        self.assertEqual(isinstance(subject_bundle_list[0], Bundle), True)
+        self.assertEqual(subject_bundle_list[0].data['name'], u'News')
+        self.assertEqual(subject_bundle_list[0].data['url'], u'/news/')
+        self.assertEqual(subject_bundle_list[0].obj.name, u'News')
+        self.assertEqual(subject_bundle_list[0].obj.url, u'/news/')
+        self.assertEqual(isinstance(subject_bundle_list[1], Bundle), True)
+        self.assertEqual(subject_bundle_list[1].data['name'], u'Photos')
+        self.assertEqual(subject_bundle_list[1].data['url'], u'/photos/')
+        self.assertEqual(subject_bundle_list[1].obj.name, u'Photos')
+        self.assertEqual(subject_bundle_list[1].obj.url, u'/photos/')
+
+        #list url with callable returning True
+        field_5 = ToManyField(SubjectResource, 'subjects', full=True, full_list=lambda x: True)
+        field_5.instance_name = 'm2m'
+        request = MockRequest()
+        request.path = "/api/v1/subjects/"
+        bundle_5 = Bundle(obj=self.note_1, request=request)
+        subject_bundle_list = field_5.dehydrate(bundle_5)
+        self.assertEqual(len(subject_bundle_list), 2)
+        self.assertEqual(isinstance(subject_bundle_list[0], Bundle), True)
+        self.assertEqual(subject_bundle_list[0].data['name'], u'News')
+        self.assertEqual(subject_bundle_list[0].data['url'], u'/news/')
+        self.assertEqual(subject_bundle_list[0].obj.name, u'News')
+        self.assertEqual(subject_bundle_list[0].obj.url, u'/news/')
+        self.assertEqual(isinstance(subject_bundle_list[1], Bundle), True)
+        self.assertEqual(subject_bundle_list[1].data['name'], u'Photos')
+        self.assertEqual(subject_bundle_list[1].data['url'], u'/photos/')
+        self.assertEqual(subject_bundle_list[1].obj.name, u'Photos')
+        self.assertEqual(subject_bundle_list[1].obj.url, u'/photos/')
+
+        #list url with callable returning False
+        field_6 = ToManyField(SubjectResource, 'subjects', full=True, full_list=lambda x: False)
+        field_6.instance_name = 'm2m'
+        request = MockRequest()
+        request.path = "/api/v1/subjects/"
+        bundle_6 = Bundle(obj=self.note_1, request=request)
+        self.assertEqual(field_6.dehydrate(bundle_6), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
+
+        #detail url with callable returning True
+        field_7 = ToManyField(SubjectResource, 'subjects', full=True, full_detail=lambda x: True)
+        field_7.instance_name = 'm2m'
+        request = MockRequest()
+        request.path = "/api/v1/subjects/%(pk)s/" % {'pk': self.note_1.pk}
+        bundle_7 = Bundle(obj=self.note_1, request=request)
+        subject_bundle_list = field_7.dehydrate(bundle_7)
+        self.assertEqual(len(subject_bundle_list), 2)
+        self.assertEqual(isinstance(subject_bundle_list[0], Bundle), True)
+        self.assertEqual(subject_bundle_list[0].data['name'], u'News')
+        self.assertEqual(subject_bundle_list[0].data['url'], u'/news/')
+        self.assertEqual(subject_bundle_list[0].obj.name, u'News')
+        self.assertEqual(subject_bundle_list[0].obj.url, u'/news/')
+        self.assertEqual(isinstance(subject_bundle_list[1], Bundle), True)
+        self.assertEqual(subject_bundle_list[1].data['name'], u'Photos')
+        self.assertEqual(subject_bundle_list[1].data['url'], u'/photos/')
+        self.assertEqual(subject_bundle_list[1].obj.name, u'Photos')
+        self.assertEqual(subject_bundle_list[1].obj.url, u'/photos/')
+
+        #detail url with callable returning False
+        field_8 = ToManyField(SubjectResource, 'subjects', full=True, full_detail=lambda x: False)
+        field_8.instance_name = 'm2m'
+        request = MockRequest()
+        request.path = "/api/v1/subjects/%(pk)s/" % {'pk': self.note_1.pk}
+        bundle_8 = Bundle(obj=self.note_1, request=request)
+        self.assertEqual(field_8.dehydrate(bundle_8), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
 
     def test_dehydrate_with_callable(self):
         note = Note()
