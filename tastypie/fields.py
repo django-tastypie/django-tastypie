@@ -518,7 +518,7 @@ class RelatedField(ApiField):
         Based on the ``full_resource``, returns either the endpoint or the data
         from ``full_dehydrate`` for the related resource.
         """
-        should_dehydrate_full_resource = self.should_full_hydrate(bundle)
+        should_dehydrate_full_resource = self.should_full_dehydrate(bundle)
 
         if not should_dehydrate_full_resource:
             # Be a good netizen.
@@ -616,7 +616,7 @@ class RelatedField(ApiField):
         else:
             raise ApiFieldError("The '%s' field was given data that was not a URI, not a dictionary-alike and does not have a 'pk' attribute: %s." % (self.instance_name, value))
 
-    def should_full_hydrate(self, bundle):
+    def should_full_dehydrate(self, bundle):
         """
         Based on the ``full``, ``list_full`` and ``detail_full`` returns ``True`` or ``False``
         indicating weather the resource should be fully dehydrated.
