@@ -56,8 +56,10 @@ class FormValidation(Validation):
                 kwargs['instance'] = bundle.obj
 
             kwargs['data'] = model_to_dict(bundle.obj)
+        
+        data.update(kwargs['data'])
+        kwargs['data'] = data
 
-        kwargs['data'].update(data)
         return kwargs
 
     def is_valid(self, bundle, request=None):
