@@ -3,6 +3,7 @@ from dateutil.tz import *
 from django.db import models
 from django.contrib.auth.models import User
 from django.test import TestCase
+from django.http import HttpRequest
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.fields import *
@@ -1131,6 +1132,28 @@ class ToManyFieldTestCase(TestCase):
         request.path = "/api/v1/subjects/%(pk)s/" % {'pk': self.note_1.pk}
         bundle_8 = Bundle(obj=self.note_1, request=request)
         self.assertEqual(field_8.dehydrate(bundle_8), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
+
+        #detail url with full_detail=True and get parameters
+        field_9 = ToManyField(SubjectResource, 'subjects', full=True, full_detail=True)
+        field_9.instance_name = 'm2m'
+        request = HttpRequest()
+        request.method = "GET"
+        request.GET = {"foo": "bar"}
+        request.META["QUERY_STRING"] = "foo=bar"
+        request.path = "/api/v1/subjects/%(pk)s/" % {'pk': self.note_1.pk}
+        bundle_9 = Bundle(obj=self.note_1, request=request)
+        subject_bundle_list = field_9.dehydrate(bundle_9)
+        self.assertEqual(len(subject_bundle_list), 2)
+        self.assertEqual(isinstance(subject_bundle_list[0], Bundle), True)
+        self.assertEqual(subject_bundle_list[0].data['name'], u'News')
+        self.assertEqual(subject_bundle_list[0].data['url'], u'/news/')
+        self.assertEqual(subject_bundle_list[0].obj.name, u'News')
+        self.assertEqual(subject_bundle_list[0].obj.url, u'/news/')
+        self.assertEqual(isinstance(subject_bundle_list[1], Bundle), True)
+        self.assertEqual(subject_bundle_list[1].data['name'], u'Photos')
+        self.assertEqual(subject_bundle_list[1].data['url'], u'/photos/')
+        self.assertEqual(subject_bundle_list[1].obj.name, u'Photos')
+        self.assertEqual(subject_bundle_list[1].obj.url, u'/photos/')
 
     def test_dehydrate_with_callable(self):
         note = Note()
