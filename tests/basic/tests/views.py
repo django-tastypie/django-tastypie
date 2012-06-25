@@ -2,6 +2,7 @@ from django.http import HttpRequest
 from django.test import TestCase
 from django.utils import simplejson as json
 
+
 class ViewsTestCase(TestCase):
     def test_gets(self):
         resp = self.client.get('/api/v1/', data={'format': 'json'})
@@ -111,17 +112,17 @@ class ViewsTestCase(TestCase):
         self.assertEqual(len(deserialized), 2)
         self.assertEqual(deserialized['meta']['limit'], 20)
         self.assertEqual(len(deserialized['objects']), 2)
-        self.assertEqual([obj['title'] for obj in deserialized['objects']], [u'First Post!', u'Another Post'])
+        self.assertEqual([obj['title'] for obj in deserialized['objects']], [u'First Post', u'Another First Post'])
 
         resp = self.client.get('/api/v2/slugbased/first-post/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content)
-        self.assertEqual(len(deserialized), 8)
-        self.assertEqual(deserialized['title'], u'First Post!')
+        self.assertEqual(len(deserialized), 5)
+        self.assertEqual(deserialized['title'], u'First Post')
 
-        resp = self.client.get('/api/v2/slugbased/set/another-post;first-post/', data={'format': 'json'})
+        resp = self.client.get('/api/v2/slugbased/set/another-first-post;first-post/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content)
         self.assertEqual(len(deserialized), 1)
         self.assertEqual(len(deserialized['objects']), 2)
-        self.assertEqual([obj['title'] for obj in deserialized['objects']], [u'Another Post', u'First Post!'])
+        self.assertEqual([obj['title'] for obj in deserialized['objects']], [u'Another First Post', u'First Post'])

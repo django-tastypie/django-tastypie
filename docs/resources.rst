@@ -997,6 +997,16 @@ Allows for the sorting of objects being returned.
 ``ModelResource`` includes a full working version specific to Django's
 ``Models``.
 
+``get_bundle_detail_data``
+--------------------------
+
+.. method:: Resource.get_bundle_detail_data(self, bundle)
+
+Convenience method to return the ``detail_uri_name`` attribute off
+``bundle.obj``.
+
+Usually just accesses ``bundle.obj.pk`` by default.
+
 ``get_resource_uri``
 --------------------
 
