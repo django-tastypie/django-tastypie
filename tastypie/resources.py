@@ -1885,7 +1885,7 @@ class ModelResource(Resource):
         """
         A ORM-specific implementation of ``obj_update``.
         """
-        if not bundle.obj or not bundle.obj.pk:
+        if not bundle.obj or not getattr(bundle.obj,self._meta.detail_uri_name):
             # Attempt to hydrate data from kwargs before doing a lookup for the object.
             # This step is needed so certain values (like datetime) will pass model validation.
             try:
