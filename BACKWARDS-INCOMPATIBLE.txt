@@ -1,1 +1,2 @@
 [2012-05-04] AutoFields will now serialize and deserialize as Integers
+[2012-06-26] ``Authentication`` classes now require ``User.is_active = True``

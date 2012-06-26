@@ -43,6 +43,21 @@ Authentication Options
 
 Tastypie ships with the following ``Authentication`` classes:
 
+.. warning:
+
+    Tastypie, when used with ``django.contrib.auth.models.User``, will check
+    to ensure that the ``User.is_active = True`` by default.
+
+    You can disable this behavior by initializing your ``Authentication`` class
+    with ``require_active=False``::
+
+        class UserResource(ModelResource):
+            class Meta:
+                # ...
+                authentication = BasicAuthentication(require_active=False)
+
+    *The behavior changed to active-by-default in v0.9.12.*
+
 ``Authentication``
 ~~~~~~~~~~~~~~~~~~
 
