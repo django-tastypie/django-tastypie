@@ -78,4 +78,11 @@ class ModelResource(resources.ModelResource):
                         value = (value, D(**{units: radius}))
                     except (KeyError, ValueError):
                         raise
+                elif filter_type == 'dwithin':
+                    # e.g PostGIS ST_DWIthin query
+                    try:
+                        radius = float(filters['distance.radius'])
+                        value = (value, radius)
+                    except:
+                        raise
         return value
