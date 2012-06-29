@@ -151,16 +151,16 @@ class DjangoAuthorization(Authorization):
         klass = self.base_checks(bundle.request, object_list.model)
 
         if klass is False:
-            return False
+            return object_list.none()
 
         # GET-style methods are always allowed.
-        return True
+        return object_list
 
     def read_detail(self, object_list, bundle):
         klass = self.base_checks(bundle.request, bundle.obj.__class__)
 
         if klass is False:
-            return False
+            raise Unauthorized
 
         # GET-style methods are always allowed.
         return True
@@ -169,52 +169,70 @@ class DjangoAuthorization(Authorization):
         klass = self.base_checks(bundle.request, object_list.model)
 
         if klass is False:
-            return False
+            return object_list.none()
 
         permission = '%s.add_%s' % (klass._meta.app_label, klass._meta.module_name)
-        return bundle.request.user.has_perm(permission)
+        if bundle.request.user.has_perm(permission):
+            return object_list
+        else:
+            return object_list.none()
 
     def create_detail(self, object_list, bundle):
         klass = self.base_checks(bundle.request, bundle.obj.__class__)
 
         if klass is False:
-            return False
+            raise Unauthorized
 
         permission = '%s.add_%s' % (klass._meta.app_label, klass._meta.module_name)
-        return bundle.request.user.has_perm(permission)
+        if bundle.request.user.has_perm(permission):
+            return True
+        else:
+            raise Unauthorized
 
     def update_list(self, object_list, bundle):
         klass = self.base_checks(bundle.request, bundle.request, object_list.model)
 
         if klass is False:
-            return False
+            return object_list.none()
 
         permission = '%s.change_%s' % (klass._meta.app_label, klass._meta.module_name)
-        return bundle.request.user.has_perm(permission)
+        if bundle.request.user.has_perm(permission):
+            return object_list
+        else:
+            return object_list.none()
 
     def update_detail(self, object_list, bundle):
         klass = self.base_checks(bundle.request, bundle.obj.__class__)
 
         if klass is False:
-            return False
+            raise Unauthorized
 
         permission = '%s.change_%s' % (klass._meta.app_label, klass._meta.module_name)
-        return bundle.request.user.has_perm(permission)
+        if bundle.request.user.has_perm(permission):
+            return True
+        else:
+            raise Unauthorized
 
     def delete_list(self, object_list, bundle):
         klass = self.base_checks(bundle.request, object_list.model)
 
         if klass is False:
-            return False
+            return object_list.none()
 
         permission = '%s.delete_%s' % (klass._meta.app_label, klass._meta.module_name)
-        return bundle.request.user.has_perm(permission)
+        if bundle.request.user.has_perm(permission):
+            return object_list
+        else:
+            return object_list.none()
 
     def delete_detail(self, object_list, bundle):
         klass = self.base_checks(bundle.request, bundle.obj.__class__)
 
         if klass is False:
-            return False
+            raise Unauthorized
 
         permission = '%s.delete_%s' % (klass._meta.app_label, klass._meta.module_name)
-        return bundle.request.user.has_perm(permission)
+        if bundle.request.user.has_perm(permission):
+            return True
+        else:
+            raise Unauthorized
