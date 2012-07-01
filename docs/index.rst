@@ -30,6 +30,7 @@ interfaces.
    paginator
    geodjango
    content_types
+   namespaces
 
    cookbook
    debugging
