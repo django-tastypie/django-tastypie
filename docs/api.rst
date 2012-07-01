@@ -29,6 +29,7 @@ URLconf)::
         (r'^api/', include(v1_api.urls)),
     )
 
+For namespaced urls see :ref:`namespaces`
 
 ``Api`` Methods
 ===============
