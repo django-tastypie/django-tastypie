@@ -1,15 +1,14 @@
 # See COPYING file in this directory.
 # Some code originally from django-boundaryservice
-
 from urllib import unquote
 
-from django.contrib.gis.db.models import GeometryField
 from django.utils import simplejson
+from django.contrib.gis.measure import D
 from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.db.models import GeometryField
 
-from tastypie.fields import ApiField, CharField
 from tastypie import resources
-
+from tastypie.fields import ApiField, CharField
 
 class GeometryApiField(ApiField):
     """
@@ -69,4 +68,21 @@ class ModelResource(resources.ModelResource):
                 value = GEOSGeometry(unquote(value))
             except ValueError:
                 pass
+            else:
+                # Check if is a Distance Query operator,
+                # and if so interpolate distance radius
+                if filter_type.startswith('distance_'):
+                    try:
+                        radius = filters['distance.radius']
+                        units = filters['distance.units']
+                        value = (value, D(**{units: radius}))
+                    except (KeyError, ValueError):
+                        raise
+                elif filter_type == 'dwithin':
+                    # e.g PostGIS ST_DWIthin query
+                    try:
+                        radius = float(filters['distance.radius'])
+                        value = (value, radius)
+                    except:
+                        raise
         return value

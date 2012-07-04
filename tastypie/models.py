@@ -18,10 +18,10 @@ class ApiAccess(models.Model):
     url = models.CharField(max_length=255, blank=True, default='')
     request_method = models.CharField(max_length=10, blank=True, default='')
     accessed = models.PositiveIntegerField()
-    
+
     def __unicode__(self):
         return u"%s @ %s" % (self.identifer, self.accessed)
-    
+
     def save(self, *args, **kwargs):
         self.accessed = int(time.time())
         return super(ApiAccess, self).save(*args, **kwargs)
@@ -31,7 +31,7 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
     import uuid
     from django.conf import settings
     from django.contrib.auth.models import User
-    
+
     class ApiKey(models.Model):
         user = models.OneToOneField(User, related_name='api_key')
         key = models.CharField(max_length=256, blank=True, default='')
@@ -39,23 +39,59 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
 
         def __unicode__(self):
             return u"%s for %s" % (self.key, self.user)
-        
+
         def save(self, *args, **kwargs):
             if not self.key:
                 self.key = self.generate_key()
-            
+
             return super(ApiKey, self).save(*args, **kwargs)
-        
+
         def generate_key(self):
             # Get a random UUID.
             new_uuid = uuid.uuid4()
             # Hmac that beast.
             return hmac.new(str(new_uuid), digestmod=sha1).hexdigest()
-    
-    
+
     def create_api_key(sender, **kwargs):
         """
         A signal for hooking up automatic ``ApiKey`` creation.
         """
         if kwargs.get('created') is True:
             ApiKey.objects.create(user=kwargs.get('instance'))
+
+    class ApiToken(models.Model):
+        user = models.ForeignKey(User, related_name='api_tokens')
+        token = models.CharField(max_length=256, blank=True, default='')
+        last = models.DateTimeField(auto_now_add=True)
+
+        def __unicode__(self):
+            return u"Token %s for %s used at %s" % (
+                self.token, self.user, self.last)
+
+        def generate_token(self):
+            # Concatenate two uuids.
+            uuids = [uuid.uuid4() for i in range(2)]
+
+            # Get the hmac.
+            hmacs = [hmac.new(str(u), digestmod=sha1) for u in uuids]
+
+            # Return the concatenation.
+            return ''.join([h.hexdigest() for h in hmacs])
+
+        def save(self, *args, **kwargs):
+            if not self.token:
+                self.token = self.generate_token()
+
+            return super(ApiToken, self).save(*args, **kwargs)
+
+        def is_valid(self, now=datetime.datetime.now()):
+            " Check if token is still valid."
+
+            # Get valid period.
+            valid_time = getattr(settings, 'TOKEN_VALID_TIME', 3600)
+
+            if (now - self.last) < datetime.timedelta(seconds=valid_time):
+                self.last = now
+                self.save()
+                return True
+            return False
