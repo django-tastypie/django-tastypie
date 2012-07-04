@@ -144,6 +144,50 @@ class BasicAuthentication(Authentication):
         return request.META.get('REMOTE_USER', 'nouser')
 
 
+class ApiTokenAuthentication(Authentication):
+    """
+    Handles API Token auth, in which an user provide just a temporary
+    token using the 'HTTP-X' headers.
+    """
+
+    def _unauthorized(self):
+        response = HttpUnauthorized()
+        response['WWW-Authenticate'] = 'Token'
+        return response
+
+    def is_authenticated(self, request, **kwargs):
+        """
+        Finds the user with the API Token.
+        """
+
+        if not request.META.get('HTTP_AUTHORIZATION'):
+            return self._unauthorized()
+
+        try:
+            http_authorization = request.META['HTTP_AUTHORIZATION']
+            (auth_type, data) = http_authorization.split(' ', 1)
+
+            if auth_type != 'Token':
+                return self._unauthorized()
+        except:
+            return self._unauthorized()
+
+        # Get api_token.
+        from tastypie.models import ApiToken
+
+        try:
+            api_token = ApiToken.objects.get(token=data)
+        except ApiToken.DoesNotExist:
+            return self._unauthorized()
+
+        # Check if still valid.
+        if not api_token.is_valid():
+            return self._unauthorized()
+
+        request.user = api_token.user
+        return True
+
+
 class ApiKeyAuthentication(Authentication):
     """
     Handles API key auth, in which a user provides a username & API key.

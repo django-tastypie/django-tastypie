@@ -1,11 +1,12 @@
 import base64
 import time
 import warnings
+import datetime
 from django.contrib.auth.models import User
 from django.core import mail
 from django.http import HttpRequest
 from django.test import TestCase
-from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, DigestAuthentication, OAuthAuthentication, MultiAuthentication
+from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, DigestAuthentication, OAuthAuthentication, MultiAuthentication, ApiTokenAuthentication
 from tastypie.http import HttpUnauthorized
 from tastypie.models import ApiKey, create_api_key
 
@@ -129,6 +130,46 @@ class BasicAuthenticationTestCase(TestCase):
         bob_doe.save()
         request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('bobdoe:pass')
         self.assertTrue(auth.is_authenticated(request))
+
+
+class ApiTokenAuthenticationTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+
+    def setUp(self):
+        super(ApiTokenAuthenticationTestCase, self).setUp()
+        ApiKey.objects.all().delete()
+
+    def test_is_authenticated(self):
+        auth = ApiTokenAuthentication()
+        request = HttpRequest()
+
+        # Simulate sending the signal.
+        john_doe = User.objects.get(username='johndoe')
+        api_token = john_doe.api_tokens.create()
+
+        # No HTTP Basic auth details should fail.
+        auth_request = auth.is_authenticated(request)
+        self.assertEqual(isinstance(auth_request, HttpUnauthorized), True)
+
+        # HttpUnauthorized with auth type.
+        self.assertEqual(auth_request['WWW-Authenticate'].find('Token'), 0)
+
+        # No api_token details should fail.
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+
+        # Wrong api_token details.
+        request.META['HTTP_AUTHORIZATION'] = 'Token aaaa'
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+
+        # Correct api_token.
+        request.META['HTTP_AUTHORIZATION'] = 'Token %s' % (api_token.token, )
+        self.assertEqual(auth.is_authenticated(request), True)
+
+        # Invalid api_token.
+        api_token.last = datetime.datetime.now() - datetime.timedelta(1)
+        api_token.save()
+        request.META['HTTP_AUTHORIZATION'] = 'Token %s' % (api_token.token, )
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
 
 
 class ApiKeyAuthenticationTestCase(TestCase):
