@@ -99,7 +99,7 @@ just for this purpose, so you'll need to sensure ``tastypie`` is in ``INSTALLED_
 To use this mechanism, the end user needs to specify an ``Authorization`` header. 
 Example::
 
-  Authorization: ApiToken 44b91beebc43209488502499d258b5b27bc7088e9e0e05cdd68ac4335f43a9172afd815e796e4dea
+  Authorization: Token 44b91beebc43209488502499d258b5b27bc7088e9e0e05cdd68ac4335f43a9172afd815e796e4dea
 
 The period time in which the token is valid can be set with the variable 
 ``TOKEN_VALID_TIME`` in ``settings.py``. Default is 3600 seconds (1 hour).
@@ -108,13 +108,26 @@ The user must create an ApiToken previously to start an interaction with the API
 A possible way is to define a ``SessionResource`` authenticated with any other method, 
 and define the ``ApiToken`` as a field in the session, then any other resource can be authenticated with temporary tokens, and only one endpoint (the ``SessionResource``)will receive sensitive data as username or password.
 
+Here we use an ``UserResource`` that just can list and show the users, you can made an resource that signup users or signup user in other way.
+
 Example::
 
     from tastypie.models import ApiToken
+    from tastypie.resources import ModelResource
     from tastypie.authorization import Authorization
     from tastypie.authentication import BasicAuthentication
     from tastypie.authentication import ApiTokenAuthentication
     from tastypie import fields
+    from django.contrib.auth.models import User
+
+    class UserResource(ModelResource):
+        class Meta(object):
+	    queryset = User.objects.all()
+	    resource_name = 'users'
+	    fields = ['username', 'email']
+	    allowed_methods = ['get']
+	    authorization = Authorization()
+	    authentication = ApiTokenAuthentication()
 
     class PublicSessionResource(ModelResource):
         user = fields.ToOneField(
