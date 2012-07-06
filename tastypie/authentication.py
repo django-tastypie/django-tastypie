@@ -408,6 +408,27 @@ class OAuthAuthentication(Authentication):
         oauth_server, oauth_request = oauth_provider.utils.initialize_server_request(request)
         return oauth_server.verify_request(oauth_request, consumer, token)
 
+class CookieAuthentication(object):
+    """
+    An authentication backend which checks for auth cookies.
+    This is beneficial when the APIs are being used within browsers
+    """
+
+    def is_authenticated(self, request, **kwargs):
+        return request.user.is_authenticated()
+
+    def get_identifier(self, request):
+        """
+        Provides a unique string identifier for the requestor.
+
+        This implementation returns the user's username.
+        """
+        if hasattr(request, 'user'):
+            if hasattr(request.user, 'username'):
+                return request.user.username
+
+        return 'nouser'
+
 
 class MultiAuthentication(object):
     """
