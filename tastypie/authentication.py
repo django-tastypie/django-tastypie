@@ -414,8 +414,14 @@ class CookieAuthentication(object):
     This is beneficial when the APIs are being used within browsers
     """
 
+    def _unauthorized(self):
+        return HttpUnauthorized()
+
     def is_authenticated(self, request, **kwargs):
-        return request.user.is_authenticated()
+        if not request.user.is_authenticated():
+            return self._unauthorized()
+
+        return True
 
     def get_identifier(self, request):
         """
