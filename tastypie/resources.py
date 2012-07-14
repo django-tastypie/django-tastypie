@@ -1725,7 +1725,8 @@ class ModelResource(Resource):
 
         if hasattr(self._meta, 'queryset'):
             # Get the possible query terms from the current QuerySet.
-            query_terms = self._meta.queryset.query.query_terms.keys()
+            if hasattr(self._meta.queryset.query.query_terms, 'keys'):
+                query_terms = self._meta.queryset.query.query_terms.keys()
         else:
             query_terms = QUERY_TERMS.keys()
 
