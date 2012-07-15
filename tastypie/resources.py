@@ -233,11 +233,13 @@ class Resource(object):
         import sys
         the_trace = '\n'.join(traceback.format_exception(*(sys.exc_info())))
         response_class = http.HttpApplicationError
+        response_code = 500
 
         NOT_FOUND_EXCEPTIONS = (NotFound, ObjectDoesNotExist, Http404)
 
         if isinstance(exception, NOT_FOUND_EXCEPTIONS):
             response_class = HttpResponseNotFound
+            response_code = 404
 
         if settings.DEBUG:
             data = {
@@ -250,11 +252,13 @@ class Resource(object):
 
         # When DEBUG is False, send an error message to the admins (unless it's
         # a 404, in which case we check the setting).
-        if not isinstance(exception, NOT_FOUND_EXCEPTIONS):
-            log = logging.getLogger('django.request.tastypie')
-            log.error('Internal Server Error: %s' % request.path, exc_info=sys.exc_info(), extra={'status_code': 500, 'request':request})
+        send_broken_links = getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False)
 
-            if django.VERSION < (1, 3, 0) and getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False):
+        if not response_code == 404 or send_broken_links:
+            log = logging.getLogger('django.request.tastypie')
+            log.error('Internal Server Error: %s' % request.path, exc_info=sys.exc_info(), extra={'status_code': response_code, 'request':request})
+
+            if django.VERSION < (1, 3, 0):
                 from django.core.mail import mail_admins
                 subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), request.path)
                 try:
