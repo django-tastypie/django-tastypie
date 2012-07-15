@@ -29,6 +29,27 @@ from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote
 from core.tests.mocks import MockRequest
 from core.utils import SimpleHandler
 
+
+if not hasattr(HttpRequest, '_load_post_and_files'):
+    from django.utils.datastructures import MultiValueDict
+    from django.http import QueryDict
+
+    # An HttpRequest that implements _load_post_and_files
+    # for Django 1.2 compatibility
+    class HttpRequest(HttpRequest):
+        @property
+        def raw_post_data(self):
+            return self._raw_post_data
+
+        def _load_post_and_files(self):
+            # Populates self._post and self._files
+            if self.method != 'POST':
+                self._post, self._files = QueryDict('', encoding=self._encoding), MultiValueDict()
+                return
+            else:
+                self._post, self._files = QueryDict(self.raw_post_data, encoding=self._encoding), MultiValueDict()
+
+
 class CustomSerializer(Serializer):
     pass
 
