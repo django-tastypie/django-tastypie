@@ -18,7 +18,12 @@ class NoCache(object):
         No-op for setting values in the cache.
         """
         pass
-
+        
+    def delete(self, key):
+        """
+        No-op for deleting values in the cache.
+        """
+        pass
 
 class SimpleCache(NoCache):
     """
@@ -45,8 +50,13 @@ class SimpleCache(NoCache):
         Optionally accepts a ``timeout`` in seconds. Defaults to ``None`` which
         uses the resource's default timeout.
         """
-
         if timeout == None:
             timeout = self.timeout
 
         cache.set(key, value, timeout)
+
+    def delete(self, key):
+        """
+        Deletes a key-value in the cache.
+        """
+        cache.delete(key)
