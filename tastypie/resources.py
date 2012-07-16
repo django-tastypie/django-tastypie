@@ -1465,7 +1465,7 @@ class Resource(object):
 
         for identifier in obj_identifiers:
             try:
-                obj = self.obj_get(request, **{self._meta.detail_uri_name: identifier})
+                obj = self.cache_obj_get(request, **{self._meta.detail_uri_name: identifier})
                 bundle = self.build_bundle(obj=obj, request=request)
                 bundle = self.full_dehydrate(bundle)
                 objects.append(bundle)
