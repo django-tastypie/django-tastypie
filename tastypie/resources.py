@@ -1014,6 +1014,16 @@ class Resource(object):
         """
         raise NotImplementedError()
 
+    def cached_obj_update(self, bundle, request=None, **kwargs):
+        """
+        A version of ``obj_update`` that deletes the existing old data in cache 
+        after successfully updates the object. 
+        """
+        cache_key = self.generate_cache_key('detail', **kwargs)
+        updated_bundle = self.obj_update(bundle, request, **kwargs)
+        self._meta.cache.delete(cache_key)
+        return updated_bundle
+
     def obj_delete_list(self, request=None, **kwargs):
         """
         Deletes an entire list of objects.
