@@ -1199,7 +1199,7 @@ class Resource(object):
         Either updates an existing resource or creates a new one with the
         provided data.
 
-        Calls ``obj_update`` with the provided data first, but falls back to
+        Calls ``cached_obj_update`` with the provided data first, but falls back to
         ``obj_create`` if the object does not already exist.
 
         If a new resource is created, return ``HttpCreated`` (201 Created).
@@ -1218,7 +1218,7 @@ class Resource(object):
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
 
         try:
-            updated_bundle = self.obj_update(bundle, request=request, **self.remove_api_resource_names(kwargs))
+            updated_bundle = self.cached_obj_update(bundle, request=request, **self.remove_api_resource_names(kwargs))
 
             if not self._meta.always_return_data:
                 return http.HttpNoContent()
@@ -1397,7 +1397,7 @@ class Resource(object):
         """
         Updates a resource in-place.
 
-        Calls ``obj_update``.
+        Calls ``cached_obj_update``.
 
         If the resource is updated, return ``HttpAccepted`` (202 Accepted).
         If the resource did not exist, return ``HttpNotFound`` (404 Not Found).
@@ -1446,7 +1446,7 @@ class Resource(object):
             self._meta.detail_uri_name: self.get_bundle_detail_data(original_bundle),
             'request': request,
         }
-        return self.obj_update(original_bundle, **kwargs)
+        return self.cached_obj_update(original_bundle, **kwargs)
 
     def get_schema(self, request, **kwargs):
         """
@@ -1468,7 +1468,7 @@ class Resource(object):
         Returns a serialized list of resources based on the identifiers
         from the URL.
 
-        Calls ``obj_get`` to fetch only the objects requested. This method
+        Calls ``cached_obj_get`` to fetch only the objects requested. This method
         only responds to HTTP GET.
 
         Should return a HttpResponse (200 OK).
