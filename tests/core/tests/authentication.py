@@ -2,10 +2,13 @@ import base64
 import time
 import warnings
 from django.contrib.auth.models import User
+from django.contrib import auth as django_auth
 from django.core import mail
 from django.http import HttpRequest
+from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import TestCase
-from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, DigestAuthentication, OAuthAuthentication, MultiAuthentication
+from django.test.utils import override_settings
+from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, DigestAuthentication, CookieAuthentication, OAuthAuthentication, MultiAuthentication
 from tastypie.http import HttpUnauthorized
 from tastypie.models import ApiKey, create_api_key
 
@@ -310,6 +313,29 @@ class DigestAuthenticationTestCase(TestCase):
         auth_request = auth.is_authenticated(request)
         self.assertTrue(auth_request, True)
 
+class CookieAuthenticationTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+
+    @override_settings(SESSION_ENGINE='django.contrib.sessions.backends.file')
+    def test_is_authenticated(self):
+        auth = CookieAuthentication()
+        request = HttpRequest()
+        middleware = SessionMiddleware()
+
+        # Simulate a request that modifies the session
+        middleware.process_request(request)
+        request.user = None
+
+        # Do a login and then test it
+        john_doe = User.objects.get(username='johndoe')
+        john_doe.backend = ''
+
+        django_auth.login(request, john_doe)
+        self.assertEqual(auth.is_authenticated(request), True)
+
+        # It should fail after a logout
+        django_auth.logout(request)
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
 
 class OAuthAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']

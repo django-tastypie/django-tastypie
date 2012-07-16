@@ -123,6 +123,14 @@ should be included in ``INSTALLED_APPS``.
 
 .. _`this post`: http://www.nerdydork.com/basic-authentication-on-mod_wsgi.html
 
+``CookieAuthentication``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This authentication scheme uses cookies to check a user's credentials.
+This scheme is useful in web pages, which make use of REST APIs to
+access/modify data. In such cases, the browser can use the session cookie
+for authentication.
+
 ``OAuthAuthentication``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
