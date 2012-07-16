@@ -2347,6 +2347,9 @@ class BaseModelResource(Resource):
                 related_obj = bundle.related_objects_to_save.get(field_object.attribute, None)
 
             if field_object.related_name:
+                # this might be a reverse relation, so we need to save this
+                # model, attach it to the related object, and save the related
+                # object.
                 if not self.get_bundle_detail_data(bundle):
                     bundle.obj.save()
 
@@ -2354,17 +2357,37 @@ class BaseModelResource(Resource):
 
             related_resource = field_object.get_related_resource(related_obj)
 
-            if bundle.data.get(field_name) and hasattr(bundle.data[field_name], 'keys'):
-                # Only build & save if there's data, not just a URI.
-                related_bundle = related_resource.build_bundle(
-                    obj=related_obj,
-                    data=bundle.data.get(field_name),
-                    request=bundle.request,
-                    objects_saved=bundle.objects_saved
-                )
-                related_resource.full_hydrate(related_bundle)
-                related_resource.save(related_bundle)
-                related_obj = related_bundle.obj
+            # Before we build the bundle & try saving it, let's make sure we
+            # haven't already saved it.
+            if related_obj:
+                obj_id = self.create_identifier(related_obj)
+
+                if obj_id in bundle.objects_saved:
+                    # It's already been saved. We're done here.
+                    continue
+
+            if bundle.data.get(field_name):
+                if hasattr(bundle.data[field_name], 'keys'):
+                    # Only build & save if there's data, not just a URI.
+                    related_bundle = related_resource.build_bundle(
+                        obj=related_obj,
+                        data=bundle.data.get(field_name),
+                        request=bundle.request,
+                        objects_saved=bundle.objects_saved
+                    )
+                    related_resource.full_hydrate(related_bundle)
+                    related_resource.save(related_bundle)
+                    related_obj = related_bundle.obj
+                elif field_object.related_name:
+                    # This condition probably means a URI for a reverse
+                    # relation was provided.
+                    related_bundle = related_resource.build_bundle(
+                        obj=related_obj,
+                        request=bundle.request,
+                        objects_saved=bundle.objects_saved
+                    )
+                    related_resource.save(related_bundle)
+                    related_obj = related_bundle.obj
 
             if related_obj:
                 setattr(bundle.obj, field_object.attribute, related_obj)
