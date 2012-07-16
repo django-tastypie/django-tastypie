@@ -1035,6 +1035,15 @@ class Resource(object):
         ``Models``.
         """
         raise NotImplementedError()
+        
+    def cached_obj_delete(self, request=None, **kwargs):
+        """
+        A version of ``obj_delete`` that clean out the deleted data of object 
+        in the cache to make cache consistance.
+        """
+        cache_key = self.generate_cache_key('detail', **kwargs)
+        self._meta.cache.delete(cache_key)
+        return self.obj_delete(request, **kwargs)
 
     def create_response(self, request, data, response_class=HttpResponse, **response_kwargs):
         """
