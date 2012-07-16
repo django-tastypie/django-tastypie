@@ -1293,7 +1293,7 @@ class Resource(object):
         If the resource did not exist, return ``Http404`` (404 Not Found).
         """
         try:
-            self.obj_delete(request=request, **self.remove_api_resource_names(kwargs))
+            self.cached_obj_delete(request=request, **self.remove_api_resource_names(kwargs))
             return http.HttpNoContent()
         except NotFound:
             return http.HttpNotFound()
@@ -1389,7 +1389,7 @@ class Resource(object):
 
         for uri in deserialized.get('deleted_objects', []):
             obj = self.get_via_uri(uri, request=request)
-            self.obj_delete(request=request, _obj=obj)
+            self.cached_obj_delete(request=request, _obj=obj)
 
         return http.HttpAccepted()
 
