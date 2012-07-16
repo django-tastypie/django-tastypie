@@ -7,7 +7,7 @@ from django.utils import datetime_safe, importlib
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.utils import dict_strip_unicode_keys, make_aware
-
+from django.db.models.fields.related import SingleRelatedObjectDescriptor
 
 class NOT_PROVIDED:
     def __str__(self):
@@ -644,7 +644,17 @@ class ToOneField(RelatedField):
 
         if value is None:
             return value
-
+        
+        if bundle.obj and isinstance(getattr(bundle.obj.__class__, self.attribute),  SingleRelatedObjectDescriptor):
+            # This is the case when we are writing to a reverse one to one field. 
+            # Enable related name to make this work fantastically.
+            # see https://code.djangoproject.com/ticket/18638 (bug; closed; worksforme) 
+            # and https://github.com/toastdriven/django-tastypie/issues/566
+            
+            # this gets the related_name of the one to one field of our model
+            self.related_name = getattr(bundle.obj.__class__, self.attribute).related.field.name
+            
+            
         return self.build_related_resource(value, request=bundle.request)
 
 class ForeignKey(ToOneField):
