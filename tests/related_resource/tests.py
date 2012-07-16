@@ -14,13 +14,12 @@ from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
 
 from related_resource.api.resources import CategoryResource, ForumResource,\
-    FreshNoteResource, JobResource, NoteResource,\
-    NoteWithUpdatableUserResource, OrderResource, PersonResource, UserResource,\
-    Contact, ContactGroup
+    FreshNoteResource, JobResource, NoteResource, OrderResource,\
+    NoteWithUpdatableUserResource, PersonResource, TagResource, UserResource
 from related_resource.api.urls import api
 from related_resource.models import Category, Label, Tag, Taggable,\
     TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product,\
-    Address, Job, Payment, Forum, Order, OrderItem
+    Address, Job, Payment, Forum, Order, OrderItem, Contact, ContactGroup
 from testcases import TestCaseWithFixture
 
 
@@ -1089,3 +1088,25 @@ class ModelWithReverseItemsRelationshipTest(TestCase):
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(Order.objects.count(), 1)
         self.assertEqual(OrderItem.objects.count(), 2)
+
+
+class OneToOneTestCase(TestCase):
+    def test_reverse_one_to_one_post(self):
+        ed = ExtraData.objects.create(name='ed_name')
+        resource = TagResource()
+        
+        # Post the extradata element which is attached to a "reverse" OneToOne
+        request = MockRequest()
+        request.method = "POST"
+        request.raw_post_data = json.dumps({
+            "name": "tag_name",
+            "tagged": [],
+            "extradata": "/v1/extradata/%s/" % ed.pk
+        })
+        
+        resp = resource.post_list(request)
+        # Assert that the status code is CREATED
+        self.assertEqual(resp.status_code, 201)
+        
+        tag = Tag.objects.get(pk=int(resp['Location'].split("/")[-2]))
+        self.assertEqual(tag.extradata, ed)
