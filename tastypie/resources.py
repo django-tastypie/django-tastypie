@@ -1052,8 +1052,9 @@ class Resource(object):
         in the cache to make cache consistance.
         """
         cache_key = self.generate_cache_key('detail', **kwargs)
+        return_vals = self.obj_delete(request, **kwargs)
         self._meta.cache.delete(cache_key)
-        return self.obj_delete(request, **kwargs)
+        return return_vals
 
     def create_response(self, request, data, response_class=HttpResponse, **response_kwargs):
         """
