@@ -12,19 +12,33 @@ class NoCache(object):
         Always returns ``None``.
         """
         return None
-    
+
     def set(self, key, value, timeout=60):
         """
         No-op for setting values in the cache.
         """
         pass
-        
+
     def delete(self, key):
         """
         No-op for deleting values in the cache.
         """
         pass
 
+    def delete_many(self, keys):
+        """
+        No-op for deleting a bunch of keys when the class type is NoCache.  
+        Note that this method is optional but highly recommended when 
+        implementing the cache backend. If this method is not implemented 
+        by user, the default behavior is looping through all the key in keys 
+        which is inefficiency.
+        """
+        if issubclass(NoCache, self.__class__):
+            pass
+        else:
+            for key in keys:
+                delete(key)
+                       
 class SimpleCache(NoCache):
     """
     Uses Django's current ``CACHE_BACKEND`` to store cached data.
@@ -60,3 +74,10 @@ class SimpleCache(NoCache):
         Deletes a key-value in the cache.
         """
         cache.delete(key)
+        
+    def delete_many(self, keys):
+        """
+        Deletes a bunch of keys at once in the cache.
+        """
+        cache.delete_many(keys)
+        
