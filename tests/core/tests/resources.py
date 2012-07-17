@@ -82,7 +82,10 @@ class BasicResource(Resource):
         bundle.obj.date_joined = bundle.data['date_joined']
         return bundle
 
-
+class FilteredBasicResource(BasicResource):
+    class Meta(BasicResource.Meta):
+        list_fields = ("name", "view_count")
+        
 class AnotherBasicResource(BasicResource):
     name = fields.CharField(attribute='name')
     view_count = fields.IntegerField(attribute='view_count', default=0)
@@ -350,7 +353,21 @@ class ResourceTestCase(TestCase):
         self.assertEqual(another_bundle_1.data['meta'], {'threat': 'high'})
         self.assertEqual(another_bundle_1.data['owed'], Decimal('102.57'))
         self.assertEqual(another_bundle_1.data['bar'], "But sometimes I'm not ignored!")
-
+        
+        test_object_4 = TestObject()
+        test_object_4.name = "Bob"
+        test_object_4.view_count = 9
+        filtered = FilteredBasicResource()
+        test_bundle_4 = filtered.build_bundle(obj=test_object_4)
+        filtered_bundle = filtered.full_dehydrate(test_bundle_4, list_view=True)
+        self.assertEqual(filtered_bundle.data['name'], "Bob")
+        self.assertEqual(filtered_bundle.data['view_count'], 9)
+        self.assertTrue("date_joined" not in filtered_bundle.data)
+        filtered_bundle = filtered.full_dehydrate(filtered.build_bundle(obj=test_object_4), list_view=False)
+        self.assertEqual(filtered_bundle.data['name'], "Bob")
+        self.assertEqual(filtered_bundle.data['view_count'], 9)
+        self.assertTrue("date_joined" in filtered_bundle.data)
+        
     def test_full_hydrate(self):
         basic = BasicResource()
         basic_bundle_1 = Bundle(data={
