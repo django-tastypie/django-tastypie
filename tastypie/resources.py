@@ -1035,6 +1035,14 @@ class Resource(object):
         """
         raise NotImplementedError()
 
+    def cached_obj_delete_list(self, request=None, **kwargs):
+        """
+        A version of ``obj_delete_list`` that cleans out the entire list of data
+        in the cache to make cache consistance.
+        """        
+        return_vals = self.obj_delete_list(request, **kwargs)
+        return return_vals
+
     def obj_delete(self, request=None, **kwargs):
         """
         Deletes a single object.
