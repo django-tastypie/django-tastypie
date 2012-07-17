@@ -1649,7 +1649,16 @@ class ModelResource(Resource):
         """
         if filter_bits is None:
             filter_bits = []
-
+        
+        if (self._meta.filtering == ALL or 
+            (self._meta.filtering == ALL_WITH_RELATIONS 
+                and not getattr(self.fields[field_name], "is_related", False))):
+            return [self.fields[field_name].attribute]
+        
+        if self._meta.filtering == ALL_WITH_RELATIONS:
+            related_resource = self.fields[field_name].get_related_resource(None)
+            return [self.fields[field_name].attribute] + related_resource.check_filtering(filter_bits[0], filter_type, filter_bits[1:])
+            
         if not field_name in self._meta.filtering:
             raise InvalidFilterError("The '%s' field does not allow filtering." % field_name)
 
@@ -1801,7 +1810,7 @@ class ModelResource(Resource):
                 # It's not a field we know about. Move along citizen.
                 raise InvalidSortError("No matching '%s' field for ordering on." % field_name)
 
-            if not field_name in self._meta.ordering:
+            if not self._meta.ordering == ALL and not field_name in self._meta.ordering:
                 raise InvalidSortError("The '%s' field does not allow ordering." % field_name)
 
             if self.fields[field_name].attribute is None:

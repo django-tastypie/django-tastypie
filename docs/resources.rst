@@ -573,6 +573,11 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   Keys should be the fieldnames as strings while values should be a list of
   accepted filter types.
+  
+  Also may be set to ``tastypie.constants.ALL`` or 
+  ``tastypie.constants.ALL_WITH_RELATIONS`` to enable all filters on all fields 
+  or all filters with relations on all fields.
+  
 
 ``ordering``
 ------------
@@ -584,6 +589,8 @@ The inner ``Meta`` class allows for class-level configuration of how the
   by the ``order_by`` GET parameter, you can specify either the ``fieldname``
   (ascending order) or ``-fieldname`` (descending order).
 
+  Also may be set to ``tastypie.constants.ALL`` to enable ordering on all fields.
+  
 ``object_class``
 ----------------
 
