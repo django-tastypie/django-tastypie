@@ -739,6 +739,12 @@ class ToManyField(RelatedField):
             return None
 
         if bundle.data.get(self.instance_name) is None:
+            if self.attribute and hasattr(bundle, 'obj') and bundle.obj and bundle.obj.pk and hasattr(getattr(bundle.obj, self.attribute), 'all'):
+                # Note: test for pk since bundle must exist before using the m2m
+                # No data was supplied in the request, but there is already m2m data on bundle.obj
+                # This occurs when a put request is made without the m2m field supplied
+                # Return None to indicate to save_m2m that the data on the field should be preserved
+                return None
             if self.blank:
                 return []
             elif self.null:
