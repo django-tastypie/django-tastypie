@@ -67,6 +67,24 @@ class AuthenticationTestCase(TestCase):
 class BasicAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
 
+    def test_whitelisting(self):
+        auth = BasicAuthentication(whitelisted_methods=['a_method'])
+        request = HttpRequest()
+
+        # Calling with a whitelisted method_name without credentials should work
+        self.assertEqual(auth.is_authenticated(request, method_name='a_method'), True)
+        
+        # Calling any other method should require auth
+        self.assertEqual(isinstance(auth.is_authenticated(request, method_name='another_method'), HttpUnauthorized), True)
+
+        # Correct user/password.
+        john_doe = User.objects.get(username='johndoe')
+        john_doe.set_password('pass')
+        john_doe.save()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass')
+        self.assertEqual(auth.is_authenticated(request, method_name="another_method"), True)
+        self.assertEqual(auth.is_authenticated(request, method_name="a_method"), True)
+
     def test_is_authenticated(self):
         auth = BasicAuthentication()
         request = HttpRequest()
@@ -137,6 +155,29 @@ class ApiKeyAuthenticationTestCase(TestCase):
     def setUp(self):
         super(ApiKeyAuthenticationTestCase, self).setUp()
         ApiKey.objects.all().delete()
+
+    def test_whitelisting(self):
+        auth = ApiKeyAuthentication(whitelisted_methods=['a_method'])
+        request = HttpRequest()
+
+        # Simulate sending the signal.
+        john_doe = User.objects.get(username='johndoe')
+        create_api_key(User, instance=john_doe, created=True)
+
+        # Calling with a whitelisted method_name without credentials should work
+        self.assertEqual(auth.is_authenticated(request, method_name='a_method'), True)
+        
+        # Calling any other method should require the Api Key
+        self.assertEqual(isinstance(auth.is_authenticated(request, method_name='another_method'), HttpUnauthorized), True)
+
+        # Correct user/api_key
+        john_doe = User.objects.get(username='johndoe')
+        request.GET['username'] = 'johndoe'
+        request.GET['api_key'] = john_doe.api_key.key
+        self.assertEqual(auth.is_authenticated(request, method_name="another_method"), True)
+        self.assertEqual(auth.get_identifier(request), 'johndoe')
+        self.assertEqual(auth.is_authenticated(request, method_name="a_method"), True)
+        self.assertEqual(auth.get_identifier(request), 'johndoe')
 
     def test_is_authenticated_get_params(self):
         auth = ApiKeyAuthentication()
@@ -227,6 +268,34 @@ class DigestAuthenticationTestCase(TestCase):
     def setUp(self):
         super(DigestAuthenticationTestCase, self).setUp()
         ApiKey.objects.all().delete()
+
+    def test_whitelisting(self):
+        auth = DigestAuthentication(whitelisted_methods=['a_method'])
+        request = HttpRequest()
+
+        # Simulate sending the signal.
+        john_doe = User.objects.get(username='johndoe')
+        create_api_key(User, instance=john_doe, created=True)
+
+        # Calling with a whitelisted method_name without credentials should work
+        self.assertEqual(auth.is_authenticated(request, method_name='a_method'), True)
+        
+        # Calling any other method should require the Api Key
+        self.assertEqual(isinstance(auth.is_authenticated(request, method_name='another_method'), HttpUnauthorized), True)
+
+        # Correct digest
+        john_doe = User.objects.get(username='johndoe')
+        request.META['HTTP_AUTHORIZATION'] = python_digest.build_authorization_request(
+            john_doe.username,
+            request.method,
+            '/', # uri
+            1,   # nonce_count
+            digest_challenge=auth.is_authenticated(request)['WWW-Authenticate'],
+            password=john_doe.api_key.key
+        )
+        self.assertEqual(auth.is_authenticated(request, method_name="another_method"), True)
+        self.assertEqual(auth.is_authenticated(request, method_name="a_method"), True)
+
 
     def test_is_authenticated(self):
         auth = DigestAuthentication()
@@ -345,6 +414,29 @@ class OAuthAuthenticationTestCase(TestCase):
             'secret': '',
             'user': self.user_inactive,
         })
+
+    def test_whitelisting(self):
+        auth = OAuthAuthentication(whitelisted_methods=['a_method'])
+
+        # Calling with a whitelisted method_name without credentials should work
+        self.assertEqual(auth.is_authenticated(self.request, method_name='a_method'), True)
+
+        # Calling any other method should require auth
+        resp = auth.is_authenticated(self.request, method_name='another_method')
+        self.assertEqual(resp.status_code, 401)
+
+        # No username/api_key details should fail.
+        self.request.REQUEST = self.request.GET = {
+            'oauth_consumer_key': '123',
+            'oauth_nonce': 'abc',
+            'oauth_signature': '&',
+            'oauth_signature_method': 'PLAINTEXT',
+            'oauth_timestamp': str(int(time.time())),
+            'oauth_token': 'foo',
+        }
+        self.request.META['Authorization'] = 'OAuth ' + ','.join([key+'='+value for key, value in self.request.REQUEST.items()])
+        self.assertEqual(auth.is_authenticated(self.request, method_name='a_method'), True)
+        self.assertEqual(auth.is_authenticated(self.request, method_name='another_method'), True)
 
     def test_is_authenticated(self):
         auth = OAuthAuthentication()

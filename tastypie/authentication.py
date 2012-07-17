@@ -37,7 +37,8 @@ class Authentication(object):
 
     By default, this indicates the user is always authenticated.
     """
-    def __init__(self, require_active=True):
+    def __init__(self, require_active=True, whitelisted_methods=None):
+        self.whitelisted_methods = whitelisted_methods or []
         self.require_active = require_active
 
     def is_authenticated(self, request, **kwargs):
@@ -48,6 +49,16 @@ class Authentication(object):
         ``HttpResponse`` if you need something custom.
         """
         return True
+
+    def whitelisted_method(self, method_name=None):
+        """
+        Checks if the method given is whitelisted
+        
+        Should return either ``True`` if whitelisted or ``False`` otherwise
+        """
+        if method_name and method_name in self.whitelisted_methods:
+            return True
+        return False
 
     def get_identifier(self, request):
         """
@@ -105,6 +116,9 @@ class BasicAuthentication(Authentication):
         Should return either ``True`` if allowed, ``False`` if not or an
         ``HttpResponse`` if you need something custom.
         """
+        if self.whitelisted_method(**kwargs):
+            return True        
+
         if not request.META.get('HTTP_AUTHORIZATION'):
             return self._unauthorized()
 
@@ -177,6 +191,9 @@ class ApiKeyAuthentication(Authentication):
         ``HttpResponse`` if you need something custom.
         """
         from django.contrib.auth.models import User
+
+        if self.whitelisted_method(**kwargs):
+            return True        
 
         try:
             username, api_key = self.extract_credentials(request)
@@ -260,6 +277,9 @@ class DigestAuthentication(Authentication):
         Should return either ``True`` if allowed, ``False`` if not or an
         ``HttpResponse`` if you need something custom.
         """
+        if self.whitelisted_method(**kwargs):
+            return True        
+
         if not request.META.get('HTTP_AUTHORIZATION'):
             return self._unauthorized()
 
@@ -356,6 +376,9 @@ class OAuthAuthentication(Authentication):
 
     def is_authenticated(self, request, **kwargs):
         from oauth_provider.store import store, InvalidTokenError
+
+        if self.whitelisted_method(**kwargs):
+            return True        
 
         if self.is_valid_request(request):
             oauth_request = oauth_provider.utils.get_oauth_request(request)

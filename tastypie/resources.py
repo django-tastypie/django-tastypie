@@ -436,12 +436,13 @@ class Resource(object):
         """
         allowed_methods = getattr(self._meta, "%s_allowed_methods" % request_type, None)
         request_method = self.method_check(request, allowed=allowed_methods)
-        method = getattr(self, "%s_%s" % (request_method, request_type), None)
+        method_name = "%s_%s" % (request_method, request_type)
+        method = getattr(self, method_name, None)
 
         if method is None:
             raise ImmediateHttpResponse(response=http.HttpNotImplemented())
 
-        self.is_authenticated(request)
+        self.is_authenticated(request, method_name=method_name)
         self.is_authorized(request)
         self.throttle_check(request)
 
@@ -531,7 +532,7 @@ class Resource(object):
         if not auth_result is True:
             raise ImmediateHttpResponse(response=http.HttpUnauthorized())
 
-    def is_authenticated(self, request):
+    def is_authenticated(self, request, **kwargs):
         """
         Handles checking if the user is authenticated and dealing with
         unauthenticated users.
@@ -540,7 +541,7 @@ class Resource(object):
         ``Resource._meta``.
         """
         # Authenticate the request as needed.
-        auth_result = self._meta.authentication.is_authenticated(request)
+        auth_result = self._meta.authentication.is_authenticated(request, **kwargs)
 
         if isinstance(auth_result, HttpResponse):
             raise ImmediateHttpResponse(response=auth_result)
