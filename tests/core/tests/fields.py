@@ -1015,11 +1015,18 @@ class ToManyFieldTestCase(TestCase):
         note = Note.objects.get(pk=1)
         bundle = Bundle(obj=note)
 
-        # With no value or nullable, we should get an ``ApiFieldError``.
+        # With no value or nullable, we should get None because the data from
+        # the note object will be used.
         field_1 = ToManyField(SubjectResource, 'subjects')
         field_1.instance_name = 'm2m'
-        self.assertRaises(ApiFieldError, field_1.hydrate_m2m, bundle)
-
+        self.assertEquals(field_1.hydrate_m2m(bundle), None)
+        
+        # With no value or nullable, and no data on the object (because it has
+        # not been saved) we should get an ApiFieldError
+        field_1 = ToManyField(SubjectResource, 'subjects')
+        field_1.instance_name = 'm2m'
+        self.assertRaises(ApiFieldError, field_1.hydrate_m2m, Bundle(obj=Note()))
+        
         # The nullable case.
         field_2 = ToManyField(SubjectResource, 'subjects', null=True)
         field_2.instance_name = 'm2m'
