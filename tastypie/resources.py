@@ -1179,7 +1179,7 @@ class Resource(object):
 
         if not 'objects' in deserialized:
             raise BadRequest("Invalid data sent.")
-        self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
+        self.cached_obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
         bundles_seen = []
 
         for object_data in deserialized['objects']:
@@ -1207,7 +1207,7 @@ class Resource(object):
         Either updates an existing resource or creates a new one with the
         provided data.
 
-        Calls ``cached_obj_update`` with the provided data first, but falls back to
+        Calls ``cached_obj_update/obj_update`` with the provided data first, but falls back to
         ``obj_create`` if the object does not already exist.
 
         If a new resource is created, return ``HttpCreated`` (201 Created).
@@ -1284,11 +1284,11 @@ class Resource(object):
         """
         Destroys a collection of resources/objects.
 
-        Calls ``obj_delete_list``.
+        Calls ``cached_obj_delete_list/obj_delete_list``.
 
         If the resources are deleted, return ``HttpNoContent`` (204 No Content).
         """
-        self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
+        self.cached_obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
         return http.HttpNoContent()
 
     def delete_detail(self, request, **kwargs):
@@ -1405,7 +1405,7 @@ class Resource(object):
         """
         Updates a resource in-place.
 
-        Calls ``cached_obj_update``.
+        Calls ``cached_obj_update/obj_update``.
 
         If the resource is updated, return ``HttpAccepted`` (202 Accepted).
         If the resource did not exist, return ``HttpNotFound`` (404 Not Found).
