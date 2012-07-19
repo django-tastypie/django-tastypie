@@ -1678,18 +1678,18 @@ class ModelResource(Resource):
 
         return [self.fields[field_name].attribute]
 
-    def filter_value_to_python(self, value, field_name, filters, filter_expr,
-            filter_type):
+    def filter_value_to_python(self, value, field_name, filters=None,
+            filter_expr=None, filter_type=None):
         """
         Turn the string ``value`` into a python object.
         """
         # Simple values
         if value in ['true', 'True', True]:
-            value = True
+            return True
         elif value in ['false', 'False', False]:
-            value = False
+            return False
         elif value in ('nil', 'none', 'None', None):
-            value = None
+            return None
 
         # Split on ',' if not empty string and either an in or range filter.
         if filter_type in ('in', 'range') and len(value):
@@ -1700,6 +1700,18 @@ class ModelResource(Resource):
                     value.extend(part.split(','))
             else:
                 value = value.split(',')
+
+            to_python = self.filter_value_to_python
+            # We just use None to ensure the to_python call is just a
+            # string -> python object conversion.
+            return [to_python(v, field_name, None, None, None) for v in value]
+
+        # Attempt to use the associated Field object to convert the value to a
+        # python object.
+        try:
+            value = self.fields[field_name].convert(value)
+        except:
+            pass
 
         return value
 
