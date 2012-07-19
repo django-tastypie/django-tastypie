@@ -1,17 +1,20 @@
-.. _ref-authentication_authorization:
+.. _authentication_authorization:
 
 ==============================
 Authentication / Authorization
 ==============================
 
-Authentication & authorization make up the components needed to verify that
-a certain user has access to the API and what they can do with it.
+Authentication & authorization make up the components needed to verify who a
+certain user is and to validate their access to the API and what they can do
+with it.
 
-Authentication answers the question "can they see this data?" This usually
-involves requiring credentials, such as an API key or username/password.
+Authentication answers the question "Who is this person?" This usually involves
+requiring credentials, such as an API key or username/password or oAuth tokens.
 
-Authorization answers the question "what objects can they modify?" This usually
-involves checking permissions, but is open to other implementations.
+Authorization answers the question "Is permission granted for this user to take
+this action?" This usually involves checking permissions such as
+Create/Read/Update/Delete access, or putting limits on what data the user
+can access.
 
 Usage
 =====
@@ -39,6 +42,21 @@ Authentication Options
 ======================
 
 Tastypie ships with the following ``Authentication`` classes:
+
+.. warning:
+
+    Tastypie, when used with ``django.contrib.auth.models.User``, will check
+    to ensure that the ``User.is_active = True`` by default.
+
+    You can disable this behavior by initializing your ``Authentication`` class
+    with ``require_active=False``::
+
+        class UserResource(ModelResource):
+            class Meta:
+                # ...
+                authentication = BasicAuthentication(require_active=False)
+
+    *The behavior changed to active-by-default in v0.9.12.*
 
 ``Authentication``
 ~~~~~~~~~~~~~~~~~~

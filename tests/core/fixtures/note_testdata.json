@@ -17,7 +17,17 @@
         "model": "auth.user",
         "pk": 2
     },
-    
+    {
+        "fields": {
+            "username": "bobdoe",
+            "email": "bob@doe.com",
+            "password": "ghi789",
+            "is_active": false
+        },
+        "model": "auth.user",
+        "pk": 3
+    },
+
     {
         "fields": {
             "author": 1,
@@ -96,7 +106,7 @@
         "model": "core.note",
         "pk": 6
     },
-    
+
     {
         "fields": {
             "note": 1,

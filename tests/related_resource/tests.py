@@ -1,9 +1,9 @@
-import json
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.http import HttpRequest
 from django.test import TestCase
+from django.utils import simplejson as json
 from core.models import Note, MediaBit
+from core.tests.resources import HttpRequest
 from core.tests.mocks import MockRequest
 from tastypie import fields
 from related_resource.api.resources import FreshNoteResource, CategoryResource
@@ -44,7 +44,7 @@ class RelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": {"id": %s, "username": "foobar"}}' % self.user.id
+        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-2", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": {"id": %s, "username": "foobar"}}' % self.user.id
 
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)

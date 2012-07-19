@@ -81,7 +81,7 @@ something like the following::
         class Meta:
             queryset = User.objects.all()
 
-        def override_urls(self):
+        def prepend_urls(self):
             return [
                 url(r"^(?P<resource_name>%s)/(?P<username>[\w\d_.-]+)/$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
             ]
@@ -130,13 +130,13 @@ Nested Resources
 ----------------
 
 You can also do "nested resources" (resources within another related resource)
-by lightly overriding the ``override_urls`` method & adding on a new method to
+by lightly overriding the ``prepend_urls`` method & adding on a new method to
 handle the children::
 
     class ParentResource(ModelResource):
         children = fields.ToManyField(ChildResource, 'children')
 
-        def override_urls(self):
+        def prepend_urls(self):
             return [
                 url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/children%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_children'), name="api_get_children"),
             ]
@@ -201,7 +201,7 @@ at ``/api/v1/notes/search/``::
             queryset = Note.objects.all()
             resource_name = 'notes'
 
-        def override_urls(self):
+        def prepend_urls(self):
             return [
                 url(r"^(?P<resource_name>%s)/search%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_search'), name="api_get_search"),
             ]
@@ -330,6 +330,26 @@ values in camelCase instead::
 
         return underscored_data
 
+Pretty-printed JSON Serialization
+---------------------------------
+
+By default, Tastypie outputs JSON with no indentation or newlines (equivalent to calling
+:py:func:`json.dumps` with *indent* set to ``None``). You can override this
+behavior in a custom serializer::
+
+    from django.core.serializers import json
+    from django.utils import simplejson
+    from tastypie.serializers import Serializer
+
+    class PrettyJSONSerializer(Serializer):
+        json_indent = 2
+
+        def to_json(self, data, options=None):
+            options = options or {}
+            data = self.to_simple(data, options)
+            return simplejson.dumps(data, cls=json.DjangoJSONEncoder,
+                    sort_keys=True, ensure_ascii=False, indent=self.json_indent)
+
 Determining format via URL
 --------------------------
 
@@ -343,7 +363,7 @@ of syntax additional to the default URL scheme::
         class Meta:
             queryset = User.objects.all()
 
-        def override_urls(self):
+        def prepend_urls(self):
             """
             Returns a URL scheme based on the default scheme to specify
             the response format as a file extension, e.g. /api/v1/users.json
@@ -371,3 +391,26 @@ of syntax additional to the default URL scheme::
                 wrapped_view = super(UserResource, self).wrap_view(view)
                 return wrapped_view(request, *args, **kwargs)
             return wrapper
+
+Adding to the Django Admin
+--------------------------
+
+If you're using the django admin and ApiKeyAuthentication, you may want to see
+or edit ApiKeys next to users. To do this, you need to unregister the built-in
+UserAdmin, alter the inlines, and re-register it. This could go in any of your
+admin.py files. You may also want to register ApiAccess and ApiKey models on
+their own.::
+
+    from tastypie.admin import ApiKeyInline
+    from tastypie.models import ApiAccess, ApiKey
+    from django.contrib.auth.admin import UserAdmin
+    from django.contrib.auth.models import User
+
+    admin.site.register(ApiKey)
+    admin.site.register(ApiAccess)
+
+    class UserModelAdmin(UserAdmin):
+        inlines = UserAdmin.inlines + [ApiKeyInline]
+
+    admin.site.unregister(User)
+    admin.site.register(User,UserModelAdmin)
