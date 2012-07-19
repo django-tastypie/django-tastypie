@@ -2071,7 +2071,8 @@ class ModelResource(Resource):
         else:
             kwargs['pk'] = bundle_or_obj.id
 
-        if (self._meta.api_name is not None and
+        if (self._meta._api and
+            self._meta.api_name is not None and
             not self._meta._api._accept_header_routing):
             kwargs['api_name'] = self._meta.api_name
 
