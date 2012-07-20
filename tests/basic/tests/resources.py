@@ -4,8 +4,8 @@ from django.test import TestCase
 from tastypie.bundle import Bundle
 from tastypie.fields import ToOneField, ToManyField
 from tastypie.resources import ModelResource
-from basic.api.resources import SlugBasedNoteResource
-from basic.models import Note, AnnotatedNote, SlugBasedNote
+from basic.api.resources import SlugBasedNoteResource, RelatedBasedNoteResource
+from basic.models import Note, AnnotatedNote, SlugBasedNote, RelatedBasedNote
 
 
 class InvalidLazyUserResource(ModelResource):
@@ -132,6 +132,23 @@ class DetailURIKwargsResourceTestCase(TestCase):
         n1_bundle = resource.build_bundle(obj=n1)
         self.assertEqual(resource.detail_uri_kwargs(n1_bundle), {
             'slug': 'first-post',
+        })
+
+    def test_correct_related_detail_uri_model(self):
+        n1 = RelatedBasedNote.objects.get(title='Title of related note')
+
+        resource = RelatedBasedNoteResource()
+        self.assertEqual(resource.detail_uri_kwargs(n1), {
+            'note__note__slug': 'another-post',
+        })
+
+    def test_correct_related_detail_uri_bundle(self):
+        n1 = RelatedBasedNote.objects.get(title='Title of related note')
+
+        resource = RelatedBasedNoteResource()
+        n1_bundle = resource.build_bundle(obj=n1)
+        self.assertEqual(resource.detail_uri_kwargs(n1_bundle), {
+            'note__note__slug': 'another-post',
         })
 
 

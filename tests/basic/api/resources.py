@@ -4,7 +4,7 @@ from tastypie.bundle import Bundle
 from tastypie import fields
 from tastypie.resources import ModelResource
 from tastypie.authorization import Authorization
-from basic.models import Note, AnnotatedNote, SlugBasedNote
+from basic.models import Note, AnnotatedNote, SlugBasedNote, RelatedBasedNote
 
 
 class UserResource(ModelResource):
@@ -35,6 +35,12 @@ class NoteResource(ModelResource):
         authorization = Authorization()
 
 
+class AnnotatedNoteResource(ModelResource):
+    class Meta:
+        queryset = AnnotatedNote.objects.all()
+        resource_name = 'annotatednotes'
+
+
 class BustedResource(ModelResource):
     class Meta:
         queryset = AnnotatedNote.objects.all()
@@ -49,3 +55,12 @@ class SlugBasedNoteResource(ModelResource):
         queryset = SlugBasedNote.objects.all()
         resource_name = 'slugbased'
         detail_uri_name = 'slug'
+
+
+class RelatedBasedNoteResource(ModelResource):
+    note = fields.ForeignKey(AnnotatedNoteResource, 'note')
+
+    class Meta:
+        queryset = RelatedBasedNote.objects.all()
+        resource_name = 'relatedbased'
+        detail_uri_name = 'note__note__slug'

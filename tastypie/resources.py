@@ -2085,11 +2085,21 @@ class ModelResource(Resource):
         By default, it uses the model's ``pk`` in order to create the URI.
         """
         kwargs = {}
+        detail_uri_name = self._meta.detail_uri_name
 
         if isinstance(bundle_or_obj, Bundle):
-            kwargs[self._meta.detail_uri_name] = getattr(bundle_or_obj.obj, self._meta.detail_uri_name)
+            obj = bundle_or_obj.obj
         else:
-            kwargs[self._meta.detail_uri_name] = getattr(bundle_or_obj, self._meta.detail_uri_name)
+            obj = bundle_or_obj
+
+        # Split the detail_uri_name by LOOKUP_SEP to allow people to
+        # specify things like 'entry__slug'
+        parts = detail_uri_name.split(LOOKUP_SEP)
+        while parts:
+            part = parts.pop(0)
+            obj = getattr(obj, part)
+
+        kwargs[detail_uri_name] = obj
 
         return kwargs
 

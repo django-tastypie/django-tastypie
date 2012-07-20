@@ -52,5 +52,21 @@
         },
         "model": "basic.slugbasednote",
         "pk": "another-first-post"
+    },
+    {
+        "pk": 1, 
+        "model": "basic.annotatednote", 
+        "fields": {
+            "note": 2, 
+            "annotations": "Note about note!"
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "basic.relatedbasednote", 
+        "fields": {
+            "note": 1, 
+            "title": "Title of related note"
+        }
     }
 ]

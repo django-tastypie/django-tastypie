@@ -40,6 +40,14 @@ class SlugBasedNote(models.Model):
         return u"SlugBased %s" % self.title
 
 
+class RelatedBasedNote(models.Model):
+    title = models.CharField(max_length=255)
+    note = models.ForeignKey(AnnotatedNote)
+
+    def __unicode__(self):
+        return u"RelatedBased %s" % self.title
+
+
 class UserForm(forms.ModelForm):
     class Meta:
         model = User
