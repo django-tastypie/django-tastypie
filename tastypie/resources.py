@@ -658,6 +658,7 @@ class Resource(object):
         }
 
         if (self._meta.api_name is not None and
+            self._meta._api and
             not self._meta._api._accept_header_routing):
             kwargs['api_name'] = self._meta.api_name
 
