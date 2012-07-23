@@ -33,11 +33,8 @@ class NoCache(object):
         by user, the default behavior is looping through all the key in keys 
         which is inefficiency.
         """
-        if issubclass(NoCache, self.__class__):
-            pass
-        else:
-            for key in keys:
-                self.delete(key)
+        for key in keys:
+            self.delete(key)
                        
 class SimpleCache(NoCache):
     """
