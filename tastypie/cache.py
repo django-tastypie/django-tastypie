@@ -37,7 +37,7 @@ class NoCache(object):
             pass
         else:
             for key in keys:
-                delete(key)
+                self.delete(key)
                        
 class SimpleCache(NoCache):
     """
