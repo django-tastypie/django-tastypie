@@ -61,17 +61,24 @@ plug. Very useful for development.
 ~~~~~~~~~~~~~~~
 
 This option does basic object caching, attempting to find the object in the
-cache & writing the object to the cache. It uses Django's current
-``CACHE_BACKEND`` to store cached data. The constructor receive a `timeout`
-parameter to control per-resource the default timeout for the cache.
+cache & writing the object to the cache. If the object is updated or deleted,
+the data in the cache will be erased, and the new data will be populated to 
+the cache in next ``get`` request. It uses Django's current ``CACHE_BACKEND`` 
+to store cached data. The constructor receive a `timeout` parameter to 
+control per-resource the default timeout for the cache.
 
 
 Implementing Your Own Cache
 ===========================
 
 Implementing your own ``Cache`` class is as simple as subclassing ``NoCache``
-and overriding the ``get`` & ``set`` methods. For example, a json-backed
-cache might look like::
+and overriding the ``get`` & ``set`` & ``delete`` & ``delete_many`` methods. 
+The ``delete_many`` method is optional, and if it's omitted, the default 
+behavior is using ``delete`` method to loop through all the key in keys 
+to erase the data in the cache, and it's inefficiency. This method is optional 
+but highly recommended when one implements the cache backend. 
+
+For example, a json-backed cache might look like::
 
     import json
     from django.conf import settings
@@ -86,7 +93,7 @@ cache might look like::
         def _save(self, data):
             data_file = open(settings.TASTYPIE_JSON_CACHE, 'w')
             return json.dump(data, data_file)
-
+            
         def get(self, key):
             data = self._load()
             return data.get(key, None)
@@ -96,6 +103,19 @@ cache might look like::
             data[key] = value
             self._save(data)
 
+        def delete(self, key):
+            data = self._load()
+            if data.has_key(key):
+                del data[key]
+            self._save(data)
+
+        def delete_many(self, keys):
+            data = self._load()
+            for key in keys:
+                if data.has_key(key):
+                    del data[key]
+            self._save(data)
+                
 Note that this is *NOT* necessarily an optimal solution, but is simply
 demonstrating how one might go about implementing your own ``Cache``.
 
