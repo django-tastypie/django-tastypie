@@ -9,33 +9,38 @@ class NoCache(object):
     """
     def get(self, key):
         """
-        Always returns ``None``.
+        Always raises ``NotImplementedError`` for getting values in the cache.
         """
-        return None
+        raise NotImplementedError()
 
     def set(self, key, value, timeout=60):
         """
-        No-op for setting values in the cache.
+        Always raises ``NotImplementedError`` for setting values in the cache.
         """
-        pass
+        raise NotImplementedError()
 
     def delete(self, key):
         """
-        No-op for deleting values in the cache.
+        Always raises ``NotImplementedError`` for deleting values in the cache.
         """
-        pass
+        raise NotImplementedError()
 
     def delete_many(self, keys):
         """
-        No-op for deleting a bunch of keys when the class type is NoCache.  
-        Note that this method is optional but highly recommended when 
-        implementing the cache backend. If this method is not implemented 
-        by user, the default behavior is looping through all the key in keys 
+        If ``delete`` method raises ``NotImplementedError``, raises 
+        ``NotImplementedError`` again. If not, the  default behavior is 
+        looping through all the key to delete the cache in keys  
         which is inefficiency.
+        
+        Note that this method is optional but highly recommended when 
+        one implements the cache backend. 
         """
-        for key in keys:
-            self.delete(key)
-                       
+        try:
+            for key in keys:
+                self.delete(key)
+        except NotImplementedError:
+            raise NotImplementedError()
+                           
 class SimpleCache(NoCache):
     """
     Uses Django's current ``CACHE_BACKEND`` to store cached data.
