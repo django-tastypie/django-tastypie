@@ -1266,6 +1266,14 @@ provided data.
 ``ModelResource`` includes a full working version specific to Django's
 ``Models``.
 
+``cached_obj_update``
+---------------------
+
+.. method:: Resource.cached_obj_update(self, bundle, request=None, **kwargs)
+
+A version of ``obj_update`` that deletes the existing old data in the cache 
+after successfully updates the object.
+
 ``obj_delete_list``
 -------------------
 
@@ -1278,6 +1286,14 @@ Deletes an entire list of objects.
 ``ModelResource`` includes a full working version specific to Django's
 ``Models``.
 
+``cached_obj_delete_list``
+--------------------------
+
+.. method:: Resource.cached_obj_delete_list(self, request=None, **kwargs)
+
+A version of ``obj_delete_list`` that cleans out the entire list of data
+in the cache after the objects are deleted.
+
 ``obj_delete``
 --------------
 
@@ -1289,6 +1305,14 @@ Deletes a single object.
 
 ``ModelResource`` includes a full working version specific to Django's
 ``Models``.
+
+``cached_obj_delete``
+---------------------
+
+.. method:: Resource.cached_obj_delete(self, request=None, **kwargs)
+
+A version of ``obj_delete`` that clean out the data of object in the cache  
+after the object is deleted.
 
 ``create_response``
 -------------------
@@ -1374,7 +1398,7 @@ Return ``HttpAccepted`` (202 Accepted) if
 Either updates an existing resource or creates a new one with the
 provided data.
 
-Calls ``obj_update`` with the provided data first, but falls back to
+Calls ``cached_obj_update/obj_update`` with the provided data first, but falls back to
 ``obj_create`` if the object does not already exist.
 
 If a new resource is created, return ``HttpCreated`` (201 Created).
@@ -1421,7 +1445,7 @@ If a new resource is created, return ``HttpCreated`` (201 Created).
 
 Destroys a collection of resources/objects.
 
-Calls ``obj_delete_list``.
+Calls ``cached_obj_delete_list/obj_delete_list``.
 
 If the resources are deleted, return ``HttpNoContent`` (204 No Content).
 
@@ -1432,7 +1456,7 @@ If the resources are deleted, return ``HttpNoContent`` (204 No Content).
 
 Destroys a single resource/object.
 
-Calls ``obj_delete``.
+Calls ``cached_obj_delete/obj_delete``.
 
 If the resource is deleted, return ``HttpNoContent`` (204 No Content).
 If the resource did not exist, return ``HttpNotFound`` (404 Not Found).
@@ -1499,7 +1523,7 @@ In any case:
 
 Updates a resource in-place.
 
-Calls ``obj_update``.
+Calls ``cached_obj_update/obj_update``.
 
 If the resource is updated, return ``HttpAccepted`` (202 Accepted).
 If the resource did not exist, return ``HttpNotFound`` (404 Not Found).
@@ -1524,7 +1548,7 @@ Should return a HttpResponse (200 OK).
 Returns a serialized list of resources based on the identifiers
 from the URL.
 
-Calls ``obj_get`` to fetch only the objects requested. This method
+Calls ``cached_obj_get/obj_get`` to fetch only the objects requested. This method
 only responds to HTTP GET.
 
 Should return a HttpResponse (200 OK).
