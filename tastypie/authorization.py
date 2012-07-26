@@ -29,14 +29,14 @@ class ReadOnlyAuthorization(Authorization):
     """
     Default Authentication class for ``Resource`` objects.
 
-    Only allows GET requests.
+    Only allows GET, HEAD requests.
     """
 
     def is_authorized(self, request, object=None):
         """
-        Allow any ``GET`` request.
+        Allow any ``GET``-style request.
         """
-        if request.method == 'GET':
+        if request.method in ['GET', 'HEAD']:
             return True
         else:
             return False
