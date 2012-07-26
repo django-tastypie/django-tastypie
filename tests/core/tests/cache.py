@@ -15,18 +15,64 @@ class NoCacheTestCase(TestCase):
         cache.set('moof', 'baz', 1)
 
         no_cache = NoCache()
-        self.assertEqual(no_cache.get('foo'), None)
-        self.assertEqual(no_cache.get('moof'), None)
-        self.assertEqual(no_cache.get(''), None)
+        self.assertRaises(NotImplementedError,no_cache.get,'foo')
+        self.assertRaises(NotImplementedError,no_cache.get,'moof')
+        self.assertRaises(NotImplementedError,no_cache.get,'')
 
     def test_set(self):
         no_cache = NoCache()
-        no_cache.set('foo', 'bar')
-        no_cache.set('moof', 'baz', timeout=1)
-
+        self.assertRaises(NotImplementedError,no_cache.set,'foo', 'bar')
+        self.assertRaises(NotImplementedError,no_cache.set,'moof', 'baz', timeout=1)
+        
         # Use the underlying cache system to verify.
         self.assertEqual(cache.get('foo'), None)
         self.assertEqual(cache.get('moof'), None)
+
+    def test_delete(self):
+        cache.set('foo', 'bar', 60)
+        cache.set('moof', 'baz', 1)
+
+        no_cache = NoCache()
+        self.assertRaises(NotImplementedError,no_cache.delete,'foo')
+        self.assertRaises(NotImplementedError,no_cache.delete,'moof')
+
+        # The test_delete will not actually delete the data in the underlying cache system.
+        self.assertEqual(cache.get('foo'), 'bar')
+        self.assertEqual(cache.get('moof'), 'baz')        
+
+    def test_delete_many(self):
+        cache.set('foo', 'bar', 60)
+        cache.set('moof', 'baz', 1)
+
+        no_cache = NoCache()
+        self.assertRaises(NotImplementedError,no_cache.delete_many,['foo','moof'])
+
+        # The test_delete_many will not actually delete the data in the underlying cache system.
+        self.assertEqual(cache.get('foo'), 'bar')
+        self.assertEqual(cache.get('moof'), 'baz')      
+
+
+class OptionalMethodsTestCase(TestCase):
+    def tearDown(self):
+        cache.delete('foo')
+        cache.delete('moof')
+        super(OptionalMethodsTestCase, self).tearDown()
+
+    def test_delete_many(self):
+        cache.set('foo', 'bar', 60)
+        cache.set('moof', 'baz', 1)
+        
+        class DeleteManyTestCache(NoCache):
+            def delete(self, key):
+                cache.delete(key)
+        
+        optional_cache =  DeleteManyTestCache()
+        optional_cache.delete_many(['foo','moof'])
+        
+        # Should fail-over to ``delete`` method, i.e., loop through all the key in keys
+        # and delete the data in the underlying cache system.
+        self.assertEqual(cache.get('foo'), None)
+        self.assertEqual(cache.get('moof'), None)      
 
 
 class SimpleCacheTestCase(TestCase):
@@ -57,3 +103,26 @@ class SimpleCacheTestCase(TestCase):
         time.sleep(2)
         self.assertEqual(cache.get('moof'), None)
         self.assertEqual(cache.get('foo'), 'bar')
+
+    def test_delete(self):
+        simple_cache = SimpleCache()
+        simple_cache.set('foo', 'bar')
+        simple_cache.set('moof', 'baz')
+        
+        simple_cache.delete('foo')
+        
+        # Use the underlying cache system to verify.
+        self.assertEqual(cache.get('foo'), None)
+        self.assertEqual(cache.get('moof'), 'baz')        
+
+    def test_delete_many(self):
+        simple_cache = SimpleCache()
+        simple_cache.set('foo', 'bar')
+        simple_cache.set('moof', 'baz')
+        
+        simple_cache.delete_many(['foo','moof'])
+        
+        # Use the underlying cache system to verify.
+        self.assertEqual(cache.get('foo'), None)
+        self.assertEqual(cache.get('moof'), None)        
+        
