@@ -957,11 +957,17 @@ class Resource(object):
         commonly-accessed data faster.
         """
         cache_key = self.generate_cache_key('list', **kwargs)
-        obj_list = self._meta.cache.get(cache_key)
+        try:
+            obj_list = self._meta.cache.get(cache_key)
+        except NotImplementedError:
+            obj_list = None
 
         if obj_list is None:
             obj_list = self.obj_get_list(request=request, **kwargs)
-            self._meta.cache.set(cache_key, obj_list)
+            try:
+                self._meta.cache.set(cache_key, obj_list)
+            except NotImplementedError:
+                pass
 
         return obj_list
 
@@ -983,11 +989,17 @@ class Resource(object):
         commonly-accessed data faster.
         """
         cache_key = self.generate_cache_key('detail', **kwargs)
-        bundle = self._meta.cache.get(cache_key)
+        try:
+            bundle = self._meta.cache.get(cache_key)
+        except NotImplementedError:
+            bundle = None
 
         if bundle is None:
             bundle = self.obj_get(request=request, **kwargs)
-            self._meta.cache.set(cache_key, bundle)
+            try:
+                self._meta.cache.set(cache_key, bundle)
+            except NotImplementedError:
+                pass
 
         return bundle
 
@@ -1021,7 +1033,11 @@ class Resource(object):
         """
         cache_key = self.generate_cache_key('detail', **kwargs)
         updated_bundle = self.obj_update(bundle, request, **kwargs)
-        self._meta.cache.delete(cache_key)
+        try:
+            self._meta.cache.delete(cache_key)
+        except NotImplementedError:
+            pass
+            
         return updated_bundle
 
     def obj_delete_list(self, request=None, **kwargs):
@@ -1061,7 +1077,11 @@ class Resource(object):
         """
         cache_key = self.generate_cache_key('detail', **kwargs)
         return_vals = self.obj_delete(request, **kwargs)
-        self._meta.cache.delete(cache_key)
+        try:
+            self._meta.cache.delete(cache_key)
+        except NotImplementedError:
+            pass
+            
         return return_vals
 
     def create_response(self, request, data, response_class=HttpResponse, **response_kwargs):
@@ -1493,7 +1513,7 @@ class Resource(object):
 
         for identifier in obj_identifiers:
             try:
-                obj = self.cache_obj_get(request, **{self._meta.detail_uri_name: identifier})
+                obj = self.cached_obj_get(request, **{self._meta.detail_uri_name: identifier})
                 bundle = self.build_bundle(obj=obj, request=request)
                 bundle = self.full_dehydrate(bundle)
                 objects.append(bundle)
