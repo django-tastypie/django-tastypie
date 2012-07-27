@@ -28,7 +28,7 @@ class NoCache(object):
     def delete_many(self, keys):
         """
         If ``delete`` method raises ``NotImplementedError``, raises 
-        ``NotImplementedError`` again. If not, the  default behavior is 
+        ``NotImplementedError`` again. If not, the default behavior is 
         looping through all the key to delete the cache in keys  
         which is inefficiency.
         
