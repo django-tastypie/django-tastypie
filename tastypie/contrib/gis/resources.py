@@ -21,24 +21,28 @@ class GeometryApiField(ApiField):
 
     def hydrate(self, bundle):
         value = super(GeometryApiField, self).hydrate(bundle)
-        if value is None:
-            return value
-        return simplejson.dumps(value)
 
-    def dehydrate(self, obj):
-        return self.convert(super(GeometryApiField, self).dehydrate(obj))
-
-    def convert(self, value):
-        if value is None:
-            return None
+        if value and isinstance(value, GEOSGeometry):
+            return value.geojson
 
         if isinstance(value, dict):
-            return value
+            return simplejson.dumps(value)
 
-        # Get ready-made geojson serialization and then convert it _back_ to
-        # a Python object so that tastypie can serialize it as part of the
-        # bundle.
-        return simplejson.loads(value.geojson)
+    def to_geom(self, s):
+        try:
+            return GEOSGeometry(unquote(s))
+        except ValueError:
+            return None
+
+    def dehydrate(self, obj):
+        v = self.convert(super(GeometryApiField, self).dehydrate(obj))
+        if v:
+            return simplejson.loads(v.geojson)
+
+    def convert(self, value):
+        if isinstance(value, basestring):
+            return self.to_geom(value)
+        return value
 
 
 class ModelResource(resources.ModelResource):
@@ -54,19 +58,3 @@ class ModelResource(resources.ModelResource):
             return GeometryApiField
 
         return super(ModelResource, cls).api_field_from_django_field(f, default)
-
-    def filter_value_to_python(self, value, field_name, filters, filter_expr,
-            filter_type):
-        value = super(ModelResource, self).filter_value_to_python(
-            value, field_name, filters, filter_expr, filter_type)
-
-        # If we are filtering on a GeometryApiField then we should try
-        # and convert this to a GEOSGeometry object.  The conversion
-        # will fail if we don't have value JSON, so in that case we'll
-        # just return ``value`` as normal.
-        if isinstance(self.fields[field_name], GeometryApiField):
-            try:
-                value = GEOSGeometry(unquote(value))
-            except ValueError:
-                pass
-        return value
