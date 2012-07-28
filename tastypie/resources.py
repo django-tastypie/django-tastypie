@@ -1032,7 +1032,6 @@ class Resource(object):
         after successfully updates the object. 
         """
         cache_key = self.generate_cache_key('detail', **kwargs)
-        print cache_key
         updated_bundle = self.obj_update(bundle, request, **kwargs)
         try:
             self._meta.cache.delete(cache_key)
@@ -1057,19 +1056,20 @@ class Resource(object):
         A version of ``obj_delete_list`` that cleans out the entire list of data
         in the cache to make cache consistance.
         """        
-        #import pdb; pdb.set_trace() 
+        
         # Since ``cache.delete_many`` may fail-over to ``cache.delete``, we just test
         # if ``cache.delete`` is well defined first. If so, we clean out the cache of
         # deleted objects. 
         try:
+            # import pdb; pdb.set_trace()
             self._meta.cache.delete(None)
             deleted_objects = self.obj_get_list(request, **kwargs)
             
             cache_keys = []
             for obj in deleted_objects:
-                cache_key = self.generate_cache_key('detail', self.detail_uri_kwargs(obj))
+                cache_key = self.generate_cache_key('detail', **self.detail_uri_kwargs(obj))
                 cache_keys.append(cache_key)
-                
+             
             self._meta.cache.delete_many(cache_keys)
             
         except NotImplementedError:

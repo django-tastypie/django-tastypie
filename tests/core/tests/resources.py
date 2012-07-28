@@ -19,6 +19,7 @@ from tastypie.authorization import Authorization
 from tastypie.bundle import Bundle
 from tastypie.exceptions import InvalidFilterError, InvalidSortError, ImmediateHttpResponse, BadRequest, NotFound
 from tastypie import fields
+from tastypie.cache import SimpleCache
 from tastypie.paginator import Paginator
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS, convert_post_to_put, convert_post_to_patch
 from tastypie.serializers import Serializer
@@ -709,6 +710,25 @@ class NoteResource(ModelResource):
         return '/api/v1/notes/%s/' % bundle_or_obj.obj.id
 
 
+class CachedNoteResource(ModelResource):
+    class Meta:
+        cache = SimpleCache()
+        resource_name = 'notes'
+        filtering = {
+            'content': ['startswith', 'exact'],
+            'title': ALL,
+            'slug': ['exact'],
+        }
+        ordering = ['title', 'slug', 'resource_uri']
+        queryset = Note.objects.filter(is_active=True)
+
+    def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
+        if bundle_or_obj is None:
+            return '/api/v1/notes/'
+
+        return '/api/v1/notes/%s/' % bundle_or_obj.obj.id
+
+
 class LightlyCustomNoteResource(NoteResource):
     class Meta:
         resource_name = 'noteish'
@@ -736,6 +756,21 @@ class VeryCustomNoteResource(NoteResource):
     constant = fields.IntegerField(default=20)
 
     class Meta:
+        limit = 50
+        resource_name = 'notey'
+        serializer = CustomSerializer()
+        list_allowed_methods = ['get']
+        detail_allowed_methods = ['get', 'post', 'put']
+        queryset = Note.objects.all()
+        fields = ['title', 'content', 'created', 'is_active']
+
+
+class CachedVeryCustomNoteResource(NoteResource):
+    author = fields.CharField(attribute='author__username')
+    constant = fields.IntegerField(default=20)
+
+    class Meta:
+        cache = SimpleCache()
         limit = 50
         resource_name = 'notey'
         serializer = CustomSerializer()
@@ -875,6 +910,21 @@ class RelatedNoteResource(ModelResource):
     subjects = fields.ManyToManyField(SubjectResource, 'subjects')
 
     class Meta:
+        queryset = Note.objects.all()
+        resource_name = 'relatednotes'
+        filtering = {
+            'author': ALL,
+            'subjects': ALL_WITH_RELATIONS,
+        }
+        fields = ['title', 'slug', 'content', 'created', 'is_active']
+
+
+class CachedRelatedNoteResource(ModelResource):
+    author = fields.ForeignKey(UserResource, 'author')
+    subjects = fields.ManyToManyField(SubjectResource, 'subjects')
+
+    class Meta:
+        cache = SimpleCache()
         queryset = Note.objects.all()
         resource_name = 'relatednotes'
         filtering = {
@@ -2106,6 +2156,79 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(related_obj.author.username, u'johndoe')
         self.assertEqual(related_obj.title, u'First Post!')
         self.assertEqual(list(related_obj.subjects.values_list('id', flat=True)), [1, 2])
+
+    def test_cached_obj_get(self):
+        # Clear out all the data in the cache!
+        cache.clear()
+        resource = CachedNoteResource()
+
+        # Should load the data to the cache
+        cache_key = resource.generate_cache_key('detail', pk=1)
+        obj = resource.cached_obj_get(pk=1)
+        obj.title = u'Cached First Post!'
+        cache.set(cache_key, obj)
+        # Hardcoding the title in the cache to verify that the next request is from cache!
+        cached_obj = resource.cached_obj_get(pk=1)
+        self.assertTrue(isinstance(cached_obj, Note))
+        self.assertEqual(cached_obj.title, u'Cached First Post!')
+        cache.clear()
+        
+        # Test non-pk gets.
+        cache_key = resource.generate_cache_key('detail', slug='another-post')
+        obj = resource.cached_obj_get(slug='another-post')
+        obj.title = u'Cached Another Post'
+        cache.set(cache_key, obj)
+        cached_obj = resource.cached_obj_get(slug='another-post')
+        self.assertTrue(isinstance(cached_obj, Note))
+        self.assertEqual(cached_obj.title, u'Cached Another Post')
+        cache.clear()
+        
+        note = CachedNoteResource()
+        cache_key = note.generate_cache_key('detail', pk=1)
+        note_obj = note.cached_obj_get(pk=1)
+        note_obj.content = u'Cached This is my very first post using my shiny new API. Pretty sweet, huh?'
+        note_obj.slug = u'Cached first-post'
+        note_obj.title = u'Cached First Post!'
+        cache.set(cache_key, note_obj)
+        cached_note_obj = note.cached_obj_get(pk=1)
+        self.assertEqual(cached_note_obj.content, u'Cached This is my very first post using my shiny new API. Pretty sweet, huh?')
+        self.assertEqual(cached_note_obj.created, aware_datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(cached_note_obj.is_active, True)
+        self.assertEqual(cached_note_obj.slug, u'Cached first-post')
+        self.assertEqual(cached_note_obj.title, u'Cached First Post!')
+        self.assertEqual(cached_note_obj.updated, aware_datetime(2010, 3, 30, 20, 5))
+        cache.clear()
+        
+        custom = CachedVeryCustomNoteResource()
+        cache_key = custom.generate_cache_key('detail', pk=1)
+        custom_obj = custom.cached_obj_get(pk=1)
+        custom_obj.content = u'Cached This is my very first post using my shiny new API. Pretty sweet, huh?'
+        custom_obj.author.username = u'Cached johndoe'
+        custom_obj.title = u'Cached First Post!'
+        cache.set(cache_key, custom_obj)
+        cached_custom_obj = custom.cached_obj_get(pk=1)
+        self.assertEqual(cached_custom_obj.content, u'Cached This is my very first post using my shiny new API. Pretty sweet, huh?')
+        self.assertEqual(cached_custom_obj.created, aware_datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(cached_custom_obj.is_active, True)
+        self.assertEqual(cached_custom_obj.author.username, u'Cached johndoe')
+        self.assertEqual(cached_custom_obj.title, u'Cached First Post!')
+        cache.clear()
+        
+        related = CachedRelatedNoteResource()
+        cache_key = related.generate_cache_key('detail', pk=1)
+        related_obj = related.cached_obj_get(pk=1)
+        related_obj.content = u'Cached This is my very first post using my shiny new API. Pretty sweet, huh?'
+        related_obj.author.username = u'Cached johndoe'
+        related_obj.title = u'Cached First Post!'
+        cache.set(cache_key, related_obj)
+        cached_related_obj = related.cached_obj_get(pk=1)
+        self.assertEqual(cached_related_obj.content, u'Cached This is my very first post using my shiny new API. Pretty sweet, huh?')
+        self.assertEqual(cached_related_obj.created, aware_datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(cached_related_obj.is_active, True)
+        self.assertEqual(cached_related_obj.author.username, u'Cached johndoe')
+        self.assertEqual(cached_related_obj.title, u'Cached First Post!')
+        self.assertEqual(list(related_obj.subjects.values_list('id', flat=True)), [1, 2])
+        cache.clear()
 
     def test_uri_fields(self):
         with_abs_url = WithAbsoluteURLNoteResource()
