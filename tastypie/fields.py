@@ -393,7 +393,7 @@ class RelatedField(ApiField):
     self_referential = False
     help_text = 'A related resource. Can be either a URI or set of nested resource data.'
 
-    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None):
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, use_in='all'):
         """
         Builds the field and prepares it to access to related data.
 
@@ -428,6 +428,12 @@ class RelatedField(ApiField):
         Optionally accepts ``help_text``, which lets you provide a
         human-readable description of the field exposed at the schema level.
         Defaults to the per-Field definition.
+        Optionally accepts a ``use_in``. This may be one of ``list``, ``detail``
+        ``all`` or a callable which accepts a bundle object and returns
+        ``True`` or ``False``. Indicates wheather this field will be included
+        during dehydration or a list of object or a single object.
+        Defaults to ``all``.
+
         """
         self.instance_name = None
         self._resource = None
@@ -443,6 +449,7 @@ class RelatedField(ApiField):
         self.resource_name = None
         self.unique = unique
         self._to_class = None
+        self.use_in = use_in if use_in in ['all', 'detail', 'list'] or callable(use_in) else 'all'
 
         if self.to == 'self':
             self.self_referential = True
@@ -617,11 +624,11 @@ class ToOneField(RelatedField):
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
                  null=False, blank=False, readonly=False, full=False,
-                 unique=False, help_text=None):
+                 unique=False, help_text=None, use_in='all'):
         super(ToOneField, self).__init__(
             to, attribute, related_name=related_name, default=default,
             null=null, blank=blank, readonly=readonly, full=full,
-            unique=unique, help_text=help_text
+            unique=unique, help_text=help_text, use_in=use_in
         )
         self.fk_resource = None
 
@@ -683,11 +690,11 @@ class ToManyField(RelatedField):
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
                  null=False, blank=False, readonly=False, full=False,
-                 unique=False, help_text=None):
+                 unique=False, help_text=None, use_in='all'):
         super(ToManyField, self).__init__(
             to, attribute, related_name=related_name, default=default,
             null=null, blank=blank, readonly=readonly, full=full,
-            unique=unique, help_text=help_text
+            unique=unique, help_text=help_text, use_in=use_in
         )
         self.m2m_bundles = []
 
