@@ -106,6 +106,14 @@ objects. Hooking it up looks like::
 
     models.signals.post_save.connect(create_api_key, sender=User)
 
+.. warning::
+
+  If you're using Apache & ``mod_wsgi``, you will need to enable
+  ``WSGIPassAuthorization On``, otherwise ``mod_wsgi`` strips out the
+  ``Authorization`` header. See `this post`_ for details (even though it
+  only mentions Basic auth).
+
+.. _`this post`: http://www.nerdydork.com/basic-authentication-on-mod_wsgi.html
 
 ``SessionAuthentication``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
