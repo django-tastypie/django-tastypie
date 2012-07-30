@@ -2077,7 +2077,11 @@ class ModelResource(Resource):
             related_objs = []
 
             for related_bundle in bundle.data[field_name]:
-                related_bundle.obj.save()
+                # We only want to save things that are dict-like.
+                # If we don't have a dict then it's a URI to an existing
+                # resource, so we don't need to call save.
+                if hasattr(related_bundle.data.get(field_name, None), 'items'):
+                    related_bundle.obj.save()
                 related_objs.append(related_bundle.obj)
 
             related_mngr.add(*related_objs)
