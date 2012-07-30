@@ -224,3 +224,42 @@ class RelatedPatchTestCase(TestCase):
         self.assertEqual(resp.status_code, 202)
         cat2 = Category.objects.get(pk=2)
         self.assertEqual(cat2.name, 'Kid')
+
+
+class RelatedSaveCallsTest(TestCase):
+    urls = 'related_resource.api.urls'
+
+    def test_one_query_for_post_list(self):
+        """
+        Posting a new detail with no related objects
+        should require one query to save the object
+        """
+        resource = api.canonical_resource_for('category')
+
+        request = MockRequest()
+        request.raw_post_data = json.dumps({
+            'name': 'Foo',
+            'parent': None
+        })
+
+        with self.assertNumQueries(1):
+            resp = resource.post_list(request)
+
+
+    def test_two_queries_for_post_list(self):
+        """
+        Posting a new detail with one related object, referenced via its
+        ``resource_uri`` should require two queries: one to save the
+        object, and one to lookup the related object.
+        """
+        parent = Category.objects.create(name='Bar')
+        resource = api.canonical_resource_for('category')
+
+        request = MockRequest()
+        request.raw_post_data = json.dumps({
+            'name': 'Foo',
+            'parent': resource.get_resource_uri(parent)
+        })
+
+        with self.assertNumQueries(2):
+            resp = resource.post_list(request)
