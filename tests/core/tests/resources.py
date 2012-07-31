@@ -2516,10 +2516,50 @@ class ModelResourceTestCase(TestCase):
         notes = NoteResource().obj_delete_list()
         self.assertEqual(len(Note.objects.all()), 2)
 
+    def test_cached_obj_delete_list_custom_qs(self):
+        cache.clear()
+        cache_keys = []
+        
+        # Load all the active notes into the memory cache.
+        for obj in Note.objects.filter(is_active=True):
+            cache_key = CachedNoteResource().generate_cache_key('detail', pk=obj.pk)
+            self.assertEqual(cache.get(cache_key),None)
+            cached_obj = CachedNoteResource().cached_obj_get(pk=obj.pk)
+            self.assertNotEqual(cache.get(cache_key),None)
+            cache_keys.append(cache_key)
+
+        self.assertEqual(len(Note.objects.all()), 6)
+        notes = CachedNoteResource().cached_obj_delete_list()
+        self.assertEqual(len(Note.objects.all()), 2)
+
+        for cache_key in cache_keys:
+            self.assertEqual(cache.get(cache_key),None)
+        cache.clear()
+
     def test_obj_delete_list_basic_qs(self):
         self.assertEqual(len(Note.objects.all()), 6)
         customs = VeryCustomNoteResource().obj_delete_list()
         self.assertEqual(len(Note.objects.all()), 0)
+
+    def test_cached_obj_delete_list_basic_qs(self):
+        cache.clear()
+        cache_keys = []
+        
+        # Load all the notes into the memory cache.
+        for obj in Note.objects.all():
+            cache_key = CachedVeryCustomNoteResource().generate_cache_key('detail', pk=obj.pk)
+            self.assertEqual(cache.get(cache_key),None)
+            cached_obj = CachedVeryCustomNoteResource().cached_obj_get(pk=obj.pk)
+            self.assertNotEqual(cache.get(cache_key),None)
+            cache_keys.append(cache_key)
+
+        self.assertEqual(len(Note.objects.all()), 6)
+        customs = CachedVeryCustomNoteResource().cached_obj_delete_list()
+        self.assertEqual(len(Note.objects.all()), 0)
+
+        for cache_key in cache_keys:
+            self.assertEqual(cache.get(cache_key),None)
+        cache.clear()
 
     def test_obj_delete_list_non_queryset(self):
         class NonQuerysetNoteResource(ModelResource):
@@ -2533,6 +2573,40 @@ class ModelResourceTestCase(TestCase):
         # This is a regression. Used to fail miserably.
         notes = NonQuerysetNoteResource().obj_delete_list()
         self.assertEqual(len(Note.objects.all()), 4)
+
+    def test_cached_obj_delete_list_non_queryset(self):
+        class CachedNonQuerysetNoteResource(ModelResource):
+            class Meta:
+                cache = SimpleCache()
+                queryset = Note.objects.all()
+
+            def apply_authorization_limits(self, request, obj_list):
+                return tuple(obj_list[:2])
+        
+        cache.clear()
+        cache_keys = []
+
+        # Load all the notes into the memory cache.
+        for obj in Note.objects.all():
+            cache_key = CachedNonQuerysetNoteResource().generate_cache_key('detail', pk=obj.pk)
+            self.assertEqual(cache.get(cache_key),None)
+            cached_obj = CachedNonQuerysetNoteResource().cached_obj_get(pk=obj.pk)
+            self.assertNotEqual(cache.get(cache_key),None)
+            cache_keys.append(cache_key)
+        
+        self.assertEqual(len(Note.objects.all()), 6)
+        # This is a regression. Used to fail miserably.
+        notes = CachedNonQuerysetNoteResource().cached_obj_delete_list()
+        self.assertEqual(len(Note.objects.all()), 4)
+
+        # Check if the cache of first two entries are deleted.
+        self.assertEqual(cache.get(cache_keys[0]),None)
+        self.assertEqual(cache.get(cache_keys[1]),None)
+        self.assertNotEqual(cache.get(cache_keys[2]),None)
+        self.assertNotEqual(cache.get(cache_keys[3]),None)
+        self.assertNotEqual(cache.get(cache_keys[4]),None)
+        self.assertNotEqual(cache.get(cache_keys[5]),None)
+        cache.clear()
 
     def test_obj_create(self):
         self.assertEqual(Note.objects.all().count(), 6)
