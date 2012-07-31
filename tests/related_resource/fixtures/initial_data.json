@@ -8,7 +8,6 @@
         "model": "auth.user",
         "pk": 1
     },
-    
     {
         "fields": {
             "author": 1,
@@ -34,5 +33,12 @@
         },
         "model": "core.note",
         "pk": 2
+    },
+    {
+        "fields": {
+            "name": "coffee"
+        }, 
+        "model": "related_resource.label", 
+        "pk": 1
     }
 ]
