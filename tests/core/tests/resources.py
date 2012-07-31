@@ -2478,14 +2478,14 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resource.generate_cache_key('abc', '123', foo='bar', moof='baz'), 'None:notes:abc:123:foo=bar:moof=baz')
 
     def test_cached_fetch_list(self):
-        resource = NoteResource()
+        resource = CachedNoteResource()
 
         object_list = resource.cached_obj_get_list()
         self.assertEqual(len(object_list), 4)
         self.assertEqual(object_list[0].title, u'First Post!')
 
     def test_cached_fetch_detail(self):
-        resource = NoteResource()
+        resource = CachedNoteResource()
 
         obj = resource.cached_obj_get(pk=1)
         self.assertTrue(isinstance(obj, Note))
