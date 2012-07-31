@@ -2392,12 +2392,12 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.content, '{"objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": 6, "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]}')
 
     def test_cached_get_multiple(self):
+        cache.clear()
         resource = CachedNoteResource()
         request = HttpRequest()
         request.GET = {'format': 'json'}
         request.method = 'GET'
-
-        cache.clear()
+        
         # Preload pk=1, 6 to the memory cache, and add ``Cached`` in the content.
         cache_key = resource.generate_cache_key('detail', pk=1)
         obj = resource.cached_obj_get(pk=1)
@@ -2478,19 +2478,21 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resource.generate_cache_key('abc', '123', foo='bar', moof='baz'), 'None:notes:abc:123:foo=bar:moof=baz')
 
     def test_cached_fetch_list(self):
+        cache.clear()
         resource = CachedNoteResource()
-
         object_list = resource.cached_obj_get_list()
         self.assertEqual(len(object_list), 4)
         self.assertEqual(object_list[0].title, u'First Post!')
-
+        cache.clear()
+        
     def test_cached_fetch_detail(self):
+        cache.clear()
         resource = CachedNoteResource()
-
         obj = resource.cached_obj_get(pk=1)
         self.assertTrue(isinstance(obj, Note))
         self.assertEqual(obj.title, u'First Post!')
-
+        cache.clear()
+        
     def test_configuration(self):
         note = NoteResource()
         self.assertEqual(len(note.fields), 8)
@@ -2760,6 +2762,36 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(Note.objects.all().count(), 4)
         self.assertRaises(Note.DoesNotExist, Note.objects.get, slug='another-post')
 
+    def test_cached_obj_delete(self):
+        cache.clear()
+        self.assertEqual(Note.objects.all().count(), 6)
+        note = CachedNoteResource()
+        cache_key = note.generate_cache_key('detail', pk=1)
+        self.assertEqual(cache.get(cache_key), None)
+        
+        # Load the data to the memory cache
+        obj = note.cached_obj_get(pk=1)
+        self.assertNotEqual(cache.get(cache_key), None)
+        
+        note.cached_obj_delete(pk=1)
+        self.assertEqual(cache.get(cache_key), None)
+        self.assertEqual(Note.objects.all().count(), 5)
+        self.assertRaises(Note.DoesNotExist, Note.objects.get, pk=1)
+
+        # Test non-pk deletes.
+        cache.clear()
+        cache_key = note.generate_cache_key('detail', slug='another-post')
+        self.assertEqual(cache.get(cache_key), None)
+
+        obj = note.cached_obj_get(slug='another-post')
+        self.assertNotEqual(cache.get(cache_key), None)
+
+        note.cached_obj_delete(slug='another-post')
+        self.assertEqual(cache.get(cache_key), None)
+        self.assertEqual(Note.objects.all().count(), 4)
+        self.assertRaises(Note.DoesNotExist, Note.objects.get, slug='another-post')
+        cache.clear()
+        
     def test_rollback(self):
         self.assertEqual(Note.objects.all().count(), 6)
         note = NoteResource()
