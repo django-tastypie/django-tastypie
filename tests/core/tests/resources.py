@@ -817,6 +817,17 @@ class AlwaysUserNoteResource(NoteResource):
         return super(AlwaysUserNoteResource, self).get_object_list(request).filter(author=request.user)
 
 
+class CachedAlwaysUserNoteResource(NoteResource):
+    class Meta:
+        cache = SimpleCache()
+        resource_name = 'noteish'
+        queryset = Note.objects.filter(is_active=True)
+        authorization = Authorization()
+
+    def get_object_list(self, request):
+        return super(CachedAlwaysUserNoteResource, self).get_object_list(request).filter(author=request.user)
+
+
 class UserResource(ModelResource):
     class Meta:
         queryset = User.objects.all()
@@ -959,6 +970,19 @@ class AnotherRelatedNoteResource(ModelResource):
         }
         fields = ['title', 'slug', 'content', 'created', 'is_active']
 
+class CachedAnotherRelatedNoteResource(ModelResource):
+    author = fields.ForeignKey(UserResource, 'author')
+    subjects = fields.ManyToManyField(SubjectResource, 'subjects', full=True)
+
+    class Meta:
+        cache = SimpleCache()
+        queryset = Note.objects.all()
+        resource_name = 'relatednotes'
+        filtering = {
+            'author': ALL,
+            'subjects': ALL_WITH_RELATIONS,
+        }
+        fields = ['title', 'slug', 'content', 'created', 'is_active']
 
 class YetAnotherRelatedNoteResource(ModelResource):
     author = fields.ForeignKey(UserResource, 'author', full=True)
@@ -2823,6 +2847,153 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(numero_uno.content, u'WHEEEEEE!')
         self.assertEqual(numero_uno.is_active, True)
         self.assertEqual(numero_uno.author.pk, request.user.pk)
+
+    def test_cached_obj_update(self):
+        cache.clear()
+
+        # When the obj is updated, the old cache will be just erased, and it 
+        # will not be loaded into the cache until next ``GET`` request.
+        self.assertEqual(Note.objects.all().count(), 6)
+        note = CachedNoteResource()
+        cache_key = note.generate_cache_key('detail', pk=1)
+        self.assertEqual(cache.get(cache_key), None)
+        note_obj = note.cached_obj_get(pk=1)
+        self.assertNotEqual(cache.get(cache_key), None)
+        note_bundle = note.build_bundle(obj=note_obj)
+        note_bundle = note.full_dehydrate(note_bundle)
+        note_bundle.data['title'] = 'Whee!'
+        note.cached_obj_update(note_bundle, pk=1)
+        # The cache should be deleted.
+        self.assertEqual(cache.get(cache_key), None)
+        self.assertEqual(Note.objects.all().count(), 6)
+        numero_uno = Note.objects.get(pk=1)
+        self.assertEqual(numero_uno.title, u'Whee!')
+        self.assertEqual(numero_uno.slug, u'first-post')
+        self.assertEqual(numero_uno.content, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
+        self.assertEqual(numero_uno.is_active, True)
+        cache.clear()
+        
+        self.assertEqual(Note.objects.all().count(), 6)
+        note = CachedRelatedNoteResource()
+        cache_key = note.generate_cache_key('detail', pk=1)
+        self.assertEqual(cache.get(cache_key), None)
+        related_obj = note.cached_obj_get(pk=1)
+        self.assertNotEqual(cache.get(cache_key), None)
+        related_bundle = Bundle(obj=related_obj, data={
+            'title': "Yet another new post!",
+            'slug': "yet-another-new-post",
+            'content': "WHEEEEEE!",
+            'is_active': True,
+            'author': '/api/v1/users/2/',
+            'subjects': ['/api/v1/subjects/2/', '/api/v1/subjects/1/'],
+        })
+        note.cached_obj_update(related_bundle, pk=1)
+        self.assertEqual(cache.get(cache_key), None)
+        self.assertEqual(Note.objects.all().count(), 6)
+        latest = Note.objects.get(slug='yet-another-new-post')
+        self.assertEqual(latest.title, u"Yet another new post!")
+        self.assertEqual(latest.slug, u'yet-another-new-post')
+        self.assertEqual(latest.content, u'WHEEEEEE!')
+        self.assertEqual(latest.is_active, True)
+        self.assertEqual(latest.author.username, u'janedoe')
+        self.assertEqual(latest.subjects.all().count(), 2)
+        self.assertEqual([sub.id for sub in latest.subjects.all()], [1, 2])
+        cache.clear()
+        
+        self.assertEqual(Note.objects.all().count(), 6)
+        note = CachedAnotherRelatedNoteResource()
+        cache_key = note.generate_cache_key('detail', pk=1)
+        self.assertEqual(cache.get(cache_key), None)
+        related_obj = note.cached_obj_get(pk=1)
+        self.assertNotEqual(cache.get(cache_key), None)
+        related_bundle = Bundle(data={
+            'title': "Yet another another new post!",
+            'slug': "yet-another-another-new-post",
+            'content': "WHEEEEEE!",
+            'is_active': True,
+            'author': '/api/v1/users/1/',
+            'subjects': [{
+                'name': 'helloworld',
+                'url': 'http://example.com',
+                'created': '2010-05-20 14:22:00',
+            }],
+        })
+        note.cached_obj_update(related_bundle, pk=1)
+        self.assertEqual(cache.get(cache_key), None)
+        self.assertEqual(Note.objects.all().count(), 6)
+        latest = Note.objects.get(slug='yet-another-another-new-post')
+        self.assertEqual(latest.title, u"Yet another another new post!")
+        self.assertEqual(latest.slug, u'yet-another-another-new-post')
+        self.assertEqual(latest.content, u'WHEEEEEE!')
+        self.assertEqual(latest.is_active, True)
+        self.assertEqual(latest.author.username, u'johndoe')
+        self.assertEqual(latest.subjects.all().count(), 1)
+        self.assertEqual([sub.id for sub in latest.subjects.all()], [3])
+        cache.clear()
+        
+        # Fix non-native types (like datetimes) during attempted hydration.
+        # This ensures that handing the wrong type should get coerced to the
+        # right thing.
+        self.assertEqual(Note.objects.all().count(), 6)
+        note = CachedNoteResource()
+        cache_key = note.generate_cache_key('detail', pk=1)
+        self.assertEqual(cache.get(cache_key), None)
+        note_obj = note.cached_obj_get(pk=1)
+        self.assertNotEqual(cache.get(cache_key), None)
+        self.assertEqual(note_obj.title, u'Yet another another new post!')
+        self.assertEqual(note_obj.created, aware_datetime(2010, 3, 30, 20, 5))
+        note_bundle = note.build_bundle(obj=note_obj)
+        note_bundle = note.full_dehydrate(note_bundle)
+        note_bundle.data['title'] = 'OMGOMGOMGOMG!'
+        note_bundle.data['created'] = aware_datetime(2011, 11, 23, 1, 0, 0)
+        note.cached_obj_update(note_bundle, pk=1)
+        self.assertEqual(cache.get(cache_key), None)
+        self.assertEqual(Note.objects.all().count(), 6)
+        numero_uno = Note.objects.get(pk=1)
+        self.assertEqual(numero_uno.title, u'OMGOMGOMGOMG!')
+        self.assertEqual(numero_uno.slug, u'yet-another-another-new-post')
+        self.assertEqual(numero_uno.content, u'WHEEEEEE!')
+        self.assertEqual(numero_uno.created, aware_datetime(2011, 11, 23, 1, 0))
+        cache.clear()
+        
+        # Now try a lookup that should fail.
+        note = CachedNoteResource()
+        note_bundle = note.build_bundle(data={
+            "author": "/api/v1/users/1/",
+            "title": "Something something Post!",
+            "slug": "something-something-post",
+            "content": "Stock post content.",
+            "is_active": True,
+            "created": "2011-03-30 20:05:00",
+            "updated": "2011-03-30 20:05:00"
+        })
+        self.assertRaises(NotFound, note.cached_obj_update, note_bundle, pk=1, created='2010-03-31T20:05:00')
+        self.assertEqual(Note.objects.all().count(), 6)
+
+        # Assign based on the ``request.user``, which helps ensure that
+        # the correct ``request`` is being passed along.
+        request = HttpRequest()
+        request.user = User.objects.get(username='johndoe')
+        self.assertEqual(CachedAlwaysUserNoteResource().get_object_list(request).count(), 2)
+        note = CachedAlwaysUserNoteResource()
+        cache_key = note.generate_cache_key('detail', pk=1)
+        self.assertEqual(cache.get(cache_key), None)
+        note_obj = note.cached_obj_get(request, pk=1)
+        self.assertNotEqual(cache.get(cache_key), None)
+        note_bundle = note.build_bundle(obj=note_obj)
+        note_bundle = note.full_dehydrate(note_bundle)
+        note_bundle.data['title'] = 'Whee!'
+        note_bundle.request = request
+        note.cached_obj_update(note_bundle, pk=1)
+        self.assertEqual(cache.get(cache_key), None)
+        self.assertEqual(Note.objects.all().count(), 6)
+        numero_uno = Note.objects.get(pk=1)
+        self.assertEqual(numero_uno.title, u'Whee!')
+        self.assertEqual(numero_uno.slug, u'yet-another-another-new-post')
+        self.assertEqual(numero_uno.content, u'WHEEEEEE!')
+        self.assertEqual(numero_uno.is_active, True)
+        self.assertEqual(numero_uno.author.pk, request.user.pk)
+        cache.clear()
 
     def test_obj_delete(self):
         self.assertEqual(Note.objects.all().count(), 6)
