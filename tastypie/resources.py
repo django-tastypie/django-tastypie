@@ -957,11 +957,17 @@ class Resource(object):
         commonly-accessed data faster.
         """
         cache_key = self.generate_cache_key('list', **kwargs)
-        obj_list = self._meta.cache.get(cache_key)
+        try:
+            obj_list = self._meta.cache.get(cache_key)
+        except NotImplementedError:
+            obj_list = None
 
         if obj_list is None:
             obj_list = self.obj_get_list(request=request, **kwargs)
-            self._meta.cache.set(cache_key, obj_list)
+            try:
+                self._meta.cache.set(cache_key, obj_list)
+            except NotImplementedError:
+                pass
 
         return obj_list
 
@@ -983,11 +989,17 @@ class Resource(object):
         commonly-accessed data faster.
         """
         cache_key = self.generate_cache_key('detail', **kwargs)
-        bundle = self._meta.cache.get(cache_key)
+        try:
+            bundle = self._meta.cache.get(cache_key)
+        except NotImplementedError:
+            bundle = None
 
         if bundle is None:
             bundle = self.obj_get(request=request, **kwargs)
-            self._meta.cache.set(cache_key, bundle)
+            try:
+                self._meta.cache.set(cache_key, bundle)
+            except NotImplementedError:
+                pass
 
         return bundle
 
@@ -1014,6 +1026,20 @@ class Resource(object):
         """
         raise NotImplementedError()
 
+    def cached_obj_update(self, bundle, request=None, **kwargs):
+        """
+        A version of ``obj_update`` that deletes the existing old data in cache 
+        after successfully updates the object. 
+        """
+        cache_key = self.generate_cache_key('detail', **kwargs)
+        updated_bundle = self.obj_update(bundle, request, **kwargs)
+        try:
+            self._meta.cache.delete(cache_key)
+        except NotImplementedError:
+            pass
+            
+        return updated_bundle
+
     def obj_delete_list(self, request=None, **kwargs):
         """
         Deletes an entire list of objects.
@@ -1025,6 +1051,31 @@ class Resource(object):
         """
         raise NotImplementedError()
 
+    def cached_obj_delete_list(self, request=None, **kwargs):
+        """
+        A version of ``obj_delete_list`` that cleans out the entire list of data
+        in the cache to make cache consistance.
+        """        
+        
+        # Since ``cache.delete_many`` may fail-over to ``cache.delete``, we just test
+        # if ``cache.delete`` is well defined first. If so, we clean out the cache of
+        # deleted objects. 
+        try:
+            self._meta.cache.delete(None)
+            deleted_objects = self.obj_get_list(request, **kwargs)
+            
+            cache_keys = []
+            for obj in deleted_objects:
+                cache_key = self.generate_cache_key('detail', **self.detail_uri_kwargs(obj))
+                cache_keys.append(cache_key)
+             
+            self._meta.cache.delete_many(cache_keys)
+            
+        except NotImplementedError:
+            pass
+
+        return self.obj_delete_list(request, **kwargs)
+
     def obj_delete(self, request=None, **kwargs):
         """
         Deletes a single object.
@@ -1035,6 +1086,20 @@ class Resource(object):
         ``Models``.
         """
         raise NotImplementedError()
+        
+    def cached_obj_delete(self, request=None, **kwargs):
+        """
+        A version of ``obj_delete`` that clean out the deleted data of object 
+        in the cache to make cache consistance.
+        """
+        cache_key = self.generate_cache_key('detail', **kwargs)
+        return_vals = self.obj_delete(request, **kwargs)
+        try:
+            self._meta.cache.delete(cache_key)
+        except NotImplementedError:
+            pass
+            
+        return return_vals
 
     def create_response(self, request, data, response_class=HttpResponse, **response_kwargs):
         """
@@ -1151,7 +1216,7 @@ class Resource(object):
 
         if not 'objects' in deserialized:
             raise BadRequest("Invalid data sent.")
-        self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
+        self.cached_obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
         bundles_seen = []
 
         for object_data in deserialized['objects']:
@@ -1179,7 +1244,7 @@ class Resource(object):
         Either updates an existing resource or creates a new one with the
         provided data.
 
-        Calls ``obj_update`` with the provided data first, but falls back to
+        Calls ``cached_obj_update/obj_update`` with the provided data first, but falls back to
         ``obj_create`` if the object does not already exist.
 
         If a new resource is created, return ``HttpCreated`` (201 Created).
@@ -1198,7 +1263,7 @@ class Resource(object):
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
 
         try:
-            updated_bundle = self.obj_update(bundle, request=request, **self.remove_api_resource_names(kwargs))
+            updated_bundle = self.cached_obj_update(bundle, request=request, **self.remove_api_resource_names(kwargs))
 
             if not self._meta.always_return_data:
                 return http.HttpNoContent()
@@ -1256,11 +1321,11 @@ class Resource(object):
         """
         Destroys a collection of resources/objects.
 
-        Calls ``obj_delete_list``.
+        Calls ``cached_obj_delete_list/obj_delete_list``.
 
         If the resources are deleted, return ``HttpNoContent`` (204 No Content).
         """
-        self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
+        self.cached_obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
         return http.HttpNoContent()
 
     def delete_detail(self, request, **kwargs):
@@ -1273,7 +1338,7 @@ class Resource(object):
         If the resource did not exist, return ``Http404`` (404 Not Found).
         """
         try:
-            self.obj_delete(request=request, **self.remove_api_resource_names(kwargs))
+            self.cached_obj_delete(request=request, **self.remove_api_resource_names(kwargs))
             return http.HttpNoContent()
         except NotFound:
             return http.HttpNotFound()
@@ -1369,7 +1434,7 @@ class Resource(object):
 
         for uri in deserialized.get('deleted_objects', []):
             obj = self.get_via_uri(uri, request=request)
-            self.obj_delete(request=request, _obj=obj)
+            self.cached_obj_delete(request=request, _obj=obj)
 
         return http.HttpAccepted()
 
@@ -1377,7 +1442,7 @@ class Resource(object):
         """
         Updates a resource in-place.
 
-        Calls ``obj_update``.
+        Calls ``cached_obj_update/obj_update``.
 
         If the resource is updated, return ``HttpAccepted`` (202 Accepted).
         If the resource did not exist, return ``HttpNotFound`` (404 Not Found).
@@ -1426,7 +1491,7 @@ class Resource(object):
             self._meta.detail_uri_name: self.get_bundle_detail_data(original_bundle),
             'request': request,
         }
-        return self.obj_update(original_bundle, **kwargs)
+        return self.cached_obj_update(original_bundle, **kwargs)
 
     def get_schema(self, request, **kwargs):
         """
@@ -1448,7 +1513,7 @@ class Resource(object):
         Returns a serialized list of resources based on the identifiers
         from the URL.
 
-        Calls ``obj_get`` to fetch only the objects requested. This method
+        Calls ``cached_obj_get`` to fetch only the objects requested. This method
         only responds to HTTP GET.
 
         Should return a HttpResponse (200 OK).
@@ -1465,7 +1530,7 @@ class Resource(object):
 
         for identifier in obj_identifiers:
             try:
-                obj = self.obj_get(request, **{self._meta.detail_uri_name: identifier})
+                obj = self.cached_obj_get(request, **{self._meta.detail_uri_name: identifier})
                 bundle = self.build_bundle(obj=obj, request=request)
                 bundle = self.full_dehydrate(bundle)
                 objects.append(bundle)

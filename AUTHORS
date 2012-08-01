@@ -54,12 +54,12 @@ Contributors:
 * Alexis Svinartchouk (zvin) for patching field type fix for AutoFields.
 * Mike W (mik3y) for a cookbook entry on pretty-printed JSON serialization.
 * Taylor Mitchell (tmitchell) for finding and patching a bug in the paginator query encoding.
-* D.B. Tsai (dbtsai) & DuJour for funding:
+* David Tsai (dbtsai) & DuJour for funding:
     * The work to make non-pk URIs work better
 * Ryan West (ryanisnan) for finding and patching a bug in patch_list where requests were not included in the bundle.
 * Julien Bouquillon (revolunet) for authentication and authorization docs fixes.
 * Andrey Voronov (eyvoro) for fixing a typo in the AUTHORS file.
-* D.B. Tsai (dbtsai) for a fix relating to ``detail_uri_kwargs``.
+* David Tsai (dbtsai) for a fix relating to ``detail_uri_kwargs``, and the cache implementation.
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
