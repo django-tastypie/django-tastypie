@@ -1061,7 +1061,6 @@ class Resource(object):
         # if ``cache.delete`` is well defined first. If so, we clean out the cache of
         # deleted objects. 
         try:
-            # import pdb; pdb.set_trace()
             self._meta.cache.delete(None)
             deleted_objects = self.obj_get_list(request, **kwargs)
             
