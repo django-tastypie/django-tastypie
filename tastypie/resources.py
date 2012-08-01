@@ -615,7 +615,10 @@ class Resource(object):
 
         Usually just accesses ``bundle.obj.pk`` by default.
         """
-        return getattr(bundle.obj, self._meta.detail_uri_name)
+        try:
+            return self._get_detail_uri_val(bundle.obj)
+        except:
+            return None
 
     # URL-related methods.
 
@@ -2077,6 +2080,19 @@ class ModelResource(Resource):
 
             related_mngr.add(*related_objs)
 
+    def _get_detail_uri_val(self, obj):
+        """
+        Get the detail_uri_name value from ``obj``.
+        """
+        detail_uri_name = self._meta.detail_uri_name
+        # Split the detail_uri_name by LOOKUP_SEP to allow people to
+        # specify things like 'entry__slug'
+        parts = detail_uri_name.split(LOOKUP_SEP)
+        while parts:
+            part = parts.pop(0)
+            obj = getattr(obj, part)
+        return obj
+
     def detail_uri_kwargs(self, bundle_or_obj):
         """
         Given a ``Bundle`` or an object (typically a ``Model`` instance),
@@ -2087,10 +2103,11 @@ class ModelResource(Resource):
         kwargs = {}
 
         if isinstance(bundle_or_obj, Bundle):
-            kwargs[self._meta.detail_uri_name] = getattr(bundle_or_obj.obj, self._meta.detail_uri_name)
+            obj = bundle_or_obj.obj
         else:
-            kwargs[self._meta.detail_uri_name] = getattr(bundle_or_obj, self._meta.detail_uri_name)
+            obj = bundle_or_obj
 
+        kwargs[self._meta.detail_uri_name] = self._get_detail_uri_val(obj)
         return kwargs
 
 
