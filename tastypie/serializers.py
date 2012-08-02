@@ -259,7 +259,7 @@ class Serializer(object):
             for (key, value) in data.iteritems():
                 element.append(self.to_etree(value, options, name=key, depth=depth+1))
         elif isinstance(data, Bundle):
-            element = Element(name or 'object')
+            element = Element(name or data.name or 'object')
             for field_name, field_object in data.data.items():
                 element.append(self.to_etree(field_object, options, name=field_name, depth=depth+1))
         elif hasattr(data, 'dehydrated_type'):
