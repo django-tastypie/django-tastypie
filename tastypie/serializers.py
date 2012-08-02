@@ -249,7 +249,7 @@ class Serializer(object):
             else:
                 element = Element('objects')
             for item in data:
-                element.append(self.to_etree(item, options, depth=depth+1))
+                element.append(self.to_etree(item, options, depth=depth+1, name=item.name))
         elif isinstance(data, dict):
             if depth == 0:
                 element = Element(name or 'response')
