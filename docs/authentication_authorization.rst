@@ -122,7 +122,7 @@ have a valid CSRF token.
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This authentication scheme uses HTTP Digest Auth to check a user's
-credentials.The username is their ``django.contrib.auth.models.User``
+credentials. The username is their ``django.contrib.auth.models.User``
 username (assuming it is present) and their password should be their
 machine-generated api key. As with ApiKeyAuthentication, ``tastypie``
 should be included in ``INSTALLED_APPS``.
