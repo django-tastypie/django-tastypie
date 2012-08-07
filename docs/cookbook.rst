@@ -433,5 +433,6 @@ Then you'd build a template like::
     </html>
 
 There are other ways to make this function, with other libraries or other
-techniques for supplying the token. This is simply a starting point for
-getting things working.
+techniques for supplying the token (see
+https://docs.djangoproject.com/en/dev/ref/contrib/csrf/#ajax for an
+alternative). This is simply a starting point for getting things working.
