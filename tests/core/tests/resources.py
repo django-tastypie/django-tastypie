@@ -30,26 +30,6 @@ from core.tests.mocks import MockRequest
 from core.utils import SimpleHandler
 
 
-if not hasattr(HttpRequest, '_load_post_and_files'):
-    from django.utils.datastructures import MultiValueDict
-    from django.http import QueryDict
-
-    # An HttpRequest that implements _load_post_and_files
-    # for Django 1.2 compatibility
-    class HttpRequest(HttpRequest):
-        @property
-        def raw_post_data(self):
-            return self._raw_post_data
-
-        def _load_post_and_files(self):
-            # Populates self._post and self._files
-            if self.method != 'POST':
-                self._post, self._files = QueryDict('', encoding=self._encoding), MultiValueDict()
-                return
-            else:
-                self._post, self._files = QueryDict(self.raw_post_data, encoding=self._encoding), MultiValueDict()
-
-
 class CustomSerializer(Serializer):
     pass
 
@@ -694,6 +674,7 @@ class ResourceTestCase(TestCase):
 class NoteResource(ModelResource):
     class Meta:
         resource_name = 'notes'
+        authorization = Authorization()
         filtering = {
             'content': ['startswith', 'exact'],
             'title': ALL,
@@ -1973,6 +1954,17 @@ class ModelResourceTestCase(TestCase):
         resp = resource.dispatch('detail', request, pk=1)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
+
+        # Check for an override.
+        request.META = {
+            'HTTP_X_HTTP_METHOD_OVERRIDE': 'PATCH',
+        }
+        request._read_started = False
+        request._raw_post_data = request._body = '{"title": "Super-duper override ACTIVATE!"}'
+        resp = resource.dispatch('detail', request, pk=1)
+        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(resp.content, '')
+        self.assertEqual(Note.objects.get(pk=1).title, u'Super-duper override ACTIVATE!')
 
     def test_build_bundle(self):
         resource = NoteResource()

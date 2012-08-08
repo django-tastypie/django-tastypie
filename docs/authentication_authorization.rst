@@ -106,11 +106,31 @@ objects. Hooking it up looks like::
 
     models.signals.post_save.connect(create_api_key, sender=User)
 
+.. warning::
+
+  If you're using Apache & ``mod_wsgi``, you will need to enable
+  ``WSGIPassAuthorization On``, otherwise ``mod_wsgi`` strips out the
+  ``Authorization`` header. See `this post`_ for details (even though it
+  only mentions Basic auth).
+
+.. _`this post`: http://www.nerdydork.com/basic-authentication-on-mod_wsgi.html
+
+``SessionAuthentication``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This authentication scheme uses the built-in Django sessions to check if
+a user is logged. This is typically useful when used by Javascript on the same
+site as the API is hosted on.
+
+It requires that the user has logged in & has an active session. They also must
+have a valid CSRF token.
+
+
 ``DigestAuthentication``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This authentication scheme uses HTTP Digest Auth to check a user's
-credentials.  The username is their ``django.contrib.auth.models.User``
+credentials. The username is their ``django.contrib.auth.models.User``
 username (assuming it is present) and their password should be their
 machine-generated api key. As with ApiKeyAuthentication, ``tastypie``
 should be included in ``INSTALLED_APPS``.
