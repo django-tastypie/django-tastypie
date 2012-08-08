@@ -290,15 +290,6 @@ class ResourceSerializationTestCase(TestCase):
         self.another_resource = AnotherNoteResource()
         self.another_obj_list = [self.another_resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.another_resource.obj_get_list()]
     
-    def test_from_form(self):
-        request = HttpRequest()
-        request.META = {
-            "CONTENT_TYPE": "application/x-www-form-urlencoded"
-        }
-        request.POST = {"age": 27, "name": "Daniel"}
-        data = self.resource.deserialize(request)
-        self.assertEqual(data, request.POST)
-
     def test_from_multipart_form(self):
         request = HttpRequest()
         request.META = {
