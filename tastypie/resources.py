@@ -1500,6 +1500,22 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
         field_names = new_class.base_fields.keys()
 
         for field_name in field_names:
+            # Update the Field from the attribute which means the field will look through the relation
+            field = new_class.base_fields.get(field_name)
+            if field.attribute and '__' in field.attribute:
+                field_attributes = field.attribute.split('__')
+                model_class = meta.object_class
+                for field_attr in field_attributes:
+                    try:
+                        model_class = getattr(model_class,field_attr).related.model
+                    except AttributeError:
+                        model_field = model_class._meta.get_field(field_attr)
+                        kwargs = new_class.transfer_model_field_to_kwargs(model_field)
+                        #kwargs['attribute'] is the model name of Django Field, but what we need is the name with '__'
+                        for option_no_change in ['attribute','readonly']:
+                            kwargs[option_no_change] = getattr(field, option_no_change)
+                        field.__init__(**kwargs)
+
             if field_name == 'resource_uri':
                 continue
             if field_name in new_class.declared_fields:
@@ -1578,6 +1594,42 @@ class ModelResource(Resource):
 
         return result
 
+    @staticmethod
+    def transfer_model_field_to_kwargs(f):
+        """
+        Transfer the options of Field in Django_Model
+        to
+        the options of Field in Tasypie Field
+        """
+        kwargs = {
+            'attribute': f.name,
+            'help_text': f.help_text,
+            }
+
+        if f.null is True:
+            kwargs['null'] = True
+
+        kwargs['unique'] = f.unique
+
+        if not f.null and f.blank is True:
+            kwargs['default'] = ''
+            kwargs['blank'] = True
+
+        if f.get_internal_type() == 'TextField':
+            kwargs['default'] = ''
+
+        if f.has_default():
+            kwargs['default'] = f.default
+
+        if getattr(f, 'auto_now', False):
+            kwargs['default'] = f.auto_now
+
+        if getattr(f, 'auto_now_add', False):
+            kwargs['default'] = f.auto_now_add
+
+        return kwargs
+
+
     @classmethod
     def get_fields(cls, fields=None, excludes=None):
         """
@@ -1609,31 +1661,7 @@ class ModelResource(Resource):
 
             api_field_class = cls.api_field_from_django_field(f)
 
-            kwargs = {
-                'attribute': f.name,
-                'help_text': f.help_text,
-            }
-
-            if f.null is True:
-                kwargs['null'] = True
-
-            kwargs['unique'] = f.unique
-
-            if not f.null and f.blank is True:
-                kwargs['default'] = ''
-                kwargs['blank'] = True
-
-            if f.get_internal_type() == 'TextField':
-                kwargs['default'] = ''
-
-            if f.has_default():
-                kwargs['default'] = f.default
-
-            if getattr(f, 'auto_now', False):
-                kwargs['default'] = f.auto_now
-
-            if getattr(f, 'auto_now_add', False):
-                kwargs['default'] = f.auto_now_add
+            kwargs = cls.transfer_model_field_to_kwargs(f)
 
             final_fields[f.name] = api_field_class(**kwargs)
             final_fields[f.name].instance_name = f.name
