@@ -41,7 +41,6 @@ except ImportError:
     def csrf_exempt(func):
         return func
 
-DEFAULT_FORMAT = 'application/json'
 
 class NOT_AVAILABLE:
     def __str__(self):
@@ -359,23 +358,16 @@ class Resource(object):
 
         return self._meta.serializer.serialize(data, format, options)
 
-    def deserialize(self, request):
+    def deserialize(self, request, data, format='application/json'):
         """
-        Deserializes the data from the given request object.
+        Given a request, data and a format, deserializes the given data.
 
         It relies on the request properly sending a ``CONTENT_TYPE`` header,
-        falling back to ``application/json``(which is DEFAULT_FORMAT) if not provided.
+        falling back to ``application/json`` if not provided.
 
         Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
         """
-        content_type = request.META.get('CONTENT_TYPE', DEFAULT_FORMAT)
-        if content_type.startswith('multipart'):
-            data = request.POST.get('data')
-            content_type = DEFAULT_FORMAT
-        else:
-            data = request.raw_post_data
-
-        deserialized = self._meta.serializer.deserialize(data, format=content_type) if data else {}
+        deserialized = self._meta.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         return deserialized
 
     def alter_list_data_to_serialize(self, request, data):
@@ -1158,7 +1150,7 @@ class Resource(object):
         Return ``HttpAccepted`` (202 Accepted) if
         ``Meta.always_return_data = True``.
         """
-        deserialized = self.deserialize(request)
+        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_list_data(request, deserialized)
 
         if not 'objects' in deserialized:
@@ -1205,7 +1197,7 @@ class Resource(object):
         ``Meta.always_return_data = True``, return ``HttpAccepted`` (202
         Accepted).
         """
-        deserialized = self.deserialize(request)
+        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
 
@@ -1240,7 +1232,7 @@ class Resource(object):
         If ``Meta.always_return_data = True``, there will be a populated body
         of serialized data.
         """
-        deserialized = self.deserialize(request)
+        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
         updated_bundle = self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
@@ -1341,7 +1333,7 @@ class Resource(object):
 
         """
         request = convert_post_to_patch(request)
-        deserialized = self.deserialize(request)
+        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
 
         if "objects" not in deserialized:
             raise BadRequest("Invalid data sent.")
@@ -1414,7 +1406,7 @@ class Resource(object):
         bundle = self.alter_detail_data_to_serialize(request, bundle)
 
         # Now update the bundle in-place.
-        deserialized = self.deserialize(request)
+        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         self.update_in_place(request, bundle, deserialized)
 
         if not self._meta.always_return_data:
@@ -1508,21 +1500,6 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
         field_names = new_class.base_fields.keys()
 
         for field_name in field_names:
-            # Update the Field from the attribute which means the field will look through the relation
-            field = new_class.base_fields.get(field_name)
-            if field.attribute and '__' in field.attribute:
-                field_attributes = field.attribute.split('__')
-                model_class = meta.object_class
-                for field_attr in field_attributes:
-                    try:
-                        model_class = getattr(model_class,field_attr).related.model
-                    except AttributeError:
-                        model_field = model_class._meta.get_field(field_attr)
-                        kwargs = new_class.transfer_model_field_to_kwargs(model_field)
-                        #kwargs['attribute'] is the model name of Django Field, but what we need is the name with '__'
-                        kwargs['attribute'] = field.attribute
-                        field.__init__(**kwargs)
-
             if field_name == 'resource_uri':
                 continue
             if field_name in new_class.declared_fields:
@@ -1601,42 +1578,6 @@ class ModelResource(Resource):
 
         return result
 
-    @staticmethod
-    def transfer_model_field_to_kwargs(f):
-        """
-        Transfer the options of Field in Django_Model
-        to
-        the options of Field in Tasypie Field
-        """
-        kwargs = {
-            'attribute': f.name,
-            'help_text': f.help_text,
-            }
-
-        if f.null is True:
-            kwargs['null'] = True
-
-        kwargs['unique'] = f.unique
-
-        if not f.null and f.blank is True:
-            kwargs['default'] = ''
-            kwargs['blank'] = True
-
-        if f.get_internal_type() == 'TextField':
-            kwargs['default'] = ''
-
-        if f.has_default():
-            kwargs['default'] = f.default
-
-        if getattr(f, 'auto_now', False):
-            kwargs['default'] = f.auto_now
-
-        if getattr(f, 'auto_now_add', False):
-            kwargs['default'] = f.auto_now_add
-
-        return kwargs
-
-
     @classmethod
     def get_fields(cls, fields=None, excludes=None):
         """
@@ -1668,7 +1609,31 @@ class ModelResource(Resource):
 
             api_field_class = cls.api_field_from_django_field(f)
 
-            kwargs = cls.transfer_model_field_to_kwargs(f)
+            kwargs = {
+                'attribute': f.name,
+                'help_text': f.help_text,
+            }
+
+            if f.null is True:
+                kwargs['null'] = True
+
+            kwargs['unique'] = f.unique
+
+            if not f.null and f.blank is True:
+                kwargs['default'] = ''
+                kwargs['blank'] = True
+
+            if f.get_internal_type() == 'TextField':
+                kwargs['default'] = ''
+
+            if f.has_default():
+                kwargs['default'] = f.default
+
+            if getattr(f, 'auto_now', False):
+                kwargs['default'] = f.auto_now
+
+            if getattr(f, 'auto_now_add', False):
+                kwargs['default'] = f.auto_now_add
 
             final_fields[f.name] = api_field_class(**kwargs)
             final_fields[f.name].instance_name = f.name
@@ -1911,22 +1876,6 @@ class ModelResource(Resource):
         except ValueError:
             raise NotFound("Invalid resource lookup data provided (mismatched type).")
 
-
-    def save_files(self, bundle, request):
-        """
-        Support for files that POST/PATCH with the content_type starts with multipart
-        no need to hydrate the field_object or deserialize the request,
-        because Django has made it done for us indeed.
-        """
-        for field_name, field_instance in self.fields.items():
-            if type(field_instance) is fields.FileField and request.method in ('POST','PATCH','PUT'):
-                file = request.FILES.get(field_name)
-                if not field_instance.readonly and file:
-                    file_filed_instance = getattr(bundle.obj,field_name)
-                    if request.method is 'PATCH':
-                        if file_filed_instance.path: file_filed_instance.delete()
-                    file_filed_instance.save(file.name, file, save=False)
-
     def obj_create(self, bundle, request=None, **kwargs):
         """
         A ORM-specific implementation of ``obj_create``.
@@ -1945,10 +1894,8 @@ class ModelResource(Resource):
         # Save FKs just in case.
         self.save_related(bundle)
 
-        self.save_files(bundle, request)
         # Save parent
         bundle.obj.save()
-
 
         # Now pick up the M2M bits.
         m2m_bundle = self.hydrate_m2m(bundle)
@@ -1995,7 +1942,6 @@ class ModelResource(Resource):
         # Save FKs just in case.
         self.save_related(bundle)
 
-        self.save_files(bundle, request)
         # Save the main object.
         bundle.obj.save()
 
