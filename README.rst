@@ -1,4 +1,6 @@
-===============
+
+<!-- saved from url=(0068)https://raw.github.com/toastdriven/django-tastypie/master/README.rst -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><pre style="word-wrap: break-word; white-space: pre-wrap;">===============
 django-tastypie
 ===============
 
@@ -20,7 +22,7 @@ Required
 
   * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
 
-* dateutil (http://labix.org/python-dateutil) >= 1.5, < 2.0
+* dateutil (http://labix.org/python-dateutil) &gt;= 1.5, &lt; 2.0
 
 Optional
 --------
@@ -112,3 +114,4 @@ from `Toast Driven`_. Services offered include:
 If you're interested, please contact Daniel Lindsley (daniel@toastdriven.com).
 
 .. _`Toast Driven`: http://toastdriven.com/
+</pre></body><link rel="stylesheet" type="text/css" href="data:text/css,"></html>
