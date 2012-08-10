@@ -36,6 +36,14 @@ class NoteResource(ModelResource):
         authorization = Authorization()
 
 
+class FullNoteResource(ModelResource):
+    class Meta:
+        resource_name = 'full_note'
+        queryset = Note.objects.all()
+        authorization = Authorization()
+        always_return_data = True
+
+
 class BustedResource(ModelResource):
     class Meta:
         queryset = AnnotatedNote.objects.all()
