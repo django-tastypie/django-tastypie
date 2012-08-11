@@ -519,6 +519,10 @@ class RelatedField(ApiField):
         try:
             obj = fk_resource.get_via_uri(uri, request=request)
             bundle = fk_resource.build_bundle(obj=obj, request=request)
+            # Fix the ``api_name`` if it's not present.
+            if fk_resource._meta.api_name is None:
+                if self._resource and not self._resource._meta.api_name is None:
+                    fk_resource._meta.api_name = self._resource._meta.api_name
             return fk_resource.full_dehydrate(bundle)
         except ObjectDoesNotExist:
             raise ApiFieldError("Could not find the provided object via resource URI '%s'." % uri)
