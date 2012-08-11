@@ -2067,7 +2067,15 @@ class ModelResource(Resource):
                 continue
 
             # Get the manager.
-            related_mngr = getattr(bundle.obj, field_object.attribute)
+            related_mngr = None
+
+            if isinstance(field_object.attribute, basestring):
+                related_mngr = getattr(bundle.obj, field_object.attribute)
+            elif callable(field_object.attribute):
+                related_mngr = field_object.attribute(bundle)
+
+            if not related_mngr:
+                continue
 
             if hasattr(related_mngr, 'clear'):
                 # Clear it out, just to be safe.
