@@ -656,6 +656,16 @@ class ToOneFieldTestCase(TestCase):
         self.assertEqual(user_bundle.data['username'], u'johndoe')
         self.assertEqual(user_bundle.data['email'], u'john@doe.com')
 
+    def test_dehydrate_with_callable(self):
+        note = Note.objects.get(pk=1)
+        bundle = Bundle(obj=note)
+
+        field_1 = ToOneField(UserResource, lambda bundle: User.objects.get(pk=1))
+        self.assertEqual(field_1.dehydrate(bundle), '/api/v1/users/1/')
+
+        field_2 = ToManyField(UserResource, lambda bundle: User.objects.filter(pk=1))
+        self.assertEqual(field_2.dehydrate(bundle), ['/api/v1/users/1/'])
+
     def test_hydrate(self):
         note = Note()
         bundle = Bundle(obj=note)
