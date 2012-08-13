@@ -173,6 +173,7 @@ class Resource(object):
 
     def __init__(self, api_name=None):
         self.fields = deepcopy(self.base_fields)
+        self._urls = None
 
         if not api_name is None:
             self._meta.api_name = api_name
@@ -327,6 +328,9 @@ class Resource(object):
         when registered with an ``Api`` class or for including directly in
         a URLconf should you choose to.
         """
+        if self._urls:
+            return self._urls
+
         urls = self.prepend_urls()
 
         if self.override_urls():
@@ -337,7 +341,9 @@ class Resource(object):
         urlpatterns = patterns('',
             *urls
         )
-        return urlpatterns
+
+        self._urls = urlpatterns
+        return self._urls
 
     def determine_format(self, request):
         """
