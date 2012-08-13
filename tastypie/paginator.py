@@ -157,6 +157,10 @@ class Paginator(object):
         try:
             # QueryDict has a urlencode method that can handle multiple values for the same key
             request_params = self.request_data.copy()
+            if 'limit' in request_params:
+                del request_params['limit']
+            if 'offset' in request_params:
+                del request_params['offset']
             request_params.update({'limit': limit, 'offset': offset})
             encoded_params = request_params.urlencode()
         except AttributeError:
@@ -168,6 +172,10 @@ class Paginator(object):
                 else:
                     request_params[k] = v
 
+            if 'limit' in request_params:
+                del request_params['limit']
+            if 'offset' in request_params:
+                del request_params['offset']
             request_params.update({'limit': limit, 'offset': offset})
             encoded_params = urlencode(request_params)
 
