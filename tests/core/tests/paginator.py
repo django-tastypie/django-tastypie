@@ -82,12 +82,10 @@ class PaginatorTestCase(TestCase):
         paginator = Paginator({'limit': 0}, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=0)
         page = paginator.page()
         meta = page['meta']
-        self.assertEqual(meta['limit'], 0)
+        self.assertEqual(meta['limit'], 2)
         self.assertEqual(meta['offset'], 0)
         self.assertEqual(meta['total_count'], 6)
-        self.assertEqual(len(page['objects']), 6)
-        self.assertFalse('previous' in meta)
-        self.assertFalse('next' in meta)
+        self.assertEqual(len(page['objects']), 2)
 
     def test_complex_get(self):
         request = {
