@@ -131,7 +131,7 @@ class Paginator(object):
         if offset - limit < 0:
             return None
 
-        return self._generate_uri(limit, offset - limit)
+        return self._generate_uri(limit, offset-limit)
 
     def get_next(self, limit, offset, count):
         """
@@ -141,7 +141,7 @@ class Paginator(object):
         if offset + limit >= count:
             return None
 
-        return self._generate_uri(limit, offset + limit)
+        return self._generate_uri(limit, offset+limit)
 
     def _generate_uri(self, limit, offset):
         if self.resource_uri is None:

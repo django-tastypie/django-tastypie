@@ -693,7 +693,7 @@ class Resource(object):
         chomped_uri = uri
 
         if prefix and chomped_uri.startswith(prefix):
-            chomped_uri = chomped_uri[len(prefix) - 1:]
+            chomped_uri = chomped_uri[len(prefix)-1:]
 
         try:
             view, args, kwargs = resolve(chomped_uri)
