@@ -33,12 +33,12 @@ class CategoryResource(ModelResource):
 
 class TagResource(ModelResource):
     taggabletags = fields.ToManyField(
-            'related_resource.api.resources.TaggableTagResource', 'taggabletags',
-            null=True)
+        'related_resource.api.resources.TaggableTagResource', 'taggabletags',
+        null=True)
 
     extradata = fields.ToOneField(
-            'related_resource.api.resources.ExtraDataResource', 'extradata',
-            null=True, blank=True, full=True)
+        'related_resource.api.resources.ExtraDataResource', 'extradata',
+        null=True, blank=True, full=True)
 
     class Meta:
         resource_name = 'tag'
@@ -48,8 +48,8 @@ class TagResource(ModelResource):
 
 class TaggableResource(ModelResource):
     taggabletags = fields.ToManyField(
-            'related_resource.api.resources.TaggableTagResource', 'taggabletags',
-            null=True)
+        'related_resource.api.resources.TaggableTagResource', 'taggabletags',
+        null=True)
 
     class Meta:
         resource_name = 'taggable'
@@ -59,11 +59,11 @@ class TaggableResource(ModelResource):
 
 class TaggableTagResource(ModelResource):
     tag = fields.ToOneField(
-            'related_resource.api.resources.TagResource', 'tag',
-            null=True)
+        'related_resource.api.resources.TagResource', 'tag',
+        null=True)
     taggable = fields.ToOneField(
-            'related_resource.api.resources.TaggableResource', 'taggable',
-            null=True)
+        'related_resource.api.resources.TaggableResource', 'taggable',
+        null=True)
 
     class Meta:
         resource_name = 'taggabletag'
@@ -73,8 +73,8 @@ class TaggableTagResource(ModelResource):
 
 class ExtraDataResource(ModelResource):
     tag = fields.ToOneField(
-            'related_resource.api.resources.TagResource', 'tag',
-            null=True)
+        'related_resource.api.resources.TagResource', 'tag',
+        null=True)
 
     class Meta:
         resource_name = 'extradata'

@@ -109,8 +109,8 @@ class Api(object):
             urlpatterns += self.override_urls()
 
         urlpatterns += patterns('',
-            *pattern_list
-        )
+                                *pattern_list
+                                )
         return urlpatterns
 
     def top_level(self, request, api_name=None):

@@ -6,6 +6,7 @@ api = Api(api_name='v1')
 api.register(NoteResource(), canonical=True)
 api.register(UserResource(), canonical=True)
 
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
     url(r'^api/', include(api.urls)),
 )

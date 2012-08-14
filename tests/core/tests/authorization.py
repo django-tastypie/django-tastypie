@@ -60,6 +60,7 @@ class AuthorizationTestCase(TestCase):
             request.method = method
             self.assertFalse(ReadOnlyNoteResource()._meta.authorization.is_authorized(request))
 
+
 class DjangoAuthorizationTestCase(TestCase):
     fixtures = ['note_testdata']
 

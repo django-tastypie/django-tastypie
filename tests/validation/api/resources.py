@@ -18,11 +18,13 @@ class UserResource(ModelResource):
         authorization = Authorization()
         validation = FormValidation(form_class=UserForm)
 
+
 class AnnotatedNoteForm(forms.ModelForm):
 
     class Meta:
         model = AnnotatedNote
         exclude = ('note',)
+
 
 class AnnotatedNoteResource(ModelResource):
 
@@ -32,11 +34,13 @@ class AnnotatedNoteResource(ModelResource):
         authorization = Authorization()
         validation = FormValidation(form_class=AnnotatedNoteForm)
 
+
 class NoteForm(forms.ModelForm):
 
     class Meta:
         model = Note
         exclude = ('user', 'created', 'updated')
+
 
 class NoteResource(ModelResource):
     user = fields.ForeignKey(UserResource, 'user')
@@ -49,5 +53,4 @@ class NoteResource(ModelResource):
         validation = FormValidation(form_class=NoteForm)
         filtering = {
             "created": ALL
-            }
-
+        }

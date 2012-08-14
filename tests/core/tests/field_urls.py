@@ -14,7 +14,7 @@ class SubjectResource(ModelResource):
 class CustomNoteResource(ModelResource):
     author = fields.ForeignKey(UserResource, 'author')
     subjects = fields.ManyToManyField(SubjectResource, 'subjects')
-    
+
     class Meta:
         resource_name = 'notes'
         queryset = Note.objects.all()
@@ -25,6 +25,7 @@ api.register(CustomNoteResource())
 api.register(UserResource())
 api.register(SubjectResource())
 
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
     (r'^api/', include(api.urls)),
 )

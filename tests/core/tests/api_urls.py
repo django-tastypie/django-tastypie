@@ -6,6 +6,7 @@ api = Api()
 api.register(NoteResource())
 api.register(UserResource())
 
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
     (r'^api/', include(api.urls)),
 )

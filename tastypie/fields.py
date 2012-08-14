@@ -141,7 +141,7 @@ class ApiField(object):
         """
         if self.readonly:
             return None
-        if not bundle.data.has_key(self.instance_name):
+        if not self.instance_name in bundle.data.has_key:
             if getattr(self, 'is_related', False) and not getattr(self, 'is_m2m', False):
                 # We've got an FK (or alike field) & a possible parent object.
                 # Check for it.
@@ -651,6 +651,7 @@ class ToOneField(RelatedField):
             return value
 
         return self.build_related_resource(value, request=bundle.request)
+
 
 class ForeignKey(ToOneField):
     """

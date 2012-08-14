@@ -30,8 +30,10 @@ class Note(models.Model):
     def my_property(self):
         return 'my_property'
 
+
 class NoteWithEditor(Note):
     editor = models.ForeignKey(User, related_name='notes_edited')
+
 
 class Subject(models.Model):
     notes = models.ManyToManyField(Note, related_name='subjects')

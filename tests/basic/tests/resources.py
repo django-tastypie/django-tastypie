@@ -185,4 +185,3 @@ class SlugBasedResourceTestCase(TestCase):
 
         # Make sure it's gone.
         self.assertRaises(SlugBasedNote.DoesNotExist, SlugBasedNote.objects.get, pk='first-post')
-

@@ -6,6 +6,7 @@ from django.core.servers import basehttp
 from django.test.testcases import TransactionTestCase
 from django.core.management import call_command
 
+
 class StoppableWSGIServer(basehttp.WSGIServer):
     """WSGIServer with short timeout, so that server thread can stop this server."""
 
@@ -22,6 +23,7 @@ class StoppableWSGIServer(basehttp.WSGIServer):
             return (sock, address)
         except socket.timeout:
             raise
+
 
 class TestServerThread(threading.Thread):
     """Thread for running a http server while tests are running."""
@@ -50,7 +52,7 @@ class TestServerThread(threading.Thread):
         # Must do database stuff in this new thread if database in memory.
         from django.conf import settings
         if settings.DATABASE_ENGINE == 'sqlite3' \
-            and (not settings.TEST_DATABASE_NAME or settings.TEST_DATABASE_NAME == ':memory:'):
+                and (not settings.TEST_DATABASE_NAME or settings.TEST_DATABASE_NAME == ':memory:'):
             # Import the fixture data into the test database.
             if hasattr(self, 'fixtures'):
                 # We have to use this slightly awkward syntax due to the fact

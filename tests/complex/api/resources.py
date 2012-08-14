@@ -26,7 +26,7 @@ class GroupResource(ModelResource):
 class UserResource(ModelResource):
     groups = ManyToManyField(GroupResource, 'groups', full=True)
     profile = OneToOneField(ProfileResource, 'profile', full=True)
-    
+
     class Meta:
         queryset = User.objects.all()
         resource_name = 'users'
@@ -35,7 +35,7 @@ class UserResource(ModelResource):
 class PostResource(ModelResource):
     user = ForeignKey(UserResource, 'user')
     comments = OneToManyField(CommentResource, 'comments', full=False)
-    
+
     class Meta:
         queryset = Post.objects.all()
         resource_name = 'posts'

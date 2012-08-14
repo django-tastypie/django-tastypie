@@ -140,7 +140,6 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         # and check whether the extradata is present
         self.assertEqual(data['extradata']['name'], u'additional')
 
-
     def test_post_new_tag(self):
         resource = api.canonical_resource_for('tag')
         request = MockRequest()

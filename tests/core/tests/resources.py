@@ -785,7 +785,7 @@ class DetailedNoteResource(ModelResource):
             'title': ALL,
             'slug': ['exact'],
             'user': ALL,
-            'hello_world': ['exact'], # Note this is invalid for filtering.
+            'hello_world': ['exact'],  # Note this is invalid for filtering.
         }
         ordering = ['title', 'slug', 'user']
         queryset = Note.objects.filter(is_active=True)
@@ -796,10 +796,12 @@ class DetailedNoteResource(ModelResource):
 
         return '/api/v1/notes/%s/' % bundle_or_obj.obj.id
 
+
 class DetailedNoteResourceWithHydrate(DetailedNoteResource):
     def hydrate(self, bundle):
         bundle.data['user'] = bundle.request.user  # This should fail using TastyPie 0.9.11 if triggered in patch_list
         return bundle
+
 
 class RequiredFKNoteResource(ModelResource):
     editor = fields.ForeignKey(UserResource, 'editor')
