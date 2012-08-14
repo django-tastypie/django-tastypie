@@ -25,7 +25,6 @@ api.register(CustomNoteResource())
 api.register(UserResource())
 api.register(SubjectResource())
 
-urlpatterns = patterns(
-    '',
+urlpatterns = patterns('',
     (r'^api/', include(api.urls)),
 )

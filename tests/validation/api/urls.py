@@ -7,7 +7,6 @@ api.register(NoteResource(), canonical=True)
 api.register(UserResource(), canonical=True)
 api.register(AnnotatedNoteResource(), canonical=True)
 
-urlpatterns = patterns(
-    '',
+urlpatterns = patterns('',
     url(r'^api/', include(api.urls)),
 )

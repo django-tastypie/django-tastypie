@@ -334,8 +334,8 @@ class DigestAuthenticationTestCase(TestCase):
         request.META['HTTP_AUTHORIZATION'] = python_digest.build_authorization_request(
             john_doe.username,
             request.method,
-            '/',  # uri
-            1,    # nonce_count
+            '/', # uri
+            1,   # nonce_count
             digest_challenge=auth_request['WWW-Authenticate'],
             password=john_doe.api_key.key
         )
@@ -352,8 +352,8 @@ class DigestAuthenticationTestCase(TestCase):
         request.META['HTTP_AUTHORIZATION'] = python_digest.build_authorization_request(
             bob_doe.username,
             request.method,
-            '/',  # uri
-            1,    # nonce_count
+            '/', # uri
+            1,   # nonce_count
             digest_challenge=auth_request['WWW-Authenticate'],
             password=bob_doe.api_key.key
         )
@@ -370,8 +370,8 @@ class DigestAuthenticationTestCase(TestCase):
         request.META['HTTP_AUTHORIZATION'] = python_digest.build_authorization_request(
             bob_doe.username,
             request.method,
-            '/',  # uri
-            1,    # nonce_count
+            '/', # uri
+            1,   # nonce_count
             digest_challenge=auth_request['WWW-Authenticate'],
             password=bob_doe.api_key.key
         )
@@ -430,7 +430,7 @@ class OAuthAuthenticationTestCase(TestCase):
             'oauth_timestamp': str(int(time.time())),
             'oauth_token': 'foo',
         }
-        self.request.META['Authorization'] = 'OAuth ' + ','.join([key + '=' + value for key, value in self.request.REQUEST.items()])
+        self.request.META['Authorization'] = 'OAuth ' + ','.join([key+'='+value for key, value in self.request.REQUEST.items()])
         resp = auth.is_authenticated(self.request)
         self.assertEqual(resp, True)
         self.assertEqual(self.request.user.pk, self.user.pk)
@@ -447,7 +447,7 @@ class OAuthAuthenticationTestCase(TestCase):
             'oauth_timestamp': str(int(time.time())),
             'oauth_token': 'bar',
         }
-        self.request.META['Authorization'] = 'OAuth ' + ','.join([key + '=' + value for key, value in self.request.REQUEST.items()])
+        self.request.META['Authorization'] = 'OAuth ' + ','.join([key+'='+value for key, value in self.request.REQUEST.items()])
         resp = auth.is_authenticated(self.request)
         self.assertFalse(resp)
 
@@ -463,7 +463,7 @@ class OAuthAuthenticationTestCase(TestCase):
             'oauth_timestamp': str(int(time.time())),
             'oauth_token': 'bar',
         }
-        self.request.META['Authorization'] = 'OAuth ' + ','.join([key + '=' + value for key, value in self.request.REQUEST.items()])
+        self.request.META['Authorization'] = 'OAuth ' + ','.join([key+'='+value for key, value in self.request.REQUEST.items()])
         resp = auth.is_authenticated(self.request)
         self.assertTrue(resp)
         self.assertEqual(self.request.user.pk, self.user_inactive.pk)

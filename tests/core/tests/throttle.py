@@ -12,7 +12,7 @@ class NoThrottleTestCase(TestCase):
         self.assertEqual(throttle_1.timeframe, 3600)
         self.assertEqual(throttle_1.expiration, 604800)
 
-        throttle_2 = BaseThrottle(throttle_at=50, timeframe=60 * 30, expiration=1)
+        throttle_2 = BaseThrottle(throttle_at=50, timeframe=60*30, expiration=1)
         self.assertEqual(throttle_2.throttle_at, 50)
         self.assertEqual(throttle_2.timeframe, 1800)
         self.assertEqual(throttle_2.expiration, 1)

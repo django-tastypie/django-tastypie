@@ -6,7 +6,6 @@ api = NamespacedApi(api_name='v1', urlconf_namespace='special')
 api.register(NamespacedNoteResource(), canonical=True)
 api.register(NamespacedUserResource(), canonical=True)
 
-urlpatterns = patterns(
-    '',
+urlpatterns = patterns('',
     url(r'^api/', include(api.urls, namespace='special')),
 )

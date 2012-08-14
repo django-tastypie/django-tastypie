@@ -785,7 +785,7 @@ class DetailedNoteResource(ModelResource):
             'title': ALL,
             'slug': ['exact'],
             'user': ALL,
-            'hello_world': ['exact'],  # Note this is invalid for filtering.
+            'hello_world': ['exact'], # Note this is invalid for filtering.
         }
         ordering = ['title', 'slug', 'user']
         queryset = Note.objects.filter(is_active=True)
