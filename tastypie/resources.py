@@ -1733,7 +1733,12 @@ class ModelResource(Resource):
 
         if hasattr(self._meta, 'queryset'):
             # Get the possible query terms from the current QuerySet.
-            query_terms = self._meta.queryset.query.query_terms.keys()
+            if hasattr(self._meta.queryset.query.query_terms, 'keys'):
+                # Django 1.4 & below compatibility.
+                query_terms = self._meta.queryset.query.query_terms.keys()
+            else:
+                # Django 1.5+.
+                query_terms = self._meta.queryset.query.query_terms
         else:
             query_terms = QUERY_TERMS.keys()
 
