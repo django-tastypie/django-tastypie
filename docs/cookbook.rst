@@ -90,6 +90,42 @@ The added URLconf matches before the standard URLconf included by default &
 matches on the username provided in the URL.
 
 
+Removing the api name from URLs
+-------------------------------
+
+By convention, we route to ``Api`` instances based on urls, e.g.
+/api/v1/, /api/v2/.  You may want to route to your ``Api`` instances
+based on the HTTP Accept instead.  Simply import the
+``AcceptHeaderRouter`` and register your ``Api`` instances with it::
+
+    from tastypie.api import Api, AcceptHeaderRouter
+
+    api_router = AcceptHeaderRouter()
+
+    api_v1 = Api(api_name='v1')
+    api_v1.register(SomeResource())
+    api_router.register(api_v1)
+
+    api_v2 = Api(api_name='v2')
+    api_v1.register(SomeOtherResource())
+    api_router.register(api_v2)
+
+then in your urls.py, route to the ``AcceptHeaderRouter`` instance::
+
+    from api import api_router
+    
+    urlpatterns = patterns('',
+        (r'^api/(?P<rest>.*)', api_router.as_view()),
+    )
+
+Make sure you include the wildcard ``<rest>`` portion.
+
+Now when you make requests to your api with the ``Accept`` header set to the
+form ``vnd.api.<api_name>+type``, e.g. ``Accept: vnd.api.v1+json`` or
+``Accept: vnd.api.v2+xml`` you'll get the corresponding versions of the api!
+Requests also return a ``Content-type`` specifying what version of the
+api they correspond to, so clients can easily sort everything out.
+
 Nested Resources
 ----------------
 
