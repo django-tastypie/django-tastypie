@@ -173,7 +173,6 @@ class Resource(object):
 
     def __init__(self, api_name=None):
         self.fields = deepcopy(self.base_fields)
-        self._urls = None
 
         if not api_name is None:
             self._meta.api_name = api_name
@@ -328,8 +327,11 @@ class Resource(object):
         when registered with an ``Api`` class or for including directly in
         a URLconf should you choose to.
         """
-        if self._urls:
-            return self._urls
+        api = self._meta._api
+
+        urlpatterns = api._resource_url_cache.get(self.__class__, None)
+        if urlpatterns is not None:
+            return urlpatterns
 
         urls = self.prepend_urls()
 
@@ -342,9 +344,9 @@ class Resource(object):
             *urls
         )
 
-        self._urls = urlpatterns
-        return self._urls
-
+        api._resource_url_cache[self.__class__] = urlpatterns
+        return urlpatterns
+        
     def determine_format(self, request):
         """
         Used to determine the desired format.

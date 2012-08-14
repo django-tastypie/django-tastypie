@@ -34,6 +34,7 @@ class Api(object):
         self._accept_header_routing = False
         self._reverse_url_prefix = '/'
         self._registry = {}
+        self._resource_url_cache = {}
         self._canonicals = {}
 
     def register(self, resource, canonical=True):
