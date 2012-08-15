@@ -60,6 +60,12 @@ Contributors:
 * Julien Bouquillon (revolunet) for authentication and authorization docs fixes.
 * Andrey Voronov (eyvoro) for fixing a typo in the AUTHORS file.
 * D.B. Tsai (dbtsai) for a fix relating to ``detail_uri_kwargs``.
+* maraujop for a patch adding to ``X-HTTP-Method-Override`` support.
+* Donald Stufft (dstufft) for patching ToOneField callable attributes.
+* Vladimir Volodin (vvolodin) for patching ToManyField callable attributes.
+* Mike Urbanski (mcu) for patching ``Paginator.get_limit``.
+* Jason Brownbridge (jbrownbridge) for patching multiple ``offset/limit`` params appearing in pagination URIs.
+
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
