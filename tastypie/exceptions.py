@@ -32,7 +32,10 @@ class Unauthorized(TastypieError):
     This is different than the ``tastypie.http.HttpUnauthorized`` & is handled
     differently internally.
     """
-    pass
+    response = None
+
+    def __init__(self, response=None):
+        self.response = response
 
 
 class ApiFieldError(TastypieError):
