@@ -356,6 +356,39 @@ of syntax additional to the default URL scheme::
                 return wrapped_view(request, *args, **kwargs)
             return wrapper
 
+
+Uploading files via your API
+----------------------------
+
+If your resource contains a model ``FileField`` (or similar type) then you can upload files through the API and have them stored in the associated fields.  Instead of sending raw JSON/XML/etc to the API, you'll instead need to perform a POST/PUT with a Content-Type of ``multipart/form-data``, and each of the fields in your response should correspond to a field on the resource.
+
+For instance, imagine we have the following model::
+
+   class MyModel(models.Model):
+       slug = models.SlugField()
+       content = models.TextField()
+       file = models.FileField(upload_to="place/")
+
+and associated resource::
+
+   class MyResource(ModelResource):
+       class Meta:
+           queryset = MyModel.objects.all()
+           resource_name = 'myresource'
+
+we can use curl to POST a new MyResource as follows::
+
+    curl --form file=@our_file_name --form slug=slug-name-here --form content="my content" http://127.0.0.1:8000/api/v1/myresource/
+
+or using the `requests <http://docs.python-requests.org>`_ http library, we could do something like this::
+
+    requests.post('http://localhost:8000/api/v1/myresource/',
+        {'slug': 'slug-name-here', 'content': 'my content'}, files={'file':open('our_file_name')})
+
+*Note*: nested updates of resources containing ``FileFields`` aren't
+currently supported.
+
+
 Adding to the Django Admin
 --------------------------
 
