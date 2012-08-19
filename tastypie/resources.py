@@ -75,6 +75,7 @@ class ResourceOptions(object):
     object_class = None
     queryset = None
     fields = []
+    readonly_fields = []
     excludes = []
     include_resource_uri = True
     include_absolute_url = False
@@ -1516,6 +1517,8 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
                             kwargs[option_no_change] = getattr(field, option_no_change)
                         field.__init__(**kwargs)
 
+            if field_name in new_class._meta.readonly_fields:
+                field.readonly = True
             if field_name == 'resource_uri':
                 continue
             if field_name in new_class.declared_fields:
@@ -1594,8 +1597,8 @@ class ModelResource(Resource):
 
         return result
 
-    @staticmethod
-    def transfer_model_field_to_kwargs(f):
+    @classmethod
+    def transfer_model_field_to_kwargs(cls, f):
         """
         Transfer the options of Field in Django_Model
         to
@@ -1626,6 +1629,9 @@ class ModelResource(Resource):
 
         if getattr(f, 'auto_now_add', False):
             kwargs['default'] = f.auto_now_add
+
+        if f.name in cls._meta.readonly_fields:
+            kwargs['readonly'] = True
 
         return kwargs
 
