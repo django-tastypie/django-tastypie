@@ -228,6 +228,7 @@ class SessionAuthenticationTestCase(TestCase):
     def test_is_authenticated(self):
         auth = SessionAuthentication()
         request = HttpRequest()
+        request.method = 'POST'
         request.COOKIES = {
             settings.CSRF_COOKIE_NAME: 'abcdef1234567890abcdef1234567890'
         }
@@ -253,8 +254,18 @@ class SessionAuthenticationTestCase(TestCase):
         request.user = User.objects.get(username='johndoe')
         self.assertTrue(auth.is_authenticated(request))
 
+        # Logged in (with GET & no token).
+        request.method = 'GET'
+        request.META = {}
+        request.user = User.objects.get(username='johndoe')
+        self.assertTrue(auth.is_authenticated(request))
+
         # Secure & wrong referrer.
         os.environ["HTTPS"] = "on"
+        request.method = 'POST'
+        request.META = {
+            'HTTP_X_CSRFTOKEN': 'abcdef1234567890abcdef1234567890'
+        }
         request.META['HTTP_HOST'] = 'example.com'
         request.META['HTTP_REFERER'] = ''
         self.assertFalse(auth.is_authenticated(request))
