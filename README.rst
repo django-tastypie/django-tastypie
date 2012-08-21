@@ -1,6 +1,5 @@
 
-<!-- saved from url=(0068)https://raw.github.com/toastdriven/django-tastypie/master/README.rst -->
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><pre style="word-wrap: break-word; white-space: pre-wrap;">===============
+===============
 django-tastypie
 ===============
 
@@ -114,4 +113,3 @@ from `Toast Driven`_. Services offered include:
 If you're interested, please contact Daniel Lindsley (daniel@toastdriven.com).
 
 .. _`Toast Driven`: http://toastdriven.com/
-</pre></body><link rel="stylesheet" type="text/css" href="data:text/css,"></html>
