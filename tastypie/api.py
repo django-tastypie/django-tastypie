@@ -3,6 +3,7 @@ from django.conf.urls.defaults import *
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
+from tastypie.resources import Resource, DeclarativeMetaclass, ModelDeclarativeMetaclass
 from tastypie.exceptions import NotRegistered, BadRequest
 from tastypie.serializers import Serializer
 from tastypie.utils import trailing_slash, is_valid_jsonp_callback_value
@@ -36,7 +37,7 @@ class Api(object):
         ``True``.
         """
 
-        if isinstance(resource_or_iterable, DeclarativeMetaclass):
+        if isinstance(resource_or_iterable, DeclarativeMetaclass) or isinstance(resource_or_iterable, Resource):
             resource_or_iterable = [resource_or_iterable]
 
         for resource in resource_or_iterable:
