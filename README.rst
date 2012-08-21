@@ -1,4 +1,3 @@
-
 ===============
 django-tastypie
 ===============
@@ -21,7 +20,7 @@ Required
 
   * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
 
-* dateutil (http://labix.org/python-dateutil) &gt;= 1.5, &lt; 2.0
+* dateutil (http://labix.org/python-dateutil) >= 1.5, < 2.0
 
 Optional
 --------
