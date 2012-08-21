@@ -3,7 +3,7 @@ from django.conf.urls.defaults import *
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
-from tastypie.resources import Resource, DeclarativeMetaclass, ModelDeclarativeMetaclass
+from tastypie.resources import Resource, DeclarativeMetaclass
 from tastypie.exceptions import NotRegistered, BadRequest
 from tastypie.serializers import Serializer
 from tastypie.utils import trailing_slash, is_valid_jsonp_callback_value
