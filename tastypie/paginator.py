@@ -57,17 +57,25 @@ class Paginator(object):
 
         Default is 20 per page.
         """
-        limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)
+        settings_limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)
 
         if 'limit' in self.request_data:
             limit = self.request_data['limit']
         elif self.limit is not None:
             limit = self.limit
+        else:
+            limit = settings_limit
 
         try:
             limit = int(limit)
         except ValueError:
             raise BadRequest("Invalid limit '%s' provided. Please provide a positive integer." % limit)
+
+        if limit == 0:
+            if self.limit:
+                limit = self.limit
+            else:
+                limit = settings_limit
 
         if limit < 0:
             raise BadRequest("Invalid limit '%s' provided. Please provide a positive integer >= 0." % limit)
@@ -107,9 +115,8 @@ class Paginator(object):
         """
         Slices the result set to the specified ``limit`` & ``offset``.
         """
-        # If it's zero, return everything.
         if limit == 0:
-            return self.objects[offset:]
+            raise BadRequest("Invalid limit '%s' provided. Please provide a positive, non-zero, integer." % limit)
 
         return self.objects[offset:offset + limit]
 
@@ -150,6 +157,10 @@ class Paginator(object):
         try:
             # QueryDict has a urlencode method that can handle multiple values for the same key
             request_params = self.request_data.copy()
+            if 'limit' in request_params:
+                del request_params['limit']
+            if 'offset' in request_params:
+                del request_params['offset']
             request_params.update({'limit': limit, 'offset': offset})
             encoded_params = request_params.urlencode()
         except AttributeError:
@@ -161,6 +172,10 @@ class Paginator(object):
                 else:
                     request_params[k] = v
 
+            if 'limit' in request_params:
+                del request_params['limit']
+            if 'offset' in request_params:
+                del request_params['offset']
             request_params.update({'limit': limit, 'offset': offset})
             encoded_params = urlencode(request_params)
 
