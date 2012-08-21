@@ -26,30 +26,40 @@ class Api(object):
         self._registry = {}
         self._canonicals = {}
 
-    def register(self, resource, canonical=True):
+    def register(self, resource_or_iterable, canonical=True):
         """
-        Registers an instance of a ``Resource`` subclass with the API.
+        Registers a ``Resource`` subclass with the API. Allows registering
+        list of ``Resource``s for convenience.
 
         Optionally accept a ``canonical`` argument, which indicates that the
-        resource being registered is the canonical variant. Defaults to
+        resources being registered are the canonical variant. Defaults to
         ``True``.
         """
-        resource_name = getattr(resource._meta, 'resource_name', None)
 
-        if resource_name is None:
-            raise ImproperlyConfigured("Resource %r must define a 'resource_name'." % resource)
+        if isinstance(resource_or_iterable, DeclarativeMetaclass):
+            resource_or_iterable = [resource_or_iterable]
 
-        self._registry[resource_name] = resource
+        for resource in resource_or_iterable:
+            if not isinstance(resource, Resource):
+                resource = resource()
 
-        if canonical is True:
-            if resource_name in self._canonicals:
-                warnings.warn("A new resource '%r' is replacing the existing canonical URL for '%s'." % (resource, resource_name), Warning, stacklevel=2)
+            resource_name = getattr(resource._meta, 'resource_name', None)
 
-            self._canonicals[resource_name] = resource
-            # TODO: This is messy, but makes URI resolution on FK/M2M fields
-            #       work consistently.
-            resource._meta.api_name = self.api_name
-            resource.__class__.Meta.api_name = self.api_name
+            if resource_name is None:
+                raise ImproperlyConfigured("Resource %r must define a 'resource_name'." % resource)
+
+            self._registry[resource_name] = resource
+
+            if canonical is True:
+                if resource_name in self._canonicals:
+                    warnings.warn("A new resource '%r' is replacing the existing canonical URL for '%s'." % (resource, resource_name), Warning, stacklevel=2)
+
+                self._canonicals[resource_name] = resource
+                # TODO: This is messy, but makes URI resolution on FK/M2M fields
+                #       work consistently.
+                resource._meta.api_name = self.api_name
+                resource.__class__.Meta.api_name = self.api_name
+
 
     def unregister(self, resource_name):
         """
