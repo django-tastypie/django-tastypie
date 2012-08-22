@@ -27,9 +27,10 @@ class Api(object):
     instances to merge with this instance. This allows for more decoupled
     apps and cleaner imports.
     """
-    def __init__(self, api_name="v1", consume=None, **kwargs):
+    def __init__(self, name=None, consume=None, **kwargs):
 
-        self.api_name = kwargs.get('name', api_name)  # 'name' takes precedence and 'api_name' is a fallback
+        legacy_api_name = kwargs.get('api_name', None)
+        self.api_name = name if name else legacy_api_name or 'v1'  # 'name' takes precedence and 'api_name' is a fallback
         self._registry = {}
         self._canonicals = {}
 
@@ -64,7 +65,6 @@ class Api(object):
 
         for obj in res_mod_iter:
             # if Model subclass, make a ModelResource with sane defaults
-            # it's so hackish that it might actually work ;)
             if isinstance(obj, ModelBase):
                 dummy_meta = type("Meta", (object,), {'resource_name': obj._meta.module_name, 'queryset': obj.objects.all()})
                 dummy_resource = type("%sResource" % obj.__name__, (ModelResource,), {'Meta': dummy_meta,})
