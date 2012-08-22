@@ -14,7 +14,7 @@ class NamespacedUserResource(NamespacedModelResource):
 
 class NamespacedNoteResource(NamespacedModelResource):
     user = fields.ForeignKey(NamespacedUserResource, 'user')
-    
+
     class Meta:
         resource_name = 'notes'
         queryset = Note.objects.all()

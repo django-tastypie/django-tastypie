@@ -4,7 +4,7 @@ from core.models import Note
 
 class NoteForm(forms.ModelForm):
     foobaz = forms.CharField()
-    
+
     class Meta:
         model = Note
 

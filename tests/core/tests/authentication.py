@@ -509,7 +509,6 @@ class MultiAuthenticationTestCase(TestCase):
         self.assertEqual(auth.is_authenticated(request), True)
         self.assertEqual(auth.get_identifier(request), 'johndoe')
 
-
     def test_apikey_and_basic_auth(self):
         auth = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
         request = HttpRequest()
@@ -528,7 +527,6 @@ class MultiAuthenticationTestCase(TestCase):
         self.assertEqual(auth.is_authenticated(request), True)
         self.assertEqual(auth.get_identifier(request), 'johndoe')
 
-
         # Basic Auth works.
         request = HttpRequest()
         john_doe = User.objects.get(username='johndoe')
@@ -536,5 +534,3 @@ class MultiAuthenticationTestCase(TestCase):
         john_doe.save()
         request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass')
         self.assertEqual(auth.is_authenticated(request), True)
-
-

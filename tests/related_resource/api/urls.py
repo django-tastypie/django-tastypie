@@ -1,8 +1,8 @@
 from django.conf.urls.defaults import *
 from tastypie.api import Api
 from related_resource.api.resources import NoteResource, UserResource, \
-        CategoryResource, TagResource, TaggableTagResource, TaggableResource, \
-        ExtraDataResource, FreshNoteResource, FreshMediaBitResource
+    CategoryResource, TagResource, TaggableTagResource, TaggableResource, \
+    ExtraDataResource, FreshNoteResource, FreshMediaBitResource
 
 api = Api(api_name='v1')
 api.register(NoteResource(), canonical=True)

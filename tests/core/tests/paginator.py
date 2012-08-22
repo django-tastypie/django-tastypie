@@ -172,7 +172,7 @@ class PaginatorTestCase(TestCase):
         paginator.offset = 10
         self.assertEqual(paginator.get_offset(), 10)
 
-        paginator.offset= -10
+        paginator.offset = -10
         raised = False
         try:
             paginator.get_offset()

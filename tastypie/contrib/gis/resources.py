@@ -56,7 +56,7 @@ class ModelResource(resources.ModelResource):
         return super(ModelResource, cls).api_field_from_django_field(f, default)
 
     def filter_value_to_python(self, value, field_name, filters, filter_expr,
-            filter_type):
+                               filter_type):
         value = super(ModelResource, self).filter_value_to_python(
             value, field_name, filters, filter_expr, filter_type)
 

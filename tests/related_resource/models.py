@@ -18,14 +18,14 @@ class Taggable(models.Model):
 # Explicit intermediary 'through' table
 class TaggableTag(models.Model):
     tag = models.ForeignKey(
-            'Tag',
-            related_name='taggabletags',
-            null=True, blank=True, # needed at creation time
-        )
+        'Tag',
+        related_name='taggabletags',
+        null=True, blank=True,  # needed at creation time
+    )
     taggable = models.ForeignKey(
-            'Taggable',
-            related_name='taggabletags',
-            null=True, blank=True, # needed at creation time
+        'Taggable',
+        related_name='taggabletags',
+        null=True, blank=True,  # needed at creation time
     )
 
 
@@ -53,5 +53,3 @@ class ExtraData(models.Model):
 
     def __unicode__(self):
         return u"%s" % (self.name)
-
-

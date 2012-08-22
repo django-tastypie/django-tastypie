@@ -209,12 +209,12 @@ class Serializer(object):
         elif isinstance(data, Bundle):
             return dict((key, self.to_simple(val, options)) for (key, val) in data.data.iteritems())
         elif hasattr(data, 'dehydrated_type'):
-            if getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == False:
+            if getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m is False:
                 if data.full:
                     return self.to_simple(data.fk_resource, options)
                 else:
                     return self.to_simple(data.value, options)
-            elif getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == True:
+            elif getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m is True:
                 if data.full:
                     return [self.to_simple(bundle, options) for bundle in data.m2m_bundles]
                 else:
@@ -263,12 +263,12 @@ class Serializer(object):
             for field_name, field_object in data.data.items():
                 element.append(self.to_etree(field_object, options, name=field_name, depth=depth+1))
         elif hasattr(data, 'dehydrated_type'):
-            if getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == False:
+            if getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m is False:
                 if data.full:
                     return self.to_etree(data.fk_resource, options, name, depth+1)
                 else:
                     return self.to_etree(data.value, options, name, depth+1)
-            elif getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == True:
+            elif getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m is True:
                 if data.full:
                     element = Element(name or 'objects')
                     for bundle in data.m2m_bundles:
@@ -431,6 +431,7 @@ class Serializer(object):
         implemented.
         """
         pass
+
 
 def get_type_string(data):
     """

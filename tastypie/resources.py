@@ -256,7 +256,7 @@ class Resource(object):
 
         if not response_code == 404 or send_broken_links:
             log = logging.getLogger('django.request.tastypie')
-            log.error('Internal Server Error: %s' % request.path, exc_info=sys.exc_info(), extra={'status_code': response_code, 'request':request})
+            log.error('Internal Server Error: %s' % request.path, exc_info=sys.exc_info(), extra={'status_code': response_code, 'request': request})
 
             if django.VERSION < (1, 3, 0):
                 from django.core.mail import mail_admins
@@ -1683,7 +1683,7 @@ class ModelResource(Resource):
         return [self.fields[field_name].attribute]
 
     def filter_value_to_python(self, value, field_name, filters, filter_expr,
-            filter_type):
+                               filter_type):
         """
         Turn the string ``value`` into a python object.
         """
@@ -1891,7 +1891,7 @@ class ModelResource(Resource):
         for key, value in kwargs.items():
             setattr(bundle.obj, key, value)
         bundle = self.full_hydrate(bundle)
-        self.is_valid(bundle,request)
+        self.is_valid(bundle, request)
 
         if bundle.errors:
             self.error_response(bundle.errors, request)
@@ -1939,7 +1939,7 @@ class ModelResource(Resource):
                 raise NotFound("A model instance matching the provided arguments could not be found.")
 
         bundle = self.full_hydrate(bundle)
-        self.is_valid(bundle,request)
+        self.is_valid(bundle, request)
 
         if bundle.errors and not skip_errors:
             self.error_response(bundle.errors, request)
@@ -2031,7 +2031,7 @@ class ModelResource(Resource):
             if not field_object.attribute:
                 continue
 
-            if field_object.blank and not bundle.data.has_key(field_name):
+            if field_object.blank and not field_name in bundle.data:
                 continue
 
             # Get the object.

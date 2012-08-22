@@ -279,6 +279,7 @@ class SerializerTestCase(TestCase):
         self.assertEqual(sample_1['date_joined'], u'2010-03-27')
         self.assertEqual(sample_1['snowman'], u'☃')
 
+
 class ResourceSerializationTestCase(TestCase):
     fixtures = ['note_testdata.json']
 
@@ -364,6 +365,7 @@ class StubbedSerializer(Serializer):
         self.from_jsonp_called = True
         return True
 
+
 class ContentHeaderTest(TestCase):
     def test_deserialize_json(self):
         serializer = StubbedSerializer()
@@ -414,4 +416,3 @@ class ContentHeaderTest(TestCase):
         serializer = StubbedSerializer()
         serializer.deserialize('', 'text/html; charset=UTF-8')
         self.assertTrue(serializer.from_html_called)
-
