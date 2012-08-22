@@ -23,24 +23,24 @@ class Api(object):
     this is done with version numbers (i.e. ``v1``, ``v2``, etc.) but can
     be named any string.
 
-    You can also provide ``consume`` argument that should be a list of `Api`
+    You can also provide ``include`` argument that should be a list of `Api`
     instances to merge with this instance. This allows for more decoupled
     apps and cleaner imports.
     """
-    def __init__(self, name=None, consume=None, **kwargs):
+    def __init__(self, name=None, include=None, **kwargs):
 
         legacy_api_name = kwargs.get('api_name', None)
         self.api_name = name if name else legacy_api_name or 'v1'  # 'name' takes precedence and 'api_name' is a fallback
         self._registry = {}
         self._canonicals = {}
 
-        if consume is not None:
-            if isinstance(consume, Api):
+        if include is not None:
+            if isinstance(include, Api):
                 # it's more convenient not to wrap single object in list, so let's do it now
                 # on the other hand - we don't need to consume single instance
-                consume = [consume]
+                include = [include]
 
-            for snack in consume:
+            for snack in include:
                 # should I update api_name for each snack?
                 self._registry.update(snack._registry)      # maybe I should warn when overwriting?
                 self._canonicals.update(snack._canonicals)
