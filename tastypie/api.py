@@ -18,14 +18,31 @@ class Api(object):
     Especially useful for navigation, HATEOAS and for providing multiple
     versions of your API.
 
-    Optionally supplying ``api_name`` allows you to name the API. Generally,
+    Optionally supplying ``name`` allows you to name the API. Generally,
     this is done with version numbers (i.e. ``v1``, ``v2``, etc.) but can
     be named any string.
+
+    You can also provide ``consume`` argument that should be a list of `Api`
+    instances to merge with this instance. This allows for more decoupled
+    apps and cleaner imports.
     """
-    def __init__(self, api_name="v1"):
-        self.api_name = api_name
+    def __init__(self, api_name="v1", consume=None, **kwargs):
+
+        self.api_name = kwargs.get('name', api_name)  # 'name' takes precedence and 'api_name' is a fallback
         self._registry = {}
         self._canonicals = {}
+
+        if consume is not None:
+            if isinstance(consume, Api):
+                # it's more convenient not to wrap single object in list, so let's do it now
+                # on the other hand - we don't need to consume single instance
+                consume = [consume]
+
+            for snack in consume:
+                # should I update api_name for each snack?
+                self._registry.update(snack._registry)      # maybe I should warn when overwriting?
+                self._canonicals.update(snack._canonicals)
+
 
     def register(self, res_mod_iter, canonical=True):
         """
