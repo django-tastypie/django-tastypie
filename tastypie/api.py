@@ -27,7 +27,7 @@ class Api(object):
         self._registry = {}
         self._canonicals = {}
 
-    def register(self, resource_or_iterable, canonical=True):
+    def register(self, res_mod_iter, canonical=True):
         """
         Registers a ``Resource`` subclass with the API. Allows registering
         list of ``Resource``s for convenience.
@@ -36,30 +36,41 @@ class Api(object):
         resources being registered are the canonical variant. Defaults to
         ``True``.
         """
+        # DeclarativeMetaclas -> Resource subclass; let's instantiate it
+        # Resource -> Resource subclass *instance*; nothin' to do
+        # ModelBase -> Model subclass; let's make a ModelResource based on it
+        if isinstance(res_mod_iter, DeclarativeMetaclass) or\
+           isinstance(res_mod_iter, Resource) or\
+           isinstance(res_mod_iter, ModelBase):
+            res_mod_iter = [res_mod_iter]
 
-        if isinstance(resource_or_iterable, DeclarativeMetaclass) or isinstance(resource_or_iterable, Resource):
-            resource_or_iterable = [resource_or_iterable]
+        for obj in res_mod_iter:
+            # if Model subclass, make a ModelResource with sane defaults
+            # it's so hackish that it might actually work ;)
+            if isinstance(obj, ModelBase):
+                dummy_meta = type("Meta", (object,), {'resource_name': obj._meta.module_name, 'queryset': obj.objects.all()})
+                dummy_resource = type("%sResource" % obj.__name__, (ModelResource,), {'Meta': dummy_meta,})
+                obj = dummy_resource()
 
-        for resource in resource_or_iterable:
-            if not isinstance(resource, Resource):
-                resource = resource()
+            elif not isinstance(obj, Resource):
+                obj = obj()
 
-            resource_name = getattr(resource._meta, 'resource_name', None)
+            resource_name = getattr(obj._meta, 'resource_name', None)
 
             if resource_name is None:
-                raise ImproperlyConfigured("Resource %r must define a 'resource_name'." % resource)
+                raise ImproperlyConfigured("Resource %r must define a 'resource_name'." % obj)
 
-            self._registry[resource_name] = resource
+            self._registry[resource_name] = obj
 
             if canonical is True:
                 if resource_name in self._canonicals:
-                    warnings.warn("A new resource '%r' is replacing the existing canonical URL for '%s'." % (resource, resource_name), Warning, stacklevel=2)
+                    warnings.warn("A new resource '%r' is replacing the existing canonical URL for '%s'." % (obj, resource_name), Warning, stacklevel=2)
 
-                self._canonicals[resource_name] = resource
+                self._canonicals[resource_name] = obj
                 # TODO: This is messy, but makes URI resolution on FK/M2M fields
                 #       work consistently.
-                resource._meta.api_name = self.api_name
-                resource.__class__.Meta.api_name = self.api_name
+                obj._meta.api_name = self.api_name
+                obj.__class__.Meta.api_name = self.api_name
 
 
     def unregister(self, resource_name):
