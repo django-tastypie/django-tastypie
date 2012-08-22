@@ -3,6 +3,8 @@ from django.conf.urls.defaults import *
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
+from django.db.models.base import ModelBase
+from tastypie.resources import Resource, DeclarativeMetaclass
 from tastypie.exceptions import NotRegistered, BadRequest
 from tastypie.serializers import Serializer
 from tastypie.utils import trailing_slash, is_valid_jsonp_callback_value
@@ -17,39 +19,77 @@ class Api(object):
     Especially useful for navigation, HATEOAS and for providing multiple
     versions of your API.
 
-    Optionally supplying ``api_name`` allows you to name the API. Generally,
+    Optionally supplying ``name`` allows you to name the API. Generally,
     this is done with version numbers (i.e. ``v1``, ``v2``, etc.) but can
     be named any string.
+
+    You can also provide ``include`` argument that should be a list of `Api`
+    instances to merge with this instance. This allows for more decoupled
+    apps and cleaner imports.
     """
-    def __init__(self, api_name="v1"):
-        self.api_name = api_name
+    def __init__(self, name=None, include=None, **kwargs):
+
+        legacy_api_name = kwargs.get('api_name', None)
+        self.api_name = name if name else legacy_api_name or 'v1'  # 'name' takes precedence and 'api_name' is a fallback
         self._registry = {}
         self._canonicals = {}
 
-    def register(self, resource, canonical=True):
+        if include is not None:
+            if isinstance(include, Api):
+                # it's more convenient not to wrap single object in list, so let's do it now
+                # on the other hand - we don't need to consume single instance
+                include = [include]
+
+            for snack in include:
+                # should I update api_name for each snack?
+                self._registry.update(snack._registry)      # maybe I should warn when overwriting?
+                self._canonicals.update(snack._canonicals)
+
+
+    def register(self, res_mod_iter, canonical=True):
         """
-        Registers an instance of a ``Resource`` subclass with the API.
+        Registers a ``Resource`` subclass with the API. Allows registering
+        list of ``Resource``s for convenience.
 
         Optionally accept a ``canonical`` argument, which indicates that the
-        resource being registered is the canonical variant. Defaults to
+        resources being registered are the canonical variant. Defaults to
         ``True``.
         """
-        resource_name = getattr(resource._meta, 'resource_name', None)
+        # DeclarativeMetaclas -> Resource subclass; let's instantiate it
+        # Resource -> Resource subclass *instance*; nothin' to do
+        # ModelBase -> Model subclass; let's make a ModelResource based on it
+        if isinstance(res_mod_iter, DeclarativeMetaclass) or\
+           isinstance(res_mod_iter, Resource) or\
+           isinstance(res_mod_iter, ModelBase):
+            res_mod_iter = [res_mod_iter]
 
-        if resource_name is None:
-            raise ImproperlyConfigured("Resource %r must define a 'resource_name'." % resource)
+        for obj in res_mod_iter:
+            # if Model subclass, make a ModelResource with sane defaults
+            if isinstance(obj, ModelBase):
+                dummy_meta = type("Meta", (object,), {'resource_name': obj._meta.module_name, 'queryset': obj.objects.all()})
+                dummy_resource = type("%sResource" % obj.__name__, (ModelResource,), {'Meta': dummy_meta,})
+                obj = dummy_resource()
 
-        self._registry[resource_name] = resource
+            elif not isinstance(obj, Resource):
+                obj = obj()
 
-        if canonical is True:
-            if resource_name in self._canonicals:
-                warnings.warn("A new resource '%r' is replacing the existing canonical URL for '%s'." % (resource, resource_name), Warning, stacklevel=2)
+            resource_name = getattr(obj._meta, 'resource_name', None)
 
-            self._canonicals[resource_name] = resource
-            # TODO: This is messy, but makes URI resolution on FK/M2M fields
-            #       work consistently.
-            resource._meta.api_name = self.api_name
-            resource.__class__.Meta.api_name = self.api_name
+            if resource_name is None:
+                raise ImproperlyConfigured("Resource %r must define a 'resource_name'." % obj)
+
+            self._registry[resource_name] = obj
+
+            if canonical is True:
+                if resource_name in self._canonicals:
+                    warnings.warn("A new resource '%r' is replacing the existing canonical URL for '%s'." % (obj, resource_name), Warning, stacklevel=2)
+
+                self._canonicals[resource_name] = obj
+                # TODO: This is messy, but makes URI resolution on FK/M2M fields
+                #       work consistently.
+                obj._meta.api_name = self.api_name
+                obj.__class__.Meta.api_name = self.api_name
+
 
     def unregister(self, resource_name):
         """
