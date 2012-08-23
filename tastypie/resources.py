@@ -1742,10 +1742,15 @@ class ModelResource(Resource):
         else:
             query_terms = QUERY_TERMS.keys()
 
+        model_fields = map(lambda x:x.name, self._meta.queryset.model._meta.fields)
+
         for filter_expr, value in filters.items():
             filter_bits = filter_expr.split(LOOKUP_SEP)
             field_name = filter_bits.pop(0)
             filter_type = 'exact'
+
+            if field_name in model_fields and field_name not in self.fields:
+                raise InvalidFilterError("Invalid field in filtering %s" % field_name)
 
             if not field_name in self.fields:
                 # It's not a field we know about. Move along citizen.

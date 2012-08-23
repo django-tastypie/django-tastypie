@@ -1489,6 +1489,9 @@ class ModelResourceTestCase(TestCase):
         # Make sure that fields that don't have attributes can't be filtered on.
         self.assertRaises(InvalidFilterError, resource_4.build_filters, filters={'notes__hello_world': 'News'})
 
+        # Filtering on a model field not listed within the Resource fields
+        self.assertRaises(InvalidFilterError, resource_4.build_filters, filters={'name': 'News'})
+
     def test_apply_sorting(self):
         resource = NoteResource()
 
