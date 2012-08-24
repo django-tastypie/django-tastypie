@@ -160,6 +160,19 @@ class PaginatorTestCase(TestCase):
         paginator = Paginator({}, self.data_set, limit=20, offset=0, max_limit=10)
         self.assertEqual(paginator.get_limit(), 10)
 
+        # Test the global max limit
+        paginator = Paginator({}, self.data_set, limit=20, offset=0)
+        settings.API_MAX_LIMIT_PER_PAGE = 10000
+        paginator.limit = 20000
+        self.assertEqual(paginator.get_limit(), 10000)
+
+        # Test that if a limit is passed into the Paginator instance,
+        #   it will defer to that
+        paginator = Paginator({}, self.data_set, limit=20, offset=0, max_limit=10)
+        paginator.limit = 20000
+        self.assertEqual(paginator.get_limit(), 10)
+
+
     def test_offset(self):
         paginator = Paginator({}, self.data_set, limit=20, offset=0)
 
