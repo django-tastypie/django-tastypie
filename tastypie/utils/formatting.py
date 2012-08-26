@@ -2,6 +2,7 @@ import email
 import datetime
 import time
 from django.utils import dateformat
+from django.utils.feedgenerator import rfc2822_date
 from tastypie.utils.timezone import make_aware, make_naive, aware_datetime
 
 # Try to use dateutil for maximum date-parsing niceness. Fall back to
@@ -16,7 +17,7 @@ def format_datetime(dt):
     """
     RFC 2822 datetime formatter
     """
-    return dateformat.format(make_naive(dt), 'r')
+    return rfc2822_date(make_naive(dt))
 
 def format_date(d):
     """
