@@ -26,6 +26,7 @@ interfaces.
    throttling
    paginator
    geodjango
+   content_types
 
    cookbook
    debugging
