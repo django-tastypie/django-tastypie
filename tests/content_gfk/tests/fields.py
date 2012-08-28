@@ -9,16 +9,17 @@ from content_gfk.api.resources import NoteResource, DefinitionResource, \
 class ContentTypeFieldTestCase(TestCase):
 
     def test_init(self):
+        # Test that you have to use a dict some other resources
         with self.assertRaises(ValueError):
-            # Test that you have to use a dict some other resources
             GenericForeignKeyField(((Note, NoteResource)), 'nofield')
 
-            # Test that you must register some other resources
+        # Test that you must register some other resources
+        with self.assertRaises(ValueError):
             GenericForeignKeyField({}, 'nofield')
 
-            # Test that the resources you raise must be models
-            GenericForeignKeyField({'str': 'ing'}, 'nofield')
-
+        # Test that the resources you raise must be models
+        with self.assertRaises(ValueError):
+            GenericForeignKeyField({NoteResource: Note}, 'nofield')
 
     def test_get_related_resource(self):
         gfk_field = GenericForeignKeyField({
