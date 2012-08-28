@@ -115,8 +115,9 @@ class Paginator(object):
         """
         Slices the result set to the specified ``limit`` & ``offset``.
         """
+        # If it's zero, return everything.
         if limit == 0:
-            raise BadRequest("Invalid limit '%s' provided. Please provide a positive, non-zero, integer." % limit)
+            return self.objects[offset:]
 
         return self.objects[offset:offset + limit]
 
