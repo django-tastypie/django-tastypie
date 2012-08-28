@@ -13,7 +13,6 @@ class GenericForeignKeyField(fields.ToOneField):
     """
 
     def __init__(self, to, attribute, **kwargs):
-
         if not isinstance(to, dict):
             raise ValueError('to field must be a dictionary in GenericForeignKeyField')
 
@@ -36,14 +35,12 @@ class GenericForeignKeyField(fields.ToOneField):
 
     @property
     def to_class(self):
-
         if self._to_class and not issubclass(GenericResource, self._to_class):
             return self._to_class
 
         return GenericResource
 
     def resource_from_uri(self, fk_resource, uri, request=None, related_obj=None, related_name=None):
-
         try:
             obj = fk_resource.get_via_uri(uri, request=request)
             fk_resource = self.get_related_resource(obj)
