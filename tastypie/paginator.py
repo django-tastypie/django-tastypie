@@ -15,7 +15,7 @@ class Paginator(object):
     ``total_count`` of resources seen and convenience links to the
     ``previous``/``next`` pages of data as available.
     """
-    def __init__(self, request_data, objects, resource_uri=None, limit=None, offset=0, max_limit=1000, collection_name='objects'):
+    def __init__(self, request_data, objects, resource_uri=None, limit=None, offset=0, max_limit=None, collection_name='objects'):
         """
         Instantiates the ``Paginator`` and allows for some configuration.
 
@@ -56,6 +56,12 @@ class Paginator(object):
             * ``settings.API_LIMIT_PER_PAGE`` if specified.
 
         Default is 20 per page.
+
+        Max limit excludes the query parameter, in order to prevent malicious use:
+
+            * The object-level ``max_limit``, if specified
+            * ``settings.API_MAX_LIMIT_PER_PAGE``, if specified
+
         """
         settings_limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)
 
@@ -80,7 +86,10 @@ class Paginator(object):
         if limit < 0:
             raise BadRequest("Invalid limit '%s' provided. Please provide a positive integer >= 0." % limit)
 
-        if self.max_limit and limit > self.max_limit:
+        if not self.max_limit:
+            self.max_limit = getattr(settings, 'API_MAX_LIMIT_PER_PAGE', 1000)
+
+        if limit > self.max_limit:
             # If it's more than the max, we're only going to return the max.
             # This is to prevent excessive DB (or other) load.
             return self.max_limit
