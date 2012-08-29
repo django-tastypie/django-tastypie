@@ -33,9 +33,10 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
     from django.contrib.auth.models import User
     
     class ApiKey(models.Model):
-        user = models.OneToOneField(User, related_name='api_key')
+        user = models.ForeignKey(User, related_name='api_keys')
         key = models.CharField(max_length=256, blank=True, default='')
         created = models.DateTimeField(default=now)
+        description = models.CharField(max_length=256, blank=True, default='')
 
         def __unicode__(self):
             return u"%s for %s" % (self.key, self.user)
