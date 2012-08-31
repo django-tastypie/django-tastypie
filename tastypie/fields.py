@@ -247,6 +247,14 @@ class DecimalField(ApiField):
 
         return Decimal(value)
 
+    def hydrate(self, bundle):
+        value = super(DecimalField, self).hydrate(bundle)
+
+        if value and not isinstance(value, Decimal):
+            value = Decimal(value)
+
+        return value
+
 
 class BooleanField(ApiField):
     """

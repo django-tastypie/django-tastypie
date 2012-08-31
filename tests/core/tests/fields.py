@@ -294,6 +294,17 @@ class DecimalFieldTestCase(TestCase):
         field_2 = DecimalField(default='18.5')
         self.assertEqual(field_2.dehydrate(bundle), Decimal('18.5'))
 
+    def test_hydrate(self):
+        bundle = Bundle(data={
+            'decimal-y': '18.50',
+        })
+
+        field_1 = DecimalField(default='20')
+        self.assertEqual(field_1.hydrate(bundle), Decimal('20.0'))
+
+        field_2 = DecimalField(default='18.5')
+        self.assertEqual(field_2.hydrate(bundle), Decimal('18.5'))
+
     def test_model_resource_correct_association(self):
         api_field = ModelResource.api_field_from_django_field(models.DecimalField())
         self.assertEqual(api_field, DecimalField)
