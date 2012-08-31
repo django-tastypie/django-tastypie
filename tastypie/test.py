@@ -161,6 +161,9 @@ class TestApiClient(object):
 
         if data is not None:
             kwargs['data'] = self.serializer.serialize(data, format=content_type)
+            if content_type == "application/json":
+                kwargs['data'] = str(kwargs['data'])
+
 
         if authentication is not None:
             kwargs['HTTP_AUTHORIZATION'] = authentication
