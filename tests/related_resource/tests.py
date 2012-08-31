@@ -1,10 +1,12 @@
-import json
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
+from django.utils import simplejson as json
 from core.models import Note, MediaBit
+from core.tests.resources import HttpRequest
 from core.tests.mocks import MockRequest
-from related_resource.api.resources import FreshNoteResource
+from tastypie import fields
+from related_resource.api.resources import FreshNoteResource, CategoryResource
 from related_resource.api.urls import api
 from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData
 
@@ -42,7 +44,7 @@ class RelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": {"id": %s, "username": "foobar"}}' % self.user.id
+        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-2", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": {"id": %s, "username": "foobar"}}' % self.user.id
 
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
@@ -195,3 +197,30 @@ class OneToManySetupTestCase(TestCase):
         note = Note.objects.latest('created')
         self.assertEqual(note.media_bits.count(), 1)
         self.assertEqual(note.media_bits.all()[0].title, u'Picture #1')
+
+
+class FullCategoryResource(CategoryResource):
+    parent = fields.ToOneField('self', 'parent', null=True, full=True)
+
+
+class RelatedPatchTestCase(TestCase):
+    def test_patch_to_one(self):
+        resource = FullCategoryResource()
+        cat1 = Category.objects.create(name='Dad')
+        cat2 = Category.objects.create(parent=cat1, name='Child')
+
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PATCH'
+        request._read_started = False
+
+        data = {
+            'name': 'Kid'
+        }
+
+        request._raw_post_data = request._body = json.dumps(data)
+        self.assertEqual(cat2.name, 'Child')
+        resp = resource.patch_detail(request, pk=cat2.pk)
+        self.assertEqual(resp.status_code, 202)
+        cat2 = Category.objects.get(pk=2)
+        self.assertEqual(cat2.name, 'Kid')

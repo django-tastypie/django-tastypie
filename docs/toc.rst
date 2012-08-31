@@ -10,17 +10,19 @@ Table Of Contents
    settings
    non_orm_data_sources
    tools
+   testing
 
    resources
    bundles
    api
    fields
-   authentication_authorization
-   validation
    caching
+   validation
+   authentication_authorization
    serialization
    throttling
    paginator
+   geodjango
 
    cookbook
    debugging

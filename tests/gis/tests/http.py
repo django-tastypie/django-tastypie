@@ -1,10 +1,7 @@
 import httplib
-from testcases import TestServerTestCase
 from urllib import quote
-try:
-    import json
-except ImportError:
-    import simplejson as json
+from testcases import TestServerTestCase
+from django.utils import simplejson as json
 
 
 class HTTPTestCase(TestServerTestCase):
@@ -22,9 +19,9 @@ class HTTPTestCase(TestServerTestCase):
         connection.request('GET', '/api/v1/', headers={'Accept': 'application/json'})
         response = connection.getresponse()
         connection.close()
-        data = response.read()
+        data = json.loads(response.read())
         self.assertEqual(response.status, 200)
-        self.assertEqual(data, '{"geonotes": {"list_endpoint": "/api/v1/geonotes/", "schema": "/api/v1/geonotes/schema/"}, "users": {"list_endpoint": "/api/v1/users/", "schema": "/api/v1/users/schema/"}}')
+        self.assertEqual(data, {"geonotes": {"list_endpoint": "/api/v1/geonotes/", "schema": "/api/v1/geonotes/schema/"}, "users": {"list_endpoint": "/api/v1/users/", "schema": "/api/v1/users/schema/"}})
 
     def test_get_apis_xml(self):
         connection = self.get_connection()
@@ -40,8 +37,30 @@ class HTTPTestCase(TestServerTestCase):
         connection.request('GET', '/api/v1/geonotes/', headers={'Accept': 'application/json'})
         response = connection.getresponse()
         connection.close()
+        data = json.loads(response.read())
         self.assertEqual(response.status, 200)
-        self.assertEqual(response.read(), '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 3}, "objects": [{"content": "Wooo two points inside Golden Gate park", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "lines": null, "points": {"coordinates": [[-122.475233, 37.768616999999999], [-122.470416, 37.767381999999998]], "type": "MultiPoint"}, "polys": null, "resource_uri": "/api/v1/geonotes/1/", "slug": "points-inside-golden-gate-park-note", "title": "Points inside Golden Gate Park note", "updated": "2012-03-07T21:47:37", "user": "/api/v1/users/1/"}, {"content": "This is a note about Golden Gate Park. It contains Golden Gate Park\'s polygon", "created": "2010-03-31T20:05:00", "id": "2", "is_active": true, "lines": null, "points": null, "polys": {"coordinates": [[[[-122.511067, 37.771276], [-122.510037, 37.766390999999999], [-122.510037, 37.763812999999999], [-122.456822, 37.765847999999998], [-122.45296, 37.766458999999998], [-122.454848, 37.773989999999998], [-122.475362, 37.773040000000002], [-122.511067, 37.771276]]]], "type": "MultiPolygon"}, "resource_uri": "/api/v1/geonotes/2/", "slug": "another-post", "title": "Golden Gate Park", "updated": "2012-03-07T21:48:48", "user": "/api/v1/users/1/"}, {"content": "A path inside Golden Gate Park! Huzzah!", "created": "2012-03-07T21:51:52", "id": "3", "is_active": true, "lines": {"coordinates": [[[-122.504544, 37.767001999999998], [-122.499995, 37.768222999999999], [-122.49596099999999, 37.769173000000002], [-122.495017, 37.769241000000001], [-122.491669, 37.770937000000004], [-122.48497500000001, 37.770733]]], "type": "MultiLineString"}, "points": null, "polys": null, "resource_uri": "/api/v1/geonotes/3/", "slug": "line-inside-golden-gate-park", "title": "Line inside Golden Gate Park", "updated": "2012-03-07T21:52:21", "user": "/api/v1/users/1/"}]}')
+        self.assertEqual(len(data['objects']), 3)
+
+        # Because floating point.
+        self.assertEqual(data['objects'][0]['content'], "Wooo two points inside Golden Gate park")
+        self.assertEqual(data['objects'][0]['points']['type'], 'MultiPoint')
+        self.assertAlmostEqual(data['objects'][0]['points']['coordinates'][0][0], -122.475233, places=5)
+        self.assertAlmostEqual(data['objects'][0]['points']['coordinates'][0][1], 37.768616, places=5)
+        self.assertAlmostEqual(data['objects'][0]['points']['coordinates'][1][0], -122.470416, places=5)
+        self.assertAlmostEqual(data['objects'][0]['points']['coordinates'][1][1], 37.767381, places=5)
+
+        self.assertEqual(data['objects'][1]['content'], "This is a note about Golden Gate Park. It contains Golden Gate Park\'s polygon")
+        self.assertEqual(data['objects'][1]['polys']['type'], 'MultiPolygon')
+        self.assertEqual(len(data['objects'][1]['polys']['coordinates']), 1)
+        self.assertEqual(len(data['objects'][1]['polys']['coordinates'][0]), 1)
+        self.assertEqual(len(data['objects'][1]['polys']['coordinates'][0][0]), 8)
+
+        self.assertEqual(data['objects'][2]['content'], "A path inside Golden Gate Park! Huzzah!")
+        self.assertEqual(data['objects'][2]['lines']['type'], 'MultiLineString')
+        self.assertAlmostEqual(data['objects'][2]['lines']['coordinates'][0][0][0], -122.504544, places=5)
+        self.assertAlmostEqual(data['objects'][2]['lines']['coordinates'][0][0][1], 37.767002, places=5)
+        self.assertAlmostEqual(data['objects'][2]['lines']['coordinates'][0][1][0], -122.499995, places=5)
+        self.assertAlmostEqual(data['objects'][2]['lines']['coordinates'][0][1][1], 37.768223, places=5)
 
     def test_post_object(self):
         connection = self.get_connection()
@@ -135,9 +154,9 @@ class HTTPTestCase(TestServerTestCase):
         connection.close()
         self.assertEqual(response.status, 200)
 
-        data = response.read()
+        data = json.loads(response.read())
         # We get back the points inside Golden Gate park!
-        self.assertEqual(data, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 1}, "objects": [{"content": "Wooo two points inside Golden Gate park", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "lines": null, "points": {"coordinates": [[-122.475233, 37.768616999999999], [-122.470416, 37.767381999999998]], "type": "MultiPoint"}, "polys": null, "resource_uri": "/api/v1/geonotes/1/", "slug": "points-inside-golden-gate-park-note", "title": "Points inside Golden Gate Park note", "updated": "2012-03-07T21:47:37", "user": "/api/v1/users/1/"}]}')
+        self.assertEqual(data, {"meta": {"limit": 20, "next": None, "offset": 0, "previous": None, "total_count": 1}, "objects": [{"content": "Wooo two points inside Golden Gate park", "created": "2010-03-30T20:05:00", "id": 1, "is_active": True, "lines": None, "points": {"coordinates": [[-122.475233, 37.768616999999999], [-122.470416, 37.767381999999998]], "type": "MultiPoint"}, "polys": None, "resource_uri": "/api/v1/geonotes/1/", "slug": "points-inside-golden-gate-park-note", "title": "Points inside Golden Gate Park note", "updated": "2012-03-07T21:47:37", "user": "/api/v1/users/1/"}]})
 
         # Get lines
         connection = self.get_connection()
@@ -146,9 +165,9 @@ class HTTPTestCase(TestServerTestCase):
         connection.close()
         self.assertEqual(response.status, 200)
 
-        data = response.read()
+        data = json.loads(response.read())
         # We get back the line inside Golden Gate park!
-        self.assertEqual(data, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 1}, "objects": [{"content": "A path inside Golden Gate Park! Huzzah!", "created": "2012-03-07T21:51:52", "id": "3", "is_active": true, "lines": {"coordinates": [[[-122.504544, 37.767001999999998], [-122.499995, 37.768222999999999], [-122.49596099999999, 37.769173000000002], [-122.495017, 37.769241000000001], [-122.491669, 37.770937000000004], [-122.48497500000001, 37.770733]]], "type": "MultiLineString"}, "points": null, "polys": null, "resource_uri": "/api/v1/geonotes/3/", "slug": "line-inside-golden-gate-park", "title": "Line inside Golden Gate Park", "updated": "2012-03-07T21:52:21", "user": "/api/v1/users/1/"}]}')
+        self.assertEqual(data, {"meta": {"limit": 20, "next": None, "offset": 0, "previous": None, "total_count": 1}, "objects": [{"content": "A path inside Golden Gate Park! Huzzah!", "created": "2012-03-07T21:51:52", "id": 3, "is_active": True, "lines": {"coordinates": [[[-122.504544, 37.767001999999998], [-122.499995, 37.768222999999999], [-122.49596099999999, 37.769173000000002], [-122.495017, 37.769241000000001], [-122.491669, 37.770937000000004], [-122.48497500000001, 37.770733]]], "type": "MultiLineString"}, "points": None, "polys": None, "resource_uri": "/api/v1/geonotes/3/", "slug": "line-inside-golden-gate-park", "title": "Line inside Golden Gate Park", "updated": "2012-03-07T21:52:21", "user": "/api/v1/users/1/"}]})
 
     def test_filter_contains(self):
         points_inside_golden_gate_park = """{"coordinates": [[-122.475233, 37.768616999999999], [-122.470416, 37.767381999999998]], "type": "MultiPoint"}"""
@@ -160,6 +179,6 @@ class HTTPTestCase(TestServerTestCase):
         connection.close()
         self.assertEqual(response.status, 200)
 
-        data = response.read()
+        data = json.loads(response.read())
         # We get back the golden gate park polygon!
-        self.assertEqual(data, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 1}, "objects": [{"content": "This is a note about Golden Gate Park. It contains Golden Gate Park\'s polygon", "created": "2010-03-31T20:05:00", "id": "2", "is_active": true, "lines": null, "points": null, "polys": {"coordinates": [[[[-122.511067, 37.771276], [-122.510037, 37.766390999999999], [-122.510037, 37.763812999999999], [-122.456822, 37.765847999999998], [-122.45296, 37.766458999999998], [-122.454848, 37.773989999999998], [-122.475362, 37.773040000000002], [-122.511067, 37.771276]]]], "type": "MultiPolygon"}, "resource_uri": "/api/v1/geonotes/2/", "slug": "another-post", "title": "Golden Gate Park", "updated": "2012-03-07T21:48:48", "user": "/api/v1/users/1/"}]}')
+        self.assertEqual(data, {"meta": {"limit": 20, "next": None, "offset": 0, "previous": None, "total_count": 1}, "objects": [{"content": "This is a note about Golden Gate Park. It contains Golden Gate Park\'s polygon", "created": "2010-03-31T20:05:00", "id": 2, "is_active": True, "lines": None, "points": None, "polys": {"coordinates": [[[[-122.511067, 37.771276], [-122.510037, 37.766390999999999], [-122.510037, 37.763812999999999], [-122.456822, 37.765847999999998], [-122.45296, 37.766458999999998], [-122.454848, 37.773989999999998], [-122.475362, 37.773040000000002], [-122.511067, 37.771276]]]], "type": "MultiPolygon"}, "resource_uri": "/api/v1/geonotes/2/", "slug": "another-post", "title": "Golden Gate Park", "updated": "2012-03-07T21:48:48", "user": "/api/v1/users/1/"}]})

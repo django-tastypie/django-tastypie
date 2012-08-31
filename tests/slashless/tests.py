@@ -2,10 +2,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.http import HttpRequest
 from django.test import TestCase
-try:
-    import json
-except ImportError:
-    import simplejson as json
+from django.utils import simplejson as json
 
 
 class ViewsWithoutSlashesTestCase(TestCase):
@@ -41,11 +38,9 @@ class ViewsWithoutSlashesTestCase(TestCase):
         self.assertEqual(len(deserialized), 9)
         self.assertEqual(deserialized['title'], u'First Post!')
         
-        # Due to the way Django parses URLs, ``get_multiple`` won't work without
-        # a trailing slash. This will cause the ``get_detail`` to match
-        # instead, resulting in a 500.
         resp = self.client.get('/api/v1/notes/set/2;1', data={'format': 'json'})
-        self.assertEqual(resp.status_code, 404)
-        # This behavior is inconsistent across versions of Django. 1.3+ doesn't
-        # seem to cause this error to be available.
-        # self.assertEqual(json.loads(resp.content)["error_message"], "Invalid resource lookup data provided (mismatched type).")
+        self.assertEqual(resp.status_code, 200)
+        deserialized = json.loads(resp.content)
+        obj_ids = [o["id"] for o in deserialized["objects"]]
+        self.assertEqual(sorted(obj_ids), [1,2])
+        

@@ -1,17 +1,20 @@
-.. _ref-authentication_authorization:
+.. _authentication_authorization:
 
 ==============================
 Authentication / Authorization
 ==============================
 
-Authentication & authorization make up the components needed to verify that
-a certain user has access to the API and what they can do with it.
+Authentication & authorization make up the components needed to verify who a
+certain user is and to validate their access to the API and what they can do
+with it.
 
-Authentication answers the question "can they see this data?" This usually
-involves requiring credentials, such as an API key or username/password.
+Authentication answers the question "Who is this person?" This usually involves
+requiring credentials, such as an API key or username/password or oAuth tokens.
 
-Authorization answers the question "what objects can they modify?" This usually
-involves checking permissions, but is open to other implementations.
+Authorization answers the question "Is permission granted for this user to take
+this action?" This usually involves checking permissions such as
+Create/Read/Update/Delete access, or putting limits on what data the user
+can access.
 
 Usage
 =====
@@ -39,6 +42,21 @@ Authentication Options
 ======================
 
 Tastypie ships with the following ``Authentication`` classes:
+
+.. warning:
+
+    Tastypie, when used with ``django.contrib.auth.models.User``, will check
+    to ensure that the ``User.is_active = True`` by default.
+
+    You can disable this behavior by initializing your ``Authentication`` class
+    with ``require_active=False``::
+
+        class UserResource(ModelResource):
+            class Meta:
+                # ...
+                authentication = BasicAuthentication(require_active=False)
+
+    *The behavior changed to active-by-default in v0.9.12.*
 
 ``Authentication``
 ~~~~~~~~~~~~~~~~~~
@@ -88,11 +106,31 @@ objects. Hooking it up looks like::
 
     models.signals.post_save.connect(create_api_key, sender=User)
 
+.. warning::
+
+  If you're using Apache & ``mod_wsgi``, you will need to enable
+  ``WSGIPassAuthorization On``, otherwise ``mod_wsgi`` strips out the
+  ``Authorization`` header. See `this post`_ for details (even though it
+  only mentions Basic auth).
+
+.. _`this post`: http://www.nerdydork.com/basic-authentication-on-mod_wsgi.html
+
+``SessionAuthentication``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This authentication scheme uses the built-in Django sessions to check if
+a user is logged. This is typically useful when used by Javascript on the same
+site as the API is hosted on.
+
+It requires that the user has logged in & has an active session. They also must
+have a valid CSRF token.
+
+
 ``DigestAuthentication``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This authentication scheme uses HTTP Digest Auth to check a user's
-credentials.  The username is their ``django.contrib.auth.models.User``
+credentials. The username is their ``django.contrib.auth.models.User``
 username (assuming it is present) and their password should be their
 machine-generated api key. As with ApiKeyAuthentication, ``tastypie``
 should be included in ``INSTALLED_APPS``.
@@ -128,6 +166,28 @@ consumption.
 
 .. _mechanize: http://pypi.python.org/pypi/mechanize/
 
+``MultiAuthentication``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+This authentication class actually wraps any number of other authentication classes,
+attempting each until successfully authenticating. For example::
+
+    from django.contrib.auth.models import User
+    from tastypie.authentication import BasicAuthentication, ApiKeyAuthentication, MultiAuthentication
+    from tastypie.authorization import DjangoAuthorization
+    from tastypie.resources import ModelResource
+
+    class UserResource(ModelResource):
+        class Meta:
+            queryset = User.objects.all()
+            resource_name = 'auth/user'
+            excludes = ['email', 'password', 'is_superuser']
+
+            authentication = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+            authorization = DjangoAuthorization()
+
+
+In the case of an authentication returning a customized HttpUnauthorized, MultiAuthentication defaults to the first returned one. Authentication schemes that need to control the response, such as the included BasicAuthentication and DigestAuthentication, should be placed first.
 
 Authorization Options
 =====================
