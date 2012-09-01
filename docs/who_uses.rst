@@ -57,3 +57,14 @@ Crate is a PyPI mirror/replacement. It's using Tastypie to provide a convenient
 REST API.
 
 * https://crate.io/api/v1/
+
+
+LocalWiki
+---------
+
+`LocalWiki <http://localwiki.org>`_ is a tool for collaborating in local, geographic
+communities.  It's using Tastypie to provide an awesome,
+geospatially-aware REST API.
+
+* http://localwiki.readthedocs.org/en/latest/api.html
+* http://localwiki.org/blog/2012/aug/31/localwiki-api-released/
