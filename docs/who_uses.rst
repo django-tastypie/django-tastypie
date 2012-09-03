@@ -57,3 +57,11 @@ Crate is a PyPI mirror/replacement. It's using Tastypie to provide a convenient
 REST API.
 
 * https://crate.io/api/v1/
+
+
+I-Am-CC.org
+-----------
+
+`I-Am-CC.org <http://i-am-cc.org>`_ is a tool for releasing Instagram photos under a Creative Commons license.  Tastypie powers their REST API.
+
+* http://i-am-cc.org/api/?format=json
