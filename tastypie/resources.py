@@ -81,6 +81,7 @@ class ResourceOptions(object):
     always_return_data = False
     collection_name = 'objects'
     detail_uri_name = 'pk'
+    suppress_sessions = getattr(settings, 'API_SUPPRESSES_SESSIONS', True)
 
     def __new__(cls, meta=None):
         overrides = {}
@@ -434,6 +435,9 @@ class Resource(object):
         Handles the common operations (allowed HTTP method, authentication,
         throttling, method lookup) surrounding most CRUD interactions.
         """
+        if hasattr(request, 'tastypie') and self._meta.suppress_sessions:
+            request.tastypie.suppress_session = True
+        
         allowed_methods = getattr(self._meta, "%s_allowed_methods" % request_type, None)
 
         if 'HTTP_X_HTTP_METHOD_OVERRIDE' in request.META:

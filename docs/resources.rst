@@ -658,6 +658,45 @@ The inner ``Meta`` class allows for class-level configuration of how the
   to ``pk``.
 
 
+.. _ref-resources-suppress_sessions:
+
+``suppress_sessions``
+---------------------
+
+  Specifies if the ``Resource`` should flag the request to suppress
+  sessions. (This is handled by
+  ``tastype.middleware.ApiSessionMiddleware``, which must be installed
+  in ``MIDDLEWARE_CLASSES`` for sessions to be suppressed.) Default is
+  the value of ``settings.API_SUPPRESSES_SESSIONS`` or True.
+
+  If ``tastypie.middleware.ApiSessionMiddleware`` is not installed in
+  ``MIDDLEWARE_CLASSES``, this setting has no effect.
+
+
+.. _Django sessions framework: https://docs.djangoproject.com/en/dev/topics/http/sessions/
+
+  If ``True``, ``tastypie.middleware.ApiSessionMiddleware`` will not
+  save the current session, the ``Set-Cookie`` header will not be
+  emitted with the response, and the ``Vary`` header will not be set
+  to ``Cookie``.
+
+  If ``False``, ``tastypie.middleware.ApiSessionMiddleware`` will
+  behave exactly as
+  ``django.contrib.sessions.middleware.SessionMiddleware``, saving the
+  current session, emitting the ``Set-Cookie`` header and setting the
+  ``Vary`` header to ``Cookie``.
+
+.. note::
+
+  This is useful if you have enabled the `Django sessions framework`_
+  elsewhere on the site. Sessions are often not desirable for API
+  interactions if your clients are not expected to support session
+  cookies. The ``Vary: Cookie`` header emitted by
+  ``django.contrib.middleware.SessionMiddleware`` will prevent an
+  upstream cache from properly caching ``GET`` requests, and a
+  heavily-trafficked API could end up spamming your session store.
+
+
 Basic Filtering
 ===============
 
