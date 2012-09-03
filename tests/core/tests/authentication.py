@@ -146,6 +146,8 @@ class ApiKeyAuthenticationTestCase(TestCase):
         # Simulate sending the signal.
         john_doe = User.objects.get(username='johndoe')
         create_api_key(User, instance=john_doe, created=True)
+        # create another API key for the same user
+        create_api_key(User, instance=john_doe, created=True)
 
         # No username/api_key details should fail.
         self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
@@ -166,9 +168,17 @@ class ApiKeyAuthenticationTestCase(TestCase):
         # Correct user/api_key.
         john_doe = User.objects.get(username='johndoe')
         request.GET['username'] = 'johndoe'
-        request.GET['api_key'] = john_doe.api_key.key
+        request.GET['api_key'] = john_doe.api_keys.all()[0].key
         self.assertEqual(auth.is_authenticated(request), True)
         self.assertEqual(auth.get_identifier(request), 'johndoe')
+
+        # Correct user/second api_key
+        john_doe = User.objects.get(username='johndoe')
+        request.GET['username'] = 'johndoe'
+        request.GET['api_key'] = john_doe.api_keys.all()[1].key
+        self.assertEqual(auth.is_authenticated(request), True)
+        self.assertEqual(auth.get_identifier(request), 'johndoe')
+
 
     def test_is_authenticated_header(self):
         auth = ApiKeyAuthentication()
@@ -176,6 +186,8 @@ class ApiKeyAuthenticationTestCase(TestCase):
 
         # Simulate sending the signal.
         john_doe = User.objects.get(username='johndoe')
+        create_api_key(User, instance=john_doe, created=True)
+        # create another api_key
         create_api_key(User, instance=john_doe, created=True)
 
         # No username/api_key details should fail.
@@ -195,13 +207,18 @@ class ApiKeyAuthenticationTestCase(TestCase):
 
         # Correct user/api_key.
         john_doe = User.objects.get(username='johndoe')
-        request.META['HTTP_AUTHORIZATION'] = 'ApiKey johndoe:%s' % john_doe.api_key.key
+        request.META['HTTP_AUTHORIZATION'] = 'ApiKey johndoe:%s' % john_doe.api_keys.all()[0].key
+        self.assertEqual(auth.is_authenticated(request), True)
+
+        # Correct second api_key
+        request.META['HTTP_AUTHORIZATION'] = 'ApiKey johndoe:%s' % john_doe.api_keys.all()[1].key
         self.assertEqual(auth.is_authenticated(request), True)
 
         # Capitalization shouldn't matter.
         john_doe = User.objects.get(username='johndoe')
-        request.META['HTTP_AUTHORIZATION'] = 'aPiKeY johndoe:%s' % john_doe.api_key.key
+        request.META['HTTP_AUTHORIZATION'] = 'aPiKeY johndoe:%s' % john_doe.api_keys.all()[0].key
         self.assertEqual(auth.is_authenticated(request), True)
+
 
     def test_check_active_true(self):
         auth = ApiKeyAuthentication()
@@ -209,8 +226,14 @@ class ApiKeyAuthenticationTestCase(TestCase):
 
         bob_doe = User.objects.get(username='bobdoe')
         create_api_key(User, instance=bob_doe, created=True)
-        request.META['HTTP_AUTHORIZATION'] = 'ApiKey bobdoe:%s' % bob_doe.api_key.key
+        create_api_key(User, instance=bob_doe, created=True)
+
+        request.META['HTTP_AUTHORIZATION'] = 'ApiKey bobdoe:%s' % bob_doe.api_keys.all()[0].key
         self.assertFalse(auth.is_authenticated(request))
+
+        request.META['HTTP_AUTHORIZATION'] = 'ApiKey bobdoe:%s' % bob_doe.api_keys.all()[1].key
+        self.assertFalse(auth.is_authenticated(request))
+
 
     def test_check_active_false(self):
         auth = BasicAuthentication(require_active=False)
@@ -218,8 +241,14 @@ class ApiKeyAuthenticationTestCase(TestCase):
 
         bob_doe = User.objects.get(username='bobdoe')
         create_api_key(User, instance=bob_doe, created=True)
-        request.META['HTTP_AUTHORIZATION'] = 'ApiKey bobdoe:%s' % bob_doe.api_key.key
+        create_api_key(User, instance=bob_doe, created=True)
+
+        request.META['HTTP_AUTHORIZATION'] = 'ApiKey bobdoe:%s' % bob_doe.api_keys.all()[0].key
         self.assertTrue(auth.is_authenticated(request))
+
+        request.META['HTTP_AUTHORIZATION'] = 'ApiKey bobdoe:%s' % bob_doe.api_keys.all()[1].key
+        self.assertTrue(auth.is_authenticated(request))
+
 
 
 class SessionAuthenticationTestCase(TestCase):
@@ -337,7 +366,7 @@ class DigestAuthenticationTestCase(TestCase):
             '/', # uri
             1,   # nonce_count
             digest_challenge=auth_request['WWW-Authenticate'],
-            password=john_doe.api_key.key
+            password=john_doe.api_keys.all()[0].key
         )
         auth_request = auth.is_authenticated(request)
         self.assertEqual(auth_request, True)
@@ -355,7 +384,7 @@ class DigestAuthenticationTestCase(TestCase):
             '/', # uri
             1,   # nonce_count
             digest_challenge=auth_request['WWW-Authenticate'],
-            password=bob_doe.api_key.key
+            password=bob_doe.api_keys.all()[0].key
         )
         auth_request = auth.is_authenticated(request)
         self.assertFalse(auth_request)
@@ -373,7 +402,7 @@ class DigestAuthenticationTestCase(TestCase):
             '/', # uri
             1,   # nonce_count
             digest_challenge=auth_request['WWW-Authenticate'],
-            password=bob_doe.api_key.key
+            password=bob_doe.api_keys.all()[0].key
         )
         auth_request = auth.is_authenticated(request)
         self.assertTrue(auth_request, True)
@@ -505,7 +534,7 @@ class MultiAuthenticationTestCase(TestCase):
 
         request = HttpRequest()
         request.GET['username'] = 'johndoe'
-        request.GET['api_key'] = john_doe.api_key.key
+        request.GET['api_key'] = john_doe.api_keys.all()[0].key
         self.assertEqual(auth.is_authenticated(request), True)
         self.assertEqual(auth.get_identifier(request), 'johndoe')
 
@@ -524,7 +553,7 @@ class MultiAuthenticationTestCase(TestCase):
         # API Key Auth works.
         request = HttpRequest()
         request.GET['username'] = 'johndoe'
-        request.GET['api_key'] = john_doe.api_key.key
+        request.GET['api_key'] = john_doe.api_keys.all()[0].key
         self.assertEqual(auth.is_authenticated(request), True)
         self.assertEqual(auth.get_identifier(request), 'johndoe')
 
