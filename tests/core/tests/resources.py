@@ -672,9 +672,15 @@ class ResourceTestCase(TestCase):
         request.method = 'POST'
         request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"'
 
-        with self.assertRaises(BadRequest) as er:
-            deserialized = resource.deserialize(request, request.raw_post_data)
+        result = False
 
+        try:
+            deserialized = resource.deserialize(request, request.raw_post_data)
+        except BadRequest:
+            result = True
+
+        self.assertTrue(result)
+            
 
 # ====================
 # Model-based tests...
