@@ -665,6 +665,16 @@ class ResourceTestCase(TestCase):
         output = mangled.alter_list_data_to_serialize(request, data)
         self.assertEqual(output, {'testobjects': [{'abc': 123, 'hello': 'world'}]})
 
+    def test_invalid_json_deserialization(self):
+        resource = BasicResource()
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"'
+
+        with self.assertRaises(BadRequest) as er:
+            deserialized = resource.deserialize(request, request.raw_post_data)
+
 
 # ====================
 # Model-based tests...
