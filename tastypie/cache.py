@@ -33,13 +33,13 @@ class NoCache(object):
         Returns True or False if the request -> response is capable of being
         cached.
         """
-        return False
+        return bool(request.method == "GET" and response.status_code == 200)
 
     def cache_control(self):
         """
         No-op for returning values for cache-control
         """
-        pass
+        return dict(no_cache=True)
 
 
 class SimpleCache(NoCache):
@@ -76,13 +76,6 @@ class SimpleCache(NoCache):
             timeout = self.timeout
 
         cache.set(key, value, timeout)
-
-    def cacheable(self, request, response):
-        """
-        Returns True or False if the request -> response is capable of being
-        cached.
-        """
-        return bool(request.method == "GET" and response.status_code == 200)
 
     def cache_control(self):
         control = dict(max_age=self.timeout, s_maxage=self.timeout)
