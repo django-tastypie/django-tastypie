@@ -86,6 +86,7 @@ class HTTPTestCase(TestServerTestCase):
         self.assertEqual(response.status, 200)
 
         headers = dict(response.getheaders())
-        self.assertEqual(headers['cache-control'], "max-age=3600",
-                         "Resource-defined Cache-Control headers should be unmodified")
+        cache_control = set([x.strip().lower() for x in headers["cache-control"].split(",") if x.strip()])
+
+        self.assertEqual(cache_control, set(["s-maxage=3600", "max-age=3600"]), "Cache-Control headers should be unmodified")
         self.assertTrue('"johndoe"' in response.read())

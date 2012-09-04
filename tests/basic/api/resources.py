@@ -1,7 +1,6 @@
-from django.conf.urls.defaults import url
 from django.contrib.auth.models import User
-from tastypie.bundle import Bundle
 from tastypie import fields
+from tastypie.cache import SimpleCache
 from tastypie.resources import ModelResource
 from tastypie.authentication import SessionAuthentication
 from tastypie.authorization import Authorization
@@ -20,11 +19,7 @@ class CachedUserResource(ModelResource):
         allowed_methods = ('get', )
         queryset = User.objects.all()
         resource_name = 'cached_users'
-
-    def create_response(self, *args, **kwargs):
-        resp = super(CachedUserResource, self).create_response(*args, **kwargs)
-        resp['Cache-Control'] = "max-age=3600"
-        return resp
+        cache = SimpleCache(timeout=3600)
 
 
 class NoteResource(ModelResource):
