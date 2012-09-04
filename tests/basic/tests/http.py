@@ -61,6 +61,22 @@ class HTTPTestCase(TestServerTestCase):
         self.assertEqual(obj['is_active'], True)
         self.assertEqual(obj['user'], '/api/v1/users/1/')
 
+    def test_vary_accept(self):
+        """
+        Ensure that resources return the Vary: Accept header.
+        """
+        connection = self.get_connection()
+        connection.request('GET', '/api/v1/cached_users/', headers={'Accept': 'application/json'})
+        response = connection.getresponse()
+        connection.close()
+
+        self.assertEqual(response.status, 200)
+
+        headers = dict(response.getheaders())
+        vary = headers.get("vary", "")
+        vary_types = [x.strip().lower() for x in vary.split(",") if x.strip()]
+        self.assertIn("accept", vary_types)
+
     def test_cache_control(self):
         """Ensure that resources can specify custom cache control directives"""
         connection = self.get_connection()
