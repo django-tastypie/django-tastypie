@@ -47,7 +47,7 @@ class SimpleCache(NoCache):
     Uses Django's current ``CACHE_BACKEND`` to store cached data.
     """
 
-    def __init__(self, timeout=60, *args, **kwargs):
+    def __init__(self, timeout=60, public=None, private=None, *args, **kwargs):
         """
         Optionally accepts a ``timeout`` in seconds for the resource's cache.
         Defaults to ``60`` seconds.
@@ -55,6 +55,8 @@ class SimpleCache(NoCache):
         super(SimpleCache, self).__init__(*args, **kwargs)
 
         self.timeout = timeout
+        self.public = public
+        self.private = private
 
     def get(self, key):
         """
@@ -84,5 +86,11 @@ class SimpleCache(NoCache):
 
     def cache_control(self):
         control = dict(max_age=self.timeout, s_maxage=self.timeout)
+
+        if self.public is not None:
+            control["public"] = self.public
+
+        if self.private is not None:
+            control["private"] = self.private
 
         return control

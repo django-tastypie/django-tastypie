@@ -20,7 +20,7 @@ class HTTPTestCase(TestServerTestCase):
         connection.close()
         data = response.read()
         self.assertEqual(response.status, 200)
-        self.assertEqual(data, '{"cached_users": {"list_endpoint": "/api/v1/cached_users/", "schema": "/api/v1/cached_users/schema/"}, "notes": {"list_endpoint": "/api/v1/notes/", "schema": "/api/v1/notes/schema/"}, "users": {"list_endpoint": "/api/v1/users/", "schema": "/api/v1/users/schema/"}}')
+        self.assertEqual(data, '{"cached_users": {"list_endpoint": "/api/v1/cached_users/", "schema": "/api/v1/cached_users/schema/"}, "notes": {"list_endpoint": "/api/v1/notes/", "schema": "/api/v1/notes/schema/"}, "private_cached_users": {"list_endpoint": "/api/v1/private_cached_users/", "schema": "/api/v1/private_cached_users/schema/"}, "public_cached_users": {"list_endpoint": "/api/v1/public_cached_users/", "schema": "/api/v1/public_cached_users/schema/"}, "users": {"list_endpoint": "/api/v1/users/", "schema": "/api/v1/users/schema/"}}')
 
     def test_get_apis_xml(self):
         connection = self.get_connection()
@@ -29,7 +29,7 @@ class HTTPTestCase(TestServerTestCase):
         connection.close()
         data = response.read()
         self.assertEqual(response.status, 200)
-        self.assertEqual(data, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><notes type="hash"><list_endpoint>/api/v1/notes/</list_endpoint><schema>/api/v1/notes/schema/</schema></notes><cached_users type="hash"><list_endpoint>/api/v1/cached_users/</list_endpoint><schema>/api/v1/cached_users/schema/</schema></cached_users><users type="hash"><list_endpoint>/api/v1/users/</list_endpoint><schema>/api/v1/users/schema/</schema></users></response>')
+        self.assertEqual(data, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><notes type="hash"><list_endpoint>/api/v1/notes/</list_endpoint><schema>/api/v1/notes/schema/</schema></notes><cached_users type="hash"><list_endpoint>/api/v1/cached_users/</list_endpoint><schema>/api/v1/cached_users/schema/</schema></cached_users><users type="hash"><list_endpoint>/api/v1/users/</list_endpoint><schema>/api/v1/users/schema/</schema></users><public_cached_users type="hash"><list_endpoint>/api/v1/public_cached_users/</list_endpoint><schema>/api/v1/public_cached_users/schema/</schema></public_cached_users><private_cached_users type="hash"><list_endpoint>/api/v1/private_cached_users/</list_endpoint><schema>/api/v1/private_cached_users/schema/</schema></private_cached_users></response>')
 
     def test_get_list(self):
         connection = self.get_connection()
@@ -78,7 +78,6 @@ class HTTPTestCase(TestServerTestCase):
         self.assertIn("accept", vary_types)
 
     def test_cache_control(self):
-        """Ensure that resources can specify custom cache control directives"""
         connection = self.get_connection()
         connection.request('GET', '/api/v1/cached_users/', headers={'Accept': 'application/json'})
         response = connection.getresponse()
@@ -89,4 +88,30 @@ class HTTPTestCase(TestServerTestCase):
         cache_control = set([x.strip().lower() for x in headers["cache-control"].split(",") if x.strip()])
 
         self.assertEqual(cache_control, set(["s-maxage=3600", "max-age=3600"]), "Cache-Control headers should be unmodified")
+        self.assertTrue('"johndoe"' in response.read())
+
+    def test_public_cache_control(self):
+        connection = self.get_connection()
+        connection.request('GET', '/api/v1/public_cached_users/', headers={'Accept': 'application/json'})
+        response = connection.getresponse()
+        connection.close()
+        self.assertEqual(response.status, 200)
+
+        headers = dict(response.getheaders())
+        cache_control = set([x.strip().lower() for x in headers["cache-control"].split(",") if x.strip()])
+
+        self.assertEqual(cache_control, set(["s-maxage=3600", "max-age=3600", "public"]), "Cache-Control headers should be unmodified")
+        self.assertTrue('"johndoe"' in response.read())
+
+    def test_private_cache_control(self):
+        connection = self.get_connection()
+        connection.request('GET', '/api/v1/private_cached_users/', headers={'Accept': 'application/json'})
+        response = connection.getresponse()
+        connection.close()
+        self.assertEqual(response.status, 200)
+
+        headers = dict(response.getheaders())
+        cache_control = set([x.strip().lower() for x in headers["cache-control"].split(",") if x.strip()])
+
+        self.assertEqual(cache_control, set(["s-maxage=3600", "max-age=3600", "private"]), "Cache-Control headers should be unmodified")
         self.assertTrue('"johndoe"' in response.read())

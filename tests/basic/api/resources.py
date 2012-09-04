@@ -22,6 +22,22 @@ class CachedUserResource(ModelResource):
         cache = SimpleCache(timeout=3600)
 
 
+class PublicCachedUserResource(ModelResource):
+    class Meta:
+        allowed_methods = ('get', )
+        queryset = User.objects.all()
+        resource_name = 'public_cached_users'
+        cache = SimpleCache(timeout=3600, public=True)
+
+
+class PrivateCachedUserResource(ModelResource):
+    class Meta:
+        allowed_methods = ('get', )
+        queryset = User.objects.all()
+        resource_name = 'private_cached_users'
+        cache = SimpleCache(timeout=3600, private=True)
+
+
 class NoteResource(ModelResource):
     user = fields.ForeignKey(UserResource, 'user')
 
