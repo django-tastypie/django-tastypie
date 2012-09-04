@@ -195,10 +195,13 @@ class Resource(object):
                 callback = getattr(self, view)
                 response = callback(request, *args, **kwargs)
 
-                # our response (content-type) can vary based on the Accept
-                # header so we need to tell caches that so that they won't
-                # return the wrong (cached) version
-                patch_vary_headers(response, ('Accept',))
+                # Our response can vary based on a number of factors, use
+                # the cache class to determine what we should Vary on so
+                # caches won't return the wrong (cached) version
+                varies = getattr(self._meta.cache, "varies", [])
+
+                if varies:
+                    patch_vary_headers(response, varies)
 
                 if request.is_ajax() and not response.has_header("Cache-Control"):
                     # IE excessively caches XMLHttpRequests, so we're disabling

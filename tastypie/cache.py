@@ -4,15 +4,24 @@ from django.core.cache import cache
 class NoCache(object):
     """
     A simplified, swappable base class for caching.
-    
+
     Does nothing save for simulating the cache API.
     """
+    def __init__(self, varies=None, *args, **kwargs):
+        """
+        Optionally accepts a ``varies`` list that will be used in the
+        Vary header. Defaults to ["Accept"].
+        """
+        super(NoCache, self).__init__(*args, **kwargs)
+
+        self.varies = varies if not varies is None else ["Accept"]
+
     def get(self, key):
         """
         Always returns ``None``.
         """
         return None
-    
+
     def set(self, key, value, timeout=60):
         """
         No-op for setting values in the cache.
@@ -25,11 +34,13 @@ class SimpleCache(NoCache):
     Uses Django's current ``CACHE_BACKEND`` to store cached data.
     """
 
-    def __init__(self, timeout=60):
+    def __init__(self, timeout=60, *args, **kwargs):
         """
         Optionally accepts a ``timeout`` in seconds for the resource's cache.
         Defaults to ``60`` seconds.
         """
+        super(SimpleCache, self).__init__(*args, **kwargs)
+
         self.timeout = timeout
 
     def get(self, key):
