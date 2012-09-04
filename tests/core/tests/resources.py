@@ -3024,6 +3024,40 @@ class ModelResourceTestCase(TestCase):
         hydrated_2 = rornr.full_hydrate(hbundle_2)
         self.assertEqual(hydrated_2.obj.author.username, 'johndoe')
 
+    def test_readonly_save_related(self):
+        rornr = ReadOnlyRelatedNoteResource()
+        note = Note.objects.get(pk=1)
+        dbundle = Bundle(obj=note)
+
+        # Make sure the field is there on read.
+        dehydrated = rornr.full_dehydrate(dbundle)
+        self.assertTrue('author' in dehydrated.data)
+
+        # Fetch the bundle
+        hbundle = Bundle(obj=note, data={
+            'name': 'Daniel',
+            'view_count': 6,
+            'date_joined': aware_datetime(2010, 2, 15, 12, 0, 0),
+            'author': '/api/v1/users/2/',
+        })
+        hydrated = rornr.full_hydrate(hbundle)
+
+        # Get the related object.
+        related_obj = getattr(hydrated.obj, "author")
+
+        # Monkey Patch save to raise an exception
+        def fake_save(*args, **kwargs):
+            raise Exception("save() called in a readonly field")
+
+        _real_save = related_obj.save
+
+        try:
+            related_obj.save = fake_save
+
+            rornr.save_related(hydrated)
+        finally:
+            related_obj.save = _real_save
+
 
 class BasicAuthResourceTestCase(TestCase):
     fixtures = ['note_testdata.json']

@@ -2077,6 +2077,9 @@ class ModelResource(Resource):
             if not field_object.attribute:
                 continue
 
+            if field_object.readonly:
+                continue
+
             if field_object.blank and not bundle.data.has_key(field_name):
                 continue
 
