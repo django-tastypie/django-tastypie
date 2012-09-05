@@ -488,10 +488,11 @@ class OAuthAuthentication(Authentication):
                 return oauth_provider.utils.send_oauth_error(e)
 
             if consumer and token:
-                if not self.check_active(token.user):
+                user = store.get_user_for_access_token(request, oauth_request, token)
+                if not self.check_active(user):
                     return False
 
-                request.user = token.user
+                request.user = user
                 return True
 
             return oauth_provider.utils.send_oauth_error(oauth2.Error(_('You are not allowed to access this resource.')))

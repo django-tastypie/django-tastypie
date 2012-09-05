@@ -7,4 +7,5 @@ copied to the release notes for the next release.
 Bugfixes
 --------
 
-* list of changes
+* Change OAuthAuthentication to use storage method to get user. (Closes #657)
+
