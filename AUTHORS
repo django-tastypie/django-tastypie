@@ -61,7 +61,7 @@ Contributors:
 * Andrey Voronov (eyvoro) for fixing a typo in the AUTHORS file.
 * D.B. Tsai (dbtsai) for a fix relating to ``detail_uri_kwargs``.
 * maraujop for a patch adding to ``X-HTTP-Method-Override`` support.
-* Donald Stufft (dstufft) for patching ToOneField callable attributes.
+* Donald Stufft (dstufft) for patching ToOneField callable attributes & for bumping the dateutil reqs.
 * Vladimir Volodin (vvolodin) for patching ToManyField callable attributes.
 * Mike Urbanski (mcu) for patching ``Paginator.get_limit``.
 * Jason Brownbridge (jbrownbridge) for patching multiple ``offset/limit`` params appearing in pagination URIs.
