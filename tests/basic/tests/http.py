@@ -61,6 +61,20 @@ class HTTPTestCase(TestServerTestCase):
         self.assertEqual(obj['is_active'], True)
         self.assertEqual(obj['user'], '/api/v1/users/1/')
 
+    def test_put_object(self):
+        connection = self.get_connection()
+        post_data = '{"content": "A new post modified.", "is_active": true, "title": "New Title", "slug": "new-title", "user": "/api/v1/users/1/", "foo-bar": "this should not be in the response"}'
+        connection.request('PUT', '/api/v2/full_note/2/', body=post_data, headers={'Accept': 'application/json', 'Content-type': 'application/json'})
+        response = connection.getresponse()
+        self.assertEqual(response.status, 202)
+
+        # make sure no data is rebounded
+        data = response.read()
+        obj = json.loads(data)
+
+        self.assertNotIn('foo-bar', obj)
+        self.assertEqual(obj['content'], "A new post modified.")
+
     def test_cache_control(self):
         """Ensure that resources can specify custom cache control directives"""
         connection = self.get_connection()
