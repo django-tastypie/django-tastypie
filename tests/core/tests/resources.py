@@ -25,7 +25,7 @@ from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
 from tastypie.utils import aware_datetime, make_naive, now
 from tastypie.validation import Validation, FormValidation
-from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote
+from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord
 from core.tests.mocks import MockRequest
 from core.utils import SimpleHandler
 
@@ -669,6 +669,15 @@ class ResourceTestCase(TestCase):
 # ====================
 # Model-based tests...
 # ====================
+
+class DateRecordResource(ModelResource):
+    class Meta:
+        queryset = DateRecord.objects.all()
+        always_return_data = True
+
+    def hydrate_username(self, bundle):
+        bundle.data['username'] = bundle.data['username'].upper()
+        return bundle
 
 
 class NoteResource(ModelResource):
@@ -1768,6 +1777,30 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(Note.objects.count(), 7)
         new_note = Note.objects.get(slug='cat-is-back')
         self.assertEqual(new_note.author, None)
+
+    def test_put_detail_with_identifiers(self):
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.raw_post_data = '{"is_active": true, "username": "whatever"}'
+        date_record_resource = DateRecordResource()
+        resp = date_record_resource.put_detail(request, username="maraujop")
+
+        self.assertEqual(resp.status_code, 202)
+        data = json.loads(resp.content)
+        self.assertEqual(data['username'], "MARAUJOP")
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.raw_post_data = '{"time": "whatever", "username": "different"}'
+        date_record_resource = DateRecordResource()
+        resp = date_record_resource.put_detail(request, date="2012-09-07")
+
+        self.assertEqual(resp.status_code, 202)
+        data = json.loads(resp.content)
+        self.assertEqual(data['date'], "2012-09-07T00:00:00")
+        self.assertEqual(data['username'], "DIFFERENT")
 
     def test_post_list(self):
         self.assertEqual(Note.objects.count(), 6)
