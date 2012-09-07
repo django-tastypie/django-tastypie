@@ -6,6 +6,7 @@ from django.core.servers import basehttp
 from django.test.testcases import TransactionTestCase
 from django.core.management import call_command
 
+
 class StoppableWSGIServer(basehttp.WSGIServer):
     """WSGIServer with short timeout, so that server thread can stop this server."""
 
@@ -22,6 +23,7 @@ class StoppableWSGIServer(basehttp.WSGIServer):
             return (sock, address)
         except socket.timeout:
             raise
+
 
 class TestServerThread(threading.Thread):
     """Thread for running a http server while tests are running."""
