@@ -1,6 +1,5 @@
-from django.conf.urls.defaults import url
 from django.contrib.auth.models import User
-from tastypie.bundle import Bundle
+from tastypie.cache import SimpleCache
 from tastypie import fields
 from tastypie.resources import ModelResource
 from tastypie.authentication import SessionAuthentication
