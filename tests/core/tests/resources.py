@@ -25,7 +25,7 @@ from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
 from tastypie.utils import aware_datetime, make_naive, now
 from tastypie.validation import Validation, FormValidation
-from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord
+from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord, Counter
 from core.tests.mocks import MockRequest
 from core.utils import SimpleHandler
 
@@ -675,6 +675,10 @@ class DateRecordResource(ModelResource):
         queryset = DateRecord.objects.all()
         always_return_data = True
 
+    def hydrate(self, bundle):
+        bundle.data['message'] = bundle.data['message'].lower()
+        return bundle
+
     def hydrate_username(self, bundle):
         bundle.data['username'] = bundle.data['username'].upper()
         return bundle
@@ -1030,6 +1034,19 @@ class PerObjectNoteResource(NoteResource):
         self._post_limits = len(object_list._result_cache)
         return new_object_list
 # End per object authorization bits.
+
+
+class CounterResource(ModelResource):
+    count = fields.IntegerField('count', default=0, null=True)
+
+    class Meta:
+        queryset = Counter.objects.all()
+
+    def full_hydrate(self, bundle):
+        bundle.times_hydrated = getattr(bundle, 'times_hydrated', 0) + 1
+        new_shiny = super(CounterResource, self).full_hydrate(bundle)
+        new_shiny.obj.count = new_shiny.times_hydrated
+        return new_shiny
 
 
 class ModelResourceTestCase(TestCase):
@@ -1782,7 +1799,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.raw_post_data = '{"is_active": true, "username": "whatever"}'
+        request.raw_post_data = '{"date": "2012-09-07", "username": "WAT", "message": "hello"}'
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, username="maraujop")
 
@@ -1793,14 +1810,24 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.raw_post_data = '{"time": "whatever", "username": "different"}'
+        request.raw_post_data = '{"date": "WAT", "username": "maraujop", "message": "hello"}'
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, date="2012-09-07")
 
         self.assertEqual(resp.status_code, 202)
         data = json.loads(resp.content)
         self.assertEqual(data['date'], "2012-09-07T00:00:00")
-        self.assertEqual(data['username'], "DIFFERENT")
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.raw_post_data = '{"date": "2012-09-07", "username": "maraujop", "message": "WAT"}'
+        date_record_resource = DateRecordResource()
+        resp = date_record_resource.put_detail(request, message="HELLO")
+
+        self.assertEqual(resp.status_code, 202)
+        data = json.loads(resp.content)
+        self.assertEqual(data['message'], "hello")
 
     def test_post_list(self):
         self.assertEqual(Note.objects.count(), 6)
@@ -2614,6 +2641,20 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(numero_uno.content, u'WHEEEEEE!')
         self.assertEqual(numero_uno.is_active, True)
         self.assertEqual(numero_uno.author.pk, request.user.pk)
+
+    def test_obj_update_single_hydrate(self):
+        counter = Counter.objects.get(pk=1)
+        self.assertEqual(counter.count, 1)
+        cr = CounterResource()
+        counter_bundle = cr.build_bundle(data={
+            "pk": counter.pk,
+            "name": "Signups",
+            "slug": "signups",
+        })
+        cr.obj_update(counter_bundle, pk=1)
+        self.assertEqual(Counter.objects.all().count(), 2)
+        counter = Counter.objects.get(pk=1)
+        self.assertEqual(counter.count, 1)
 
     def test_obj_delete(self):
         self.assertEqual(Note.objects.all().count(), 6)

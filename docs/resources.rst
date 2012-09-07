@@ -1264,6 +1264,15 @@ Creates a new object based on the provided data.
 ``ModelResource`` includes a full working version specific to Django's
 ``Models``.
 
+``lookup_kwargs_with_identifiers``
+----------------------------------
+
+.. method:: Resource.lookup_kwargs_with_identifiers(self, bundle, kwargs)
+
+Kwargs here represent uri identifiers. Ex: /repos/<user_id>/<repo_name>/
+We need to turn those identifiers into Python objects for generating
+lookup parameters that can find them in the DB.
+
 ``obj_update``
 --------------
 
