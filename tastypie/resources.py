@@ -9,7 +9,7 @@ from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver4
 from django.db import transaction
 from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
 from django.http import HttpResponse, HttpResponseNotFound, Http404
-from django.utils.cache import patch_cache_control
+from django.utils.cache import patch_cache_control, patch_vary_headers
 from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.bundle import Bundle
@@ -194,6 +194,20 @@ class Resource(object):
             try:
                 callback = getattr(self, view)
                 response = callback(request, *args, **kwargs)
+
+                # Our response can vary based on a number of factors, use
+                # the cache class to determine what we should Vary on so
+                # caches won't return the wrong (cached) version
+                varies = getattr(self._meta.cache, "varies", [])
+
+                if varies:
+                    patch_vary_headers(response, varies)
+
+                if self._meta.cache.cacheable(request, response):
+                    if self._meta.cache.cache_control():
+                        # If the request is cacheable and we have a Cache-Control
+                        # Available then patch the Cache Control header
+                        patch_cache_control(response, **self._meta.cache.cache_control())
 
                 if request.is_ajax() and not response.has_header("Cache-Control"):
                     # IE excessively caches XMLHttpRequests, so we're disabling
