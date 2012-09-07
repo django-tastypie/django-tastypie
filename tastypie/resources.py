@@ -1918,6 +1918,7 @@ class ModelResource(Resource):
                 bundle.obj = self.get_object_list(bundle.request).model()
                 # Override data values, we rely on uri identifiers
                 bundle.data.update(kwargs)
+                bundle = self.hydrate(bundle)
 
                 lookup_kwargs = {}
                 for identifier in kwargs:
