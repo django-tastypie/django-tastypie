@@ -675,6 +675,10 @@ class DateRecordResource(ModelResource):
         queryset = DateRecord.objects.all()
         always_return_data = True
 
+    def hydrate(self, bundle):
+        bundle.data['message'] = bundle.data['message'].lower()
+        return bundle
+
     def hydrate_username(self, bundle):
         bundle.data['username'] = bundle.data['username'].upper()
         return bundle
@@ -1782,7 +1786,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.raw_post_data = '{"is_active": true, "username": "whatever"}'
+        request.raw_post_data = '{"date": "2012-09-07", "username": "WAT", "message": "hello"}'
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, username="maraujop")
 
@@ -1793,14 +1797,24 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.raw_post_data = '{"time": "whatever", "username": "different"}'
+        request.raw_post_data = '{"date": "WAT", "username": "maraujop", "message": "hello"}'
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, date="2012-09-07")
 
         self.assertEqual(resp.status_code, 202)
         data = json.loads(resp.content)
         self.assertEqual(data['date'], "2012-09-07T00:00:00")
-        self.assertEqual(data['username'], "DIFFERENT")
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.raw_post_data = '{"date": "2012-09-07", "username": "maraujop", "message": "WAT"}'
+        date_record_resource = DateRecordResource()
+        resp = date_record_resource.put_detail(request, message="HELLO")
+
+        self.assertEqual(resp.status_code, 202)
+        data = json.loads(resp.content)
+        self.assertEqual(data['message'], "hello")
 
     def test_post_list(self):
         self.assertEqual(Note.objects.count(), 6)

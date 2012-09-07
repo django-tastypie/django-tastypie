@@ -31,7 +31,8 @@
     {
         "fields": {
             "date": "2012-09-07",
-            "username": "MARAUJOP"
+            "username": "MARAUJOP",
+            "message": "hello"
         },
         "model": "core.daterecord",
         "pk": 1

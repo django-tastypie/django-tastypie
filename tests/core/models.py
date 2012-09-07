@@ -7,6 +7,7 @@ from tastypie.utils import now, aware_datetime
 class DateRecord(models.Model):
     date = models.DateField()
     username = models.CharField(max_length=20)
+    message = models.CharField(max_length=20)
 
 
 class Note(models.Model):
