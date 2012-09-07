@@ -85,8 +85,9 @@ class HTTPTestCase(TestServerTestCase):
         self.assertEqual(response.status, 200)
 
         headers = dict(response.getheaders())
-        self.assertEqual(headers['cache-control'], "max-age=3600",
-                         "Resource-defined Cache-Control headers should be unmodified")
+        cache_control = set([x.strip().lower() for x in headers["cache-control"].split(",") if x.strip()])
+
+        self.assertEqual(cache_control, set(["s-maxage=3600", "max-age=3600"]))
         self.assertTrue('"johndoe"' in response.read())
 
     def test_public_cache_control(self):
@@ -99,7 +100,7 @@ class HTTPTestCase(TestServerTestCase):
         headers = dict(response.getheaders())
         cache_control = set([x.strip().lower() for x in headers["cache-control"].split(",") if x.strip()])
 
-        self.assertEqual(cache_control, set(["s-maxage=3600", "max-age=3600", "public"]), "Cache-Control headers should be unmodified")
+        self.assertEqual(cache_control, set(["s-maxage=3600", "max-age=3600", "public"]))
         self.assertTrue('"johndoe"' in response.read())
 
     def test_private_cache_control(self):
@@ -112,5 +113,5 @@ class HTTPTestCase(TestServerTestCase):
         headers = dict(response.getheaders())
         cache_control = set([x.strip().lower() for x in headers["cache-control"].split(",") if x.strip()])
 
-        self.assertEqual(cache_control, set(["s-maxage=3600", "max-age=3600", "private"]), "Cache-Control headers should be unmodified")
+        self.assertEqual(cache_control, set(["s-maxage=3600", "max-age=3600", "private"]))
         self.assertTrue('"johndoe"' in response.read())
