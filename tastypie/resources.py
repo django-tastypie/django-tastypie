@@ -1907,6 +1907,49 @@ class ModelResource(Resource):
         self.save_m2m(m2m_bundle)
         return bundle
 
+    def medium_hydrate(self, bundle):
+        """
+        Given a populated bundle with an object, get data and
+        alter object with it, only expanding data to be altered and avoiding
+        unnecessary queries.
+        """
+        if bundle.obj is None:
+            bundle.obj = self._meta.object_class()
+        bundle = self.hydrate(bundle)
+
+        for field_name in bundle.data.keys():
+            if field_name in self.fields:
+                field_object = self.fields[field_name]
+                if field_object.readonly is True:
+                    continue
+
+                # Check for an optional method to do further hydration.
+                method = getattr(self, "hydrate_%s" % field_name, None)
+
+                if method:
+                    bundle = method(bundle)
+                if field_object.attribute:
+                    value = field_object.hydrate(bundle)
+
+                    # NOTE: We only get back a bundle when it is related field.
+                    if isinstance(value, Bundle) and value.errors.get(field_name):
+                        bundle.errors[field_name] = value.errors[field_name]
+
+                    if value is not None or field_object.null:
+                        # We need to avoid populating M2M data here as that will
+                        # cause things to blow up.
+                        if not getattr(field_object, 'is_related', False):
+                            setattr(bundle.obj, field_object.attribute, value)
+                        elif not getattr(field_object, 'is_m2m', False):
+                            if value is not None:
+                                setattr(bundle.obj, field_object.attribute, value.obj)
+                            elif field_object.blank:
+                                continue
+                            elif field_object.null:
+                                setattr(bundle.obj, field_object.attribute, value)
+
+        return bundle
+
     def obj_update(self, bundle, request=None, skip_errors=False, **kwargs):
         """
         A ORM-specific implementation of ``obj_update``.
@@ -1917,7 +1960,7 @@ class ModelResource(Resource):
             try:
                 bundle.obj = self.get_object_list(bundle.request).model()
                 bundle.data.update(kwargs)
-                bundle = self.full_hydrate(bundle)
+                bundle = self.medium_hydrate(bundle)
                 lookup_kwargs = kwargs.copy()
 
                 for key in kwargs.keys():
@@ -1938,7 +1981,7 @@ class ModelResource(Resource):
             except ObjectDoesNotExist:
                 raise NotFound("A model instance matching the provided arguments could not be found.")
 
-        bundle = self.full_hydrate(bundle)
+        bundle = self.medium_hydrate(bundle)
         self.is_valid(bundle,request)
 
         if bundle.errors and not skip_errors:
