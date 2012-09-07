@@ -1912,21 +1912,32 @@ class ModelResource(Resource):
         A ORM-specific implementation of ``obj_update``.
         """
         if not bundle.obj or not self.get_bundle_detail_data(bundle):
-            # Attempt to hydrate data from kwargs before doing a lookup for the object.
-            # This step is needed so certain values (like datetime) will pass model validation.
+            # Kwargs here represent uri identifiers Ex: /repos/<user_id>/<repo_name>/
+            # We need to turn those identifiers into Python objects for looking them up in the DB
             try:
                 bundle.obj = self.get_object_list(bundle.request).model()
+                # Override data values, we rely on uri identifiers
                 bundle.data.update(kwargs)
-                bundle = self.full_hydrate(bundle)
-                lookup_kwargs = kwargs.copy()
 
-                for key in kwargs.keys():
-                    if key == self._meta.detail_uri_name:
+                lookup_kwargs = {}
+                for identifier in kwargs:
+                    if identifier == self._meta.detail_uri_name:
+                        lookup_kwargs[identifier] = kwargs[identifier]
                         continue
-                    elif getattr(bundle.obj, key, NOT_AVAILABLE) is not NOT_AVAILABLE:
-                        lookup_kwargs[key] = getattr(bundle.obj, key)
-                    else:
-                        del lookup_kwargs[key]
+
+                    field_object = self.fields[identifier]
+
+                    if field_object.readonly is True:
+                        continue
+
+                    # Check for an optional method to do further hydration.
+                    method = getattr(self, "hydrate_%s" % identifier, None)
+                    if method:
+                        bundle = method(bundle)
+                    if field_object.attribute:
+                        value = field_object.hydrate(bundle)
+
+                    lookup_kwargs[identifier] = value
             except:
                 # if there is trouble hydrating the data, fall back to just
                 # using kwargs by itself (usually it only contains a "pk" key
