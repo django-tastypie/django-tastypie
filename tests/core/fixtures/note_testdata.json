@@ -30,6 +30,15 @@
 
     {
         "fields": {
+            "date": "2012-09-07",
+            "username": "MARAUJOP"
+        },
+        "model": "core.daterecord",
+        "pk": 1
+    },
+
+    {
+        "fields": {
             "author": 1,
             "title": "First Post!",
             "slug": "first-post",
