@@ -9,7 +9,7 @@ from tastypie.fields import *
 from tastypie.resources import ModelResource
 from core.models import Note, Subject, MediaBit
 
-from tastypie.utils import aware_datetime, aware_date
+from tastypie.utils import aware_datetime
 
 
 class ApiFieldTestCase(TestCase):
@@ -178,6 +178,10 @@ class CharFieldTestCase(TestCase):
         field_2 = CharField(default=20)
         self.assertEqual(field_2.dehydrate(bundle), u'20')
 
+    def test_model_resource_correct_association(self):
+        api_field = ModelResource.api_field_from_django_field(models.CharField())
+        self.assertEqual(api_field, CharField)
+
 
 class FileFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -216,6 +220,10 @@ class FileFieldTestCase(TestCase):
         field_4 = FileField(attribute='image', null=True)
         self.assertEqual(field_4.dehydrate(bundle), None)
 
+    def test_model_resource_correct_association(self):
+        api_field = ModelResource.api_field_from_django_field(models.FileField())
+        self.assertEqual(api_field, FileField)
+
 
 class IntegerFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -244,6 +252,10 @@ class IntegerFieldTestCase(TestCase):
         field_3 = IntegerField(default=18.5)
         self.assertEqual(field_3.dehydrate(bundle), 18)
 
+    def test_model_resource_correct_association(self):
+        api_field = ModelResource.api_field_from_django_field(models.IntegerField())
+        self.assertEqual(api_field, IntegerField)
+
 
 class FloatFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -268,6 +280,10 @@ class FloatFieldTestCase(TestCase):
 
         field_2 = IntegerField(default=18.5)
         self.assertEqual(field_2.dehydrate(bundle), 18)
+
+    def test_model_resource_correct_association(self):
+        api_field = ModelResource.api_field_from_django_field(models.FloatField())
+        self.assertEqual(api_field, FloatField)
 
 
 class DecimalFieldTestCase(TestCase):
@@ -384,6 +400,10 @@ class BooleanFieldTestCase(TestCase):
         field_2 = BooleanField(default=True)
         self.assertEqual(field_2.dehydrate(bundle), True)
 
+    def test_model_resource_correct_association(self):
+        api_field = ModelResource.api_field_from_django_field(models.BooleanField())
+        self.assertEqual(api_field, BooleanField)
+
 
 class TimeFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -444,6 +464,10 @@ class TimeFieldTestCase(TestCase):
         field_5 = TimeField(attribute='created', null=True)
         field_5.instance_name = 'time'
         self.assertEqual(field_5.hydrate(bundle_5), None)
+
+    def test_model_resource_correct_association(self):
+        api_field = ModelResource.api_field_from_django_field(models.TimeField())
+        self.assertEqual(api_field, TimeField)
 
 
 class DateFieldTestCase(TestCase):
@@ -508,6 +532,10 @@ class DateFieldTestCase(TestCase):
         field_5.instance_name = 'date'
         self.assertEqual(field_5.hydrate(bundle_5), None)
 
+    def test_model_resource_correct_association(self):
+        api_field = ModelResource.api_field_from_django_field(models.DateField())
+        self.assertEqual(api_field, DateField)
+
 
 class DateTimeFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -563,6 +591,10 @@ class DateTimeFieldTestCase(TestCase):
         field_4 = DateField(attribute='created', null=True)
         field_4.instance_name = 'datetime'
         self.assertEqual(field_4.hydrate(bundle_4), None)
+
+    def test_model_resource_correct_association(self):
+        api_field = ModelResource.api_field_from_django_field(models.DateTimeField())
+        self.assertEqual(api_field, DateTimeField)
 
 
 class UserResource(ModelResource):
