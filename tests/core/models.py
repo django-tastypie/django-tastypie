@@ -1,7 +1,7 @@
 import datetime
 from django.contrib.auth.models import User
 from django.db import models
-from tastypie.utils import now, aware_datetime
+from tastypie.utils import now, today, aware_datetime
 
 
 class DateRecord(models.Model):
@@ -16,6 +16,7 @@ class Note(models.Model):
     slug = models.SlugField()
     content = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
+    pub_date = models.DateField(default=today)
     created = models.DateTimeField(default=now)
     updated = models.DateTimeField(default=now)
 

@@ -24,7 +24,12 @@ except ImportError:
     make_aware = make_naive = lambda x: x
 
 def aware_date(*args, **kwargs):
-    return make_aware(datetime.date(*args, **kwargs))
+    return datetime.date(*args, **kwargs)
 
 def aware_datetime(*args, **kwargs):
     return make_aware(datetime.datetime(*args, **kwargs))
+
+
+def today():
+    """Returns the current date associated with ``now()``."""
+    return now().date()
