@@ -475,8 +475,6 @@ class DateFieldTestCase(TestCase):
         self.assertEqual(field_3.dehydrate(bundle), datetime.date(2010, 4, 2))
 
     def test_hydrate(self):
-        note = Note.objects.get(pk=1)
-
         bundle_1 = Bundle(data={
             'date': '2010-05-12',
         })
@@ -540,8 +538,6 @@ class DateTimeFieldTestCase(TestCase):
         self.assertEqual(field_3.dehydrate(bundle), aware_datetime(2010, 4, 2, 1, 11))
 
     def test_hydrate(self):
-        note = Note.objects.get(pk=1)
-
         bundle_1 = Bundle(data={
             'datetime': '2010-05-12 10:36:28',
         })
