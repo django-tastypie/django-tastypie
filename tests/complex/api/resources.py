@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User, Group
 from django.contrib.comments.models import Comment
-from tastypie.fields import CharField, ForeignKey, ManyToManyField, OneToOneField, OneToManyField
+from tastypie.fields import ForeignKey, ManyToManyField, OneToOneField, OneToManyField
 from tastypie.resources import ModelResource
 from complex.models import Post, Profile
 
