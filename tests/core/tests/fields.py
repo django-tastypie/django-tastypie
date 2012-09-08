@@ -488,21 +488,21 @@ class DateFieldTestCase(TestCase):
         note = Note.objects.get(pk=1)
         bundle = Bundle(obj=note)
 
-        field_1 = DateField(attribute='created')
-        self.assertEqual(field_1.dehydrate(bundle), aware_datetime(2010, 3, 30, 20, 5))
+        field_1 = DateField(attribute='pub_date')
+        self.assertEqual(field_1.dehydrate(bundle), datetime.date(2010, 3, 30))
 
         field_2 = DateField(default=datetime.date(2010, 4, 1))
         self.assertEqual(field_2.dehydrate(bundle), datetime.date(2010, 4, 1))
 
-        note.created_string = '2010-04-02'
-        field_3 = DateField(attribute='created_string')
+        note.pub_date_string = '2010-04-02'
+        field_3 = DateField(attribute='pub_date_string')
         self.assertEqual(field_3.dehydrate(bundle), datetime.date(2010, 4, 2))
 
     def test_hydrate(self):
         bundle_1 = Bundle(data={
             'date': '2010-05-12',
         })
-        field_1 = DateField(attribute='created')
+        field_1 = DateField(attribute='pub_date')
         field_1.instance_name = 'date'
         self.assertEqual(field_1.hydrate(bundle_1), datetime.date(2010, 5, 12))
 
@@ -514,21 +514,21 @@ class DateFieldTestCase(TestCase):
         bundle_3 = Bundle(data={
             'date': 'Wednesday, May 12, 2010',
         })
-        field_3 = DateField(attribute='created_string')
+        field_3 = DateField(attribute='pub_date_string')
         field_3.instance_name = 'date'
         self.assertEqual(field_3.hydrate(bundle_3), datetime.date(2010, 5, 12))
 
         bundle_4 = Bundle(data={
             'date': '5 Apr 2010',
         })
-        field_4 = DateField(attribute='created')
+        field_4 = DateField(attribute='pub_date')
         field_4.instance_name = 'date'
         self.assertEqual(field_4.hydrate(bundle_4), datetime.date(2010, 4, 5))
 
         bundle_5 = Bundle(data={
             'date': None,
         })
-        field_5 = DateField(attribute='created', null=True)
+        field_5 = DateField(attribute='pub_date', null=True)
         field_5.instance_name = 'date'
         self.assertEqual(field_5.hydrate(bundle_5), None)
 
