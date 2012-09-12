@@ -23,6 +23,7 @@ setup(
         'tastypie.migrations',
         'tastypie.contrib',
         'tastypie.contrib.gis',
+        'tastypie.contrib.contenttypes',
     ],
     package_data={
         'tastypie': ['templates/tastypie/*'],
