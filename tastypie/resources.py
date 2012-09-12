@@ -1758,7 +1758,7 @@ class ModelResource(Resource):
 
         qs_filters = {}
 
-        if hasattr(self._meta, 'queryset'):
+        if getattr(self._meta, 'queryset', None) is not None:
             # Get the possible query terms from the current QuerySet.
             if hasattr(self._meta.queryset.query.query_terms, 'keys'):
                 # Django 1.4 & below compatibility.
