@@ -1932,15 +1932,12 @@ class ModelResource(Resource):
         # Save FKs just in case.
         self.save_related(bundle)
 
-<<<<<<< HEAD
-        # Save parent
-=======
         # Call full_clean on the object if requested
         if self._meta.full_clean_obj:
             bundle.obj.full_clean()
 
         # Save the main object.
->>>>>>> To make it easier to 'clean' a model object provide a new meta option 'full_clean_obj' in ResourceOptions.
+        # Save parent
         bundle.obj.save()
 
         # Now pick up the M2M bits.
@@ -2116,12 +2113,13 @@ class ModelResource(Resource):
 
             # Because sometimes it's ``None`` & that's OK.
             if related_obj:
+                if self._meta.full_clean_obj:
+                    related_obj.full_clean()
                 if field_object.related_name:
                     if not self.get_bundle_detail_data(bundle):
                         bundle.obj.save()
 
                     setattr(related_obj, field_object.related_name, bundle.obj)
-
                 related_obj.save()
                 setattr(bundle.obj, field_object.attribute, related_obj)
 
@@ -2163,6 +2161,9 @@ class ModelResource(Resource):
             related_objs = []
 
             for related_bundle in bundle.data[field_name]:
+                # Call full_clean on the object if requested
+                if self._meta.full_clean_obj:
+                    related_bundle.obj.full_clean()
                 related_bundle.obj.save()
                 related_objs.append(related_bundle.obj)
 
