@@ -33,6 +33,27 @@ class ViewsTestCase(TestCase):
         self.assertEqual(len(deserialized['objects']), 2)
         self.assertEqual([obj['title'] for obj in deserialized['objects']], [u'Another Post', u'First Post!'])
 
+    def test_heads(self):
+        resp = self.client.head('/api/v1/', data={'format': 'json'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '')
+
+        resp = self.client.head('/api/v1/notes/', data={'format': 'json'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '')
+
+        resp = self.client.head('/api/v1/notes/1/', data={'format': 'json'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '')
+
+        resp = self.client.head('/api/v1/notes/set/2;1/', data={'format': 'json'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '')
+
+        resp = self.client.head('/api/v1/notes/300/', data={'format': 'json'})
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.content, '')
+
     def test_get_test_client_error(self):
         # The test server should re-raise exceptions to make debugging easier.
         self.assertRaises(Exception, self.client.get, '/api/v2/busted/', data={'format': 'json'})
@@ -84,13 +105,13 @@ class ViewsTestCase(TestCase):
     def test_options(self):
         resp = self.client.options('/api/v1/notes/')
         self.assertEqual(resp.status_code, 200)
-        allows = 'GET,POST,PUT,DELETE,PATCH'
+        allows = 'GET,POST,PUT,DELETE,PATCH,HEAD'
         self.assertEqual(resp['Allow'], allows)
         self.assertEqual(resp.content, allows)
 
         resp = self.client.options('/api/v1/notes/1/')
         self.assertEqual(resp.status_code, 200)
-        allows = 'GET,POST,PUT,DELETE,PATCH'
+        allows = 'GET,POST,PUT,DELETE,PATCH,HEAD'
         self.assertEqual(resp['Allow'], allows)
         self.assertEqual(resp.content, allows)
 
@@ -102,7 +123,7 @@ class ViewsTestCase(TestCase):
 
         resp = self.client.options('/api/v1/notes/set/2;1/')
         self.assertEqual(resp.status_code, 200)
-        allows = 'GET'
+        allows = 'GET,HEAD'
         self.assertEqual(resp['Allow'], allows)
         self.assertEqual(resp.content, allows)
 

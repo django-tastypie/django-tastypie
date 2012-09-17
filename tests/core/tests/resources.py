@@ -452,8 +452,8 @@ class ResourceTestCase(TestCase):
         basic = BasicResource()
         schema = self.adjust_schema(basic.build_schema())
         self.assertEqual(schema, {
-            'allowed_detail_http_methods': ['get', 'post', 'put', 'delete', 'patch'],
-            'allowed_list_http_methods': ['get', 'post', 'put', 'delete', 'patch'],
+            'allowed_detail_http_methods': ['get', 'post', 'put', 'delete', 'patch', 'head'],
+            'allowed_list_http_methods': ['get', 'post', 'put', 'delete', 'patch', 'head'],
             'default_format': 'application/json',
             'default_limit': 20,
             'fields': {
@@ -505,7 +505,7 @@ class ResourceTestCase(TestCase):
                 'name': 1,
                 'date_joined': ['gt', 'gte']
             },
-            'allowed_detail_http_methods': ['get', 'post', 'put', 'delete', 'patch'],
+            'allowed_detail_http_methods': ['get', 'post', 'put', 'delete', 'patch', 'head'],
             'ordering': ['date_joined', 'name'],
             'fields': {
                 'view_count': {
@@ -547,7 +547,7 @@ class ResourceTestCase(TestCase):
             },
             'default_format': 'application/json',
             'default_limit': 20,
-            'allowed_list_http_methods': ['get', 'post', 'put', 'delete', 'patch']
+            'allowed_list_http_methods': ['get', 'post', 'put', 'delete', 'patch', 'head']
         })
 
     def test_subclassing(self):
@@ -1074,8 +1074,8 @@ class ModelResourceTestCase(TestCase):
         self.assertNotEqual(resource_1._meta.queryset, None)
         self.assertEqual(resource_1._meta.resource_name, 'notes')
         self.assertEqual(resource_1._meta.limit, 20)
-        self.assertEqual(resource_1._meta.list_allowed_methods, ['get', 'post', 'put', 'delete', 'patch'])
-        self.assertEqual(resource_1._meta.detail_allowed_methods, ['get', 'post', 'put', 'delete', 'patch'])
+        self.assertEqual(resource_1._meta.list_allowed_methods, ['get', 'post', 'put', 'delete', 'patch', 'head'])
+        self.assertEqual(resource_1._meta.detail_allowed_methods, ['get', 'post', 'put', 'delete', 'patch', 'head'])
         self.assertEqual(isinstance(resource_1._meta.serializer, Serializer), True)
 
         # Lightly custom.
@@ -1350,7 +1350,7 @@ class ModelResourceTestCase(TestCase):
                 'subjects': 2,
                 'author': 1
             },
-            'allowed_detail_http_methods': ['get', 'post', 'put', 'delete', 'patch'],
+            'allowed_detail_http_methods': ['get', 'post', 'put', 'delete', 'patch', 'head'],
             'fields': {
                 'author': {
                     'related_type': 'to_one',
@@ -1429,7 +1429,7 @@ class ModelResourceTestCase(TestCase):
             },
             'default_format': 'application/json',
             'default_limit': 20,
-            'allowed_list_http_methods': ['get', 'post', 'put', 'delete', 'patch']
+            'allowed_list_http_methods': ['get', 'post', 'put', 'delete', 'patch', 'head']
         })
 
     def test_build_filters(self):
@@ -1720,6 +1720,34 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.content, '{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}')
 
         resp = resource.get_detail(request, pk=300)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_head_list(self):
+        resource = NoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+
+        resp = resource.head_list(request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '')
+
+        # HEAD requests test the URL only and do not include data
+        # There is no support for slicing or offset
+
+    def test_head_detail(self):
+        resource = NoteResource()
+        request = HttpRequest()
+        request.HEAD = {'format': 'json'}
+
+        resp = resource.head_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '')
+
+        resp = resource.head_detail(request, pk=2)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '')
+
+        resp = resource.head_detail(request, pk=300)
         self.assertEqual(resp.status_code, 404)
 
     def test_put_list(self):
@@ -2207,8 +2235,8 @@ class ModelResourceTestCase(TestCase):
         resp = resource.get_schema(request)
         self.assertEqual(resp.status_code, 200)
         schema = {
-            "allowed_detail_http_methods": ["get", "post", "put", "delete", "patch"],
-            "allowed_list_http_methods": ["get", "post", "put", "delete", "patch"],
+            "allowed_detail_http_methods": ["get", "post", "put", "delete", "patch", "head"],
+            "allowed_list_http_methods": ["get", "post", "put", "delete", "patch", "head"],
             "default_format": "application/json",
             "default_limit": 20,
             "fields": {

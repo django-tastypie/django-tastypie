@@ -67,7 +67,7 @@ class ResourceOptions(object):
     throttle = BaseThrottle()
     validation = Validation()
     paginator_class = Paginator
-    allowed_methods = ['get', 'post', 'put', 'delete', 'patch']
+    allowed_methods = ['get', 'post', 'put', 'delete', 'patch', 'head']
     list_allowed_methods = None
     detail_allowed_methods = None
     limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)
@@ -98,7 +98,7 @@ class ResourceOptions(object):
                 if not override_name.startswith('_'):
                     overrides[override_name] = getattr(meta, override_name)
 
-        allowed_methods = overrides.get('allowed_methods', ['get', 'post', 'put', 'delete', 'patch'])
+        allowed_methods = overrides.get('allowed_methods', ['get', 'post', 'put', 'delete', 'patch', 'head'])
 
         if overrides.get('list_allowed_methods', None) is None:
             overrides['list_allowed_methods'] = allowed_methods
@@ -1157,6 +1157,31 @@ class Resource(object):
         bundle = self.alter_detail_data_to_serialize(request, bundle)
         return self.create_response(request, bundle)
 
+    def head_list(self, request, **kwargs):
+        """
+        Returns a an empty response with the correct response type based on the existence of the resource
+
+        Indicates the existence of the resource without providing any serialized data.
+        """
+        # if we make it this far, the resource exists.
+        return HttpResponse()
+
+
+    def head_detail(self, request, **kwargs):
+        """
+        Returns a an empty response with the correct response type.
+
+        Indicates the existence of the resource without providing any serialized data.
+        """
+        try:
+            obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
+        except ObjectDoesNotExist:
+            return http.HttpNotFound()
+        except MultipleObjectsReturned:
+            return http.HttpMultipleChoices()
+
+        return HttpResponse()
+
     def put_list(self, request, **kwargs):
         """
         Replaces a collection of resources with another collection.
@@ -1477,7 +1502,7 @@ class Resource(object):
 
         Should return a HttpResponse (200 OK).
         """
-        self.method_check(request, allowed=['get'])
+        self.method_check(request, allowed=['get', 'head'])
         self.is_authenticated(request)
         self.throttle_check(request)
 
