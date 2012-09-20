@@ -29,7 +29,7 @@ Contributors:
 * Marcel van den Elst (MacMaru) for testing regarding ``blank=True``.
 * ulmus for a cookbook example.
 * Jason Kraus (zbyte64) for a patch related to script prefix.
-* Timothée Peignier (cyberdelia) for various patches.
+* Timothée Peignier (cyberdelia) for various patches.
 * Chris Beaven (SmileyChris) for a documentation patch.
 * Evan Borgstrom (fatbox) for a documentation patch.
 * Madis V (madisvain) for a README patch.
@@ -53,6 +53,18 @@ Contributors:
 * Randall Degges for patch_list method documentation patch.
 * Alexis Svinartchouk (zvin) for patching field type fix for AutoFields.
 * Mike W (mik3y) for a cookbook entry on pretty-printed JSON serialization.
+* Taylor Mitchell (tmitchell) for finding and patching a bug in the paginator query encoding.
+* D.B. Tsai (dbtsai) & DuJour for funding:
+    * The work to make non-pk URIs work better
+* Ryan West (ryanisnan) for finding and patching a bug in patch_list where requests were not included in the bundle.
+* Julien Bouquillon (revolunet) for authentication and authorization docs fixes.
+* Andrey Voronov (eyvoro) for fixing a typo in the AUTHORS file.
+* D.B. Tsai (dbtsai) for a fix relating to ``detail_uri_kwargs``.
+* maraujop for a patch adding to ``X-HTTP-Method-Override`` support.
+* Donald Stufft (dstufft) for patching ToOneField callable attributes & for bumping the dateutil reqs.
+* Vladimir Volodin (vvolodin) for patching ToManyField callable attributes.
+* Mike Urbanski (mcu) for patching ``Paginator.get_limit``.
+* Jason Brownbridge (jbrownbridge) for patching multiple ``offset/limit`` params appearing in pagination URIs.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.

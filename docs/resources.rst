@@ -646,10 +646,16 @@ The inner ``Meta`` class allows for class-level configuration of how the
   with a body containing all the data in a serialized form.
 
 ``collection_name``
-------------~~~~~~~
+-------------------
 
   Specifies the collection of objects returned in the ``GET`` list will be
   named. Default is ``objects``.
+
+``detail_uri_name``
+-------------------
+
+  Specifies the name for the regex group that matches on detail views. Defaults
+  to ``pk``.
 
 
 Basic Filtering
@@ -707,6 +713,17 @@ filter the queryset before processing a request::
             return orm_filters
 
 
+Using PUT/DELETE/PATCH In Unsupported Places
+============================================
+
+Some places, like in certain browsers or hosts, don't allow the
+``PUT/DELETE/PATCH`` methods. In these environments, you can simulate those
+kinds of requests by providing an ``X-HTTP-Method-Override`` header. For
+example, to send a ``PATCH`` request over ``POST``, you'd send a request like::
+
+    curl --dump-header - -H "Content-Type: application/json" -H "X-HTTP-Method-Override: PATCH" -X POST --data '{"title": "I Visited Grandma Today"}' http://localhost:8000/api/v1/entry/1/
+
+
 ``Resource`` Methods
 ====================
 
@@ -747,7 +764,15 @@ Should return a list of individual URLconf lines (**NOT** wrapped in
 
 .. method:: Resource.override_urls(self)
 
-A hook for adding your own URLs or overriding the default URLs. Useful for
+Deprecated. Will be removed by v1.0.0. Please use ``Resource.prepend_urls``
+instead.
+
+``prepend_urls``
+----------------
+
+.. method:: Resource.prepend_urls(self)
+
+A hook for adding your own URLs or matching before the default URLs. Useful for
 adding custom endpoints or overriding the built-in ones (from ``base_urls``).
 
 Should return a list of individual URLconf lines (**NOT** wrapped in
@@ -983,36 +1008,60 @@ Allows for the sorting of objects being returned.
 ``ModelResource`` includes a full working version specific to Django's
 ``Models``.
 
+``get_bundle_detail_data``
+--------------------------
+
+.. method:: Resource.get_bundle_detail_data(self, bundle)
+
+Convenience method to return the ``detail_uri_name`` attribute off
+``bundle.obj``.
+
+Usually just accesses ``bundle.obj.pk`` by default.
+
 ``get_resource_uri``
 --------------------
 
-.. method:: Resource.get_resource_uri(self, bundle_or_obj)
+.. method:: Resource.get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list')
 
-*This needs to be implemented at the user level.*
+Handles generating a resource URI.
 
-A call to ``reverse()`` should be all that would be needed::
+If the ``bundle_or_obj`` argument is not provided, it builds the URI
+for the list endpoint.
 
-    from django.core.urlresolvers import reverse
+If the ``bundle_or_obj`` argument is provided, it builds the URI for
+the detail endpoint.
 
-    def get_resource_uri(self, bundle):
-        return reverse("api_dispatch_detail", kwargs={
-            'resource_name': self._meta.resource_name,
-            'pk': bundle.data['id'],
-        })
+Return the generated URI. If that URI can not be reversed (not found
+in the URLconf), it will return an empty string.
 
-If you're using the :class:`~tastypie.api.Api` class to group your
-URLs, you also need to pass the ``api_name`` together with the other
-kwargs.
+``resource_uri_kwargs``
+-----------------------
+
+.. method:: Resource.resource_uri_kwargs(self, bundle_or_obj=None)
+
+Handles generating a resource URI.
+
+If the ``bundle_or_obj`` argument is not provided, it builds the URI
+for the list endpoint.
+
+If the ``bundle_or_obj`` argument is provided, it builds the URI for
+the detail endpoint.
+
+Return the generated URI. If that URI can not be reversed (not found
+in the URLconf), it will return ``None``.
+
+``detail_uri_kwargs``
+---------------------
+
+.. method:: Resource.detail_uri_kwargs(self, bundle_or_obj)
+
+This needs to be implemented at the user level.
+
+Given a ``Bundle`` or an object, it returns the extra kwargs needed to
+generate a detail URI.
 
 ``ModelResource`` includes a full working version specific to Django's
 ``Models``.
-
-``get_resource_list_uri``
--------------------------
-
-.. method:: Resource.get_resource_list_uri(self)
-
-Returns a URL specific to this resource's list endpoint.
 
 ``get_via_uri``
 ---------------
@@ -1214,6 +1263,15 @@ Creates a new object based on the provided data.
 
 ``ModelResource`` includes a full working version specific to Django's
 ``Models``.
+
+``lookup_kwargs_with_identifiers``
+----------------------------------
+
+.. method:: Resource.lookup_kwargs_with_identifiers(self, bundle, kwargs)
+
+Kwargs here represent uri identifiers. Ex: /repos/<user_id>/<repo_name>/
+We need to turn those identifiers into Python objects for generating
+lookup parameters that can find them in the DB.
 
 ``obj_update``
 --------------

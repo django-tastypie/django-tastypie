@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
+import yaml
 from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -8,6 +9,15 @@ from tastypie import fields
 from tastypie.serializers import Serializer
 from tastypie.resources import ModelResource
 from core.models import Note
+
+try:
+    import biplist
+except ImportError:
+    biplist = None
+
+
+class UnsafeObject(object):
+    pass
 
 
 class NoteResource(ModelResource):
@@ -233,6 +243,14 @@ class SerializerTestCase(TestCase):
         unserialized = serializer.from_yaml(serialized)
         self.assertEqual(sample_data, unserialized)
 
+    def test_unsafe_yaml(self):
+        serializer = Serializer()
+        evil_data = UnsafeObject()
+        serialized = yaml.dump(evil_data)
+        self.assertRaises(yaml.constructor.ConstructorError,
+                          serializer.from_yaml,
+                          serialized)
+
     def test_to_jsonp(self):
         serializer = Serializer()
 
@@ -240,12 +258,18 @@ class SerializerTestCase(TestCase):
         options = {'callback': 'myCallback'}
 
     def test_to_plist(self):
+        if not biplist:
+            return
+
         serializer = Serializer()
 
         sample_1 = self.get_sample1()
         self.assertEqual(serializer.to_plist(sample_1), 'bplist00bybiplist1.0\x00\xd4\x01\x02\x03\x04\x05\x06\x07\x08WsnowmanSageTname[date_joineda&\x03\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1e&*/;>@M\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\t\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00X')
 
     def test_from_plist(self):
+        if not biplist:
+            return
+
         serializer = Serializer()
 
         sample_1 = serializer.from_plist('bplist00bybiplist1.0\x00\xd4\x01\x02\x03\x04\x05\x06\x07\x08WsnowmanSageTname[date_joineda&\x03\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1e&*/;>@M\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\t\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00X')

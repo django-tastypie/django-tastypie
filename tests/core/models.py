@@ -4,6 +4,12 @@ from django.db import models
 from tastypie.utils import now, aware_datetime
 
 
+class DateRecord(models.Model):
+    date = models.DateField()
+    username = models.CharField(max_length=20)
+    message = models.CharField(max_length=20)
+
+
 class Note(models.Model):
     author = models.ForeignKey(User, related_name='notes', blank=True, null=True)
     title = models.CharField(max_length=100)
@@ -36,7 +42,7 @@ class NoteWithEditor(Note):
 class Subject(models.Model):
     notes = models.ManyToManyField(Note, related_name='subjects')
     name = models.CharField(max_length=255)
-    url = models.URLField(verify_exists=False)
+    url = models.URLField()
     created = models.DateTimeField(default=now)
 
     def __unicode__(self):
@@ -63,3 +69,12 @@ class AutoNowNote(models.Model):
 
     def __unicode__(self):
         return self.title
+
+
+class Counter(models.Model):
+    name = models.CharField(max_length=30)
+    slug = models.SlugField(unique=True)
+    count = models.PositiveIntegerField(default=0)
+
+    def __unicode__(self):
+        return self.name

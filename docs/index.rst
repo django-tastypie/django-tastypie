@@ -26,6 +26,7 @@ interfaces.
    throttling
    paginator
    geodjango
+   content_types
 
    cookbook
    debugging
@@ -87,8 +88,8 @@ the necessary bits via the included ``requirements.txt``:
 Required
 --------
 
-* Python 2.5+
-* Django 1.2+
+* Python 2.6+
+* Django 1.3+
 * mimeparse 0.1.3+ (http://code.google.com/p/mimeparse/)
 
   * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
