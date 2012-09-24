@@ -22,7 +22,7 @@ class GenericResource(ModelResource):
         chomped_uri = uri
 
         if prefix and chomped_uri.startswith(prefix):
-            chomped_uri = chomped_uri[len(prefix)-1:]
+            chomped_uri = chomped_uri[len(prefix) - 1:]
 
         try:
             view, args, kwargs = resolve(chomped_uri)
@@ -31,4 +31,3 @@ class GenericResource(ModelResource):
 
         parent_resource = view.func_closure[0].cell_contents.func_closure[0].cell_contents
         return parent_resource.obj_get(**self.remove_api_resource_names(kwargs))
-

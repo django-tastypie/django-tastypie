@@ -7,6 +7,7 @@ class Definition(models.Model):
     word = models.CharField(max_length=255)
     content = models.TextField()
 
+
 class Note(models.Model):
     title = models.CharField(max_length=255)
     content = models.TextField()
@@ -18,7 +19,7 @@ class Quote(models.Model):
 
 
 class Rating(models.Model):
-    RATINGS = [ (x, x) for x in range(1, 6) ]
+    RATINGS = [(x, x) for x in range(1, 6)]
 
     rating = models.PositiveIntegerField(choices=RATINGS, default=3)
     content_type = models.ForeignKey(ContentType)

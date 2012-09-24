@@ -250,7 +250,7 @@ class Serializer(object):
             else:
                 element = Element('objects')
             for item in data:
-                element.append(self.to_etree(item, options, depth=depth+1))
+                element.append(self.to_etree(item, options, depth=depth + 1))
         elif isinstance(data, dict):
             if depth == 0:
                 element = Element(name or 'response')
@@ -258,26 +258,26 @@ class Serializer(object):
                 element = Element(name or 'object')
                 element.set('type', 'hash')
             for (key, value) in data.iteritems():
-                element.append(self.to_etree(value, options, name=key, depth=depth+1))
+                element.append(self.to_etree(value, options, name=key, depth=depth + 1))
         elif isinstance(data, Bundle):
             element = Element(name or 'object')
             for field_name, field_object in data.data.items():
-                element.append(self.to_etree(field_object, options, name=field_name, depth=depth+1))
+                element.append(self.to_etree(field_object, options, name=field_name, depth=depth + 1))
         elif hasattr(data, 'dehydrated_type'):
             if getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == False:
                 if data.full:
-                    return self.to_etree(data.fk_resource, options, name, depth+1)
+                    return self.to_etree(data.fk_resource, options, name, depth + 1)
                 else:
-                    return self.to_etree(data.value, options, name, depth+1)
+                    return self.to_etree(data.value, options, name, depth + 1)
             elif getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == True:
                 if data.full:
                     element = Element(name or 'objects')
                     for bundle in data.m2m_bundles:
-                        element.append(self.to_etree(bundle, options, bundle.resource_name, depth+1))
+                        element.append(self.to_etree(bundle, options, bundle.resource_name, depth + 1))
                 else:
                     element = Element(name or 'objects')
                     for value in data.value:
-                        element.append(self.to_etree(value, options, name, depth=depth+1))
+                        element.append(self.to_etree(value, options, name, depth=depth + 1))
             else:
                 return self.to_etree(data.value, options, name)
         else:
@@ -436,6 +436,7 @@ class Serializer(object):
         implemented.
         """
         pass
+
 
 def get_type_string(data):
     """

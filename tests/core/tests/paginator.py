@@ -4,7 +4,6 @@ from django.test import TestCase
 from tastypie.exceptions import BadRequest
 from tastypie.paginator import Paginator
 from core.models import Note
-from core.tests.resources import NoteResource
 from django.db import reset_queries
 from django.http import QueryDict
 
@@ -70,7 +69,7 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(meta['total_count'], 6)
 
     def test_page2_with_request(self):
-        for req in [{'offset' : '2', 'limit' : '2'}, QueryDict('offset=2&limit=2')]:
+        for req in [{'offset': '2', 'limit': '2'}, QueryDict('offset=2&limit=2')]:
             paginator = Paginator(req, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=2)
             meta = paginator.page()['meta']
             self.assertEqual(meta['limit'], 2)
@@ -80,7 +79,7 @@ class PaginatorTestCase(TestCase):
             self.assertEqual(meta['total_count'], 6)
 
     def test_page3_with_request(self):
-        for req in [{'offset' : '4', 'limit' : '2'}, QueryDict('offset=4&limit=2')]:
+        for req in [{'offset': '4', 'limit': '2'}, QueryDict('offset=4&limit=2')]:
             paginator = Paginator(req, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=4)
             meta = paginator.page()['meta']
             self.assertEqual(meta['limit'], 2)
@@ -172,7 +171,7 @@ class PaginatorTestCase(TestCase):
         paginator.offset = 10
         self.assertEqual(paginator.get_offset(), 10)
 
-        paginator.offset= -10
+        paginator.offset = -10
         raised = False
         try:
             paginator.get_offset()
