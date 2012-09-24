@@ -1800,7 +1800,10 @@ class ModelResource(Resource):
 
         if not 'order_by' in options:
             if not 'sort_by' in options:
-                # Nothing to alter the order. Return what we've got.
+                if not obj_list.ordered:
+                    # We have to apply some kind of ordering to the result set
+                    # otherwise pagination won't work reliably.
+                    obj_list.order_by('-pk')
                 return obj_list
             else:
                 warnings.warn("'sort_by' is a deprecated parameter. Please use 'order_by' instead.")
@@ -1838,6 +1841,7 @@ class ModelResource(Resource):
 
             order_by_args.append("%s%s" % (order, LOOKUP_SEP.join([self.fields[field_name].attribute] + order_by_bits[1:])))
 
+        print 'ordering by..', order_by_args
         return obj_list.order_by(*order_by_args)
 
     def apply_filters(self, request, applicable_filters):
