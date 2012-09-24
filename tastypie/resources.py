@@ -7,6 +7,7 @@ from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, ValidationError
 from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404, get_script_prefix
 from django.db import transaction
+from django.db.models import Q
 from django.db.models.sql.constants import QUERY_TERMS
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.utils.cache import patch_cache_control, patch_vary_headers
@@ -1847,6 +1848,8 @@ class ModelResource(Resource):
         The default simply applies the ``applicable_filters`` as ``**kwargs``,
         but should make it possible to do more advanced things.
         """
+        if isinstance(applicable_filters, Q):
+           return self.get_object_list(request).filter(applicable_filters)
         return self.get_object_list(request).filter(**applicable_filters)
 
     def get_object_list(self, request):
