@@ -94,7 +94,7 @@ method to implement is the ``is_valid`` method::
 
 
     class AwesomeValidation(Validation):
-        def is_valid(self, bundle, request=None):
+        def is_valid(self, bundle, request=None, purpose=None):
             if not bundle.data:
                 return {'__all__': 'Not quite what I had in mind.'}
 
