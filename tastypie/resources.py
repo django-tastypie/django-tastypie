@@ -293,6 +293,11 @@ class Resource(object):
         data = {
             "error_message": getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later."),
         }
+
+        # If the exception comes with an error, show that instead of "Sorry, this request..."
+        if getattr(exception, 'message', None):
+            data["error_message"] = exception.message
+
         desired_format = self.determine_format(request)
         serialized = self.serialize(request, data, desired_format)
         return response_class(content=serialized, content_type=build_content_type(desired_format))
