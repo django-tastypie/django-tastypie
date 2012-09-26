@@ -6,7 +6,7 @@ from core.models import Note, MediaBit
 from core.tests.resources import HttpRequest
 from core.tests.mocks import MockRequest
 from tastypie import fields
-from related_resource.api.resources import FreshNoteResource, CategoryResource
+from related_resource.api.resources import FreshNoteResource, CategoryResource, TagResource
 from related_resource.api.urls import api
 from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData
 
@@ -224,3 +224,27 @@ class RelatedPatchTestCase(TestCase):
         self.assertEqual(resp.status_code, 202)
         cat2 = Category.objects.get(pk=2)
         self.assertEqual(cat2.name, 'Kid')
+
+class OneToOneTestCase(TestCase):
+    def test_reverse_one_to_one_post(self):
+        ed = ExtraData.objects.create(name='ed_name')
+        resource = TagResource()
+        
+        # Post the extradata element which is attached to a "reverse" OneToOne
+        request = MockRequest()
+        request.method = "POST"
+        request.raw_post_data = json.dumps({
+            "name": "tag_name",
+            "tagged": [],
+            "extradata": "/v1/extradata/%s/" % ed.pk
+        })
+        
+        resp = resource.post_list(request)
+        # Assert that the status code is CREATED
+        self.assertEqual(resp.status_code, 201)
+        
+        tag = Tag.objects.get(pk=int(resp['Location'].split("/")[-2]))
+        self.assertEqual(tag.extradata, ed)
+    
+
+        
