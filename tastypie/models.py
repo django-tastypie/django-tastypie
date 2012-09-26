@@ -27,7 +27,7 @@ class ApiAccess(models.Model):
         return super(ApiAccess, self).save(*args, **kwargs)
 
 
-if 'django.contrib.auth' in settings.INSTALLED_APPS:
+if 'django.contrib.auth' in settings.INSTALLED_APPS and getattr(settings, 'TASTYPIE_CREATE_API_KEY_TABLE', True):
     import uuid
     from django.conf import settings
     from django.contrib.auth.models import User
