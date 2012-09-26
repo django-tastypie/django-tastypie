@@ -724,13 +724,17 @@ class Resource(object):
 
     # Data preparation.
 
-    def full_dehydrate(self, bundle):
+    def full_dehydrate(self, bundle, list_view=False):
         """
         Given a bundle with an object instance, extract the information from it
         to populate the resource.
         """
         # Dehydrate each field.
         for field_name, field_object in self.fields.items():
+            if list_view and field_name not in list(getattr(self._meta, 'list_fields', self.fields.keys())) + ['resource_uri']:
+                # Skips fields that aren't in meta attribute list_fields
+                continue
+            
             # A touch leaky but it makes URI resolution work.
             if getattr(field_object, 'dehydrated_type', None) == 'related':
                 field_object.api_name = self._meta.api_name
@@ -1132,7 +1136,7 @@ class Resource(object):
 
         # Dehydrate the bundles in preparation for serialization.
         bundles = [self.build_bundle(obj=obj, request=request) for obj in to_be_serialized['objects']]
-        to_be_serialized['objects'] = [self.full_dehydrate(bundle) for bundle in bundles]
+        to_be_serialized['objects'] = [self.full_dehydrate(bundle, list_view=True) for bundle in bundles]
         to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
         return self.create_response(request, to_be_serialized)
 

@@ -612,7 +612,13 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   Controls what introspected fields the ``Resource`` should include.
   A whitelist of fields. Default is ``[]``.
+ 
+``list_fields``
+---------------
 
+  Controls what fields should be displayed in the list resource.  Should be
+  subset of ``fields``.  Default is all fields.
+  
 ``excludes``
 ------------
 
