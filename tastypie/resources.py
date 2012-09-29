@@ -1492,6 +1492,7 @@ class Resource(object):
                 obj = self.obj_get(request, **{self._meta.detail_uri_name: identifier})
                 bundle = self.build_bundle(obj=obj, request=request)
                 bundle = self.full_dehydrate(bundle)
+                bundle = self.alter_detail_data_to_serialize(request, bundle)
                 objects.append(bundle)
             except ObjectDoesNotExist:
                 not_found.append(identifier)
