@@ -1,5 +1,6 @@
 from __future__ import with_statement
 import logging
+logger = logging.getLogger(__name__)
 import warnings
 import django
 from django.conf import settings
@@ -223,10 +224,13 @@ class Resource(object):
 
                 return response
             except (BadRequest, fields.ApiFieldError), e:
+                logger.exception("BadRequest/ApiFieldError: ")
                 return http.HttpBadRequest(e.args[0])
             except ValidationError, e:
+                logger.exception("ValidationError: ")
                 return http.HttpBadRequest(', '.join(e.messages))
             except Exception, e:
+                logger.exception("Resource raised exception: ")
                 if hasattr(e, 'response'):
                     return e.response
 
