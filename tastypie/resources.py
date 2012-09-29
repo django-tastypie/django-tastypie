@@ -266,9 +266,7 @@ class Resource(object):
                 "error_message": unicode(exception),
                 "traceback": the_trace,
             }
-            desired_format = self.determine_format(request)
-            serialized = self.serialize(request, data, desired_format)
-            return response_class(content=serialized, content_type=build_content_type(desired_format))
+            return self.create_response(request, data, response_class=response_class)
 
         # When DEBUG is False, send an error message to the admins (unless it's
         # a 404, in which case we check the setting).
@@ -293,9 +291,7 @@ class Resource(object):
         data = {
             "error_message": getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later."),
         }
-        desired_format = self.determine_format(request)
-        serialized = self.serialize(request, data, desired_format)
-        return response_class(content=serialized, content_type=build_content_type(desired_format))
+        return self.create_response(request, data, response_class=response_class)
 
     def _build_reverse_url(self, name, args=None, kwargs=None):
         """
