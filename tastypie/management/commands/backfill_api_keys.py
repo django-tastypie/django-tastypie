@@ -1,7 +1,5 @@
-from django.contrib.auth.models import User
 from django.core.management.base import NoArgsCommand
-from tastypie.models import ApiKey
-
+from tastypie.models import ApiKey,User
 
 class Command(NoArgsCommand):
     help = "Goes through all users and adds API keys for any that don't have one."
