@@ -30,11 +30,18 @@ class ApiAccess(models.Model):
 if 'django.contrib.auth' in settings.INSTALLED_APPS:
     import uuid
     from django.conf import settings
-    from django.contrib.auth.models import User
-    
+
+    # backwards compatible handling of user model
+    try:
+        from django.contrib.auth import get_user_model
+        auth_user_model = get_user_model()
+    except ImportError:
+        from django.contrib.auth.models import User
+        auth_user_model = User
+
     class ApiKey(models.Model):
-        user = models.OneToOneField(User, related_name='api_key')
-        key = models.CharField(max_length=256, blank=True, default='', db_index=True)
+        user = models.OneToOneField(auth_user_model, related_name='api_key')
+        key = models.CharField(max_length=256, blank=True, default='',db_index=True)
         created = models.DateTimeField(default=now)
 
         def __unicode__(self):
