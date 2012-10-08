@@ -701,8 +701,7 @@ class NoteResource(ModelResource):
             return '/api/v1/notes/'
 
         return '/api/v1/notes/%s/' % bundle_or_obj.obj.id
-
-
+        
 class LightlyCustomNoteResource(NoteResource):
     class Meta:
         resource_name = 'noteish'
@@ -878,6 +877,12 @@ class RelatedNoteResource(ModelResource):
         fields = ['title', 'slug', 'content', 'created', 'is_active']
 
 
+class FilterNote(RelatedNoteResource):
+    class Meta(RelatedNoteResource.Meta):
+        resource_name = 'filternotes'
+        filtering = ALL
+        ordering = ALL
+        
 class AnotherSubjectResource(ModelResource):
     notes = fields.ToManyField(DetailedNoteResource, 'notes')
 
@@ -1514,7 +1519,19 @@ class ModelResourceTestCase(TestCase):
 
         # Make sure that fields that don't have attributes can't be filtered on.
         self.assertRaises(InvalidFilterError, resource_4.build_filters, filters={'notes__hello_world': 'News'})
-
+        
+        resource_filter = FilterNote()
+        filters = {
+            'title__exact': "BLAM",
+            "content__exact": "VOOM",
+            "subjects__name": "Nome"
+        }
+        # All allowed but related
+        self.assertEqual(resource_filter.build_filters(filters=filters), {
+            'title__exact': "BLAM",
+            "content__exact": "VOOM"
+        })
+    
     def test_apply_sorting(self):
         resource = NoteResource()
 
@@ -1600,7 +1617,13 @@ class ModelResourceTestCase(TestCase):
         object_list = resource_2.obj_get_list()
         ordered_list = resource_2.apply_sorting(object_list, options={'order_by': ['-user__username', 'title']})
         self.assertEqual([obj.id for obj in ordered_list], [2, 1, 6, 4])
-
+        
+        resource_all = FilterNote()
+        object_list = resource_all.obj_get_list()
+        ordered = resource_all.apply_sorting(object_list, options={'order_by': 'title'})
+        # should allow since all set
+        self.assertEqual([obj.id for obj in ordered], [2, 1, 6, 3, 5, 4])
+        
     def test_get_list(self):
         resource = NoteResource()
         request = HttpRequest()
