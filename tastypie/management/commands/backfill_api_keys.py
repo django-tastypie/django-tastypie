@@ -1,7 +1,6 @@
-from django.contrib.auth.models import User
 from django.core.management.base import NoArgsCommand
 from tastypie.models import ApiKey
-
+from tastypie.utils import get_user_model
 
 class Command(NoArgsCommand):
     help = "Goes through all users and adds API keys for any that don't have one."
@@ -9,8 +8,9 @@ class Command(NoArgsCommand):
     def handle_noargs(self, **options):
         """Goes through all users and adds API keys for any that don't have one."""
         self.verbosity = int(options.get('verbosity', 1))
+        auth_user_model = get_user_model()
         
-        for user in User.objects.all().iterator():
+        for user in auth_user_model.objects.all().iterator():
             try:
                 api_key = ApiKey.objects.get(user=user)
                 
