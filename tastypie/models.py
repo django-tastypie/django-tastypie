@@ -3,7 +3,7 @@ import hmac
 import time
 from django.conf import settings
 from django.db import models
-from tastypie.utils import now
+from tastypie.utils import now, get_user_model
 
 try:
     from hashlib import sha1
@@ -31,13 +31,7 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
     import uuid
     from django.conf import settings
 
-    # backwards compatible handling of user model
-    try:
-        from django.contrib.auth import get_user_model
-        auth_user_model = get_user_model()
-    except ImportError:
-        from django.contrib.auth.models import User
-        auth_user_model = User
+    auth_user_model = get_user_model()
 
     class ApiKey(models.Model):
         user = models.OneToOneField(auth_user_model, related_name='api_key')
