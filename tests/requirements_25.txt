@@ -1,0 +1,7 @@
+django-oauth-plus
+oauth2
+lxml
+python-digest
+pyyaml
+mimeparse>=0.1.3
+python-dateutil==1.5
