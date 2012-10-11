@@ -9,6 +9,8 @@ from django.utils.encoding import force_unicode
 from tastypie.bundle import Bundle
 from tastypie.exceptions import UnsupportedFormat
 from tastypie.utils import format_datetime, format_date, format_time, make_naive
+from dateutil.tz import gettz
+
 try:
     import lxml
     from lxml.etree import parse as parse_xml
@@ -84,6 +86,9 @@ class Serializer(object):
     def __init__(self, formats=None, content_types=None, datetime_formatting=None):
         self.supported_formats = []
         self.datetime_formatting = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING', 'iso-8601')
+        timezone_str = getattr(settings, 'TIME_ZONE', None)
+        if timezone_str:
+            self.tzinfo = gettz(timezone_str)
 
         if formats is not None:
             self.formats = formats
@@ -124,6 +129,9 @@ class Serializer(object):
         data = make_naive(data)
         if self.datetime_formatting == 'rfc-2822':
             return format_datetime(data)
+        
+        if self.tzinfo:
+        	data = datetime.datetime(data.year, data.month, data.day, data.hour, data.minute, data.second, data.microsecond, self.tzinfo)
 
         return data.isoformat()
 
