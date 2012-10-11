@@ -1211,6 +1211,10 @@ This needs to be implemented at the user level.
 ``ModelResource`` includes a full working version specific to Django's
 ``Models``.
 
+As the parameter ``applicable_filters`` ``ModelResource``.``apply_filters``
+accepts either a dictionary that will be passed as kwargs to the
+``filter`` method of the provided ``QuerySet`` or a ``Q``-object.
+
 ``obj_get_list``
 ----------------
 
