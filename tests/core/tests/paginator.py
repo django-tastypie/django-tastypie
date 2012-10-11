@@ -102,10 +102,10 @@ class PaginatorTestCase(TestCase):
         paginator = Paginator({'limit': 0}, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=0)
         page = paginator.page()
         meta = page['meta']
-        self.assertEqual(meta['limit'], 2)
+        self.assertEqual(meta['limit'], 1000)
         self.assertEqual(meta['offset'], 0)
         self.assertEqual(meta['total_count'], 6)
-        self.assertEqual(len(page['objects']), 2)
+        self.assertEqual(len(page['objects']), 6)
 
     def test_complex_get(self):
         request = {
@@ -237,3 +237,16 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(meta['offset'], 2)
         self.assertEqual(meta['previous'], '/api/v1/notes/?a=1&a=2&limit=2&offset=0')
         self.assertEqual(meta['next'], '/api/v1/notes/?a=1&a=2&limit=2&offset=4')
+
+    def test_max_limit(self):
+        paginator = Paginator({'limit': 0}, self.data_set, max_limit=10,
+                              resource_uri='/api/v1/notes/')
+        meta = paginator.page()['meta']
+        self.assertEqual(meta['limit'], 10)
+
+    def test_max_limit_none(self):
+        paginator = Paginator({'limit': 0}, self.data_set, max_limit=None,
+                              resource_uri='/api/v1/notes/')
+        meta = paginator.page()['meta']
+        self.assertEqual(meta['limit'], 0)
+
