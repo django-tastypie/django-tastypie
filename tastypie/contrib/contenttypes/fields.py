@@ -1,3 +1,4 @@
+from functools import partial
 from tastypie import fields
 from tastypie.resources import Resource
 from tastypie.exceptions import ApiFieldError
@@ -38,7 +39,7 @@ class GenericForeignKeyField(fields.ToOneField):
         if self._to_class and not issubclass(GenericResource, self._to_class):
             return self._to_class
 
-        return GenericResource
+        return partial(GenericResource, resources=self.to.values())
 
     def resource_from_uri(self, fk_resource, uri, request=None, related_obj=None, related_name=None):
         try:
