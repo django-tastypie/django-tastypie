@@ -14,6 +14,7 @@ from django.http import HttpRequest, QueryDict, Http404
 from django.test import TestCase
 from django.utils import dateformat
 from django.utils import simplejson as json
+from django.db.models import Q
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
 from tastypie.bundle import Bundle
@@ -2117,6 +2118,24 @@ class ModelResourceTestCase(TestCase):
             'created__lte': datetime.date(2010, 6, 30),
         }
         notes = nr.apply_filters(mock_request, filters)
+        self.assertEqual(len(notes), 2)
+        self.assertEqual(notes[0].title, u'First Post!')
+        self.assertEqual(notes[1].title, u'Another Post')
+
+    def test_apply_filters_using_q(self):
+        nr = NoteResource()
+        mock_request = MockRequest()
+
+        q = Q(title=u"Granny's Gone")
+        notes = nr.apply_filters(mock_request, q)
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes[0].title, u"Granny's Gone")
+
+        q = Q(
+            title__icontains=u"post",
+            created__lte=datetime.date(2010, 6, 30)
+        )
+        notes = nr.apply_filters(mock_request, q)
         self.assertEqual(len(notes), 2)
         self.assertEqual(notes[0].title, u'First Post!')
         self.assertEqual(notes[1].title, u'Another Post')
