@@ -456,9 +456,6 @@ class Resource(object):
         """
         allowed_methods = getattr(self._meta, "%s_allowed_methods" % request_type, None)
 
-        if 'HTTP_X_HTTP_METHOD_OVERRIDE' in request.META:
-            request.method = request.META['HTTP_X_HTTP_METHOD_OVERRIDE']
-
         request_method = self.method_check(request, allowed=allowed_methods)
         method = getattr(self, "%s_%s" % (request_method, request_type), None)
 
@@ -524,6 +521,9 @@ class Resource(object):
         """
         if allowed is None:
             allowed = []
+
+        if 'HTTP_X_HTTP_METHOD_OVERRIDE' in request.META:
+            request.method = request.META['HTTP_X_HTTP_METHOD_OVERRIDE']
 
         request_method = request.method.lower()
         allows = ','.join(map(str.upper, allowed))
