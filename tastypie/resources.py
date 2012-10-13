@@ -86,6 +86,7 @@ class ResourceOptions(object):
     include_absolute_url = False
     always_return_data = False
     collection_name = 'objects'
+    object_name = None
     detail_uri_name = 'pk'
 
     def __new__(cls, meta=None):
@@ -608,7 +609,7 @@ class Resource(object):
         if obj is None:
             obj = self._meta.object_class()
 
-        return Bundle(obj=obj, data=data, request=request)
+        return Bundle(obj=obj, data=data, request=request, name=self._meta.object_name)
 
     def build_filters(self, filters=None):
         """
