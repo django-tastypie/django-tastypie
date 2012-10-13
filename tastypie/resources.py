@@ -1131,8 +1131,8 @@ class Resource(object):
         to_be_serialized = paginator.page()
 
         # Dehydrate the bundles in preparation for serialization.
-        bundles = [self.build_bundle(obj=obj, request=request) for obj in to_be_serialized['objects']]
-        to_be_serialized['objects'] = [self.full_dehydrate(bundle) for bundle in bundles]
+        bundles = [self.build_bundle(obj=obj, request=request) for obj in to_be_serialized[self._meta.collection_name]]
+        to_be_serialized[self._meta.collection_name] = [self.full_dehydrate(bundle) for bundle in bundles]
         to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
         return self.create_response(request, to_be_serialized)
 
@@ -1173,12 +1173,12 @@ class Resource(object):
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_list_data(request, deserialized)
 
-        if not 'objects' in deserialized:
+        if not self._meta.collection_name in deserialized:
             raise BadRequest("Invalid data sent.")
         self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
         bundles_seen = []
 
-        for object_data in deserialized['objects']:
+        for object_data in deserialized[self._meta.collection_name]:
             bundle = self.build_bundle(data=dict_strip_unicode_keys(object_data), request=request)
 
             # Attempt to be transactional, deleting any previously created
@@ -1194,7 +1194,7 @@ class Resource(object):
             return http.HttpNoContent()
         else:
             to_be_serialized = {}
-            to_be_serialized['objects'] = [self.full_dehydrate(bundle) for bundle in bundles_seen]
+            to_be_serialized[self._meta.collection_name] = [self.full_dehydrate(bundle) for bundle in bundles_seen]
             to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
             return self.create_response(request, to_be_serialized, response_class=http.HttpAccepted)
 
@@ -1351,17 +1351,22 @@ class Resource(object):
             **must** have ``delete`` in your :ref:`detail-allowed-methods`
             setting.
 
+        Substitute appropriate names for ``objects`` and
+        ``deleted_objects`` if ``Meta.collection_name`` is set to something
+        other than ``objects`` (default).
         """
         request = convert_post_to_patch(request)
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
 
-        if "objects" not in deserialized:
-            raise BadRequest("Invalid data sent.")
+        collection_name = self._meta.collection_name
+        deleted_collection_name = 'deleted_%s' % collection_name
+        if collection_name not in deserialized:
+            raise BadRequest("Invalid data sent: missing '%s'" % collection_name)
 
-        if len(deserialized["objects"]) and 'put' not in self._meta.detail_allowed_methods:
+        if len(deserialized[collection_name]) and 'put' not in self._meta.detail_allowed_methods:
             raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
 
-        for data in deserialized["objects"]:
+        for data in deserialized[collection_name]:
             # If there's a resource_uri then this is either an
             # update-in-place or a create-via-PUT.
             if "resource_uri" in data:
@@ -1388,12 +1393,14 @@ class Resource(object):
                 bundle = self.build_bundle(data=dict_strip_unicode_keys(data), request=request)
                 self.obj_create(bundle, request=request)
 
-        if len(deserialized.get('deleted_objects', [])) and 'delete' not in self._meta.detail_allowed_methods:
-            raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
+        deleted_collection = deserialized.get(deleted_collection_name, [])
+        if deleted_collection:
+            if 'delete' not in self._meta.detail_allowed_methods:
+                raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
 
-        for uri in deserialized.get('deleted_objects', []):
-            obj = self.get_via_uri(uri, request=request)
-            self.obj_delete(request=request, _obj=obj)
+            for uri in deleted_collection:
+                obj = self.get_via_uri(uri, request=request)
+                self.obj_delete(request=request, _obj=obj)
 
         return http.HttpAccepted()
 
@@ -1497,7 +1504,7 @@ class Resource(object):
                 not_found.append(identifier)
 
         object_list = {
-            'objects': objects,
+            self._meta.collection_name: objects,
         }
 
         if len(not_found):

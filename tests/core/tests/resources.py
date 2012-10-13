@@ -855,6 +855,12 @@ class WithAbsoluteURLNoteResource(ModelResource):
         return '/api/v1/withabsoluteurlnote/%s/' % bundle_or_obj.obj.id
 
 
+class AlternativeCollectionNameNoteResource(ModelResource):
+    class Meta:
+        queryset = Note.objects.filter(is_active=True)
+        collection_name = 'alt_objects'
+
+
 class SubjectResource(ModelResource):
     class Meta:
         queryset = Subject.objects.all()
@@ -3024,6 +3030,7 @@ class ModelResourceTestCase(TestCase):
         hydrated_2 = rornr.full_hydrate(hbundle_2)
         self.assertEqual(hydrated_2.obj.author.username, 'johndoe')
 
+
     def test_readonly_save_related(self):
         rornr = ReadOnlyRelatedNoteResource()
         note = Note.objects.get(pk=1)
@@ -3057,6 +3064,28 @@ class ModelResourceTestCase(TestCase):
             rornr.save_related(hydrated)
         finally:
             related_obj.save = _real_save
+
+
+    def test_collection_name(self):
+        resource = AlternativeCollectionNameNoteResource()
+        request = HttpRequest()
+        response = resource.get_list(request)
+        response_data = json.loads(response.content)
+        self.assertTrue('alt_objects' in response_data)
+
+
+    def test_collection_name_patch_list(self):
+        """Test that patch list accepts alternative names"""
+        resource = AlternativeCollectionNameNoteResource()
+        request = HttpRequest()
+        request._body = request._raw_post_data = json.dumps({
+            'alt_objects_delete': [],
+            'alt_objects': [{'title': 'Testing'}]
+        })
+        request._read_started = False
+
+        response = resource.patch_list(request)
+        self.assertEqual(response.status_code, 202)
 
 
 class BasicAuthResourceTestCase(TestCase):
