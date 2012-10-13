@@ -3030,6 +3030,13 @@ class ModelResourceTestCase(TestCase):
         hydrated_2 = rornr.full_hydrate(hbundle_2)
         self.assertEqual(hydrated_2.obj.author.username, 'johndoe')
 
+    def test_collection_name(self):
+        resource = AlternativeCollectionNameNoteResource()
+        request = HttpRequest()
+        response = resource.get_list(request)
+        response_data = json.loads(response.content)
+        self.assertTrue('alt_objects' in response_data)
+
 
     def test_readonly_save_related(self):
         rornr = ReadOnlyRelatedNoteResource()
