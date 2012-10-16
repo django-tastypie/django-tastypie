@@ -4,6 +4,7 @@ from decimal import Decimal
 import re
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.utils import datetime_safe, importlib
+import sys
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.utils import dict_strip_unicode_keys, make_aware
@@ -394,7 +395,7 @@ class RelatedField(ApiField):
     self_referential = False
     help_text = 'A related resource. Can be either a URI or set of nested resource data.'
 
-    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None):
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, max_depth=None):
         """
         Builds the field and prepares it to access to related data.
 
@@ -444,6 +445,7 @@ class RelatedField(ApiField):
         self.resource_name = None
         self.unique = unique
         self._to_class = None
+        self.max_depth = max_depth
 
         if self.to == 'self':
             self.self_referential = True
@@ -511,13 +513,17 @@ class RelatedField(ApiField):
         Based on the ``full_resource``, returns either the endpoint or the data
         from ``full_dehydrate`` for the related resource.
         """
-        if not self.full:
-            # Be a good netizen.
-            return related_resource.get_resource_uri(bundle)
-        else:
+        depth = getattr(bundle, 'depth', None) # represents a limit to how deep we'll go if we're recursive
+        if self.full and depth is None:
+            depth = 100 # as close as we're going to get to infinite right now.  If you're going past that, your API may have other problems.
+            
+        if depth:
             # ZOMG extra data and big payloads.
             bundle = related_resource.build_bundle(obj=related_resource.instance, request=bundle.request)
-            return related_resource.full_dehydrate(bundle)
+            return related_resource.full_dehydrate(bundle, depth=depth)
+        else:
+            # Be a good netizen.
+            return related_resource.get_resource_uri(bundle)
 
     def resource_from_uri(self, fk_resource, uri, request=None, related_obj=None, related_name=None):
         """
@@ -618,11 +624,11 @@ class ToOneField(RelatedField):
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
                  null=False, blank=False, readonly=False, full=False,
-                 unique=False, help_text=None):
+                 unique=False, help_text=None, max_depth=None):
         super(ToOneField, self).__init__(
             to, attribute, related_name=related_name, default=default,
             null=null, blank=blank, readonly=readonly, full=full,
-            unique=unique, help_text=help_text
+            unique=unique, help_text=help_text, max_depth=max_depth
         )
         self.fk_resource = None
 
@@ -648,8 +654,12 @@ class ToOneField(RelatedField):
 
             return None
 
+        depth = getattr(bundle, 'depth', None)
         self.fk_resource = self.get_related_resource(foreign_obj)
         fk_bundle = Bundle(obj=foreign_obj, request=bundle.request)
+        # child is one level deeper so it should retrieve one depth less
+        if depth is not None:
+            fk_bundle.depth = depth - 1
         return self.dehydrate_related(fk_bundle, self.fk_resource)
 
     def hydrate(self, bundle):
@@ -689,11 +699,11 @@ class ToManyField(RelatedField):
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
                  null=False, blank=False, readonly=False, full=False,
-                 unique=False, help_text=None):
+                 unique=False, help_text=None, max_depth=None):
         super(ToManyField, self).__init__(
             to, attribute, related_name=related_name, default=default,
             null=null, blank=blank, readonly=readonly, full=full,
-            unique=unique, help_text=help_text
+            unique=unique, help_text=help_text, max_depth=max_depth
         )
         self.m2m_bundles = []
 
@@ -734,12 +744,16 @@ class ToManyField(RelatedField):
         self.m2m_resources = []
         m2m_dehydrated = []
 
+        depth = getattr(bundle, 'depth', None)
         # TODO: Also model-specific and leaky. Relies on there being a
         #       ``Manager`` there.
         for m2m in the_m2ms.all():
             m2m_resource = self.get_related_resource(m2m)
             m2m_bundle = Bundle(obj=m2m, request=bundle.request)
-            self.m2m_resources.append(m2m_resource)
+            self.m2m_resources.append(m2m_resource)            
+            # child is one level deeper so it should retrieve one depth less
+            if depth is not None:
+                m2m_bundle.depth = depth - 1
             m2m_dehydrated.append(self.dehydrate_related(m2m_bundle, m2m_resource))
 
         return m2m_dehydrated
