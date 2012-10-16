@@ -724,14 +724,11 @@ class Resource(object):
 
     # Data preparation.
 
-    def full_dehydrate(self, bundle, depth=None):
+    def full_dehydrate(self, bundle):
         """
         Given a bundle with an object instance, extract the information from it
         to populate the resource.
         """
-        if depth is not None:
-            bundle.depth = depth
-        
         # Dehydrate each field.
         for field_name, field_object in self.fields.items():
             # A touch leaky but it makes URI resolution work.

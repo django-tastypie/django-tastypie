@@ -31,6 +31,15 @@ class CategoryResource(ModelResource):
         authorization = Authorization()
 
 
+class DepthLimitedCategoryResource(ModelResource):
+    parent = fields.ToOneField('self', 'parent', null=True, full=True, max_depth=3)
+
+    class Meta:
+        resource_name = 'depth-category'
+        queryset = Category.objects.all()
+        authorization = Authorization()
+
+
 class TagResource(ModelResource):
     taggabletags = fields.ToManyField(
             'related_resource.api.resources.TaggableTagResource', 'taggabletags',
