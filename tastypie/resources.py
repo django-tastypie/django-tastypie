@@ -1015,6 +1015,31 @@ class Resource(object):
 
         return bundle
 
+    def obj_get_multiple(self, request=None, identifiers=None, **kwargs):
+        """
+        Fetches a list of objects based on their identifiers.
+
+        This needs to be implemented at the user level.
+
+        ``ModelResource`` includes a full working version specific to Django's
+        ``Models``.
+        """
+        raise NotImplementedError()
+
+    def cached_obj_get_multiple(self, request=None, identifiers=None, **kwargs):
+        """
+        A version of ``obj_get_multiple`` that uses the cache as a means to get
+        commonly-accessed data faster.
+        """
+        cache_key = self.generate_cache_key('multiple', **kwargs)
+        obj_list = self._meta.cache.get(cache_key)
+
+        if obj_list is None:
+            obj_list = self.obj_get_multiple(request=request, identifiers=identifiers, **kwargs)
+            self._meta.cache.set(cache_key, obj_list)
+
+        return obj_list
+
     def obj_create(self, bundle, request=None, **kwargs):
         """
         Creates a new object based on the provided data.
@@ -1479,7 +1504,8 @@ class Resource(object):
         Returns a serialized list of resources based on the identifiers
         from the URL.
 
-        Calls ``obj_get`` to fetch only the objects requested. This method
+        Try to call obj_get_multiple to fetch all objects in one go. Fallbacks to
+        ``obj_get`` if the previous method is not implemented. This method
         only responds to HTTP GET.
 
         Should return a HttpResponse (200 OK).
@@ -1491,17 +1517,24 @@ class Resource(object):
         # Rip apart the list then iterate.
         kwarg_name = '%s_list' % self._meta.detail_uri_name
         obj_identifiers = kwargs.get(kwarg_name, '').split(';')
-        objects = []
-        not_found = []
+        try:
+            objects = self.cached_obj_get_multiple(request, obj_identifiers)
+            bundles = [self.build_bundle(obj=obj, request=request) for obj in objects]
+            objects = [self.full_dehydrate(bundle) for bundle in bundles]
+            found = [str(self.get_bundle_detail_data(bundle)) for bundle in bundles]
+            not_found = list(set(obj_identifiers) - set(found))
+        except NotImplementedError:
+            objects = []
+            not_found = []
 
-        for identifier in obj_identifiers:
-            try:
-                obj = self.obj_get(request, **{self._meta.detail_uri_name: identifier})
-                bundle = self.build_bundle(obj=obj, request=request)
-                bundle = self.full_dehydrate(bundle)
-                objects.append(bundle)
-            except ObjectDoesNotExist:
-                not_found.append(identifier)
+            for identifier in obj_identifiers:
+                try:
+                    obj = self.obj_get(request, **{self._meta.detail_uri_name: identifier})
+                    bundle = self.build_bundle(obj=obj, request=request)
+                    bundle = self.full_dehydrate(bundle)
+                    objects.append(bundle)
+                except ObjectDoesNotExist:
+                    not_found.append(identifier)
 
         object_list = {
             self._meta.collection_name: objects,
@@ -1907,6 +1940,24 @@ class ModelResource(Resource):
             return object_list[0]
         except ValueError:
             raise NotFound("Invalid resource lookup data provided (mismatched type).")
+
+    def obj_get_multiple(self, request=None, identifiers=None, **kwargs):
+        """
+        A ORM-specific implementation of ``obj_get_multiple``.
+
+        Identifiers are the IDs of the objects to fetch.
+        Takes optional ``kwargs``, which are used to narrow the query to find
+        the instance.
+        """
+        if identifiers is None:
+            identifiers = []
+        filters = kwargs
+        filters['%s__in' % self._meta.detail_uri_name] = identifiers
+        try:
+            base_object_list = self.apply_filters(request, filters)
+            return self.apply_authorization_limits(request, base_object_list)
+        except ValueError:
+            raise BadRequest("Invalid resource lookup data provided (mismatched type).")
 
     def obj_create(self, bundle, request=None, **kwargs):
         """

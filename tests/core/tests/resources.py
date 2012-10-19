@@ -422,6 +422,10 @@ class ResourceTestCase(TestCase):
         basic = BasicResource()
         self.assertRaises(NotImplementedError, basic.obj_get, pk=1)
 
+    def test_obj_get_multiple(self):
+        basic = BasicResource()
+        self.assertRaises(NotImplementedError, basic.obj_get_multiple, [1])
+
     def test_obj_create(self):
         basic = BasicResource()
         bundle = Bundle()
@@ -2164,6 +2168,28 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(related_obj.author.username, u'johndoe')
         self.assertEqual(related_obj.title, u'First Post!')
         self.assertEqual(list(related_obj.subjects.values_list('id', flat=True)), [1, 2])
+
+    def test_obj_get_multiple(self):
+        notes = NoteResource().obj_get_multiple(identifiers=[1, 2])
+        self.assertEqual(len(notes), 2)
+        self.assertEqual(notes[0].is_active, True)
+        self.assertEqual(notes[0].title, u'First Post!')
+        self.assertEqual(notes[1].is_active, True)
+        self.assertEqual(notes[1].title, u'Another Post')
+
+        customs = VeryCustomNoteResource().obj_get_multiple(identifiers=[1, 2])
+        self.assertEqual(len(customs), 2)
+        self.assertEqual(customs[0].is_active, True)
+        self.assertEqual(customs[0].title, u'First Post!')
+        self.assertEqual(customs[0].author.username, u'johndoe')
+        self.assertEqual(customs[1].is_active, True)
+        self.assertEqual(customs[1].title, u'Another Post')
+        self.assertEqual(customs[1].author.username, u'johndoe')
+
+        relateds = RelatedNoteResource().obj_get_multiple(identifiers=[1])
+        self.assertEqual(len(relateds), 1)
+        self.assertEqual(relateds[0].content, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
+        self.assertEqual(list(relateds[0].subjects.values_list('id', flat=True)), [1, 2])
 
     def test_uri_fields(self):
         with_abs_url = WithAbsoluteURLNoteResource()
