@@ -1544,7 +1544,8 @@ Should return a HttpResponse (200 OK).
 Returns a serialized list of resources based on the identifiers
 from the URL.
 
-Calls ``obj_get`` to fetch only the objects requested. This method
+Try to call obj_get_multiple to fetch all objects in one go. Fallbacks to
+``obj_get`` if the previous method is not implemented. This method
 only responds to HTTP GET.
 
 Should return a HttpResponse (200 OK).
