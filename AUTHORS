@@ -65,7 +65,7 @@ Contributors:
 * Vladimir Volodin (vvolodin) for patching ToManyField callable attributes.
 * Mike Urbanski (mcu) for patching ``Paginator.get_limit``.
 * Jason Brownbridge (jbrownbridge) for patching multiple ``offset/limit`` params appearing in pagination URIs.
-
+* Mitar for compatability patches with django-tastypie-mongoengine
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 

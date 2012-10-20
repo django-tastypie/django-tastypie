@@ -703,6 +703,16 @@ class NoteResource(ModelResource):
         return '/api/v1/notes/%s/' % bundle_or_obj.obj.id
 
 
+class NoQuerysetNoteResource(ModelResource):
+    class Meta:
+        resource_name = 'noqsnotes'
+        authorization = Authorization()
+        filtering = {
+            'name': ALL,
+        }
+        object_class = Note
+
+
 class LightlyCustomNoteResource(NoteResource):
     class Meta:
         resource_name = 'noteish'
@@ -1520,6 +1530,10 @@ class ModelResourceTestCase(TestCase):
 
         # Make sure that fields that don't have attributes can't be filtered on.
         self.assertRaises(InvalidFilterError, resource_4.build_filters, filters={'notes__hello_world': 'News'})
+
+        # Make sure build_filters works even on resources without queryset
+        resource = NoQuerysetNoteResource()
+        self.assertEqual(resource.build_filters(), {})
 
     def test_apply_sorting(self):
         resource = NoteResource()
