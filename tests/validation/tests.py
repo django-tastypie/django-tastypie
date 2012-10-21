@@ -30,6 +30,7 @@ class FilteringErrorsTestCase(TestCase):
 class PostNestResouceValidationTestCase(TestCase):
     urls = 'validation.api.urls'
 
+    # Verifies that valid data for both the resources goes through
     def test_valid_data(self):
         data = json.dumps({
             'title' : 'Test Title',
@@ -44,6 +45,7 @@ class PostNestResouceValidationTestCase(TestCase):
         note = json.loads(self.client.get(resp['location']).content)
         self.assertTrue(note['annotated'])
 
+    # Verifies that invalid data for both the resources is rejected
     def test_invalid_data(self):
         data = json.dumps({
             'title' : '',
@@ -63,6 +65,65 @@ class PostNestResouceValidationTestCase(TestCase):
                 'annotations': ['This field is required.']
             }
         })
+
+
+    # Verifies that invalid data for only the nested resource is rejected
+    def test_invalid_nested_data(self):
+        data = json.dumps({
+            'title' : 'Test Title',
+            'slug' : 'test-title',
+            'content' : 'This is the content',
+            'user' : {'pk' : 1}, # loaded from fixtures
+            'annotated' : {'annotations' : ''},
+        })
+
+        resp = self.client.post('/api/v1/notes/', data=data, content_type='application/json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(json.loads(resp.content), {
+            'annotated': {
+                'annotations': ['This field is required.']
+            }
+        })
+
+
+    # Verifies that invalid data for only the nested resource is rejected when updating
+    def test_invalid_nested_data_during_update(self):
+        good_data = json.dumps({
+            'title' : 'Test Title',
+            'slug' : 'test-title',
+            'content' : 'This is the content',
+            'user' : {'pk' : 1}, # loaded from fixtures
+            'annotated' : {'annotations' : 'good'},
+        })
+
+        bad_data = json.dumps({
+            'title' : 'Test Title',
+            'slug' : 'test-title',
+            'content' : 'This is the content',
+            'user' : {'pk' : 1}, # loaded from fixtures
+            'annotated' : {'annotations' : '42'},
+        })
+
+        resp = self.client.post('/api/v1/notes/', data=good_data, content_type='application/json')
+        self.assertEqual(resp.status_code, 201)
+
+        # Verify that the good data has been written
+        good_location = resp['location']
+        note = json.loads(self.client.get(good_location).content)
+        self.assertEqual(note["annotated"]["annotations"], "good")
+
+        resp = self.client.post('/api/v1/notes/', data=bad_data, content_type='application/json')
+        self.assertEqual(resp.status_code, 400)
+
+        self.assertEqual(json.loads(resp.content), {
+            'annotated': {
+                'annotations': ["You cannot use annotations including the string '42'"]
+            }
+        })
+
+        # Verify that the data is still good in the DB
+        note = json.loads(self.client.get(good_location).content)
+        self.assertEqual(note["annotated"]["annotations"], "good")
 
 
 class PutDetailNestResouceValidationTestCase(TestCase):

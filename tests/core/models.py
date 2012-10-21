@@ -1,3 +1,4 @@
+import uuid
 import datetime
 from django.contrib.auth.models import User
 from django.db import models
@@ -78,3 +79,10 @@ class Counter(models.Model):
 
     def __unicode__(self):
         return self.name
+
+
+class DateRecordWithUUIDPK(models.Model):
+    uuid = models.CharField(max_length=64, primary_key=True, default=lambda: str(uuid.uuid4()))
+    date = models.DateField()
+    username = models.CharField(max_length=20)
+    message = models.CharField(max_length=20)
