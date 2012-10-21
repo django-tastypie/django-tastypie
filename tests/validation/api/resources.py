@@ -24,6 +24,14 @@ class AnnotatedNoteForm(forms.ModelForm):
         model = AnnotatedNote
         exclude = ('note',)
 
+    # Refuse any annotations including '42'
+    def clean_annotations(self):
+        data = self.cleaned_data["annotations"]
+        if isinstance(data, basestring) and "42" in data:
+            raise forms.ValidationError("You cannot use annotations including the string '42'")
+        else:
+            return data
+
 class AnnotatedNoteResource(ModelResource):
 
     class Meta:
@@ -50,4 +58,3 @@ class NoteResource(ModelResource):
         filtering = {
             "created": ALL
             }
-
