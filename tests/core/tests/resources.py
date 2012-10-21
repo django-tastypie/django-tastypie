@@ -25,7 +25,7 @@ from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
 from tastypie.utils import aware_datetime, make_naive, now
 from tastypie.validation import Validation, FormValidation
-from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord, Counter
+from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord, DateRecordWithUUIDPK, Counter
 from core.tests.mocks import MockRequest
 from core.utils import SimpleHandler
 
@@ -673,6 +673,20 @@ class ResourceTestCase(TestCase):
 class DateRecordResource(ModelResource):
     class Meta:
         queryset = DateRecord.objects.all()
+        always_return_data = True
+
+    def hydrate(self, bundle):
+        bundle.data['message'] = bundle.data['message'].lower()
+        return bundle
+
+    def hydrate_username(self, bundle):
+        bundle.data['username'] = bundle.data['username'].upper()
+        return bundle
+
+
+class DateRecordWithUUIDPKResource(ModelResource):
+    class Meta:
+        queryset = DateRecordWithUUIDPK.objects.all()
         always_return_data = True
 
     def hydrate(self, bundle):
@@ -1816,38 +1830,41 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(new_note.author, None)
 
     def test_put_detail_with_identifiers(self):
-        request = MockRequest()
-        request.GET = {'format': 'json'}
-        request.method = 'PUT'
-        request.raw_post_data = '{"date": "2012-09-07", "username": "WAT", "message": "hello"}'
-        date_record_resource = DateRecordResource()
-        resp = date_record_resource.put_detail(request, username="maraujop")
 
-        self.assertEqual(resp.status_code, 202)
-        data = json.loads(resp.content)
-        self.assertEqual(data['username'], "MARAUJOP")
+        for resourceKlass in (DateRecordWithUUIDPKResource, DateRecordResource):
 
-        request = MockRequest()
-        request.GET = {'format': 'json'}
-        request.method = 'PUT'
-        request.raw_post_data = '{"date": "WAT", "username": "maraujop", "message": "hello"}'
-        date_record_resource = DateRecordResource()
-        resp = date_record_resource.put_detail(request, date="2012-09-07")
+            request = MockRequest()
+            request.GET = {'format': 'json'}
+            request.method = 'PUT'
+            request.raw_post_data = '{"date": "2012-09-07", "username": "WAT", "message": "hello"}'
+            date_record_resource = resourceKlass()
+            resp = date_record_resource.put_detail(request, username="maraujop")
 
-        self.assertEqual(resp.status_code, 202)
-        data = json.loads(resp.content)
-        self.assertEqual(data['date'], "2012-09-07T00:00:00")
+            self.assertIn(resp.status_code, (201, 202))
+            data = json.loads(resp.content)
+            self.assertEqual(data['username'], "MARAUJOP")
 
-        request = MockRequest()
-        request.GET = {'format': 'json'}
-        request.method = 'PUT'
-        request.raw_post_data = '{"date": "2012-09-07", "username": "maraujop", "message": "WAT"}'
-        date_record_resource = DateRecordResource()
-        resp = date_record_resource.put_detail(request, message="HELLO")
+            request = MockRequest()
+            request.GET = {'format': 'json'}
+            request.method = 'PUT'
+            request.raw_post_data = '{"date": "WAT", "username": "maraujop", "message": "hello"}'
+            date_record_resource = resourceKlass()
+            resp = date_record_resource.put_detail(request, date="2012-09-07")
 
-        self.assertEqual(resp.status_code, 202)
-        data = json.loads(resp.content)
-        self.assertEqual(data['message'], "hello")
+            self.assertEqual(resp.status_code, 202)
+            data = json.loads(resp.content)
+            self.assertEqual(data['date'], "2012-09-07T00:00:00")
+
+            request = MockRequest()
+            request.GET = {'format': 'json'}
+            request.method = 'PUT'
+            request.raw_post_data = '{"date": "2012-09-07", "username": "maraujop", "message": "WAT"}'
+            date_record_resource = resourceKlass()
+            resp = date_record_resource.put_detail(request, message="HELLO")
+
+            self.assertEqual(resp.status_code, 202)
+            data = json.loads(resp.content)
+            self.assertEqual(data['message'], "hello")
 
     def test_post_list(self):
         self.assertEqual(Note.objects.count(), 6)
