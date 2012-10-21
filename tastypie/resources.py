@@ -727,10 +727,10 @@ class Resource(object):
                     # We need to avoid populating M2M data here as that will
                     # cause things to blow up.
                     if not getattr(field_object, 'is_related', False):
-                        setattr(bundle.obj, field_object.attribute, value)
+                        field_object.set_value_on_bundle_obj(bundle, value)
                     elif not getattr(field_object, 'is_m2m', False):
                         if value is not None:
-                            setattr(bundle.obj, field_object.attribute, value.obj)
+                            field_object.set_value_on_bundle_obj(bundle, value.obj)
                         elif field_object.blank:
                             continue
                         elif field_object.null:
@@ -744,7 +744,7 @@ class Resource(object):
                                                   not orm_field.field.rel.multiple
 
                             try:
-                                setattr(bundle.obj, field_object.attribute, value)
+                                field_object.set_value_on_bundle_obj(bundle, value)
 
                             # When you're setting the reverse 1:1 rel, Django internally tries to
                             # null out the forward relationship without checking if there was any

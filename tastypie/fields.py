@@ -170,6 +170,14 @@ class ApiField(object):
         else:
             return bundle_val
 
+    def set_value_on_bundle_obj(self, bundle, value):
+        """
+        Overrideable hook for writing a value into the object on a bundle.  Enables the use of
+        custom setters in your app code if setattr() is too raw for your fancy ORM model.
+        """
+
+        setattr(bundle.obj, self.attribute, value)
+
 
 class CharField(ApiField):
     """
