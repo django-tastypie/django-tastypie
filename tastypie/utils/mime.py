@@ -1,5 +1,6 @@
 import mimeparse
 
+from django.conf import settings
 
 def determine_format(request, serializer, default_format='application/json'):
     """
@@ -15,9 +16,10 @@ def determine_format(request, serializer, default_format='application/json'):
     to ``application/json`` if not provided).
     """
     # First, check if they forced the format.
-    if request.GET.get('format'):
-        if request.GET['format'] in serializer.formats:
-            return serializer.get_mime_for_format(request.GET['format'])
+    format_parameter = getattr(settings, 'TASTYPIE_FORMAT_PARAMETER', 'format')
+    if request.GET.get(format_parameter):
+        if request.GET[format_parameter] in serializer.formats:
+            return serializer.get_mime_for_format(request.GET[format_parameter])
     
     # If callback parameter is present, use JSONP.
     if request.GET.has_key('callback'):

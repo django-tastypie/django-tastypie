@@ -98,3 +98,17 @@ An example::
     TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
 
 Defaults to ``iso-8601``.
+
+
+``TASTYPIE_FORMAT_PARAMETER``
+=============================
+
+**Optional**
+
+This setting controls the format parameter name checked in API requests.
+
+An example::
+
+    TASTYPIE_FORMAT_PARAMETER = "_format"
+
+Defaults to ``format``.
