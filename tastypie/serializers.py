@@ -432,7 +432,8 @@ class Serializer(object):
         implemented.
         """
         options = options or {}
-        return 'Sorry, not implemented yet. Please append "?format=json" to your URL.'
+        format_parameter = getattr(settings, 'TASTYPIE_FORMAT_PARAMETER', 'format')
+        return 'Sorry, not implemented yet. Please append "?' + format_parameter + '=json" to your URL.'
 
     def from_html(self, content):
         """
