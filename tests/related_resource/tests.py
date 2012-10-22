@@ -6,7 +6,8 @@ from core.models import Note, MediaBit
 from core.tests.resources import HttpRequest
 from core.tests.mocks import MockRequest
 from tastypie import fields
-from related_resource.api.resources import FreshNoteResource, CategoryResource, DepthLimitedCategoryResource
+from related_resource.api.resources import FreshNoteResource, CategoryResource, \
+    DepthLimitedCategoryResource, ZeroDepthCategoryResource
 from related_resource.api.urls import api
 from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData
 
@@ -97,6 +98,23 @@ class CategoryResourceTest(TestCase):
         self.assertEqual(data['parent']['name'], 'Grandson')
         self.assertEqual(data['parent']['parent']['name'], 'Son')
         self.assertEqual(data['parent']['parent']['parent'], '/v1/depth-category/1/')
+        
+    def test_zero_depth(self):
+        self.grandchild_cat = Category.objects.create(parent=self.child_cat_1, name='Grandson')
+        self.great_grandchild_cat = Category.objects.create(parent=self.grandchild_cat, name='Great-Grandson')
+        
+        resource = api.canonical_resource_for('zero-depth-category')
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+        resp = resource.wrap_view('dispatch_detail')(request, pk=self.great_grandchild_cat.pk)
+
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        self.assertEqual(data['name'], 'Great-Grandson')
+        self.assertEqual(data['parent']['name'], 'Grandson')
+        self.assertEqual(data['parent']['parent']['name'], 'Son')
+        self.assertEqual(data['parent']['parent']['parent']['name'], 'Dad')
         
 
     def test_put_null(self):
