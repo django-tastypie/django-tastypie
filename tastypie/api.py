@@ -79,7 +79,6 @@ class Api(object):
         """
         Deprecated. Will be removed by v1.0.0. Please use ``prepend_urls`` instead.
         """
-        warnings.warn("'override_urls' is a deprecated method & will be removed by v1.0.0. Please use ``prepend_urls`` instead.")
         return self.prepend_urls()
 
     def prepend_urls(self):
@@ -104,7 +103,8 @@ class Api(object):
 
         urlpatterns = self.prepend_urls()
 
-        if self.override_urls():
+        if self.override_urls() != urlpatterns:
+            # Customized override_urls (the default one returns the same urls as prepend_urls).
             warnings.warn("'override_urls' is a deprecated method & will be removed by v1.0.0. Please rename your method to ``prepend_urls``.")
             urlpatterns += self.override_urls()
 
