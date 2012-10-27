@@ -256,6 +256,21 @@ class SerializerTestCase(TestCase):
 
         sample_1 = self.get_sample1()
         options = {'callback': 'myCallback'}
+        serialized = serializer.to_jsonp(sample_1, options=options)
+        serialized_json = serializer.to_json(sample_1)
+        self.assertEqual('myCallback(%s)' % serialized_json,
+                         serialized)
+
+    def test_invalid_jsonp_characters(self):
+        """
+        The newline characters \u2028 and \u2029 need to be escaped
+        in JSONP.
+        """
+        serializer = Serializer()
+
+        jsonp = serializer.to_jsonp({'foo': u'Hello \u2028\u2029world!'},
+                                    {'callback': 'callback'})
+        self.assertEqual(jsonp, u'callback({"foo": "Hello \\u2028\\u2029world!"})')
 
     def test_to_plist(self):
         if not biplist:

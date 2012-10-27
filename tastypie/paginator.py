@@ -57,30 +57,20 @@ class Paginator(object):
 
         Default is 20 per page.
         """
-        settings_limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)
 
-        if 'limit' in self.request_data:
-            limit = self.request_data['limit']
-        elif self.limit is not None:
-            limit = self.limit
-        else:
-            limit = settings_limit
+        limit = self.request_data.get('limit', self.limit)
+        if limit is None:
+            limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)
 
         try:
             limit = int(limit)
         except ValueError:
             raise BadRequest("Invalid limit '%s' provided. Please provide a positive integer." % limit)
 
-        if limit == 0:
-            if self.limit:
-                limit = self.limit
-            else:
-                limit = settings_limit
-
         if limit < 0:
             raise BadRequest("Invalid limit '%s' provided. Please provide a positive integer >= 0." % limit)
 
-        if self.max_limit and limit > self.max_limit:
+        if self.max_limit and (not limit or limit > self.max_limit):
             # If it's more than the max, we're only going to return the max.
             # This is to prevent excessive DB (or other) load.
             return self.max_limit
@@ -116,7 +106,7 @@ class Paginator(object):
         Slices the result set to the specified ``limit`` & ``offset``.
         """
         if limit == 0:
-            raise BadRequest("Invalid limit '%s' provided. Please provide a positive, non-zero, integer." % limit)
+            return self.objects[offset:]
 
         return self.objects[offset:offset + limit]
 
