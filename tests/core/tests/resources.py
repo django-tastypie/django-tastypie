@@ -9,6 +9,7 @@ from django.core.cache import cache
 from django.core.exceptions import FieldError, MultipleObjectsReturned
 from django.core import mail
 from django.core.urlresolvers import reverse
+from django.db.models import Q
 from django import forms
 from django.http import HttpRequest, QueryDict
 from django.test import TestCase
@@ -959,6 +960,35 @@ class PerObjectNoteResource(NoteResource):
         return new_object_list
 # End per object authorization bits.
 
+class UsernameAuthorization(Authorization):
+    def __init__(self, username, **kwargs):
+        super(Authorization, self).__init__(**kwargs)
+        self.username = username
+
+    def apply_limits(self, request, object_list):
+        return object_list.filter(author__username=self.username)
+
+class ActiveAuthorization(Authorization):
+    def apply_limits(self, request, object_list):
+        return object_list.filter(is_active=True)
+
+class UnionAuthNoteResource(NoteResource):
+    class Meta:
+        resource_name = 'unionnotes'
+        queryset = Note.objects.all()
+        authorization = UsernameAuthorization('janedoe') | ActiveAuthorization()
+
+class IntersectionAuthNoteResource(NoteResource):
+    class Meta:
+        resource_name = 'intersectnotes'
+        queryset = Note.objects.all()
+        authorization = UsernameAuthorization('janedoe') & ActiveAuthorization()
+
+class ComplexAuthNoteResource(NoteResource):
+    class Meta:
+        resource_name = 'complexnotes'
+        queryset = Note.objects.all()
+        authorization = (UsernameAuthorization('johndoe') | UsernameAuthorization('janedoe')) & ActiveAuthorization()
 
 class ModelResourceTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -2611,6 +2641,29 @@ class ModelResourceTestCase(TestCase):
         hydrated_2 = rornr.full_hydrate(hbundle_2)
         self.assertEqual(hydrated_2.obj.author.username, 'johndoe')
 
+    def test_union_auth_limits(self):
+        resource = UnionAuthNoteResource()
+        request = HttpRequest()
+        expected_PKs = Note.objects.filter(Q(author__username='janedoe') | Q(is_active=True)).values_list('id', flat=True)
+        result_PKs = resource.apply_authorization_limits(request, resource.get_object_list(request)).values_list('id', flat=True)
+        self.assertEqual(set(expected_PKs), set(result_PKs))
+
+
+    def test_intersection_auth_limits(self):
+        # IntersectionAuth gets notes that belong to janedoe AND have is_active=True
+        resource = IntersectionAuthNoteResource()
+        request = HttpRequest()
+        expected_PKs = Note.objects.filter(Q(author__username='janedoe') & Q(is_active=True)).values_list('id', flat=True)
+        result_PKs = resource.apply_authorization_limits(request, resource.get_object_list(request)).values_list('id', flat=True)
+        self.assertEqual(set(expected_PKs), set(result_PKs))
+
+    def test_complex_auth_limits(self):
+        # ComplexAuth gets notes that ((belong to johndoe) OR (belong to janedoe)) AND have is_active=True
+        resource = ComplexAuthNoteResource()
+        request = HttpRequest()
+        expected_PKs = Note.objects.filter(Q(author__username__in=['janedoe', 'johndoe']) & Q(is_active=True)).values_list('id', flat=True)
+        result_PKs = resource.apply_authorization_limits(request, resource.get_object_list(request)).values_list('id', flat=True)
+        self.assertEqual(set(expected_PKs), set(result_PKs))
 
 class BasicAuthResourceTestCase(TestCase):
     fixtures = ['note_testdata.json']

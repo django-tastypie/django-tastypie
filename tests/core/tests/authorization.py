@@ -40,6 +40,13 @@ class NotAModelResource(Resource):
         object_class = NotAModel
         authorization = DjangoAuthorization()
 
+class TrueAuthorization(Authorization):
+    def is_authorized(self, request, object=None):
+        return True
+
+class FalseAuthorization(Authorization):
+    def is_authorized(self, request, object=None):
+        return False
 
 class AuthorizationTestCase(TestCase):
     fixtures = ['note_testdata']
@@ -59,6 +66,32 @@ class AuthorizationTestCase(TestCase):
             request = HttpRequest()
             request.method = method
             self.assertFalse(ReadOnlyNoteResource()._meta.authorization.is_authorized(request))
+
+    def test_union_authorization(self):
+        request = HttpRequest()
+
+        # test the __or__ operator by exhausting the truth table
+        self.assertTrue((TrueAuthorization() | TrueAuthorization()).is_authorized(request))
+        self.assertTrue((TrueAuthorization() | FalseAuthorization()).is_authorized(request))
+        self.assertTrue((FalseAuthorization() | TrueAuthorization()).is_authorized(request))
+        self.assertFalse((FalseAuthorization() | FalseAuthorization()).is_authorized(request))
+
+    def test_intersection_authorization(self):
+        request = HttpRequest()
+
+        # test the __and__ operator by exhausting the truth table
+        self.assertTrue((TrueAuthorization() & TrueAuthorization()).is_authorized(request))
+        self.assertFalse((TrueAuthorization() & FalseAuthorization()).is_authorized(request))
+        self.assertFalse((FalseAuthorization() & TrueAuthorization()).is_authorized(request))
+        self.assertFalse((FalseAuthorization() & FalseAuthorization()).is_authorized(request))
+
+    def test_complex_authorization(self):
+        request = HttpRequest()
+        # test the result of chaining combinations
+        # (T | F) & T = T
+        self.assertTrue(((TrueAuthorization() | FalseAuthorization()) & TrueAuthorization()).is_authorized(request))
+        # (T & F) | F = F
+        self.assertFalse(((TrueAuthorization() & FalseAuthorization()) | FalseAuthorization()).is_authorized(request))
 
 class DjangoAuthorizationTestCase(TestCase):
     fixtures = ['note_testdata']

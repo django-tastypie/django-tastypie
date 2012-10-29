@@ -21,6 +21,12 @@ class Authorization(object):
         """
         return True
 
+    def __and__(a,b):
+        return IntersectionAuthorization(a,b)
+
+    def __or__(a,b):
+        return UnionAuthorization(a,b)
+
 
 class ReadOnlyAuthorization(Authorization):
     """
@@ -75,3 +81,55 @@ class DjangoAuthorization(Authorization):
             return False
 
         return request.user.has_perm(permission_code)
+
+class IntersectionAuthorization(Authorization):
+    """
+    Checks that all the provided Authorization methods are authorized
+    """
+    def __init__(self, *backends, **kwargs):
+        super(Authorization, self).__init__(**kwargs)
+        self.backends = backends
+
+    def is_authorized(self, request, object=None):
+        # Intersection method
+        for backend in self.backends:
+            authorized = backend.is_authorized(request, object)
+            if not authorized:
+                return False
+        return True
+
+    def apply_limits(self, request, object_list):
+        backends = [b for b in self.backends if hasattr(b, 'apply_limits')]
+        if len(backends) == 0:
+            return object_list
+
+        result = backends[0].apply_limits(request, object_list)
+        for backend in backends[1:]:
+            result = result & backend.apply_limits(request, backend.apply_limits(request, object_list))
+        return result
+
+class UnionAuthorization(Authorization):
+    """
+    Checks that any of the provided Authorization methods are authorized
+    """
+    def __init__(self, *backends, **kwargs):
+        super(Authorization, self).__init__(**kwargs)
+        self.backends = backends
+
+    def is_authorized(self, request, object=None):
+        # Union method
+        for backend in self.backends:
+            authorized = backend.is_authorized(request, object)
+            if authorized:
+                return True
+        return False
+
+    def apply_limits(self, request, object_list):
+        backends = [b for b in self.backends if hasattr(b, 'apply_limits')]
+        if len(backends) == 0:
+            return object_list
+
+        result = backends[0].apply_limits(request, object_list)
+        for backend in backends[1:]:
+            result = result | backend.apply_limits(request, object_list)
+        return result
