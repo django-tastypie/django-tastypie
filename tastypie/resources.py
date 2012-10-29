@@ -87,6 +87,7 @@ class ResourceOptions(object):
     always_return_data = False
     collection_name = 'objects'
     detail_uri_name = 'pk'
+    full_clean_obj = False
 
     def __new__(cls, meta=None):
         overrides = {}
@@ -1931,6 +1932,11 @@ class ModelResource(Resource):
         # Save FKs just in case.
         self.save_related(bundle)
 
+        # Call full_clean on the object if requested
+        if self._meta.full_clean_obj:
+            bundle.obj.full_clean()
+
+        # Save the main object.
         # Save parent
         bundle.obj.save()
 
@@ -2004,6 +2010,10 @@ class ModelResource(Resource):
 
         # Save FKs just in case.
         self.save_related(bundle)
+
+        # Call full_clean on the object if requested
+        if self._meta.full_clean_obj:
+            bundle.obj.full_clean()
 
         # Save the main object.
         bundle.obj.save()
@@ -2105,10 +2115,15 @@ class ModelResource(Resource):
             if related_obj:
                 if field_object.related_name:
                     if not self.get_bundle_detail_data(bundle):
+                        if self._meta.full_clean_obj:
+                          bundle.obj.full_clean()
                         bundle.obj.save()
 
                     setattr(related_obj, field_object.related_name, bundle.obj)
-
+                    
+                if field_object.get_related_resource(self)._meta.full_clean_obj:
+                    related_obj.full_clean()
+                    
                 related_obj.save()
                 setattr(bundle.obj, field_object.attribute, related_obj)
 
@@ -2150,6 +2165,9 @@ class ModelResource(Resource):
             related_objs = []
 
             for related_bundle in bundle.data[field_name]:
+                # Call full_clean on the object if requested
+                if field_object.get_related_resource(self)._meta.full_clean_obj:
+                    related_bundle.obj.full_clean()
                 related_bundle.obj.save()
                 related_objs.append(related_bundle.obj)
 
