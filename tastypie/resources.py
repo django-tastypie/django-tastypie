@@ -2094,6 +2094,9 @@ class ModelResource(Resource):
 
             if field_object.blank and not bundle.data.has_key(field_name):
                 continue
+              
+            if field_object.readonly:
+                continue
 
             # Get the object.
             try:
