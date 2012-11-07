@@ -8,12 +8,14 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding index on 'ApiKey', fields ['key']
-        db.create_index('tastypie_apikey', ['key'])
+        if not db.backend_name in ('mysql', 'sqlite'):
+            # Adding index on 'ApiKey', fields ['key']
+            db.create_index('tastypie_apikey', ['key'])
 
     def backwards(self, orm):
-        # Removing index on 'ApiKey', fields ['key']
-        db.delete_index('tastypie_apikey', ['key'])
+        if not db.backend_name in ('mysql', 'sqlite'):
+            # Removing index on 'ApiKey', fields ['key']
+            db.delete_index('tastypie_apikey', ['key'])
 
     models = {
         'auth.group': {
