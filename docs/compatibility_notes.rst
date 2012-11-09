@@ -5,7 +5,7 @@ Compatibility Notes
 ===================
 
 
-Tastypie does it's best to be a good third-party app, trying to interoperate
+Tastypie does its best to be a good third-party app, trying to interoperate
 with the widest range of Django environments it can. However, there are times
 where certain things aren't possible. We'll do our best to document them here.
 
