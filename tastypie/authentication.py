@@ -191,7 +191,8 @@ class ApiKeyAuthentication(Authentication):
             return self._unauthorized()
 
         try:
-            user = auth_user_model.objects.get(username=username)
+            username_field = {getattr(auth_user_model, 'USERNAME_FIELD', 'username'): username}
+            user = auth_user_model.objects.get(**username_field)
         except (auth_user_model.DoesNotExist, auth_user_model.MultipleObjectsReturned):
             return self._unauthorized()
 
@@ -361,7 +362,8 @@ class DigestAuthentication(Authentication):
         auth_user_model = get_user_model()
 
         try:
-            user = auth_user_model.objects.get(username=username)
+            username_field = {getattr(auth_user_model, 'USERNAME_FIELD', 'username'): username}
+            user = auth_user_model.objects.get(**username_field)
         except (auth_user_model.DoesNotExist, auth_user_model.MultipleObjectsReturned):
             return False
 
