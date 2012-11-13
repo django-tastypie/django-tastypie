@@ -48,6 +48,55 @@ except ImportError:
     from django.db.models.sql.constants import LOOKUP_SEP
 
 
+def remove_api_resource_names(url_dict):
+    """
+    Given a dictionary of regex matches from a URLconf, removes
+    ``api_name`` and/or ``resource_name`` if found.
+
+    This is useful for converting URLconf matches into something suitable
+    for data lookup. For example::
+
+        Model.objects.filter(**remove_api_resource_names(matches))
+    """
+    kwargs_subset = url_dict.copy()
+
+    for key in ['api_name', 'resource_name']:
+        try:
+            del(kwargs_subset[key])
+        except KeyError:
+            pass
+
+    return kwargs_subset
+
+def with_obj(f):
+    """
+    Decorator to wrap around a view and use the values passed to it to try
+    and fetch the object required. All resource_action functions that wants
+    easy access to the object for the resource should use this decorator.
+    """
+    def wrapper(self, request, **kwargs):
+        try:
+            obj = self.cached_obj_get(request=request, **remove_api_resource_names(kwargs))
+        except ObjectDoesNotExist:
+            return http.HttpGone()
+        except MultipleObjectsReturned:
+            return http.HttpMultipleChoices("More than one resource is found at this URI.")
+
+        return f(self, request, obj=obj, **kwargs)
+    return wrapper
+
+
+def with_obj_set(f):
+    def wrapper(self, request, **kwargs):
+        try:
+            objs = self.cached_obj_get_list(request=request, **remove_api_resource_names(kwargs))
+        except ObjectDoesNotExist:
+            return http.HttpGone()
+
+        return f(self, request, obj_list=objs, **kwargs)
+    return wrapper
+
+
 class NOT_AVAILABLE:
     def __str__(self):
         return 'No such data is available.'
@@ -174,6 +223,8 @@ class Resource(object):
     data sources, such as search results, files, other data, etc.
     """
     __metaclass__ = DeclarativeMetaclass
+
+    remove_api_resource_names = remove_api_resource_names  # Include this in the resource for backward compatibility
 
     def __init__(self, api_name=None):
         self.fields = deepcopy(self.base_fields)
@@ -328,6 +379,43 @@ class Resource(object):
         """
         return []
 
+    def resource_actions(self):
+        """
+        A hook for providing mappings for object specific actions. Simply adds
+        a set of urls to the resources mapping. Should return a dict with name
+        of the action mapped to a string representing the callback. This will be
+        passed to ``wrap_view()``.
+
+        If the callback function uses the object it should be decorated with
+        the with_obj decorator.
+        """
+        return {} 
+
+    def list_actions(self):
+        """
+        Similar to ``resource_actions`` but for the entire resource instead.
+        """
+        return {}
+
+    def set_actions(self):
+        """
+        Similar to ``resource_actions`` but for a set of resources instead.
+
+        To give access to the ``obj_list`` the callback function should be
+        decorated with ``with_obj_set``.
+        """
+        return {}
+
+    def _get_actions(self):
+        actions = []
+        for (name, fun) in self.resource_actions().items():
+            actions.append(url(r"(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/%s%s$" % (self._meta.resource_name, self._meta.detail_uri_name, name, trailing_slash()), self.wrap_view(fun), name="api_resource_action_%s" % name))
+        for (name, fun) in self.list_actions().items():
+            actions.append(url(r"(?P<resource_name>%s)/%s%s$" % (self._meta.resource_name, name, trailing_slash()), self.wrap_view(fun), name="api_list_action_%s" % name))
+        for (name, fun) in self.set_actions().items():
+            actions.append(url(r"(?P<resource_name>%s)/set/(?P<%s>\w[\w/;-]*)/%s%s$" % (self._meta.resource_name, self._meta.detail_uri_name, name, trailing_slash()), self.wrap_view(fun), name="api_set_action_%s" % name))
+        return actions
+
     @property
     def urls(self):
         """
@@ -342,6 +430,8 @@ class Resource(object):
         if self.override_urls():
             warnings.warn("'override_urls' is a deprecated method & will be removed by v1.0.0. Please rename your method to ``prepend_urls``.")
             urls += self.override_urls()
+
+        urls += self._get_actions()
 
         urls += self.base_urls()
         urlpatterns = patterns('',
@@ -483,26 +573,6 @@ class Resource(object):
             return http.HttpNoContent()
 
         return response
-
-    def remove_api_resource_names(self, url_dict):
-        """
-        Given a dictionary of regex matches from a URLconf, removes
-        ``api_name`` and/or ``resource_name`` if found.
-
-        This is useful for converting URLconf matches into something suitable
-        for data lookup. For example::
-
-            Model.objects.filter(**self.remove_api_resource_names(matches))
-        """
-        kwargs_subset = url_dict.copy()
-
-        for key in ['api_name', 'resource_name']:
-            try:
-                del(kwargs_subset[key])
-            except KeyError:
-                pass
-
-        return kwargs_subset
 
     def method_check(self, request, allowed=None):
         """
@@ -720,7 +790,7 @@ class Resource(object):
         except Resolver404:
             raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
 
-        return self.obj_get(request=request, **self.remove_api_resource_names(kwargs))
+        return self.obj_get(request=request, **remove_api_resource_names(kwargs))
 
     # Data preparation.
 
@@ -1124,7 +1194,7 @@ class Resource(object):
         """
         # TODO: Uncached for now. Invalidation that works for everyone may be
         #       impossible.
-        objects = self.obj_get_list(request=request, **self.remove_api_resource_names(kwargs))
+        objects = self.obj_get_list(request=request, **remove_api_resource_names(kwargs))
         sorted_objects = self.apply_sorting(objects, options=request.GET)
 
         paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_uri(), limit=self._meta.limit, max_limit=self._meta.max_limit, collection_name=self._meta.collection_name)
@@ -1146,7 +1216,7 @@ class Resource(object):
         Should return a HttpResponse (200 OK).
         """
         try:
-            obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
+            obj = self.cached_obj_get(request=request, **remove_api_resource_names(kwargs))
         except ObjectDoesNotExist:
             return http.HttpNotFound()
         except MultipleObjectsReturned:
@@ -1175,7 +1245,7 @@ class Resource(object):
 
         if not self._meta.collection_name in deserialized:
             raise BadRequest("Invalid data sent.")
-        self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
+        self.obj_delete_list(request=request, **remove_api_resource_names(kwargs))
         bundles_seen = []
 
         for object_data in deserialized[self._meta.collection_name]:
@@ -1184,7 +1254,7 @@ class Resource(object):
             # Attempt to be transactional, deleting any previously created
             # objects if validation fails.
             try:
-                self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
+                self.obj_create(bundle, request=request, **remove_api_resource_names(kwargs))
                 bundles_seen.append(bundle)
             except ImmediateHttpResponse:
                 self.rollback(bundles_seen)
@@ -1222,7 +1292,7 @@ class Resource(object):
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
 
         try:
-            updated_bundle = self.obj_update(bundle, request=request, **self.remove_api_resource_names(kwargs))
+            updated_bundle = self.obj_update(bundle, request=request, **remove_api_resource_names(kwargs))
 
             if not self._meta.always_return_data:
                 return http.HttpNoContent()
@@ -1231,7 +1301,7 @@ class Resource(object):
                 updated_bundle = self.alter_detail_data_to_serialize(request, updated_bundle)
                 return self.create_response(request, updated_bundle, response_class=http.HttpAccepted)
         except (NotFound, MultipleObjectsReturned):
-            updated_bundle = self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
+            updated_bundle = self.obj_create(bundle, request=request, **remove_api_resource_names(kwargs))
             location = self.get_resource_uri(updated_bundle)
 
             if not self._meta.always_return_data:
@@ -1255,7 +1325,7 @@ class Resource(object):
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
-        updated_bundle = self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
+        updated_bundle = self.obj_create(bundle, request=request, **remove_api_resource_names(kwargs))
         location = self.get_resource_uri(updated_bundle)
 
         if not self._meta.always_return_data:
@@ -1284,7 +1354,7 @@ class Resource(object):
 
         If the resources are deleted, return ``HttpNoContent`` (204 No Content).
         """
-        self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
+        self.obj_delete_list(request=request, **remove_api_resource_names(kwargs))
         return http.HttpNoContent()
 
     def delete_detail(self, request, **kwargs):
@@ -1297,7 +1367,7 @@ class Resource(object):
         If the resource did not exist, return ``Http404`` (404 Not Found).
         """
         try:
-            self.obj_delete(request=request, **self.remove_api_resource_names(kwargs))
+            self.obj_delete(request=request, **remove_api_resource_names(kwargs))
             return http.HttpNoContent()
         except NotFound:
             return http.HttpNotFound()
@@ -1422,7 +1492,7 @@ class Resource(object):
         # So first pull out the original object. This is essentially
         # ``get_detail``.
         try:
-            obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
+            obj = self.cached_obj_get(request=request, **remove_api_resource_names(kwargs))
         except ObjectDoesNotExist:
             return http.HttpNotFound()
         except MultipleObjectsReturned:
