@@ -409,11 +409,11 @@ class Resource(object):
     def _get_actions(self):
         actions = []
         for (name, fun) in self.resource_actions().items():
-            actions.append(url(r"(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/%s%s$" % (self._meta.resource_name, self._meta.detail_uri_name, name, trailing_slash()), self.wrap_view(fun), name="api_resource_action_%s" % name))
+            actions.append(url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/%s%s$" % (self._meta.resource_name, self._meta.detail_uri_name, name, trailing_slash()), self.wrap_view(fun), name="api_resource_action_%s" % name))
         for (name, fun) in self.list_actions().items():
-            actions.append(url(r"(?P<resource_name>%s)/%s%s$" % (self._meta.resource_name, name, trailing_slash()), self.wrap_view(fun), name="api_list_action_%s" % name))
+            actions.append(url(r"^(?P<resource_name>%s)/%s%s$" % (self._meta.resource_name, name, trailing_slash()), self.wrap_view(fun), name="api_list_action_%s" % name))
         for (name, fun) in self.set_actions().items():
-            actions.append(url(r"(?P<resource_name>%s)/set/(?P<%s>\w[\w/;-]*)/%s%s$" % (self._meta.resource_name, self._meta.detail_uri_name, name, trailing_slash()), self.wrap_view(fun), name="api_set_action_%s" % name))
+            actions.append(url(r"^(?P<resource_name>%s)/set/(?P<%s>\w[\w/;-]*)/%s%s$" % (self._meta.resource_name, self._meta.detail_uri_name, name, trailing_slash()), self.wrap_view(fun), name="api_set_action_%s" % name))
         return actions
 
     @property
