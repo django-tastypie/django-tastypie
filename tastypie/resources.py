@@ -1778,6 +1778,7 @@ class ModelResource(Resource):
             filter_bits = filter_expr.split(LOOKUP_SEP)
             field_name = filter_bits.pop(0)
             filter_type = 'exact'
+            exclude = False
 
             if not field_name in self.fields:
                 # It's not a field we know about. Move along citizen.
@@ -1787,7 +1788,11 @@ class ModelResource(Resource):
                 filter_type = filter_bits.pop()
 
             lookup_bits = self.check_filtering(field_name, filter_type, filter_bits)
+            if value.startswith('!'):
+                value = value[1:]
+                exclude = True
             value = self.filter_value_to_python(value, field_name, filters, filter_expr, filter_type)
+            value = (value, exclude)
 
             db_field_name = LOOKUP_SEP.join(lookup_bits)
             qs_filter = "%s%s%s" % (db_field_name, LOOKUP_SEP, filter_type)
@@ -1859,7 +1864,19 @@ class ModelResource(Resource):
         The default simply applies the ``applicable_filters`` as ``**kwargs``,
         but should make it possible to do more advanced things.
         """
-        return self.get_object_list(request).filter(**applicable_filters)
+        includes = {}
+        excludes = {}
+        for f, (v, exclude) in applicable_filters.items():
+            if exclude:
+                excludes[f] = v
+            else:
+                includes[f] = v
+        obj_list = self.get_object_list(request)
+        if includes:
+            obj_list = obj_list.filter(**includes)
+        if excludes:
+            obj_list = obj_list.exclude(**excludes)
+        return obj_list
 
     def get_object_list(self, request):
         """
