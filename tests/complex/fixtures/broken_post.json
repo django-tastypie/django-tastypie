@@ -1,0 +1,14 @@
+[	{
+        "fields": {
+            "content": "This is another post!", 
+            "created": "2010-04-21 14:38:35", 
+            "is_active": true, 
+            "slug": "another-post", 
+            "title": "Another Post 2", 
+            "updated": "2010-04-21 14:39:12", 
+            "user": 666
+        }, 
+        "model": "complex.post", 
+        "pk": 3
+    }
+]

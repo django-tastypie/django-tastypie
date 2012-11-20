@@ -1132,9 +1132,20 @@ class Resource(object):
 
         # Dehydrate the bundles in preparation for serialization.
         bundles = [self.build_bundle(obj=obj, request=request) for obj in to_be_serialized[self._meta.collection_name]]
-        to_be_serialized[self._meta.collection_name] = [self.full_dehydrate(bundle) for bundle in bundles]
+        to_be_serialized[self._meta.collection_name] = self._full_dehydrate_bundles(bundles)
         to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
         return self.create_response(request, to_be_serialized)
+    
+    def _full_dehydrate_bundles(self, bundles):
+        dehydrated = []
+        for bundle in bundles:
+            try:
+                dehydrated.append(self.full_dehydrate(bundle))
+            except Exception:
+                # Prevent one broken bundle from stopping whole get_list
+                pass
+            
+        return dehydrated
 
     def get_detail(self, request, **kwargs):
         """
