@@ -1141,7 +1141,7 @@ class Resource(object):
         for bundle in bundles:
             try:
                 dehydrated.append(self.full_dehydrate(bundle))
-            except Exception as e:
+            except Exception:
                 # Prevent one broken bundle from stopping whole get_list
                 pass
             
