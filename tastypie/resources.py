@@ -253,30 +253,27 @@ class Resource(object):
         import sys
         the_trace = '\n'.join(traceback.format_exception(*(sys.exc_info())))
         response_class = http.HttpApplicationError
-        response_code = 500
 
         NOT_FOUND_EXCEPTIONS = (NotFound, ObjectDoesNotExist, Http404)
 
         if isinstance(exception, NOT_FOUND_EXCEPTIONS):
             response_class = HttpResponseNotFound
-            response_code = 404
 
         if settings.DEBUG:
             data = {
                 "error_message": unicode(exception),
                 "traceback": the_trace,
             }
-            desired_format = self.determine_format(request)
-            serialized = self.serialize(request, data, desired_format)
-            return response_class(content=serialized, content_type=build_content_type(desired_format))
+        else:
+            data = {
+                "error_message": getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later."),
+            }
 
-        # When DEBUG is False, send an error message to the admins (unless it's
-        # a 404, in which case we check the setting).
         send_broken_links = getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False)
 
-        if not response_code == 404 or send_broken_links:
+        if response_class is not HttpResponseNotFound or send_broken_links:
             log = logging.getLogger('django.request.tastypie')
-            log.error('Internal Server Error: %s' % request.path, exc_info=sys.exc_info(), extra={'status_code': response_code, 'request':request})
+            log.error('Internal Server Error: %s' % request.path, exc_info=sys.exc_info(), extra={'status_code': response_class.status_code, 'request':request})
 
             if django.VERSION < (1, 3, 0):
                 from django.core.mail import mail_admins
@@ -289,13 +286,7 @@ class Resource(object):
                 message = "%s\n\n%s" % (the_trace, request_repr)
                 mail_admins(subject, message, fail_silently=True)
 
-        # Prep the data going out.
-        data = {
-            "error_message": getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later."),
-        }
-        desired_format = self.determine_format(request)
-        serialized = self.serialize(request, data, desired_format)
-        return response_class(content=serialized, content_type=build_content_type(desired_format))
+        return self.create_response(request, data, response_class)
 
     def _build_reverse_url(self, name, args=None, kwargs=None):
         """
