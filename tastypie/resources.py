@@ -223,9 +223,9 @@ class Resource(object):
 
                 return response
             except (BadRequest, fields.ApiFieldError), e:
-                return http.HttpBadRequest(e.args[0])
+                return self.create_response(request, [e.args[0]], http.HttpBadRequest)
             except ValidationError, e:
-                return http.HttpBadRequest(', '.join(e.messages))
+                return self.create_response(request, e.messages, http.HttpBadRequest)
             except Exception, e:
                 if hasattr(e, 'response'):
                     return e.response
