@@ -227,7 +227,7 @@ class Resource(object):
             except ValidationError, e:
                 return http.HttpBadRequest(', '.join(e.messages))
             except Exception, e:
-                if hasattr(e, 'response'):
+                if isinstance(getattr(e, 'response', None), HttpResponse):
                     return e.response
 
                 # A real, non-expected exception.
