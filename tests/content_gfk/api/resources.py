@@ -10,7 +10,13 @@ class DefinitionResource(ModelResource):
         resource_name = 'definitions'
         queryset = Definition.objects.all()
 
+
 class NoteResource(ModelResource):
+
+    def apply_authorization_limits(self, request, object_list):
+        if request is None:
+            return object_list.none()
+        return object_list
 
     class Meta:
         resource_name = 'notes'
@@ -22,6 +28,7 @@ class QuoteResource(ModelResource):
     class Meta:
         resource_name = 'quotes'
         queryset = Quote.objects.all()
+
 
 class RatingResource(ModelResource):
     content_object = GenericForeignKeyField({
