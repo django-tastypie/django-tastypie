@@ -37,6 +37,6 @@ class GenericResource(ModelResource):
 
         parent_resource = resource_class(api_name=self._meta.api_name)
         kwargs = parent_resource.remove_api_resource_names(kwargs)
-        return parent_resource.obj_get(**kwargs)
+        return parent_resource.obj_get(request=request, **kwargs)
 
 
