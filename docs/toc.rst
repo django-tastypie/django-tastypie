@@ -11,6 +11,7 @@ Table Of Contents
    non_orm_data_sources
    tools
    testing
+   compatibility_notes
 
    resources
    bundles
@@ -23,6 +24,7 @@ Table Of Contents
    throttling
    paginator
    geodjango
+   content_types
 
    cookbook
    debugging

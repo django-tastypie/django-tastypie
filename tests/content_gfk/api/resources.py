@@ -1,3 +1,4 @@
+from tastypie.authorization import Authorization
 from tastypie.contrib.contenttypes.fields import GenericForeignKeyField
 from tastypie.resources import ModelResource
 from content_gfk.models import Note, Quote, Definition, Rating
@@ -31,3 +32,4 @@ class RatingResource(ModelResource):
     class Meta:
         resource_name = 'ratings'
         queryset = Rating.objects.all()
+        authorization = Authorization()

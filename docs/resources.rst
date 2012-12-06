@@ -323,7 +323,7 @@ The cycle looks like:
 
 The goal of this cycle is to populate the ``bundle.obj`` data model with data
 suitable for saving/persistence. Again, with the exception of the ``alter_*``
-methods (as hooks to manipulate the overall structure), this cycle controls what
+methods (as hooks to manipulate the overall structure), this cycle controls
 how the data from the client is interpreted & placed on the data model.
 
 ``hydrate``
@@ -530,7 +530,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 ``limit``
 ---------
 
-  Controls what how many results the ``Resource`` will show at a time. Default
+  Controls how many results the ``Resource`` will show at a time. Default
   is either the ``API_LIMIT_PER_PAGE`` setting (if provided) or ``20`` if not
   specified.
 

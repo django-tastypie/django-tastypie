@@ -52,7 +52,7 @@ Contributors:
 * Aaron Elliot Ross for a patch to invalid pagination.
 * Randall Degges for patch_list method documentation patch.
 * Alexis Svinartchouk (zvin) for patching field type fix for AutoFields.
-* Mike W (mik3y) for a cookbook entry on pretty-printed JSON serialization.
+* Mike W (mik3y) for a cookbook entry on pretty-printed JSON serialization & converting 'objects' to Meta.collection_name.
 * Taylor Mitchell (tmitchell) for finding and patching a bug in the paginator query encoding.
 * D.B. Tsai (dbtsai) & DuJour for funding:
     * The work to make non-pk URIs work better
@@ -65,7 +65,8 @@ Contributors:
 * Vladimir Volodin (vvolodin) for patching ToManyField callable attributes.
 * Mike Urbanski (mcu) for patching ``Paginator.get_limit``.
 * Jason Brownbridge (jbrownbridge) for patching multiple ``offset/limit`` params appearing in pagination URIs.
-
+* Mitar for compatability patches with django-tastypie-mongoengine
+* Jeremy Dunck (jdunck) for a patch adding an index to ``ApiKey``.
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
