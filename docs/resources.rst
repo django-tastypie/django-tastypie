@@ -642,7 +642,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
   with an empty body & a ``Location`` header of where to request the full
   resource.
 
-  If ``True``, ``HttpAccepted`` (202) is returned on ``POST/PUT``
+  If ``True``, ``HttpResponse`` (200) is returned on ``POST/PUT``
   with a body containing all the data in a serialized form.
 
 ``collection_name``
