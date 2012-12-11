@@ -1167,7 +1167,7 @@ class Resource(object):
         Return ``HttpNoContent`` (204 No Content) if
         ``Meta.always_return_data = False`` (default).
 
-        Return ``HttpAccepted`` (202 Accepted) if
+        Return ``HttpAccepted`` (200 Accepted) if
         ``Meta.always_return_data = True``.
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
@@ -1214,7 +1214,7 @@ class Resource(object):
         ``Meta.always_return_data = False`` (default), return ``HttpNoContent``
         (204 No Content).
         If an existing resource is modified and
-        ``Meta.always_return_data = True``, return ``HttpAccepted`` (202
+        ``Meta.always_return_data = True``, return ``HttpAccepted`` (200
         Accepted).
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
