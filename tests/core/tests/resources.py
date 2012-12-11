@@ -1761,7 +1761,7 @@ class ModelResourceTestCase(TestCase):
 
         always_resource = AlwaysDataNoteResource()
         resp = always_resource.put_list(request)
-        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(resp.status_code, 200)
         self.assertTrue(resp.content.startswith('{"objects": ['))
 
     def test_put_detail(self):
@@ -1788,7 +1788,7 @@ class ModelResourceTestCase(TestCase):
 
         always_resource = AlwaysDataNoteResource()
         resp = always_resource.put_detail(request, pk=10)
-        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
         self.assertTrue("id" in data)
         self.assertEqual(data["id"], 10)
@@ -1823,7 +1823,7 @@ class ModelResourceTestCase(TestCase):
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, username="maraujop")
 
-        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
         self.assertEqual(data['username'], "MARAUJOP")
 
@@ -1834,7 +1834,7 @@ class ModelResourceTestCase(TestCase):
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, date="2012-09-07")
 
-        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
         self.assertEqual(data['date'], "2012-09-07T00:00:00")
 
@@ -1845,7 +1845,7 @@ class ModelResourceTestCase(TestCase):
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, message="HELLO")
 
-        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content)
         self.assertEqual(data['message'], "hello")
 

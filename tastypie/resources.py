@@ -1167,7 +1167,7 @@ class Resource(object):
         Return ``HttpNoContent`` (204 No Content) if
         ``Meta.always_return_data = False`` (default).
 
-        Return ``HttpAccepted`` (202 Accepted) if
+        Return ``HttpAccepted`` (200 Accepted) if
         ``Meta.always_return_data = True``.
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
@@ -1196,7 +1196,7 @@ class Resource(object):
             to_be_serialized = {}
             to_be_serialized[self._meta.collection_name] = [self.full_dehydrate(bundle) for bundle in bundles_seen]
             to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
-            return self.create_response(request, to_be_serialized, response_class=http.HttpAccepted)
+            return self.create_response(request, to_be_serialized)
 
     def put_detail(self, request, **kwargs):
         """
@@ -1214,7 +1214,7 @@ class Resource(object):
         ``Meta.always_return_data = False`` (default), return ``HttpNoContent``
         (204 No Content).
         If an existing resource is modified and
-        ``Meta.always_return_data = True``, return ``HttpAccepted`` (202
+        ``Meta.always_return_data = True``, return ``HttpAccepted`` (200
         Accepted).
         """
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
@@ -1229,7 +1229,7 @@ class Resource(object):
             else:
                 updated_bundle = self.full_dehydrate(updated_bundle)
                 updated_bundle = self.alter_detail_data_to_serialize(request, updated_bundle)
-                return self.create_response(request, updated_bundle, response_class=http.HttpAccepted)
+                return self.create_response(request, updated_bundle)
         except (NotFound, MultipleObjectsReturned):
             updated_bundle = self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
             location = self.get_resource_uri(updated_bundle)
