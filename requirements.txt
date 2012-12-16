@@ -1,6 +1,6 @@
 Django>=1.0.0
 mimeparse>=0.1.3
-python-dateutil==1.5
+python-dateutil>=2.1
 lxml
 PyYAML
 python-digest

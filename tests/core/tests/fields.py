@@ -294,6 +294,17 @@ class DecimalFieldTestCase(TestCase):
         field_2 = DecimalField(default='18.5')
         self.assertEqual(field_2.dehydrate(bundle), Decimal('18.5'))
 
+    def test_hydrate(self):
+        bundle = Bundle(data={
+            'decimal-y': '18.50',
+        })
+
+        field_1 = DecimalField(default='20')
+        self.assertEqual(field_1.hydrate(bundle), Decimal('20.0'))
+
+        field_2 = DecimalField(default='18.5')
+        self.assertEqual(field_2.hydrate(bundle), Decimal('18.5'))
+
     def test_model_resource_correct_association(self):
         api_field = ModelResource.api_field_from_django_field(models.DecimalField())
         self.assertEqual(api_field, DecimalField)
@@ -563,8 +574,11 @@ class UserResource(ModelResource):
         resource_name = 'users'
         queryset = User.objects.all()
 
-    def get_resource_uri(self, bundle):
-        return '/api/v1/users/%s/' % bundle.obj.id
+    def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
+        if bundle_or_obj is None:
+            return '/api/v1/users/'
+
+        return '/api/v1/users/%s/' % bundle_or_obj.obj.id
 
 
 class ToOneFieldTestCase(TestCase):
@@ -652,6 +666,16 @@ class ToOneFieldTestCase(TestCase):
         self.assertEqual(isinstance(user_bundle, Bundle), True)
         self.assertEqual(user_bundle.data['username'], u'johndoe')
         self.assertEqual(user_bundle.data['email'], u'john@doe.com')
+
+    def test_dehydrate_with_callable(self):
+        note = Note.objects.get(pk=1)
+        bundle = Bundle(obj=note)
+
+        field_1 = ToOneField(UserResource, lambda bundle: User.objects.get(pk=1))
+        self.assertEqual(field_1.dehydrate(bundle), '/api/v1/users/1/')
+
+        field_2 = ToManyField(UserResource, lambda bundle: User.objects.filter(pk=1))
+        self.assertEqual(field_2.dehydrate(bundle), ['/api/v1/users/1/'])
 
     def test_hydrate(self):
         note = Note()
@@ -820,7 +844,7 @@ class ToOneFieldTestCase(TestCase):
         user = User.objects.get(pk=1)
         mediabit = MediaBit(note=Note(author=user))
         bundle = Bundle(obj=mediabit)
-        
+
         field_1 = ToOneField(UserResource, 'note__author')
         field_1.instance_name = 'fk'
         self.assertEqual(field_1.dehydrate(bundle), '/api/v1/users/1/')
@@ -828,15 +852,18 @@ class ToOneFieldTestCase(TestCase):
         field_2 = ToOneField(UserResource, 'fakefield__author')
         field_2.instance_name = 'fk'
         self.assertRaises(ApiFieldError, field_2.hydrate, bundle)
-    
+
 
 class SubjectResource(ModelResource):
     class Meta:
         resource_name = 'subjects'
         queryset = Subject.objects.all()
 
-    def get_resource_uri(self, bundle):
-        return '/api/v1/subjects/%s/' % bundle.obj.id
+    def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
+        if bundle_or_obj is None:
+            return '/api/v1/subjects/'
+
+        return '/api/v1/subjects/%s/' % bundle_or_obj.obj.id
 
 
 class MediaBitResource(ModelResource):
@@ -844,8 +871,11 @@ class MediaBitResource(ModelResource):
         resource_name = 'mediabits'
         queryset = MediaBit.objects.all()
 
-    def get_resource_uri(self, bundle):
-        return '/api/v1/mediabits/%s/' % bundle.obj.id
+    def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
+        if bundle_or_obj is None:
+            return '/api/v1/mediabits/'
+
+        return '/api/v1/mediabits/%s/' % bundle_or_obj.obj.id
 
 
 class ToManyFieldTestCase(TestCase):
@@ -1101,11 +1131,11 @@ class ToManyFieldTestCase(TestCase):
     def test_traversed_attribute_dehydrate(self):
         mediabit = MediaBit(id=1, note=self.note_1)
         bundle = Bundle(obj=mediabit)
-        
+
         field_1 = ToManyField(SubjectResource, 'note__subjects')
         field_1.instance_name = 'm2m'
         self.assertEqual(field_1.dehydrate(bundle), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
-    
+
         field_2 = ToOneField(SubjectResource, 'fakefield__subjects')
         field_2.instance_name = 'm2m'
         self.assertRaises(ApiFieldError, field_2.hydrate, bundle)

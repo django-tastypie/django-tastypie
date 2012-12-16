@@ -57,22 +57,20 @@ class Paginator(object):
 
         Default is 20 per page.
         """
-        limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)
 
-        if 'limit' in self.request_data:
-            limit = self.request_data['limit']
-        elif self.limit is not None:
-            limit = self.limit
+        limit = self.request_data.get('limit', self.limit)
+        if limit is None:
+            limit = getattr(settings, 'API_LIMIT_PER_PAGE', 20)
 
         try:
             limit = int(limit)
         except ValueError:
-            raise BadRequest("Invalid limit '%s' provided. Please provide a positive integer.")
+            raise BadRequest("Invalid limit '%s' provided. Please provide a positive integer." % limit)
 
         if limit < 0:
-            raise BadRequest("Invalid limit '%s' provided. Please provide an integer >= 0.")
+            raise BadRequest("Invalid limit '%s' provided. Please provide a positive integer >= 0." % limit)
 
-        if self.max_limit and limit > self.max_limit:
+        if self.max_limit and (not limit or limit > self.max_limit):
             # If it's more than the max, we're only going to return the max.
             # This is to prevent excessive DB (or other) load.
             return self.max_limit
@@ -96,10 +94,10 @@ class Paginator(object):
         try:
             offset = int(offset)
         except ValueError:
-            raise BadRequest("Invalid offset '%s' provided. Please provide an integer.")
+            raise BadRequest("Invalid offset '%s' provided. Please provide an integer." % offset)
 
         if offset < 0:
-            raise BadRequest("Invalid offset '%s' provided. Please provide an integer >= 0.")
+            raise BadRequest("Invalid offset '%s' provided. Please provide a positive integer >= 0." % offset)
 
         return offset
 
@@ -107,7 +105,6 @@ class Paginator(object):
         """
         Slices the result set to the specified ``limit`` & ``offset``.
         """
-        # If it's zero, return everything.
         if limit == 0:
             return self.objects[offset:]
 
@@ -147,11 +144,34 @@ class Paginator(object):
         if self.resource_uri is None:
             return None
 
-        request_params = dict([k, v.encode('utf-8')] for k, v in self.request_data.items())
-        request_params.update({'limit': limit, 'offset': offset})
+        try:
+            # QueryDict has a urlencode method that can handle multiple values for the same key
+            request_params = self.request_data.copy()
+            if 'limit' in request_params:
+                del request_params['limit']
+            if 'offset' in request_params:
+                del request_params['offset']
+            request_params.update({'limit': limit, 'offset': offset})
+            encoded_params = request_params.urlencode()
+        except AttributeError:
+            request_params = {}
+
+            for k, v in self.request_data.items():
+                if isinstance(v, unicode):
+                    request_params[k] = v.encode('utf-8')
+                else:
+                    request_params[k] = v
+
+            if 'limit' in request_params:
+                del request_params['limit']
+            if 'offset' in request_params:
+                del request_params['offset']
+            request_params.update({'limit': limit, 'offset': offset})
+            encoded_params = urlencode(request_params)
+
         return '%s?%s' % (
             self.resource_uri,
-            urlencode(request_params)
+            encoded_params
         )
 
     def page(self):

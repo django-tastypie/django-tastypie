@@ -1,5 +1,6 @@
 import datetime
 from StringIO import StringIO
+import django
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.serializers import json
@@ -335,7 +336,11 @@ class Serializer(object):
         """
         options = options or {}
         data = self.to_simple(data, options)
-        return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
+
+        if django.get_version() >= '1.5':
+            return json.json.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
+        else:
+            return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
 
     def from_json(self, content):
         """
@@ -347,9 +352,16 @@ class Serializer(object):
         """
         Given some Python data, produces JSON output wrapped in the provided
         callback.
+
+        Due to a difference between JSON and Javascript, two
+        newline characters, \u2028 and \u2029, need to be escaped.
+        See http://timelessrepo.com/json-isnt-a-javascript-subset for
+        details.
         """
         options = options or {}
-        return '%s(%s)' % (options['callback'], self.to_json(data, options))
+        json = self.to_json(data, options)
+        json = json.replace(u'\u2028', u'\\u2028').replace(u'\u2029', u'\\u2029')
+        return u'%s(%s)' % (options['callback'], json)
 
     def to_xml(self, data, options=None):
         """

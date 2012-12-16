@@ -78,11 +78,6 @@ integrating with other systems.
 You must also have ``settings.APPEND_SLASH = False`` so that Django does not
 emit HTTP 302 redirects.
 
-.. warning::
-
-  This setting causes the ``Resource.get_multiple()`` method to fail. If you
-  need this method, you will have to override the URLconf to meet your needs.
-
 An example::
 
     TASTYPIE_ALLOW_MISSING_SLASH = True
