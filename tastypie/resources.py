@@ -1147,7 +1147,7 @@ class Resource(object):
         """
         try:
             obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
-        except ObjectDoesNotExist:
+        except (ObjectDoesNotExist, NotFound):
             return http.HttpNotFound()
         except MultipleObjectsReturned:
             return http.HttpMultipleChoices("More than one resource is found at this URI.")
@@ -1423,7 +1423,7 @@ class Resource(object):
         # ``get_detail``.
         try:
             obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
-        except ObjectDoesNotExist:
+        except (ObjectDoesNotExist, NotFound):
             return http.HttpNotFound()
         except MultipleObjectsReturned:
             return http.HttpMultipleChoices("More than one resource is found at this URI.")
