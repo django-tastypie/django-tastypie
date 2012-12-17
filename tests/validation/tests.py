@@ -2,12 +2,8 @@ from django.conf import settings
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.http import HttpRequest
 from django.test import TestCase
-
+from django.utils import simplejson as json
 #settings.DEBUG = True
-try:
-    import json
-except ImportError:
-    import simplejson as json
 
 from basic.models import Note
 

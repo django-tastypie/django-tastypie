@@ -13,6 +13,8 @@ interfaces.
    settings
    non_orm_data_sources
    tools
+   testing
+   compatibility_notes
 
    resources
    bundles
@@ -25,6 +27,7 @@ interfaces.
    throttling
    paginator
    geodjango
+   content_types
 
    cookbook
    debugging
@@ -86,8 +89,8 @@ the necessary bits via the included ``requirements.txt``:
 Required
 --------
 
-* Python 2.5+
-* Django 1.2+
+* Python 2.6+
+* Django 1.3+
 * mimeparse 0.1.3+ (http://code.google.com/p/mimeparse/)
 
   * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
@@ -105,6 +108,35 @@ Optional
 .. _Pip: http://pip.openplans.org/
 
 
+Why Tastypie?
+=============
+
+There are other, better known API frameworks out there for Django. You need to
+assess the options available and decide for yourself. That said, here are some
+common reasons for tastypie.
+
+* You need an API that is RESTful and uses HTTP well.
+* You want to support deep relations.
+* You DON'T want to have to write your own serializer to make the output right.
+* You want an API framework that has little magic, very flexible and maps well to
+  the problem domain.
+* You want/need XML serialization that is treated equally to JSON (and YAML is
+  there too).
+* You want to support my perceived NIH syndrome, which is less about NIH and more
+  about trying to help out friends/coworkers.
+
+
+Reference Material
+==================
+
+* http://github.com/toastdriven/django-tastypie/tree/master/tests/basic shows
+  basic usage of tastypie
+* http://en.wikipedia.org/wiki/REST
+* http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
+* http://www.ietf.org/rfc/rfc2616.txt
+* http://jacobian.org/writing/rest-worst-practices/
+
+
 Running The Tests
 =================
 
@@ -119,6 +151,7 @@ The easiest way to get setup to run Tastypie's tests looks like::
 Then running the tests is as simple as::
 
   # From the same directory as above:
+  $ ./env/bin/pip install -U -r tests/requirements.txt
   $ cd tests
   $ ./run_all_test.sh
 
@@ -126,3 +159,19 @@ Tastypie is maintained with all tests passing at all times. If you find a
 failure, please `report it`_ along with the versions of the installed software.
 
 .. _`report it`: https://github.com/toastdriven/django-tastypie/issues
+
+
+Commercial Support
+==================
+
+If you're using Tastypie in a commercial environment, paid support is available
+from `Toast Driven`_. Services offered include:
+
+* Advice/help with setup
+* Implementation in your project
+* Bugfixes in Tastypie itself
+* Features in Tastypie itself
+
+If you're interested, please contact Daniel Lindsley (daniel@toastdriven.com).
+
+.. _`Toast Driven`: http://toastdriven.com/

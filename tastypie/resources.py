@@ -7,9 +7,9 @@ from django.conf.urls.defaults import patterns, url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, ValidationError
 from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404, get_script_prefix
 from django.db import transaction
-from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
+from django.db.models.sql.constants import QUERY_TERMS
 from django.http import HttpResponse, HttpResponseNotFound, Http404
-from django.utils.cache import patch_cache_control
+from django.utils.cache import patch_cache_control, patch_vary_headers
 from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.bundle import Bundle
@@ -40,6 +40,12 @@ try:
 except ImportError:
     def csrf_exempt(func):
         return func
+
+# Django 1.5 has moved this constant up one level.
+try:
+    from django.db.models.constants import LOOKUP_SEP
+except ImportError:
+    from django.db.models.sql.constants import LOOKUP_SEP
 
 
 class NOT_AVAILABLE:
@@ -80,6 +86,7 @@ class ResourceOptions(object):
     include_absolute_url = False
     always_return_data = False
     collection_name = 'objects'
+    detail_uri_name = 'pk'
 
     def __new__(cls, meta=None):
         overrides = {}
@@ -194,8 +201,21 @@ class Resource(object):
                 callback = getattr(self, view)
                 response = callback(request, *args, **kwargs)
 
+                # Our response can vary based on a number of factors, use
+                # the cache class to determine what we should ``Vary`` on so
+                # caches won't return the wrong (cached) version.
+                varies = getattr(self._meta.cache, "varies", [])
 
-                if request.is_ajax():
+                if varies:
+                    patch_vary_headers(response, varies)
+
+                if self._meta.cache.cacheable(request, response):
+                    if self._meta.cache.cache_control():
+                        # If the request is cacheable and we have a
+                        # ``Cache-Control`` available then patch the header.
+                        patch_cache_control(response, **self._meta.cache.cache_control())
+
+                if request.is_ajax() and not response.has_header("Cache-Control"):
                     # IE excessively caches XMLHttpRequests, so we're disabling
                     # the browser cache here.
                     # See http://www.enhanceie.com/ie/bugs.asp for details.
@@ -216,6 +236,11 @@ class Resource(object):
                 if settings.DEBUG and getattr(settings, 'TASTYPIE_FULL_DEBUG', False):
                     raise
 
+                # Re-raise the error to get a proper traceback when the error
+                # happend during a test case
+                if request.META.get('SERVER_NAME') == 'testserver':
+                    raise
+
                 # Rather than re-raising, we're going to things similar to
                 # what Django does. The difference is returning a serialized
                 # error message.
@@ -228,11 +253,13 @@ class Resource(object):
         import sys
         the_trace = '\n'.join(traceback.format_exception(*(sys.exc_info())))
         response_class = http.HttpApplicationError
+        response_code = 500
 
         NOT_FOUND_EXCEPTIONS = (NotFound, Http404)
 
         if isinstance(exception, NOT_FOUND_EXCEPTIONS):
             response_class = HttpResponseNotFound
+            response_code = 404
 
         if settings.DEBUG:
             data = {
@@ -245,11 +272,13 @@ class Resource(object):
 
         # When DEBUG is False, send an error message to the admins (unless it's
         # a 404, in which case we check the setting).
-        if not isinstance(exception, NOT_FOUND_EXCEPTIONS):
-            log = logging.getLogger('django.request.tastypie')
-            log.error('Internal Server Error: %s' % request.path, exc_info=sys.exc_info(), extra={'status_code': 500, 'request':request})
+        send_broken_links = getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False)
 
-            if django.VERSION < (1, 3, 0) and getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False):
+        if not response_code == 404 or send_broken_links:
+            log = logging.getLogger('django.request.tastypie')
+            log.error('Internal Server Error: %s' % request.path, exc_info=sys.exc_info(), extra={'status_code': response_code, 'request':request})
+
+            if django.VERSION < (1, 3, 0):
                 from django.core.mail import mail_admins
                 subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), request.path)
                 try:
@@ -280,18 +309,22 @@ class Resource(object):
         """
         The standard URLs this ``Resource`` should respond to.
         """
-        # Due to the way Django parses URLs, ``get_multiple`` won't work without
-        # a trailing slash.
         return [
             url(r"^(?P<resource_name>%s)%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_list'), name="api_dispatch_list"),
             url(r"^(?P<resource_name>%s)/schema%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_schema'), name="api_get_schema"),
-            url(r"^(?P<resource_name>%s)/set/(?P<pk_list>\w[\w/;-]*)/$" % self._meta.resource_name, self.wrap_view('get_multiple'), name="api_get_multiple"),
-            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
+            url(r"^(?P<resource_name>%s)/set/(?P<%s_list>\w[\w/;-]*)%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('get_multiple'), name="api_get_multiple"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
         ]
 
     def override_urls(self):
         """
-        A hook for adding your own URLs or overriding the default URLs.
+        Deprecated. Will be removed by v1.0.0. Please use ``prepend_urls`` instead.
+        """
+        return []
+
+    def prepend_urls(self):
+        """
+        A hook for adding your own URLs or matching before the default URLs.
         """
         return []
 
@@ -304,7 +337,13 @@ class Resource(object):
         when registered with an ``Api`` class or for including directly in
         a URLconf should you choose to.
         """
-        urls = self.override_urls() + self.base_urls()
+        urls = self.prepend_urls()
+
+        if self.override_urls():
+            warnings.warn("'override_urls' is a deprecated method & will be removed by v1.0.0. Please rename your method to ``prepend_urls``.")
+            urls += self.override_urls()
+
+        urls += self.base_urls()
         urlpatterns = patterns('',
             *urls
         )
@@ -416,6 +455,10 @@ class Resource(object):
         throttling, method lookup) surrounding most CRUD interactions.
         """
         allowed_methods = getattr(self._meta, "%s_allowed_methods" % request_type, None)
+
+        if 'HTTP_X_HTTP_METHOD_OVERRIDE' in request.META:
+            request.method = request.META['HTTP_X_HTTP_METHOD_OVERRIDE']
+
         request_method = self.method_check(request, allowed=allowed_methods)
         method = getattr(self, "%s_%s" % (request_method, request_type), None)
 
@@ -541,7 +584,7 @@ class Resource(object):
         # Check to see if they should be throttled.
         if self._meta.throttle.should_be_throttled(identifier):
             # Throttle limit exceeded.
-            raise ImmediateHttpResponse(response=http.HttpForbidden())
+            raise ImmediateHttpResponse(response=http.HttpTooManyRequests())
 
     def log_throttled_access(self, request):
         """
@@ -589,24 +632,39 @@ class Resource(object):
         """
         return obj_list
 
+    def get_bundle_detail_data(self, bundle):
+        """
+        Convenience method to return the ``detail_uri_name`` attribute off
+        ``bundle.obj``.
+
+        Usually just accesses ``bundle.obj.pk`` by default.
+        """
+        return getattr(bundle.obj, self._meta.detail_uri_name)
+
     # URL-related methods.
 
-    def get_resource_uri(self, bundle_or_obj):
+    def detail_uri_kwargs(self, bundle_or_obj):
         """
         This needs to be implemented at the user level.
 
-        A ``return reverse("api_dispatch_detail", kwargs={'resource_name':
-        self.resource_name, 'pk': object.id})`` should be all that would
-        be needed.
+        Given a ``Bundle`` or an object, it returns the extra kwargs needed to
+        generate a detail URI.
 
         ``ModelResource`` includes a full working version specific to Django's
         ``Models``.
         """
         raise NotImplementedError()
 
-    def get_resource_list_uri(self):
+    def resource_uri_kwargs(self, bundle_or_obj=None):
         """
-        Returns a URL specific to this resource's list endpoint.
+        Builds a dictionary of kwargs to help generate URIs.
+
+        Automatically provides the ``Resource.Meta.resource_name`` (and
+        optionally the ``Resource.Meta.api_name`` if populated by an ``Api``
+        object).
+
+        If the ``bundle_or_obj`` argument is provided, it calls
+        ``Resource.detail_uri_kwargs`` for additional bits to create
         """
         kwargs = {
             'resource_name': self._meta.resource_name,
@@ -615,10 +673,31 @@ class Resource(object):
         if self._meta.api_name is not None:
             kwargs['api_name'] = self._meta.api_name
 
+        if bundle_or_obj is not None:
+            kwargs.update(self.detail_uri_kwargs(bundle_or_obj))
+
+        return kwargs
+
+    def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
+        """
+        Handles generating a resource URI.
+
+        If the ``bundle_or_obj`` argument is not provided, it builds the URI
+        for the list endpoint.
+
+        If the ``bundle_or_obj`` argument is provided, it builds the URI for
+        the detail endpoint.
+
+        Return the generated URI. If that URI can not be reversed (not found
+        in the URLconf), it will return an empty string.
+        """
+        if bundle_or_obj is not None:
+            url_name = 'api_dispatch_detail'
+
         try:
-            return self._build_reverse_url("api_dispatch_list", kwargs=kwargs)
+            return self._build_reverse_url(url_name, kwargs=self.resource_uri_kwargs(bundle_or_obj))
         except NoReverseMatch:
-            return None
+            return ''
 
     def get_via_uri(self, uri, request=None):
         """
@@ -1048,12 +1127,12 @@ class Resource(object):
         objects = self.obj_get_list(request=request, **self.remove_api_resource_names(kwargs))
         sorted_objects = self.apply_sorting(objects, options=request.GET)
 
-        paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_list_uri(), limit=self._meta.limit, max_limit=self._meta.max_limit, collection_name=self._meta.collection_name)
+        paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_uri(), limit=self._meta.limit, max_limit=self._meta.max_limit, collection_name=self._meta.collection_name)
         to_be_serialized = paginator.page()
 
         # Dehydrate the bundles in preparation for serialization.
-        bundles = [self.build_bundle(obj=obj, request=request) for obj in to_be_serialized['objects']]
-        to_be_serialized['objects'] = [self.full_dehydrate(bundle) for bundle in bundles]
+        bundles = [self.build_bundle(obj=obj, request=request) for obj in to_be_serialized[self._meta.collection_name]]
+        to_be_serialized[self._meta.collection_name] = [self.full_dehydrate(bundle) for bundle in bundles]
         to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
         return self.create_response(request, to_be_serialized)
 
@@ -1094,12 +1173,12 @@ class Resource(object):
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_list_data(request, deserialized)
 
-        if not 'objects' in deserialized:
+        if not self._meta.collection_name in deserialized:
             raise BadRequest("Invalid data sent.")
         self.obj_delete_list(request=request, **self.remove_api_resource_names(kwargs))
         bundles_seen = []
 
-        for object_data in deserialized['objects']:
+        for object_data in deserialized[self._meta.collection_name]:
             bundle = self.build_bundle(data=dict_strip_unicode_keys(object_data), request=request)
 
             # Attempt to be transactional, deleting any previously created
@@ -1115,7 +1194,7 @@ class Resource(object):
             return http.HttpNoContent()
         else:
             to_be_serialized = {}
-            to_be_serialized['objects'] = [self.full_dehydrate(bundle) for bundle in bundles_seen]
+            to_be_serialized[self._meta.collection_name] = [self.full_dehydrate(bundle) for bundle in bundles_seen]
             to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
             return self.create_response(request, to_be_serialized, response_class=http.HttpAccepted)
 
@@ -1264,17 +1343,30 @@ class Resource(object):
 
             * ``PATCH`` is all or nothing. If a single sub-operation fails, the
               entire request will fail and all resources will be rolled back.
+
+          * For ``PATCH`` to work, you **must** have ``put`` in your
+            :ref:`detail-allowed-methods` setting.
+
+          * To delete objects via ``deleted_objects`` in a ``PATCH`` request you
+            **must** have ``delete`` in your :ref:`detail-allowed-methods`
+            setting.
+
+        Substitute appropriate names for ``objects`` and
+        ``deleted_objects`` if ``Meta.collection_name`` is set to something
+        other than ``objects`` (default).
         """
         request = convert_post_to_patch(request)
         deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
 
-        if "objects" not in deserialized:
-            raise BadRequest("Invalid data sent.")
+        collection_name = self._meta.collection_name
+        deleted_collection_name = 'deleted_%s' % collection_name
+        if collection_name not in deserialized:
+            raise BadRequest("Invalid data sent: missing '%s'" % collection_name)
 
-        if len(deserialized["objects"]) and 'put' not in self._meta.detail_allowed_methods:
+        if len(deserialized[collection_name]) and 'put' not in self._meta.detail_allowed_methods:
             raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
 
-        for data in deserialized["objects"]:
+        for data in deserialized[collection_name]:
             # If there's a resource_uri then this is either an
             # update-in-place or a create-via-PUT.
             if "resource_uri" in data:
@@ -1292,21 +1384,23 @@ class Resource(object):
                     # The object referenced by resource_uri doesn't exist,
                     # so this is a create-by-PUT equivalent.
                     data = self.alter_deserialized_detail_data(request, data)
-                    bundle = self.build_bundle(data=dict_strip_unicode_keys(data))
+                    bundle = self.build_bundle(data=dict_strip_unicode_keys(data), request=request)
                     self.obj_create(bundle, request=request)
             else:
                 # There's no resource URI, so this is a create call just
                 # like a POST to the list resource.
                 data = self.alter_deserialized_detail_data(request, data)
-                bundle = self.build_bundle(data=dict_strip_unicode_keys(data))
+                bundle = self.build_bundle(data=dict_strip_unicode_keys(data), request=request)
                 self.obj_create(bundle, request=request)
 
-        if len(deserialized.get('deleted_objects', [])) and 'delete' not in self._meta.detail_allowed_methods:
-            raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
+        deleted_collection = deserialized.get(deleted_collection_name, [])
+        if deleted_collection:
+            if 'delete' not in self._meta.detail_allowed_methods:
+                raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
 
-        for uri in deserialized.get('deleted_objects', []):
-            obj = self.get_via_uri(uri, request=request)
-            self.obj_delete(request=request, _obj=obj)
+            for uri in deleted_collection:
+                obj = self.get_via_uri(uri, request=request)
+                self.obj_delete(request=request, _obj=obj)
 
         return http.HttpAccepted()
 
@@ -1359,7 +1453,11 @@ class Resource(object):
         # we're basically in the same spot as a PUT request. SO the rest of this
         # function is cribbed from put_detail.
         self.alter_deserialized_detail_data(request, original_bundle.data)
-        return self.obj_update(original_bundle, request=request, pk=original_bundle.obj.pk)
+        kwargs = {
+            self._meta.detail_uri_name: self.get_bundle_detail_data(original_bundle),
+            'request': request,
+        }
+        return self.obj_update(original_bundle, **kwargs)
 
     def get_schema(self, request, **kwargs):
         """
@@ -1391,21 +1489,22 @@ class Resource(object):
         self.throttle_check(request)
 
         # Rip apart the list then iterate.
-        obj_pks = kwargs.get('pk_list', '').split(';')
+        kwarg_name = '%s_list' % self._meta.detail_uri_name
+        obj_identifiers = kwargs.get(kwarg_name, '').split(';')
         objects = []
         not_found = []
 
-        for pk in obj_pks:
+        for identifier in obj_identifiers:
             try:
-                obj = self.obj_get(request, pk=pk)
+                obj = self.obj_get(request, **{self._meta.detail_uri_name: identifier})
                 bundle = self.build_bundle(obj=obj, request=request)
                 bundle = self.full_dehydrate(bundle)
                 objects.append(bundle)
             except ObjectDoesNotExist:
-                not_found.append(pk)
+                not_found.append(identifier)
 
         object_list = {
-            'objects': objects,
+            self._meta.collection_name: objects,
         }
 
         if len(not_found):
@@ -1480,27 +1579,28 @@ class ModelResource(Resource):
         Django type.
         """
         result = default
+        internal_type = f.get_internal_type()
 
-        if f.get_internal_type() in ('DateField', 'DateTimeField'):
+        if internal_type in ('DateField', 'DateTimeField'):
             result = fields.DateTimeField
-        elif f.get_internal_type() in ('BooleanField', 'NullBooleanField'):
+        elif internal_type in ('BooleanField', 'NullBooleanField'):
             result = fields.BooleanField
-        elif f.get_internal_type() in ('FloatField',):
+        elif internal_type in ('FloatField',):
             result = fields.FloatField
-        elif f.get_internal_type() in ('DecimalField',):
+        elif internal_type in ('DecimalField',):
             result = fields.DecimalField
-        elif f.get_internal_type() in ('IntegerField', 'PositiveIntegerField', 'PositiveSmallIntegerField', 'SmallIntegerField'):
+        elif internal_type in ('IntegerField', 'PositiveIntegerField', 'PositiveSmallIntegerField', 'SmallIntegerField', 'AutoField'):
             result = fields.IntegerField
-        elif f.get_internal_type() in ('FileField', 'ImageField'):
+        elif internal_type in ('FileField', 'ImageField'):
             result = fields.FileField
-        elif f.get_internal_type() == 'TimeField':
+        elif internal_type == 'TimeField':
             result = fields.TimeField
         # TODO: Perhaps enable these via introspection. The reason they're not enabled
         #       by default is the very different ``__init__`` they have over
         #       the other fields.
-        # elif f.get_internal_type() == 'ForeignKey':
+        # elif internal_type == 'ForeignKey':
         #     result = ForeignKey
-        # elif f.get_internal_type() == 'ManyToManyField':
+        # elif internal_type == 'ManyToManyField':
         #     result = ManyToManyField
 
         return result
@@ -1658,11 +1758,21 @@ class ModelResource(Resource):
 
         qs_filters = {}
 
-        if hasattr(self._meta, 'queryset'):
+        if getattr(self._meta, 'queryset', None) is not None:
             # Get the possible query terms from the current QuerySet.
-            query_terms = self._meta.queryset.query.query_terms.keys()
+            if hasattr(self._meta.queryset.query.query_terms, 'keys'):
+                # Django 1.4 & below compatibility.
+                query_terms = self._meta.queryset.query.query_terms.keys()
+            else:
+                # Django 1.5+.
+                query_terms = self._meta.queryset.query.query_terms
         else:
-            query_terms = QUERY_TERMS.keys()
+            if hasattr(QUERY_TERMS, 'keys'):
+                # Django 1.4 & below compatibility.
+                query_terms = QUERY_TERMS.keys()
+            else:
+                # Django 1.5+.
+                query_terms = QUERY_TERMS
 
         for filter_expr, value in filters.items():
             filter_bits = filter_expr.split(LOOKUP_SEP)
@@ -1829,26 +1939,52 @@ class ModelResource(Resource):
         self.save_m2m(m2m_bundle)
         return bundle
 
+    def lookup_kwargs_with_identifiers(self, bundle, kwargs):
+        """
+        Kwargs here represent uri identifiers Ex: /repos/<user_id>/<repo_name>/
+        We need to turn those identifiers into Python objects for generating
+        lookup parameters that can find them in the DB
+        """
+        lookup_kwargs = {}
+        bundle.obj = self.get_object_list(bundle.request).model()
+        # Override data values, we rely on uri identifiers
+        bundle.data.update(kwargs)
+        # We're going to manually hydrate, as opposed to calling
+        # ``full_hydrate``, to ensure we don't try to flesh out related
+        # resources & keep things speedy.
+        bundle = self.hydrate(bundle)
+
+        for identifier in kwargs:
+            if identifier == self._meta.detail_uri_name:
+                lookup_kwargs[identifier] = kwargs[identifier]
+                continue
+
+            field_object = self.fields[identifier]
+
+            # Skip readonly or related fields.
+            if field_object.readonly is True or getattr(field_object, 'is_related', False):
+                continue
+
+            # Check for an optional method to do further hydration.
+            method = getattr(self, "hydrate_%s" % identifier, None)
+
+            if method:
+                bundle = method(bundle)
+
+            if field_object.attribute:
+                value = field_object.hydrate(bundle)
+
+            lookup_kwargs[identifier] = value
+
+        return lookup_kwargs
+
     def obj_update(self, bundle, request=None, skip_errors=False, **kwargs):
         """
         A ORM-specific implementation of ``obj_update``.
         """
-        if not bundle.obj or not bundle.obj.pk:
-            # Attempt to hydrate data from kwargs before doing a lookup for the object.
-            # This step is needed so certain values (like datetime) will pass model validation.
+        if not bundle.obj or not self.get_bundle_detail_data(bundle):
             try:
-                bundle.obj = self.get_object_list(bundle.request).model()
-                bundle.data.update(kwargs)
-                bundle = self.full_hydrate(bundle)
-                lookup_kwargs = kwargs.copy()
-
-                for key in kwargs.keys():
-                    if key == 'pk':
-                        continue
-                    elif getattr(bundle.obj, key, NOT_AVAILABLE) is not NOT_AVAILABLE:
-                        lookup_kwargs[key] = getattr(bundle.obj, key)
-                    else:
-                        del lookup_kwargs[key]
+                lookup_kwargs = self.lookup_kwargs_with_identifiers(bundle, kwargs)
             except:
                 # if there is trouble hydrating the data, fall back to just
                 # using kwargs by itself (usually it only contains a "pk" key
@@ -1910,6 +2046,7 @@ class ModelResource(Resource):
 
         obj.delete()
 
+    @transaction.commit_on_success()
     def patch_list(self, request, **kwargs):
         """
         An ORM-specific implementation of ``patch_list``.
@@ -1917,8 +2054,7 @@ class ModelResource(Resource):
         Necessary because PATCH should be atomic (all-success or all-fail)
         and the only way to do this neatly is at the database level.
         """
-        with transaction.commit_on_success():
-            return super(ModelResource, self).patch_list(request, **kwargs)
+        return super(ModelResource, self).patch_list(request, **kwargs)
 
     def rollback(self, bundles):
         """
@@ -1928,7 +2064,7 @@ class ModelResource(Resource):
         bundles.
         """
         for bundle in bundles:
-            if bundle.obj and getattr(bundle.obj, 'pk', None):
+            if bundle.obj and self.get_bundle_detail_data(bundle):
                 bundle.obj.delete()
 
     def save_related(self, bundle):
@@ -1953,6 +2089,9 @@ class ModelResource(Resource):
             if not field_object.attribute:
                 continue
 
+            if field_object.readonly:
+                continue
+
             if field_object.blank and not bundle.data.has_key(field_name):
                 continue
 
@@ -1965,8 +2104,9 @@ class ModelResource(Resource):
             # Because sometimes it's ``None`` & that's OK.
             if related_obj:
                 if field_object.related_name:
-                    if not bundle.obj.pk:
+                    if not self.get_bundle_detail_data(bundle):
                         bundle.obj.save()
+
                     setattr(related_obj, field_object.related_name, bundle.obj)
 
                 related_obj.save()
@@ -1993,7 +2133,15 @@ class ModelResource(Resource):
                 continue
 
             # Get the manager.
-            related_mngr = getattr(bundle.obj, field_object.attribute)
+            related_mngr = None
+
+            if isinstance(field_object.attribute, basestring):
+                related_mngr = getattr(bundle.obj, field_object.attribute)
+            elif callable(field_object.attribute):
+                related_mngr = field_object.attribute(bundle)
+
+            if not related_mngr:
+                continue
 
             if hasattr(related_mngr, 'clear'):
                 # Clear it out, just to be safe.
@@ -2007,25 +2155,21 @@ class ModelResource(Resource):
 
             related_mngr.add(*related_objs)
 
-    def get_resource_uri(self, bundle_or_obj):
+    def detail_uri_kwargs(self, bundle_or_obj):
         """
-        Handles generating a resource URI for a single resource.
+        Given a ``Bundle`` or an object (typically a ``Model`` instance),
+        it returns the extra kwargs needed to generate a detail URI.
 
-        Uses the model's ``pk`` in order to create the URI.
+        By default, it uses the model's ``pk`` in order to create the URI.
         """
-        kwargs = {
-            'resource_name': self._meta.resource_name,
-        }
+        kwargs = {}
 
         if isinstance(bundle_or_obj, Bundle):
-            kwargs['pk'] = bundle_or_obj.obj.pk
+            kwargs[self._meta.detail_uri_name] = getattr(bundle_or_obj.obj, self._meta.detail_uri_name)
         else:
-            kwargs['pk'] = bundle_or_obj.id
+            kwargs[self._meta.detail_uri_name] = getattr(bundle_or_obj, self._meta.detail_uri_name)
 
-        if self._meta.api_name is not None:
-            kwargs['api_name'] = self._meta.api_name
-
-        return self._build_reverse_url("api_dispatch_detail", kwargs=kwargs)
+        return kwargs
 
 
 class NamespacedModelResource(ModelResource):
