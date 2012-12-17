@@ -106,6 +106,10 @@ class ViewsTestCase(TestCase):
         self.assertEqual(resp['Allow'], allows)
         self.assertEqual(resp.content, allows)
 
+    def test_notfound_set(self):
+        resp = self.client.get('/api/v1/notes/set/', data={'format': 'json'})
+        self.assertEqual(resp.status_code, 404)
+
     def test_slugbased(self):
         resp = self.client.get('/api/v2/slugbased/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
