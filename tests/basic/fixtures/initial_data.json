@@ -8,7 +8,7 @@
         "model": "auth.user",
         "pk": 1
     },
-    
+
     {
         "fields": {
             "user": 1,
@@ -34,5 +34,23 @@
         },
         "model": "basic.note",
         "pk": 2
+    },
+    {
+        "fields": {
+            "title": "First Post",
+            "content": "But not before the cat ate the hamster.",
+            "is_active": true
+        },
+        "model": "basic.slugbasednote",
+        "pk": "first-post"
+    },
+    {
+        "fields": {
+            "title": "Another First Post",
+            "content": "So it's a hamster-in-a-cat-in-a-dog kinda situation.",
+            "is_active": true
+        },
+        "model": "basic.slugbasednote",
+        "pk": "another-first-post"
     }
 ]

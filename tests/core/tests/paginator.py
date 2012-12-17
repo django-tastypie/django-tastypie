@@ -6,6 +6,7 @@ from tastypie.paginator import Paginator
 from core.models import Note
 from core.tests.resources import NoteResource
 from django.db import reset_queries
+from django.http import QueryDict
 
 
 class PaginatorTestCase(TestCase):
@@ -68,6 +69,26 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(meta['next'], None)
         self.assertEqual(meta['total_count'], 6)
 
+    def test_page2_with_request(self):
+        for req in [{'offset' : '2', 'limit' : '2'}, QueryDict('offset=2&limit=2')]:
+            paginator = Paginator(req, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=2)
+            meta = paginator.page()['meta']
+            self.assertEqual(meta['limit'], 2)
+            self.assertEqual(meta['offset'], 2)
+            self.assertEqual(meta['previous'], '/api/v1/notes/?limit=2&offset=0')
+            self.assertEqual(meta['next'], '/api/v1/notes/?limit=2&offset=4')
+            self.assertEqual(meta['total_count'], 6)
+
+    def test_page3_with_request(self):
+        for req in [{'offset' : '4', 'limit' : '2'}, QueryDict('offset=4&limit=2')]:
+            paginator = Paginator(req, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=4)
+            meta = paginator.page()['meta']
+            self.assertEqual(meta['limit'], 2)
+            self.assertEqual(meta['offset'], 4)
+            self.assertEqual(meta['previous'], '/api/v1/notes/?limit=2&offset=2')
+            self.assertEqual(meta['next'], None)
+            self.assertEqual(meta['total_count'], 6)
+
     def test_large_limit(self):
         paginator = Paginator({}, self.data_set, resource_uri='/api/v1/notes/', limit=20, offset=0)
         meta = paginator.page()['meta']
@@ -81,12 +102,10 @@ class PaginatorTestCase(TestCase):
         paginator = Paginator({'limit': 0}, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=0)
         page = paginator.page()
         meta = page['meta']
-        self.assertEqual(meta['limit'], 0)
+        self.assertEqual(meta['limit'], 1000)
         self.assertEqual(meta['offset'], 0)
         self.assertEqual(meta['total_count'], 6)
         self.assertEqual(len(page['objects']), 6)
-        self.assertFalse('previous' in meta)
-        self.assertFalse('next' in meta)
 
     def test_complex_get(self):
         request = {
@@ -114,10 +133,22 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(paginator.get_limit(), 10)
 
         paginator.limit = -10
-        self.assertRaises(BadRequest, paginator.get_limit)
+        raised = False
+        try:
+            paginator.get_limit()
+        except BadRequest, e:
+            raised = e
+        self.assertTrue(raised)
+        self.assertEqual(str(raised), "Invalid limit '-10' provided. Please provide a positive integer >= 0.")
 
         paginator.limit = 'hAI!'
-        self.assertRaises(BadRequest, paginator.get_limit)
+        raised = False
+        try:
+            paginator.get_limit()
+        except BadRequest, e:
+            raised = e
+        self.assertTrue(raised)
+        self.assertEqual(str(raised), "Invalid limit 'hAI!' provided. Please provide a positive integer.")
 
         # Test the max_limit.
         paginator.limit = 1000
@@ -142,10 +173,22 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(paginator.get_offset(), 10)
 
         paginator.offset= -10
-        self.assertRaises(BadRequest, paginator.get_offset)
+        raised = False
+        try:
+            paginator.get_offset()
+        except BadRequest, e:
+            raised = e
+        self.assertTrue(raised)
+        self.assertEqual(str(raised), "Invalid offset '-10' provided. Please provide a positive integer >= 0.")
 
         paginator.offset = 'hAI!'
-        self.assertRaises(BadRequest, paginator.get_offset)
+        raised = False
+        try:
+            paginator.get_offset()
+        except BadRequest, e:
+            raised = e
+        self.assertTrue(raised)
+        self.assertEqual(str(raised), "Invalid offset 'hAI!' provided. Please provide an integer.")
 
     def test_regression_nonqueryset(self):
         paginator = Paginator({}, ['foo', 'bar', 'baz'], limit=2, offset=0)
@@ -167,6 +210,15 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(meta['next'], u'/api/v1/notes/?slug__startswith=%E2%98%83&offset=4&limit=2&format=json')
         self.assertEqual(meta['total_count'], 6)
 
+        request = QueryDict('slug__startswith=☃&format=json')
+        paginator = Paginator(request, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=2)
+        meta = paginator.page()['meta']
+        self.assertEqual(meta['limit'], 2)
+        self.assertEqual(meta['offset'], 2)
+        self.assertEqual(meta['previous'], '/api/v1/notes/?slug__startswith=%E2%98%83&offset=0&limit=2&format=json')
+        self.assertEqual(meta['next'], u'/api/v1/notes/?slug__startswith=%E2%98%83&offset=4&limit=2&format=json')
+        self.assertEqual(meta['total_count'], 6)
+
     def test_custom_collection_name(self):
         paginator = Paginator({}, self.data_set, resource_uri='/api/v1/notes/', limit=20, offset=0, collection_name='notes')
         meta = paginator.page()['meta']
@@ -176,3 +228,25 @@ class PaginatorTestCase(TestCase):
         self.assertEqual(meta['next'], None)
         self.assertEqual(meta['total_count'], 6)
         self.assertEqual(len(paginator.page()['notes']), 6)
+
+    def test_multiple(self):
+        request = QueryDict('a=1&a=2')
+        paginator = Paginator(request, self.data_set, resource_uri='/api/v1/notes/', limit=2, offset=2)
+        meta = paginator.page()['meta']
+        self.assertEqual(meta['limit'], 2)
+        self.assertEqual(meta['offset'], 2)
+        self.assertEqual(meta['previous'], '/api/v1/notes/?a=1&a=2&limit=2&offset=0')
+        self.assertEqual(meta['next'], '/api/v1/notes/?a=1&a=2&limit=2&offset=4')
+
+    def test_max_limit(self):
+        paginator = Paginator({'limit': 0}, self.data_set, max_limit=10,
+                              resource_uri='/api/v1/notes/')
+        meta = paginator.page()['meta']
+        self.assertEqual(meta['limit'], 10)
+
+    def test_max_limit_none(self):
+        paginator = Paginator({'limit': 0}, self.data_set, max_limit=None,
+                              resource_uri='/api/v1/notes/')
+        meta = paginator.page()['meta']
+        self.assertEqual(meta['limit'], 0)
+

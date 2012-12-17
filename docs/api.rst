@@ -19,11 +19,11 @@ URLconf)::
 
     from tastypie.api import Api
     from myapp.api.resources import UserResource, EntryResource
-    
+
     v1_api = Api(api_name='v1')
     v1_api.register(UserResource())
     v1_api.register(EntryResource())
-    
+
     # Standard bits...
     urlpatterns = patterns('',
         (r'^api/', include(v1_api.urls)),
@@ -73,7 +73,14 @@ Returns the canonical resource for a given ``resource_name``.
 
 .. method:: Api.override_urls(self):
 
-A hook for adding your own URLs or overriding the default URLs. Useful for
+Deprecated. Will be removed by v1.0.0. Please use ``Api.prepend_urls`` instead.
+
+``prepend_urls``
+----------------
+
+.. method:: Api.prepend_urls(self):
+
+A hook for adding your own URLs or matching before the default URLs. Useful for
 adding custom endpoints or overriding the built-in ones.
 
 Should return a list of individual URLconf lines (**NOT** wrapped in
