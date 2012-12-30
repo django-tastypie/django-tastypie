@@ -1,8 +1,8 @@
 .. _ref-content_types:
 
-==================================
-ContentTypes and GenricForeignKeys
-==================================
+===================================
+ContentTypes and GenericForeignKeys
+===================================
 
 `Content Types`_ and GenericForeignKeys are for relationships where the model on
 one end is not defined by the model's schema.
