@@ -192,3 +192,13 @@ latex_documents = [
 
 # If false, no module index is generated.
 #latex_use_modindex = True
+
+# -- Options for Texinfo output ------------------------------------------------
+
+# List of tuples (startdocname, targetname, title, author, dir_entry,
+# description, category, toctree_only)
+texinfo_documents=[(
+    master_doc, "django-tastypie", "", "", "Tastypie",
+    "Documentation of the Tastypie framework", "Web development", False
+)]
+
