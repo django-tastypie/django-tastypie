@@ -2896,7 +2896,7 @@ class ModelResourceTestCase(TestCase):
         hydrated2 = nrrnr.hydrate_m2m(hydrated2)
 
         self.assertEqual(hydrated2.data['author'], '/api/v1/users/1/')
-        self.assertEqual(hydrated2.data['subjects'], [])
+        self.assertTrue('subjects' not in hydrated2.data)
 
         # Regression pt. II - Make sure saving the objects works.
         bundle_3 = Bundle(data={

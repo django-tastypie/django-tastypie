@@ -826,7 +826,10 @@ class Resource(object):
                 # unmodified. It's up to the user's code to handle this.
                 # The ``ModelResource`` provides a working baseline
                 # in this regard.
-                bundle.data[field_name] = field_object.hydrate_m2m(bundle)
+
+                # Partial PUTs may not have M2M provided
+                if field_name in bundle.data:
+                    bundle.data[field_name] = field_object.hydrate_m2m(bundle)
 
         for field_name, field_object in self.fields.items():
             if not getattr(field_object, 'is_m2m', False):
@@ -834,7 +837,7 @@ class Resource(object):
 
             method = getattr(self, "hydrate_%s" % field_name, None)
 
-            if method:
+            if method and field_name in bundle.data:
                 method(bundle)
 
         return bundle
@@ -2143,17 +2146,25 @@ class ModelResource(Resource):
             if not related_mngr:
                 continue
 
-            if hasattr(related_mngr, 'clear'):
-                # Clear it out, just to be safe.
-                related_mngr.clear()
+            # ManyToManyField with a through table don't have add method by default
+            # If we don't have an add method, better to do nothing
+            # Otherwise we would clear the relation screwing it completely.
+            if hasattr(related_mngr, 'add'):
 
-            related_objs = []
+                # Partial PUTs may not have M2M provided
+                # If no data is provided don't do anything, otherwise we would reset the related relation
+                if field_name in bundle.data:
+                    if hasattr(related_mngr, 'clear'):
+                        # Clear it out, just to be safe.
+                        related_mngr.clear()
 
-            for related_bundle in bundle.data[field_name]:
-                related_bundle.obj.save()
-                related_objs.append(related_bundle.obj)
+                    related_objs = []
 
-            related_mngr.add(*related_objs)
+                    for related_bundle in bundle.data[field_name]:
+                        related_bundle.obj.save()
+                        related_objs.append(related_bundle.obj)
+
+                    related_mngr.add(*related_objs)
 
     def detail_uri_kwargs(self, bundle_or_obj):
         """
