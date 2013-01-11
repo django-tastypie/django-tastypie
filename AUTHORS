@@ -67,6 +67,7 @@ Contributors:
 * Jason Brownbridge (jbrownbridge) for patching multiple ``offset/limit`` params appearing in pagination URIs.
 * Mitar for compatability patches with django-tastypie-mongoengine
 * Jeremy Dunck (jdunck) for a patch adding an index to ``ApiKey``.
+* Wes Winham (winhamwr) for a documentation patch.
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
