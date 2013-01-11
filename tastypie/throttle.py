@@ -44,7 +44,7 @@ class BaseThrottle(object):
         safe_string = ''.join(bits)
         return "%s_accesses" % safe_string
     
-    def should_be_throttled(self, identifier, **kwargs):
+    def should_be_throttled(self, identifier, request, **kwargs):
         """
         Returns whether or not the user has exceeded their throttle limit.
         
