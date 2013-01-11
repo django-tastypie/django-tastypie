@@ -582,7 +582,7 @@ class Resource(object):
         identifier = self._meta.authentication.get_identifier(request)
 
         # Check to see if they should be throttled.
-        if self._meta.throttle.should_be_throttled(identifier):
+        if self._meta.throttle.should_be_throttled(identifier, request):
             # Throttle limit exceeded.
             raise ImmediateHttpResponse(response=http.HttpTooManyRequests())
 
