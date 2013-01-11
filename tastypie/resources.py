@@ -19,7 +19,7 @@ from tastypie.exceptions import NotFound, BadRequest, InvalidFilterError, Hydrat
 from tastypie import fields
 from tastypie import http
 from tastypie.paginator import Paginator
-from tastypie.serializers import Serializer
+from tastypie.serializers import Serializer, UnsupportedFormat
 from tastypie.throttle import BaseThrottle
 from tastypie.utils import is_valid_jsonp_callback_value, dict_strip_unicode_keys, trailing_slash
 from tastypie.utils.mime import determine_format, build_content_type
@@ -1255,7 +1255,7 @@ class Resource(object):
         try:
             deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
             deserialized = self.alter_deserialized_detail_data(request, deserialized)
-        except ValueError:
+        except (ValueError, UnsupportedFormat):
             raise BadRequest("Invalid data sent.")
 
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
