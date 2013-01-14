@@ -511,7 +511,7 @@ class RelatedField(ApiField):
         Based on the ``full_resource``, returns either the endpoint or the data
         from ``full_dehydrate`` for the related resource.
         """
-        if not self.full:
+        if not self.full or bundle.request.META['REQUEST_METHOD'] in ('PUT', 'PATCH'):
             # Be a good netizen.
             return related_resource.get_resource_uri(bundle)
         else:
