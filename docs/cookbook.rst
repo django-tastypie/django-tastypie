@@ -97,6 +97,8 @@ You can also do "nested resources" (resources within another related resource)
 by lightly overriding the ``prepend_urls`` method & adding on a new method to
 handle the children::
 
+    from tastypie.utils import trailing_slash
+
     class ParentResource(ModelResource):
         children = fields.ToManyField(ChildResource, 'children')
 
