@@ -161,9 +161,6 @@ class ApiKeyAuthentication(Authentication):
         if request.META.get('HTTP_AUTHORIZATION') and request.META['HTTP_AUTHORIZATION'].lower().startswith('apikey '):
             (auth_type, data) = request.META['HTTP_AUTHORIZATION'].split()
 
-            if auth_type.lower() != 'apikey':
-                raise ValueError("Incorrect authorization header.")
-
             username, api_key = data.split(':', 1)
         else:
             username = request.GET.get('username') or request.POST.get('username')
