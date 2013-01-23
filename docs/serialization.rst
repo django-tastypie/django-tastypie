@@ -102,17 +102,36 @@ like::
 
 
     class CSVSerializer(Serializer):
-        formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'plist', 'csv']
-        content_types = {
-            'json': 'application/json',
-            'jsonp': 'text/javascript',
-            'xml': 'application/xml',
-            'yaml': 'text/yaml',
-            'html': 'text/html',
-            'plist': 'application/x-plist',
-            'csv': 'text/csv',
-        }
+        formats = Serializer.formats + ['csv']
 
+        content_types = dict(
+            Serializer.content_types.items() +
+            [('csv', 'text/csv')])
+
+        def to_csv(self, data, options=None):
+            options = options or {}
+            data = self.to_simple(data, options)
+            raw_data = StringIO.StringIO()
+            if data['objects']:
+                writer = csv.DictWriter(raw_data, data['objects'][0].keys(),
+                                        dialect="excel",
+                                        extrasaction='ignore')
+                writer.writeheader()
+                for item in data['objects']:
+                    writer.writerow(item)
+
+            return raw_data.getvalue()
+
+        def from_csv(self, content):
+            raw_data = StringIO.StringIO(content)
+            data = []
+            # Untested, so this might not work exactly right.
+            for item in csv.DictReader(raw_data):
+                data.append(item)
+            return data
+
+
+    class CSVSerializer(Serializer):
         def to_csv(self, data, options=None):
             options = options or {}
             data = self.to_simple(data, options)
