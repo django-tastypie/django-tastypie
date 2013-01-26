@@ -67,6 +67,7 @@ Contributors:
 * Jason Brownbridge (jbrownbridge) for patching multiple ``offset/limit`` params appearing in pagination URIs.
 * Mitar for compatability patches with django-tastypie-mongoengine
 * Jeremy Dunck (jdunck) for a patch adding an index to ``ApiKey``.
+* Miguel Carranza (MiguelCarranza) for patching 'filter_value_to_python' to support __in filters in kwargs.
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
