@@ -10,8 +10,8 @@ to complex validation that compares different fields together.
 
 If the data is valid, an empty dictionary is returned and processing continues
 as normal. If the data is invalid, a dictionary of error messages (keys being
-the field names, values being a list of error messages). This will be
-immediately returned to the user, serialized in the format they requested.
+the field names, values being a list of error messages) is immediately 
+returned to the user, serialized in the format they requested.
 
 Usage
 =====
