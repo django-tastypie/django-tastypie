@@ -115,3 +115,10 @@ class HTTPTestCase(TestServerTestCase):
 
         self.assertEqual(cache_control, set(["s-maxage=3600", "max-age=3600", "private"]))
         self.assertTrue('"johndoe"' in response.read())
+
+    def test_filter_in(self):
+        connection = self.get_connection()
+        connection.request('GET', '/api/v1/notes/1/filterin/', headers={'Accept': 'application/json'})
+        response = connection.getresponse()
+        connection.close()
+        self.assertEqual(response.status, 200)

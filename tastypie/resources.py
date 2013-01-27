@@ -1728,8 +1728,11 @@ class ModelResource(Resource):
                 value = []
 
                 for part in filters.getlist(filter_expr):
-                    value.extend(part.split(','))
-            else:
+                    if hasattr(part, 'split'):
+                        value.extend(part.split(','))
+                    else:
+                        value.extend(part)
+            elif hasattr(value, 'split'):
                 value = value.split(',')
 
         return value
