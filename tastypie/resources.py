@@ -19,7 +19,7 @@ from tastypie.exceptions import NotFound, BadRequest, InvalidFilterError, Hydrat
 from tastypie import fields
 from tastypie import http
 from tastypie.paginator import Paginator
-from tastypie.serializers import Serializer
+from tastypie.serializers import Serializer, UnsupportedFormat
 from tastypie.throttle import BaseThrottle
 from tastypie.utils import is_valid_jsonp_callback_value, dict_strip_unicode_keys, trailing_slash
 from tastypie.utils.mime import determine_format, build_content_type
@@ -1252,8 +1252,13 @@ class Resource(object):
         If ``Meta.always_return_data = True``, there will be a populated body
         of serialized data.
         """
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
-        deserialized = self.alter_deserialized_detail_data(request, deserialized)
+        try:
+            deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+            deserialized = self.alter_deserialized_detail_data(request, deserialized)
+            deserialized.items()
+        except (ValueError, UnsupportedFormat, AttributeError):
+            raise BadRequest("Invalid data sent.")
+
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
         updated_bundle = self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
         location = self.get_resource_uri(updated_bundle)
