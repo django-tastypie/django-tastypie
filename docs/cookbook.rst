@@ -323,6 +323,10 @@ of ``/api/v1/users/?format=json``. The following snippet allows that kind
 of syntax additional to the default URL scheme::
 
     # myapp/api/resources.py
+
+    # Piggy-back on internal csrf_exempt existence handling
+    from tastypie.resources import csrf_exempt
+
     class UserResource(ModelResource):
         class Meta:
             queryset = User.objects.all()
@@ -350,6 +354,7 @@ of syntax additional to the default URL scheme::
             return super(UserResource, self).determine_format(request)
 
         def wrap_view(self, view):
+            @csrf_exempt
             def wrapper(request, *args, **kwargs):
                 request.format = kwargs.pop('format', None)
                 wrapped_view = super(UserResource, self).wrap_view(view)
