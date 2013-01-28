@@ -1,4 +1,3 @@
-import datetime
 import hmac
 import time
 from django.conf import settings
@@ -29,7 +28,6 @@ class ApiAccess(models.Model):
 
 if 'django.contrib.auth' in settings.INSTALLED_APPS:
     import uuid
-    from django.conf import settings
     from django.contrib.auth.models import User
     
     class ApiKey(models.Model):
