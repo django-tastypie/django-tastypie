@@ -50,15 +50,6 @@ To power their mobile (iPhone/Android/Playbook) applications.
 * http://www.politifact.com/mobile/
 
 
-Crate
------
-
-Crate is a PyPI mirror/replacement. It's using Tastypie to provide a convenient
-REST API.
-
-* https://crate.io/api/v1/
-
-
 LocalWiki
 ---------
 
