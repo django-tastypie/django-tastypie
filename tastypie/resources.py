@@ -1385,13 +1385,13 @@ class Resource(object):
                     # so this is a create-by-PUT equivalent.
                     data = self.alter_deserialized_detail_data(request, data)
                     bundle = self.build_bundle(data=dict_strip_unicode_keys(data), request=request)
-                    self.obj_create(bundle, request=request)
+                    self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
             else:
                 # There's no resource URI, so this is a create call just
                 # like a POST to the list resource.
                 data = self.alter_deserialized_detail_data(request, data)
                 bundle = self.build_bundle(data=dict_strip_unicode_keys(data), request=request)
-                self.obj_create(bundle, request=request)
+                self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
 
         deleted_collection = deserialized.get(deleted_collection_name, [])
         if deleted_collection:
