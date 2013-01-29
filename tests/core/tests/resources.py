@@ -1064,6 +1064,18 @@ class CounterResource(ModelResource):
         new_shiny.obj.count = new_shiny.times_hydrated
         return new_shiny
 
+class MetaReadonlyNoteResource(ModelResource):
+    class Meta:
+        resource_name = 'readonly_note_meta'
+        queryset = Note.objects.all()
+        readonly = ['created','updated']
+
+class MetaReadwriteNoteResource(ModelResource):
+    class Meta:
+        resource_name = 'readwrite_note_meta'
+        queryset = Note.objects.all()
+        readwrite = ['title','content']
+
 
 class ModelResourceTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -3079,6 +3091,19 @@ class ModelResourceTestCase(TestCase):
         finally:
             related_obj.save = _real_save
 
+    def test_readonly_meta_list(self):
+        mronr = MetaReadonlyNoteResource()
+        for attribute in ['created','updated']:
+            self.assertEqual(mronr.fields[attribute].readonly,True)
+        for attribute in ['title','slug','content','is_active']:
+            self.assertEqual(mronr.fields[attribute].readonly,False)
+        
+        mrwnr = MetaReadwriteNoteResource()
+        for attribute in ['title','content']:
+            self.assertEqual(mrwnr.fields[attribute].readonly,False)
+        for attribute in ['created','updated','slug','is_active']:
+            self.assertEqual(mrwnr.fields[attribute].readonly,True)
+        
 
     def test_collection_name(self):
         resource = AlternativeCollectionNameNoteResource()

@@ -619,6 +619,18 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Controls what introspected fields the ``Resource`` should *NOT* include.
   A blacklist of fields. Default is ``[]``.
 
+``readonly``
+-------------
+
+  Controls which automatically generated ``ModelResource`` fields should be
+  marked as readonly. Default is ``[]``
+
+``readwrite``
+--------------
+
+  Controls which automatically generated ``ModelResource`` fields should
+  *NOT* be marked as readonly. Default is ``[]``
+
 ``include_resource_uri``
 ------------------------
 
