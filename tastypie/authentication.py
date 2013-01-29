@@ -48,6 +48,7 @@ class Authentication(object):
 
         Should return either ``True`` if allowed, ``False`` if not or an
         ``HttpResponse`` if you need something custom.
+        
         """
         return True
 
