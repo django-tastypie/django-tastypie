@@ -1614,6 +1614,8 @@ class ModelResource(Resource):
         final_fields = {}
         fields = fields or []
         excludes = excludes or []
+        readonly = getattr(cls._meta,'readonly',[])
+        readwrite = getattr(cls._meta,'readwrite',[])
 
         if not cls._meta.object_class:
             return final_fields
@@ -1640,6 +1642,12 @@ class ModelResource(Resource):
                 'attribute': f.name,
                 'help_text': f.help_text,
             }
+
+            if readwrite and f.name not in readwrite:
+                kwargs['readonly']=True
+
+            if f.name in readonly:
+                kwargs['readonly']=True
 
             if f.null is True:
                 kwargs['null'] = True
