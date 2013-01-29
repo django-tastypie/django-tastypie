@@ -3,7 +3,8 @@ import hmac
 import time
 from django.conf import settings
 from django.db import models
-from tastypie.utils import now, get_user_model
+from tastypie.utils import now
+from django.contrib.auth.models import get_user_model()
 
 try:
     from hashlib import sha1
@@ -11,6 +12,12 @@ except ImportError:
     import sha
     sha1 = sha.sha
 
+# Django 1.5+ Compatibility                                                                                                  
+try:
+    from django.contrib.auth.models import get_user_model
+    User = get_user_model()
+except ImportError:
+    from django.contrib.auth.models import User
 
 class ApiAccess(models.Model):
     """A simple model for use with the ``CacheDBThrottle`` behaviors."""
@@ -31,11 +38,9 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
     import uuid
     from django.conf import settings
 
-    auth_user_model = get_user_model()
-
     class ApiKey(models.Model):
-        user = models.OneToOneField(auth_user_model, related_name='api_key')
-        key = models.CharField(max_length=256, blank=True, default='',db_index=True)
+        user = models.OneToOneField(User, related_name='api_key')
+        key = models.CharField(max_length=256, blank=True, default='', db_index=True)
         created = models.DateTimeField(default=now)
 
         def __unicode__(self):
@@ -60,3 +65,5 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
         """
         if kwargs.get('created') is True:
             ApiKey.objects.create(user=kwargs.get('instance'))
+
+

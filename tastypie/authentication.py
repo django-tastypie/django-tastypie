@@ -5,6 +5,7 @@ import uuid
 
 from django.conf import settings
 from django.contrib.auth import authenticate
+from tastypie.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.middleware.csrf import _sanitize_token, constant_time_compare
 from django.utils.http import same_origin
@@ -178,9 +179,6 @@ class ApiKeyAuthentication(Authentication):
         Should return either ``True`` if allowed, ``False`` if not or an
         ``HttpResponse`` if you need something custom.
         """
-        from tastypie.utils import get_user_model
-
-        auth_user_model = get_user_model()
 
         try:
             username, api_key = self.extract_credentials(request)
@@ -191,9 +189,9 @@ class ApiKeyAuthentication(Authentication):
             return self._unauthorized()
 
         try:
-            username_field = {getattr(auth_user_model, 'USERNAME_FIELD', 'username'): username}
-            user = auth_user_model.objects.get(**username_field)
-        except (auth_user_model.DoesNotExist, auth_user_model.MultipleObjectsReturned):
+            username_field = {getattr(User, 'USERNAME_FIELD', 'username'): username}
+            user = User.objects.get(**username_field)
+        except (User.DoesNotExist, User.MultipleObjectsReturned):
             return self._unauthorized()
 
         if not self.check_active(user):
@@ -357,14 +355,10 @@ class DigestAuthentication(Authentication):
         return True
 
     def get_user(self, username):
-        from tastypie.utils import get_user_model
-
-        auth_user_model = get_user_model()
-
         try:
-            username_field = {getattr(auth_user_model, 'USERNAME_FIELD', 'username'): username}
-            user = auth_user_model.objects.get(**username_field)
-        except (auth_user_model.DoesNotExist, auth_user_model.MultipleObjectsReturned):
+            username_field = {getattr(User, 'USERNAME_FIELD', 'username'): username}
+            user = User.objects.get(**username_field)
+        except (User.DoesNotExist, User.MultipleObjectsReturned):
             return False
 
         return user
