@@ -4,7 +4,6 @@ import time
 from django.conf import settings
 from django.db import models
 from tastypie.utils import now
-from django.contrib.auth.models import get_user_model()
 
 try:
     from hashlib import sha1
