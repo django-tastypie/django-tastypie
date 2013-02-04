@@ -632,7 +632,11 @@ The inner ``Meta`` class allows for class-level configuration of how the
 ----------
 
   Controls what introspected fields the ``Resource`` should include.
-  A whitelist of fields. Default is ``[]``.
+  A whitelist of fields. Default is ``None``.
+
+  The default value of ``None`` means that all Django fields will be 
+  introspected. In order to specify that no fields should be introspected,
+  use ``[]``
 
 ``excludes``
 ------------
