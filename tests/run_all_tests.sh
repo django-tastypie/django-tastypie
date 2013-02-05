@@ -4,7 +4,7 @@ PYTHONPATH=$PWD:$PWD/..${PYTHONPATH:+:$PYTHONPATH}
 export PYTHONPATH
 
 # complex
-ALL="core basic alphanumeric slashless namespaced related validation gis content_gfk"
+ALL="core customuser basic alphanumeric slashless namespaced related validation gis content_gfk"
 
 if [ $# -eq 0 ]; then
 	TYPES=$ALL
