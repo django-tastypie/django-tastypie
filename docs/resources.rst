@@ -425,6 +425,9 @@ relationship looks like so::
       class Meta:
           queryset = Comment.objects.all()
 
+Note that ``'comments'`` in the ``ToManyField('myapp.api.resources.CommentResource', 'comments')`` will work only if the ``Comment`` model will have ``ForeignKey(Note, related_name="notes")``, i.e.  ``'comments'`` has to match the relevant ``related_name``. 
+Otherwise you can use Django default name - ``'<singular_class_name>_set'``, ``'comment_set'`` in this case. 
+
 .. warning::
 
   Unlike Django, you can't use just the class name (i.e. ``'CommentResource'``),
