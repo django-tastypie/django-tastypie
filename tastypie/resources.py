@@ -2095,6 +2095,11 @@ class ModelResource(Resource):
             if field_object.blank and not bundle.data.has_key(field_name):
                 continue
 
+            # Don't save things that are not dict-alike
+            # which means it's probably a uri
+            if not hasattr(bundle.data.get(field_name, None), 'items'):
+                continue
+
             # Get the object.
             try:
                 related_obj = getattr(bundle.obj, field_object.attribute)
@@ -2150,7 +2155,11 @@ class ModelResource(Resource):
             related_objs = []
 
             for related_bundle in bundle.data[field_name]:
-                related_bundle.obj.save()
+                # If a related bundle's `obj` is set as having `adding`
+                # True then that means the obj wasn't instantiated
+                # from an existing model, so we need to save it.
+                if related_bundle.obj._state.adding:
+                    related_bundle.obj.save()
                 related_objs.append(related_bundle.obj)
 
             related_mngr.add(*related_objs)

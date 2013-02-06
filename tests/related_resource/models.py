@@ -55,3 +55,10 @@ class ExtraData(models.Model):
         return u"%s" % (self.name)
 
 
+class Label(models.Model):
+    name = models.CharField(max_length=32)
+
+
+class Post(models.Model):
+    name = models.CharField(max_length=200)
+    label = models.ManyToManyField(Label, null=True)

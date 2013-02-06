@@ -2,13 +2,14 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import simplejson as json
+from django.db.models.signals import pre_save
 from core.models import Note, MediaBit
 from core.tests.resources import HttpRequest
 from core.tests.mocks import MockRequest
 from tastypie import fields
 from related_resource.api.resources import FreshNoteResource, CategoryResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData
+from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Label
 
 
 class RelatedResourceTest(TestCase):
@@ -224,3 +225,69 @@ class RelatedPatchTestCase(TestCase):
         self.assertEqual(resp.status_code, 202)
         cat2 = Category.objects.get(pk=2)
         self.assertEqual(cat2.name, 'Kid')
+
+
+class RelatedSaveCallsTest(TestCase):
+    urls = 'related_resource.api.urls'
+
+    def test_one_query_for_fk_post_list(self):
+        """
+        Posting a new detail with no related objects
+        should require one query to save the object
+        """
+        resource = api.canonical_resource_for('category')
+
+        request = MockRequest()
+        request.raw_post_data = json.dumps({
+            'name': 'Foo',
+            'parent': None
+        })
+
+        with self.assertNumQueries(1):
+            resp = resource.post_list(request)
+
+
+    def test_two_queries_for_fk_post_list(self):
+        """
+        Posting a new detail with one related object, referenced via its
+        ``resource_uri`` should require two queries: one to save the
+        object, and one to lookup the related object.
+        """
+        parent = Category.objects.create(name='Bar')
+        resource = api.canonical_resource_for('category')
+
+        request = MockRequest()
+        request.raw_post_data = json.dumps({
+            'name': 'Foo',
+            'parent': resource.get_resource_uri(parent)
+        })
+
+        with self.assertNumQueries(2):
+            resp = resource.post_list(request)
+
+    def test_no_save_m2m_unchanged(self):
+        """
+        Posting a new detail with a related m2m object shouldn't
+        save the m2m object unless the m2m object is provided inline.
+        """
+        global saved_label
+        saved_label = False
+
+        def _saved_label(sender, **kwargs):
+            global saved_label
+            saved_label = True
+
+        pre_save.connect(_saved_label, sender=Label)
+        l1 = Label.objects.get(name='coffee')
+        resource = api.canonical_resource_for('post')
+        label_resource = api.canonical_resource_for('label')
+
+        request = MockRequest()
+        request.raw_post_data = json.dumps({
+            'name': 'test post',
+            'label': [label_resource.get_resource_uri(l1)],
+        })
+
+        resource.post_list(request)
+
+        self.assertFalse(saved_label)
