@@ -89,7 +89,7 @@ can be helpful.
 What you return from the method varies based on the type of method.
 
 Return Values: The List Case
-----------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In the case of the ``*_list`` methods, you'll want to filter the ``object_list``
 & return only the objects the user has access to.
@@ -101,7 +101,7 @@ If you'd rather they received an unauthorized status code, raising
 ``Unauthorized`` will return a HTTP ``401``.
 
 Return Values: The Detail Case
-------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In the case of the ``*_detail`` methods, you'll have access to the
 ``object_list`` (so you know if a given object fits within the overall set),
