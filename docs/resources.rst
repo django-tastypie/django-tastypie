@@ -158,6 +158,23 @@ Ideology aside, you should use whatever suits you. If you prefer fewer requests
 consequences of each approach.
 
 
+Accessing The Current Request
+=============================
+
+Being able to change behavior based on the current request is a very commmon
+need. Virtually anywhere within ``Resource/ModelResource``, if a ``bundle`` is
+available, you can access it using ``bundle.request``. This is useful for
+altering querysets, ensuring headers are present, etc.
+
+Most methods you may need to override/extend should get a ``bundle`` passed to
+them.
+
+If you're using the ``Resource/ModelResource`` directly, with no ``request``
+available, an empty ``Request`` will be supplied instead. If this is a common
+pattern/usage in your code, you'll want to accommodate for data that potentially
+isn't there.
+
+
 Advanced Data Preparation
 =========================
 
