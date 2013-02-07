@@ -61,6 +61,7 @@ class SlugBasedNoteResource(ModelResource):
         queryset = SlugBasedNote.objects.all()
         resource_name = 'slugbased'
         detail_uri_name = 'slug'
+        authorization = Authorization()
 
 
 class SessionUserResource(ModelResource):

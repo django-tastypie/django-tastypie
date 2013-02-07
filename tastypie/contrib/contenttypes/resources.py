@@ -1,3 +1,4 @@
+from tastypie.bundle import Bundle
 from tastypie.resources import ModelResource
 from tastypie.exceptions import NotFound
 from django.core.urlresolvers import resolve, Resolver404, get_script_prefix
@@ -10,7 +11,6 @@ class GenericResource(ModelResource):
     def __init__(self, resources, *args, **kwargs):
         self.resource_mapping = dict((r._meta.resource_name, r) for r in resources)
         return super(GenericResource, self).__init__(*args, **kwargs)
-
 
     def get_via_uri(self, uri, request=None):
         """
@@ -37,6 +37,5 @@ class GenericResource(ModelResource):
 
         parent_resource = resource_class(api_name=self._meta.api_name)
         kwargs = parent_resource.remove_api_resource_names(kwargs)
-        return parent_resource.obj_get(**kwargs)
-
-
+        bundle = Bundle(request=request)
+        return parent_resource.obj_get(bundle, **kwargs)
