@@ -178,7 +178,7 @@ class ApiKeyAuthentication(Authentication):
         Should return either ``True`` if allowed, ``False`` if not or an
         ``HttpResponse`` if you need something custom.
         """
-        from django.contrib.auth.models import User
+        from tastypie.compat import User
 
         try:
             username, api_key = self.extract_credentials(request)
@@ -357,7 +357,7 @@ class DigestAuthentication(Authentication):
         return True
 
     def get_user(self, username):
-        from django.contrib.auth.models import User
+        from tastypie.compat import User
 
         try:
             user = User.objects.get(username=username)

@@ -1,5 +1,5 @@
-from django.contrib.auth.models import User
 from django.core.management.base import NoArgsCommand
+from tastypie.compat import User
 from tastypie.models import ApiKey
 
 
