@@ -311,7 +311,7 @@ class Serializer(object):
                 if element.tag in ('object', 'objects'):
                     return self.from_etree(element)
             return dict((element.tag, self.from_etree(element)) for element in elements)
-        elif data.tag == 'object' or data.get('type') == 'hash':
+        elif data.tag == 'object' or data.tag == 'response' or data.get('type') == 'hash':
             return dict((element.tag, self.from_etree(element)) for element in data.getchildren())
         elif data.tag == 'objects' or data.get('type') == 'list':
             return [self.from_etree(element) for element in data.getchildren()]
