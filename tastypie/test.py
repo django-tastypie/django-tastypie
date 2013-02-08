@@ -4,7 +4,7 @@ from django.conf import settings
 from django.test import TestCase
 from django.test.client import FakePayload, Client
 from tastypie.serializers import Serializer
-
+from django.utils.encoding import smart_str
 
 class TestApiClient(object):
     def __init__(self, serializer=None):
@@ -173,7 +173,7 @@ class TestApiClient(object):
             'PATH_INFO': self.client._get_path(parsed),
             'QUERY_STRING': parsed[4],
             'REQUEST_METHOD': 'PATCH',
-            'wsgi.input': FakePayload(kwargs['data']),
+            'wsgi.input': FakePayload(smart_str(kwargs['data'])),
         }
         r.update(kwargs)
         return self.client.request(**r)
