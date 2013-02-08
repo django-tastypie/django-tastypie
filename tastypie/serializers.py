@@ -9,6 +9,7 @@ from django.utils.encoding import force_unicode
 from tastypie.bundle import Bundle
 from tastypie.exceptions import UnsupportedFormat
 from tastypie.utils import format_datetime, format_date, format_time, make_naive
+from django.utils.encoding import smart_str
 try:
     import lxml
     from lxml.etree import parse as parse_xml
@@ -338,9 +339,9 @@ class Serializer(object):
         data = self.to_simple(data, options)
 
         if django.get_version() >= '1.5':
-            return json.json.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
+            return smart_str(json.json.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False))
         else:
-            return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
+            return smart_str(simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False))
 
     def from_json(self, content):
         """
