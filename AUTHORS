@@ -60,6 +60,7 @@ Contributors:
 * Julien Bouquillon (revolunet) for authentication and authorization docs fixes.
 * Andrey Voronov (eyvoro) for fixing a typo in the AUTHORS file.
 * D.B. Tsai (dbtsai) for a fix relating to ``detail_uri_kwargs``.
+* Numan Sachwani (numan) and Curtis Maloney (funkybob) for patch which allows fields to be omitted from list/detail form of resources.
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
