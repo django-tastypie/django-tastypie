@@ -71,7 +71,10 @@ class ApiField(object):
         self.readonly = readonly
         self.value = None
         self.unique = unique
-        self.use_in = use_in if use_in in ['all', 'detail', 'list'] or callable(use_in) else 'all'
+        self.use_in = 'all'
+
+        if use_in in ['all', 'detail', 'list'] or callable(use_in):
+            self.use_in = use_in
 
         if help_text:
             self.help_text = help_text
@@ -449,7 +452,10 @@ class RelatedField(ApiField):
         self.resource_name = None
         self.unique = unique
         self._to_class = None
-        self.use_in = use_in if use_in in ['all', 'detail', 'list'] or callable(use_in) else 'all'
+        self.use_in = 'all'
+
+        if use_in in ['all', 'detail', 'list'] or callable(use_in):
+            self.use_in = use_in
 
         if self.to == 'self':
             self.self_referential = True
