@@ -69,6 +69,7 @@ Contributors:
 * Jeremy Dunck (jdunck) for a patch adding an index to ``ApiKey``.
 * Wes Winham (winhamwr) for a documentation patch.
 * Andrew Austin (andrewaustin) for triaging, verifying and patching several tickets.
+* Sam Thompson(georgedorn) for fixing some docs and tests.
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
