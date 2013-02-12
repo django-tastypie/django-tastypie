@@ -585,8 +585,8 @@ The inner ``Meta`` class allows for class-level configuration of how the
 ``filtering``
 -------------
 
-  Provides a list of fields that the ``Resource`` will accept client
-  filtering on. Default is ``{}``.
+  Specifies the fields that the ``Resource`` will accept client filtering on. 
+  Default is ``{}``.
 
   Keys should be the fieldnames as strings while values should be a list of
   accepted filter types.
