@@ -68,7 +68,7 @@ Javascript's use, you could do the following::
 Using Non-PK Data For Your URLs
 -------------------------------
 
-By convention, ``ModelResource``'s usually expose the detail endpoints utilizing
+By convention, ``ModelResource``\s usually expose the detail endpoints utilizing
 the primary key of the ``Model`` they represent. However, this is not a strict
 requirement. Each URL can take other named URLconf parameters that can be used
 for the lookup.
@@ -323,6 +323,10 @@ of ``/api/v1/users/?format=json``. The following snippet allows that kind
 of syntax additional to the default URL scheme::
 
     # myapp/api/resources.py
+
+    # Piggy-back on internal csrf_exempt existence handling
+    from tastypie.resources import csrf_exempt
+
     class UserResource(ModelResource):
         class Meta:
             queryset = User.objects.all()
@@ -350,6 +354,7 @@ of syntax additional to the default URL scheme::
             return super(UserResource, self).determine_format(request)
 
         def wrap_view(self, view):
+            @csrf_exempt
             def wrapper(request, *args, **kwargs):
                 request.format = kwargs.pop('format', None)
                 wrapped_view = super(UserResource, self).wrap_view(view)
@@ -378,3 +383,61 @@ their own.::
 
     admin.site.unregister(User)
     admin.site.register(User,UserModelAdmin)
+
+
+Using ``SessionAuthentication``
+-------------------------------
+
+If your users are logged into the site & you want Javascript to be able to
+access the API (assuming jQuery), the first thing to do is setup
+``SessionAuthentication``::
+
+    from django.contrib.auth.models import User
+    from tastypie.authentication import SessionAuthentication
+    from tastypie.resources import ModelResource
+
+
+    class UserResource(ModelResource):
+        class Meta:
+            resource_name = 'users'
+            queryset = User.objects.all()
+            authentication = SessionAuthentication()
+
+Then you'd build a template like::
+
+    <html>
+        <head>
+            <title></title>
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+            <script type="text/javascript">
+                $(document).ready(function() {
+                    // We use ``.ajax`` here due to the overrides.
+                    $.ajax({
+                        // Substitute in your API endpoint here.
+                        url: '/api/v1/users/',
+                        contentType: 'application/json',
+                        // The ``X-CSRFToken`` evidently can't be set in the
+                        // ``headers`` option, so force it here.
+                        // This method requires jQuery 1.5+.
+                        beforeSend: function(jqXHR, settings) {
+                            // Pull the token out of the DOM.
+                            jqXHR.setRequestHeader('X-CSRFToken', $('input[name=csrfmiddlewaretoken]').val());
+                        },
+                        success: function(data, textStatus, jqXHR) {
+                            // Your processing of the data here.
+                            console.log(data);
+                        }
+                    });
+                });
+            </script>
+        </head>
+        <body>
+            <!-- Include the CSRF token in the body of the HTML -->
+            {% csrf_token %}
+        </body>
+    </html>
+
+There are other ways to make this function, with other libraries or other
+techniques for supplying the token (see
+https://docs.djangoproject.com/en/dev/ref/contrib/csrf/#ajax for an
+alternative). This is simply a starting point for getting things working.

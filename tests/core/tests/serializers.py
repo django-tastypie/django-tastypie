@@ -5,6 +5,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
+from tastypie.bundle import Bundle
 from tastypie import fields
 from tastypie.serializers import Serializer
 from tastypie.resources import ModelResource
@@ -256,6 +257,21 @@ class SerializerTestCase(TestCase):
 
         sample_1 = self.get_sample1()
         options = {'callback': 'myCallback'}
+        serialized = serializer.to_jsonp(sample_1, options=options)
+        serialized_json = serializer.to_json(sample_1)
+        self.assertEqual('myCallback(%s)' % serialized_json,
+                         serialized)
+
+    def test_invalid_jsonp_characters(self):
+        """
+        The newline characters \u2028 and \u2029 need to be escaped
+        in JSONP.
+        """
+        serializer = Serializer()
+
+        jsonp = serializer.to_jsonp({'foo': u'Hello \u2028\u2029world!'},
+                                    {'callback': 'callback'})
+        self.assertEqual(jsonp, u'callback({"foo": "Hello \\u2028\\u2029world!"})')
 
     def test_to_plist(self):
         if not biplist:
@@ -285,9 +301,10 @@ class ResourceSerializationTestCase(TestCase):
     def setUp(self):
         super(ResourceSerializationTestCase, self).setUp()
         self.resource = NoteResource()
-        self.obj_list = [self.resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.resource.obj_get_list()]
+        base_bundle = Bundle()
+        self.obj_list = [self.resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.resource.obj_get_list(base_bundle)]
         self.another_resource = AnotherNoteResource()
-        self.another_obj_list = [self.another_resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.another_resource.obj_get_list()]
+        self.another_obj_list = [self.another_resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.another_resource.obj_get_list(base_bundle)]
 
     def test_to_xml_multirepr(self):
         serializer = Serializer()

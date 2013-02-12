@@ -50,10 +50,21 @@ To power their mobile (iPhone/Android/Playbook) applications.
 * http://www.politifact.com/mobile/
 
 
-Crate
------
+LocalWiki
+---------
 
-Crate is a PyPI mirror/replacement. It's using Tastypie to provide a convenient
+`LocalWiki <http://localwiki.org>`_ is a tool for collaborating in local,
+geographic communities. It's using Tastypie to provide an geospatially-aware
 REST API.
 
-* https://crate.io/api/v1/
+* http://localwiki.readthedocs.org/en/latest/api.html
+* http://localwiki.org/blog/2012/aug/31/localwiki-api-released/
+
+
+I-Am-CC.org
+-----------
+
+`I-Am-CC.org <http://i-am-cc.org>`_ is a tool for releasing Instagram photos
+under a Creative Commons license.
+
+* http://i-am-cc.org/api/?format=json

@@ -21,6 +21,19 @@ A plugin (actually two different ones that closely mirror each other) that
 nicely reformats JSON data in the browser.
 
 
+Extensions
+==========
+
+Tastypie-msgpack
+----------------
+
+https://github.com/stephenmcd/tastypie-msgpack
+
+Adds MsgPack_ support to Tastypie's serializer.
+
+.. _MsgPack: http://msgpack.org/
+
+
 Python
 ======
 

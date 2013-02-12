@@ -37,7 +37,7 @@ class TestServerThread(threading.Thread):
     def run(self):
         """Sets up test server and database and loops over handling http requests."""
         try:
-            handler = basehttp.AdminMediaHandler(WSGIHandler())
+            handler = WSGIHandler()
             server_address = (self.address, self.port)
             httpd = StoppableWSGIServer(server_address, basehttp.WSGIRequestHandler)
             httpd.set_app(handler)

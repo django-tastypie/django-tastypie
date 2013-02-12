@@ -158,6 +158,23 @@ Ideology aside, you should use whatever suits you. If you prefer fewer requests
 consequences of each approach.
 
 
+Accessing The Current Request
+=============================
+
+Being able to change behavior based on the current request is a very commmon
+need. Virtually anywhere within ``Resource/ModelResource``, if a ``bundle`` is
+available, you can access it using ``bundle.request``. This is useful for
+altering querysets, ensuring headers are present, etc.
+
+Most methods you may need to override/extend should get a ``bundle`` passed to
+them.
+
+If you're using the ``Resource/ModelResource`` directly, with no ``request``
+available, an empty ``Request`` will be supplied instead. If this is a common
+pattern/usage in your code, you'll want to accommodate for data that potentially
+isn't there.
+
+
 Advanced Data Preparation
 =========================
 
@@ -302,7 +319,7 @@ The Hydrate Cycle
 
 Tastypie uses a "hydrate" cycle to take serializated data from the client
 and turn it into something the data model can use. This is the reverse process
-from the ``dehydrate`` cycle. If fact, by default, Tastypie's serialized data
+from the ``dehydrate`` cycle. In fact, by default, Tastypie's serialized data
 should be "round-trip-able", meaning the data that comes out should be able to
 be fed back in & result in the same original data model. This usually means
 taking a dictionary of simple data types & turning it into a complex data
@@ -323,7 +340,7 @@ The cycle looks like:
 
 The goal of this cycle is to populate the ``bundle.obj`` data model with data
 suitable for saving/persistence. Again, with the exception of the ``alter_*``
-methods (as hooks to manipulate the overall structure), this cycle controls what
+methods (as hooks to manipulate the overall structure), this cycle controls
 how the data from the client is interpreted & placed on the data model.
 
 ``hydrate``
@@ -530,7 +547,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 ``limit``
 ---------
 
-  Controls what how many results the ``Resource`` will show at a time. Default
+  Controls how many results the ``Resource`` will show at a time. Default
   is either the ``API_LIMIT_PER_PAGE`` setting (if provided) or ``20`` if not
   specified.
 
@@ -646,13 +663,13 @@ The inner ``Meta`` class allows for class-level configuration of how the
   with a body containing all the data in a serialized form.
 
 ``collection_name``
-------------~~~~~~~
+-------------------
 
   Specifies the collection of objects returned in the ``GET`` list will be
   named. Default is ``objects``.
 
 ``detail_uri_name``
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
   Specifies the name for the regex group that matches on detail views. Defaults
   to ``pk``.
@@ -711,6 +728,17 @@ filter the queryset before processing a request::
                 orm_filters["pk__in"] = [i.pk for i in sqs]
 
             return orm_filters
+
+
+Using PUT/DELETE/PATCH In Unsupported Places
+============================================
+
+Some places, like in certain browsers or hosts, don't allow the
+``PUT/DELETE/PATCH`` methods. In these environments, you can simulate those
+kinds of requests by providing an ``X-HTTP-Method-Override`` header. For
+example, to send a ``PATCH`` request over ``POST``, you'd send a request like::
+
+    curl --dump-header - -H "Content-Type: application/json" -H "X-HTTP-Method-Override: PATCH" -X POST --data '{"title": "I Visited Grandma Today"}' http://localhost:8000/api/v1/entry/1/
 
 
 ``Resource`` Methods
@@ -997,6 +1025,16 @@ Allows for the sorting of objects being returned.
 ``ModelResource`` includes a full working version specific to Django's
 ``Models``.
 
+``get_bundle_detail_data``
+--------------------------
+
+.. method:: Resource.get_bundle_detail_data(self, bundle)
+
+Convenience method to return the ``detail_uri_name`` attribute off
+``bundle.obj``.
+
+Usually just accesses ``bundle.obj.pk`` by default.
+
 ``get_resource_uri``
 --------------------
 
@@ -1195,7 +1233,7 @@ This needs to be implemented at the user level.
 ``obj_get_list``
 ----------------
 
-.. method:: Resource.obj_get_list(self, request=None, **kwargs)
+.. method:: Resource.obj_get_list(self, bundle, **kwargs)
 
 Fetches the list of objects available on the resource.
 
@@ -1207,7 +1245,7 @@ Fetches the list of objects available on the resource.
 ``cached_obj_get_list``
 -----------------------
 
-.. method:: Resource.cached_obj_get_list(self, request=None, **kwargs)
+.. method:: Resource.cached_obj_get_list(self, bundle, **kwargs)
 
 A version of ``obj_get_list`` that uses the cache as a means to get
 commonly-accessed data faster.
@@ -1215,7 +1253,7 @@ commonly-accessed data faster.
 ``obj_get``
 -----------
 
-.. method:: Resource.obj_get(self, request=None, **kwargs)
+.. method:: Resource.obj_get(self, bundle, **kwargs)
 
 Fetches an individual object on the resource.
 
@@ -1228,7 +1266,7 @@ be found, this should raise a ``NotFound`` exception.
 ``cached_obj_get``
 ------------------
 
-.. method:: Resource.cached_obj_get(self, request=None, **kwargs)
+.. method:: Resource.cached_obj_get(self, bundle, **kwargs)
 
 A version of ``obj_get`` that uses the cache as a means to get
 commonly-accessed data faster.
@@ -1236,7 +1274,7 @@ commonly-accessed data faster.
 ``obj_create``
 --------------
 
-.. method:: Resource.obj_create(self, bundle, request=None, **kwargs)
+.. method:: Resource.obj_create(self, bundle, **kwargs)
 
 Creates a new object based on the provided data.
 
@@ -1245,10 +1283,19 @@ Creates a new object based on the provided data.
 ``ModelResource`` includes a full working version specific to Django's
 ``Models``.
 
+``lookup_kwargs_with_identifiers``
+----------------------------------
+
+.. method:: Resource.lookup_kwargs_with_identifiers(self, bundle, kwargs)
+
+Kwargs here represent uri identifiers. Ex: /repos/<user_id>/<repo_name>/
+We need to turn those identifiers into Python objects for generating
+lookup parameters that can find them in the DB.
+
 ``obj_update``
 --------------
 
-.. method:: Resource.obj_update(self, bundle, request=None, **kwargs)
+.. method:: Resource.obj_update(self, bundle, **kwargs)
 
 Updates an existing object (or creates a new object) based on the
 provided data.
@@ -1261,9 +1308,21 @@ provided data.
 ``obj_delete_list``
 -------------------
 
-.. method:: Resource.obj_delete_list(self, request=None, **kwargs)
+.. method:: Resource.obj_delete_list(self, bundle, **kwargs)
 
 Deletes an entire list of objects.
+
+*This needs to be implemented at the user level.*
+
+``ModelResource`` includes a full working version specific to Django's
+``Models``.
+
+``obj_delete_list_for_update``
+------------------------------
+
+.. method:: Resource.obj_delete_list_for_update(self, bundle, **kwargs)
+
+Deletes an entire list of objects, specific to PUT list.
 
 *This needs to be implemented at the user level.*
 
@@ -1273,7 +1332,7 @@ Deletes an entire list of objects.
 ``obj_delete``
 --------------
 
-.. method:: Resource.obj_delete(self, request=None, **kwargs)
+.. method:: Resource.obj_delete(self, bundle, **kwargs)
 
 Deletes a single object.
 
@@ -1294,7 +1353,7 @@ Mostly a useful shortcut/hook.
 ``is_valid``
 ------------
 
-.. method:: Resource.is_valid(self, bundle, request=None)
+.. method:: Resource.is_valid(self, bundle)
 
 Handles checking if the data provided by the user is valid.
 
@@ -1674,6 +1733,15 @@ A ORM-specific implementation of ``obj_update``.
 .. method:: ModelResource.obj_delete_list(self, **kwargs)
 
 A ORM-specific implementation of ``obj_delete_list``.
+
+Takes optional ``kwargs``, which can be used to narrow the query.
+
+``obj_delete_list_for_update``
+------------------------------
+
+.. method:: ModelResource.obj_delete_list_for_update(self, **kwargs)
+
+A ORM-specific implementation of ``obj_delete_list_for_update``.
 
 Takes optional ``kwargs``, which can be used to narrow the query.
 

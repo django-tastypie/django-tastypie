@@ -259,6 +259,14 @@ class DecimalField(ApiField):
 
         return Decimal(value)
 
+    def hydrate(self, bundle):
+        value = super(DecimalField, self).hydrate(bundle)
+
+        if value and not isinstance(value, Decimal):
+            value = Decimal(value)
+
+        return value
+
 
 class BooleanField(ApiField):
     """
@@ -533,7 +541,11 @@ class RelatedField(ApiField):
             return related_resource.get_resource_uri(bundle)
         else:
             # ZOMG extra data and big payloads.
-            bundle = related_resource.build_bundle(obj=related_resource.instance, request=bundle.request)
+            bundle = related_resource.build_bundle(
+                obj=related_resource.instance,
+                request=bundle.request,
+                objects_saved=bundle.objects_saved
+            )
             return related_resource.full_dehydrate(bundle)
 
     def resource_from_uri(self, fk_resource, uri, request=None, related_obj=None, related_name=None):
@@ -543,7 +555,10 @@ class RelatedField(ApiField):
         """
         try:
             obj = fk_resource.get_via_uri(uri, request=request)
-            bundle = fk_resource.build_bundle(obj=obj, request=request)
+            bundle = fk_resource.build_bundle(
+                obj=obj,
+                request=request
+            )
             return fk_resource.full_dehydrate(bundle)
         except ObjectDoesNotExist:
             raise ApiFieldError("Could not find the provided object via resource URI '%s'." % uri)
@@ -555,7 +570,10 @@ class RelatedField(ApiField):
         """
         # Try to hydrate the data provided.
         data = dict_strip_unicode_keys(data)
-        fk_bundle = fk_resource.build_bundle(data=data, request=request)
+        fk_bundle = fk_resource.build_bundle(
+            data=data,
+            request=request
+        )
 
         if related_obj:
             fk_bundle.related_obj = related_obj
@@ -569,17 +587,18 @@ class RelatedField(ApiField):
 
         try:
             return fk_resource.obj_update(fk_bundle, skip_errors=True, **data)
-        except NotFound:
+        except (NotFound, TypeError):
             try:
                 # Attempt lookup by primary key
                 lookup_kwargs = dict((k, v) for k, v in data.iteritems() if getattr(fk_resource, k).unique)
 
                 if not lookup_kwargs:
                     raise NotFound()
+
                 return fk_resource.obj_update(fk_bundle, skip_errors=True, **lookup_kwargs)
             except NotFound:
                 fk_bundle = fk_resource.full_hydrate(fk_bundle)
-                fk_resource.is_valid(fk_bundle, request)
+                fk_resource.is_valid(fk_bundle)
                 return fk_bundle
         except MultipleObjectsReturned:
             return fk_resource.full_hydrate(fk_bundle)
@@ -589,7 +608,10 @@ class RelatedField(ApiField):
         Given an object with a ``pk`` attribute, the related resource
         is attempted to be loaded via that PK.
         """
-        bundle = fk_resource.build_bundle(obj=obj, request=request)
+        bundle = fk_resource.build_bundle(
+            obj=obj,
+            request=request
+        )
         return fk_resource.full_dehydrate(bundle)
 
     def build_related_resource(self, value, request=None, related_obj=None, related_name=None):
@@ -607,7 +629,10 @@ class RelatedField(ApiField):
             'related_name': related_name,
         }
 
-        if isinstance(value, basestring):
+        if isinstance(value, Bundle):
+            # Already hydrated, probably nested bundles. Just return.
+            return value
+        elif isinstance(value, basestring):
             # We got a URI. Load the object and assign it.
             return self.resource_from_uri(self.fk_resource, value, **kwargs)
         elif isinstance(value, Bundle):
@@ -644,21 +669,26 @@ class ToOneField(RelatedField):
         self.fk_resource = None
 
     def dehydrate(self, bundle):
-        attrs = self.attribute.split('__')
-        foreign_obj = bundle.obj
+        foreign_obj = None
 
-        for attr in attrs:
-            previous_obj = foreign_obj
-            try:
-                foreign_obj = getattr(foreign_obj, attr, None)
-            except ObjectDoesNotExist:
-                foreign_obj = None
+        if isinstance(self.attribute, basestring):
+            attrs = self.attribute.split('__')
+            foreign_obj = bundle.obj
 
-            if not foreign_obj:
-                if not self.null:
-                    raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
+            for attr in attrs:
+                previous_obj = foreign_obj
+                try:
+                    foreign_obj = getattr(foreign_obj, attr, None)
+                except ObjectDoesNotExist:
+                    foreign_obj = None
+        elif callable(self.attribute):
+            foreign_obj = self.attribute(bundle)
 
-                return None
+        if not foreign_obj:
+            if not self.null:
+                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
+
+            return None
 
         self.fk_resource = self.get_related_resource(foreign_obj)
         fk_bundle = Bundle(obj=foreign_obj, request=bundle.request)
