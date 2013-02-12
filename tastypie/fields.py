@@ -55,10 +55,12 @@ class ApiField(object):
         human-readable description of the field exposed at the schema level.
         Defaults to the per-Field definition.
 
-        Optionally accepts a ``use_in``. This may be one of ``list``, ``detail``
-        ``all`` or a callable which accepts a bundle object and returns
+        Optionally accepts ``use_in``. This may be one of ``list``, ``detail``
+        ``all`` or a callable which accepts a ``bundle`` and returns
         ``True`` or ``False``. Indicates wheather this field will be included
-        during dehydration or a list of object or a single object.
+        during dehydration of a list of objects or a single object. If ``use_in``
+        is a callable, and returns ``True``, the field will be included during
+        dehydration.
         Defaults to ``all``.
         """
         # Track what the index thinks this field is called.
@@ -431,10 +433,13 @@ class RelatedField(ApiField):
         Optionally accepts ``help_text``, which lets you provide a
         human-readable description of the field exposed at the schema level.
         Defaults to the per-Field definition.
-        Optionally accepts a ``use_in``. This may be one of ``list``, ``detail``
-        ``all`` or a callable which accepts a bundle object and returns
+
+        Optionally accepts ``use_in``. This may be one of ``list``, ``detail``
+        ``all`` or a callable which accepts a ``bundle`` and returns
         ``True`` or ``False``. Indicates wheather this field will be included
-        during dehydration or a list of object or a single object.
+        during dehydration of a list of objects or a single object. If ``use_in``
+        is a callable, and returns ``True``, the field will be included during
+        dehydration.
         Defaults to ``all``.
 
         """
