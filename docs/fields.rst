@@ -105,6 +105,14 @@ Indicates whether the field is a unique identifier for the object.
 A human-readable description of the field exposed at the schema level.
 Defaults to the per-Field definition.
 
+``use_in``
+~~~~~~~~~~
+
+.. attribute:: ApiField.use_in
+
+Optionally omit this field in list or detail views.  It can be either 'all',
+'list', or 'detail' or a callable which accepts a bundle and returns a boolean
+value.
 
 Field Types
 -----------

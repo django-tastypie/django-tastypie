@@ -39,6 +39,39 @@ class TestObject(object):
     date_joined = None
 
 
+class BasicResourceWithDifferentListAndDetailFields(Resource):
+    name = fields.CharField(attribute='name', use_in="all")
+    view_count = fields.IntegerField(attribute='view_count', default=0, use_in="detail")
+    date_joined = fields.DateTimeField(null=True, use_in="list")
+
+    def dehydrate_date_joined(self, bundle):
+        if getattr(bundle.obj, 'date_joined', None) is not None:
+            return bundle.obj.date_joined
+
+        if bundle.data.get('date_joined') is not None:
+            return bundle.data.get('date_joined')
+
+        return aware_datetime(2010, 3, 27, 22, 30, 0)
+
+    def hydrate_date_joined(self, bundle):
+        bundle.obj.date_joined = bundle.data['date_joined']
+        return bundle
+
+    class Meta:
+        object_class = TestObject
+        resource_name = 'basic'
+
+
+class BasicResourceWithDifferentListAndDetailFieldsCallable(Resource):
+    name = fields.CharField(attribute='name', use_in="all")
+    view_count = fields.IntegerField(attribute='view_count', default=0, use_in=lambda x: True)
+    date_joined = fields.DateTimeField(null=True, use_in=lambda x: False)
+
+    class Meta:
+        object_class = TestObject
+        resource_name = 'basic'
+
+
 class BasicResource(Resource):
     name = fields.CharField(attribute='name')
     view_count = fields.IntegerField(attribute='view_count', default=0)
@@ -280,6 +313,64 @@ class ResourceTestCase(TestCase):
         self.assertEqual(len(mrofr.fields), 3)
         self.assertEqual(mrofr.fields['test'].default, 'test_a')
         self.assertEqual(mrofr.fields['name'].default, 'Mr. Field')
+
+    def test_full_dehydrate_with_use_in(self):
+        test_object_1 = TestObject()
+        test_object_1.name = 'Daniel'
+        test_object_1.view_count = 12
+        test_object_1.date_joined = aware_datetime(2010, 3, 30, 9, 0, 0)
+
+        basic = BasicResourceWithDifferentListAndDetailFields()
+        test_bundle_1 = basic.build_bundle(obj=test_object_1)
+
+        # Sanity check.
+        self.assertEqual(basic.name.value, None)
+        self.assertEqual(basic.view_count.value, None)
+        self.assertEqual(basic.date_joined.value, None)
+
+        #check hydration with details
+        bundle_1 = basic.full_dehydrate(test_bundle_1)
+        self.assertEqual(bundle_1.data['name'], 'Daniel')
+        self.assertEqual(bundle_1.data['view_count'], 12)
+        self.assertEqual(bundle_1.data.get('date_joined'), None)
+
+        #now check dehydration with lists
+        test_bundle_2 = basic.build_bundle(obj=test_object_1)
+
+        bundle_2 = basic.full_dehydrate(test_bundle_2, for_list=True)
+        self.assertEqual(bundle_2.data['name'], 'Daniel')
+        self.assertEqual(bundle_2.data.get('view_count'), None)
+        self.assertEqual(bundle_2.data['date_joined'].year, 2010)
+        self.assertEqual(bundle_2.data['date_joined'].day, 30)
+
+    def test_full_dehydrate_with_use_in_callable(self):
+        test_object_1 = TestObject()
+        test_object_1.name = 'Daniel'
+        test_object_1.view_count = 12
+        test_object_1.date_joined = aware_datetime(2010, 3, 30, 9, 0, 0)
+
+        basic = BasicResourceWithDifferentListAndDetailFieldsCallable()
+        test_bundle_1 = basic.build_bundle(obj=test_object_1)
+
+        # Sanity check.
+        self.assertEqual(basic.name.value, None)
+        self.assertEqual(basic.view_count.value, None)
+        self.assertEqual(basic.date_joined.value, None)
+
+        #check hydration with details
+        bundle_1 = basic.full_dehydrate(test_bundle_1)
+        self.assertEqual(bundle_1.data['name'], 'Daniel')
+        self.assertEqual(bundle_1.data['view_count'], 12)
+        self.assertEqual(bundle_1.data.get('date_joined'), None)
+
+        #now check dehydration with lists. Should be the same as details since
+        #we are using callables for the use_in
+        test_bundle_2 = basic.build_bundle(obj=test_object_1)
+
+        bundle_2 = basic.full_dehydrate(test_bundle_2, for_list=True)
+        self.assertEqual(bundle_2.data['name'], 'Daniel')
+        self.assertEqual(bundle_2.data['view_count'], 12)
+        self.assertEqual(bundle_2.data.get('date_joined'), None)
 
     def test_full_dehydrate(self):
         test_object_1 = TestObject()

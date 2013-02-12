@@ -23,8 +23,9 @@ class ApiFieldTestCase(TestCase):
         self.assertEqual(field_1.null, False)
         self.assertEqual(field_1.value, None)
         self.assertEqual(field_1.help_text, '')
+        self.assertEqual(field_1.use_in, 'all')
 
-        field_2 = ApiField(attribute='foo', default=True, null=True, readonly=True, help_text='Foo.')
+        field_2 = ApiField(attribute='foo', default=True, null=True, readonly=True, help_text='Foo.', use_in="foo")
         self.assertEqual(field_2.instance_name, None)
         self.assertEqual(field_2.attribute, 'foo')
         self.assertEqual(field_2._default, True)
@@ -32,6 +33,17 @@ class ApiFieldTestCase(TestCase):
         self.assertEqual(field_2.value, None)
         self.assertEqual(field_2.readonly, True)
         self.assertEqual(field_2.help_text, 'Foo.')
+        self.assertEqual(field_1.use_in, 'all')
+
+        field_3 = ApiField(use_in="list")
+        self.assertEqual(field_3.use_in, 'list')
+
+        field_4 = ApiField(use_in="detail")
+        self.assertEqual(field_4.use_in, 'detail')
+
+        use_in_callable = lambda x: True
+        field_5 = ApiField(use_in=use_in_callable)
+        self.assertTrue(field_5.use_in is use_in_callable)
 
     def test_dehydrated_type(self):
         field_1 = ApiField()
@@ -627,6 +639,19 @@ class ToOneFieldTestCase(TestCase):
         self.assertEqual(field_4.readonly, True)
         self.assertEqual(field_4.help_text, 'Points to a User.')
 
+        field_5 = ToOneField(UserResource, 'author', default=1, null=True, readonly=True, help_text="Points to a User.", use_in="list")
+        self.assertEqual(field_5.use_in, 'list')
+
+        field_6 = ToOneField(UserResource, 'author', default=1, null=True, readonly=True, help_text="Points to a User.", use_in="detail")
+        self.assertEqual(field_6.use_in, 'detail')
+
+        use_in_callable = lambda x: True
+        field_7 = ToOneField(UserResource, 'author', default=1, null=True, readonly=True, help_text="Points to a User.", use_in=use_in_callable)
+        self.assertTrue(field_7.use_in is use_in_callable)
+
+        field_8 = ToOneField(UserResource, 'author', default=1, null=True, readonly=True, help_text="Points to a User.", use_in="foo")
+        self.assertEqual(field_8.use_in, 'all')
+
     def test_dehydrated_type(self):
         field_1 = ToOneField(UserResource, 'author')
         self.assertEqual(field_1.dehydrated_type, 'related')
@@ -947,6 +972,19 @@ class ToManyFieldTestCase(TestCase):
         self.assertEqual(field_4.full, False)
         self.assertEqual(field_4.readonly, True)
         self.assertEqual(field_4.help_text, 'Points to many Subjects.')
+
+        field_5 = ToManyField(SubjectResource, 'author', default=1, null=True, readonly=True, help_text="Points to a User.", use_in="list")
+        self.assertEqual(field_5.use_in, 'list')
+
+        field_6 = ToManyField(SubjectResource, 'author', default=1, null=True, readonly=True, help_text="Points to a User.", use_in="detail")
+        self.assertEqual(field_6.use_in, 'detail')
+
+        use_in_callable = lambda x: True
+        field_7 = ToManyField(SubjectResource, 'author', default=1, null=True, readonly=True, help_text="Points to a User.", use_in=use_in_callable)
+        self.assertTrue(field_7.use_in is use_in_callable)
+
+        field_8 = ToManyField(SubjectResource, 'author', default=1, null=True, readonly=True, help_text="Points to a User.", use_in="foo")
+        self.assertEqual(field_8.use_in, 'all')
 
     def test_dehydrated_type(self):
         field_1 = ToManyField(SubjectResource, 'subjects')
