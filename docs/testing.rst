@@ -83,7 +83,7 @@ An example usage might look like::
         def get_credentials(self):
             return self.create_basic(username=self.username, password=self.password)
 
-        def test_get_list_unauthorzied(self):
+        def test_get_list_unauthenticated(self):
             self.assertHttpUnauthorized(self.api_client.get('/api/v1/entries/', format='json'))
 
         def test_get_list_json(self):
