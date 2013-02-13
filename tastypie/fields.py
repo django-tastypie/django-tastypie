@@ -599,7 +599,9 @@ class RelatedField(ApiField):
         # resource. If not, we'll just return a populated bundle instead
         # of mistakenly updating something that should be read-only.
         if not fk_resource.can_update():
-            return fk_resource.full_hydrate(fk_bundle)
+            fk_bundle = fk_resource.full_hydrate(fk_bundle)
+            fk_resource.is_valid(fk_bundle, request)
+            return fk_bundle
 
         try:
             return fk_resource.obj_update(fk_bundle, skip_errors=True, **data)
@@ -617,7 +619,9 @@ class RelatedField(ApiField):
                 fk_resource.is_valid(fk_bundle)
                 return fk_bundle
         except MultipleObjectsReturned:
-            return fk_resource.full_hydrate(fk_bundle)
+            fk_bundle = fk_resource.full_hydrate(fk_bundle)
+            fk_resource.is_valid(fk_bundle, request)
+            return fk_bundle
 
     def resource_from_pk(self, fk_resource, obj, request=None, related_obj=None, related_name=None):
         """
