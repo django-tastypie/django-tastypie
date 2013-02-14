@@ -1,3 +1,6 @@
 [2012-05-04] AutoFields will now serialize and deserialize as Integers
 [2012-06-26] ``Authentication`` classes now require ``User.is_active = True``
 [2012-08-04] The addition of ``SessionAuthentication`` requires Django 1.3+
+[2013-02-06] Heavy rewrite of ``Authorization`` which adds a variety of new methods
+[2013-02-14] Tastypie no longer ever returns HTML errors
+[2013-02-14] JSONP is disabled by default
