@@ -74,7 +74,7 @@ class ViewsTestCase(TestCase):
 
         resp = self.client.post('/api/v1/geonotes/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 400)
-        self.assertEqual(resp.content, "Could not find the provided object via resource URI '/api/v1/users/9001/'.")
+        self.assertEqual(resp.content, '{"error": "Could not find the provided object via resource URI \'/api/v1/users/9001/\'."}')
 
     def test_options(self):
         resp = self.client.options('/api/v1/geonotes/')

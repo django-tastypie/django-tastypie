@@ -223,9 +223,11 @@ class Resource(object):
 
                 return response
             except (BadRequest, fields.ApiFieldError), e:
-                return http.HttpBadRequest(e.args[0])
+                data = {"error": e.args[0]}
+                return self.error_response(request, data, response_class=http.HttpBadRequest)
             except ValidationError, e:
-                return http.HttpBadRequest(', '.join(e.messages))
+                data = {"error": e.messages}
+                return self.error_response(request, data, response_class=http.HttpBadRequest)
             except Exception, e:
                 if hasattr(e, 'response'):
                     return e.response
@@ -266,9 +268,7 @@ class Resource(object):
                 "error_message": unicode(exception),
                 "traceback": the_trace,
             }
-            desired_format = self.determine_format(request)
-            serialized = self.serialize(request, data, desired_format)
-            return response_class(content=serialized, content_type=build_content_type(desired_format))
+            return self.error_response(request, data, response_class=response_class)
 
         # When DEBUG is False, send an error message to the admins (unless it's
         # a 404, in which case we check the setting).
@@ -293,9 +293,7 @@ class Resource(object):
         data = {
             "error_message": getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later."),
         }
-        desired_format = self.determine_format(request)
-        serialized = self.serialize(request, data, desired_format)
-        return response_class(content=serialized, content_type=build_content_type(desired_format))
+        return self.error_response(request, data, response_class=response_class)
 
     def _build_reverse_url(self, name, args=None, kwargs=None):
         """
@@ -1182,15 +1180,36 @@ class Resource(object):
         serialized = self.serialize(request, data, desired_format)
         return response_class(content=serialized, content_type=build_content_type(desired_format), **response_kwargs)
 
-    def error_response(self, errors, request):
+    def error_response(self, request, errors, response_class=None):
+        """
+        Extracts the common "which-format/serialize/return-error-response"
+        cycle.
+
+        Should be used as much as possible to return errors.
+        """
+        if response_class is None:
+            response_class = http.HttpBadRequest
+
         if request:
-            desired_format = self.determine_format(request)
+            if request.GET.get('callback', None) is None:
+                desired_format = self.determine_format(request)
+            else:
+                # JSONP can cause extra breakage.
+                desired_format = 'application/json'
         else:
             desired_format = self._meta.default_format
 
-        serialized = self.serialize(request, errors, desired_format)
-        response = http.HttpBadRequest(content=serialized, content_type=build_content_type(desired_format))
-        raise ImmediateHttpResponse(response=response)
+        try:
+            serialized = self.serialize(request, errors, desired_format)
+        except BadRequest, e:
+            error = "Additional errors occurred, but serialization of those errors failed."
+
+            if settings.DEBUG:
+                error += " %s" % e
+
+            return response_class(content=error, content_type='text/plain')
+
+        return response_class(content=serialized, content_type=build_content_type(desired_format))
 
     def is_valid(self, bundle):
         """
@@ -2192,7 +2211,7 @@ class ModelResource(Resource):
         self.is_valid(bundle)
 
         if bundle.errors and not skip_errors:
-            self.error_response(bundle.errors, bundle.request)
+            raise ImmediateHttpResponse(response=self.error_response(bundle.request, bundle.errors))
 
         # Check if they're authorized.
         if bundle.obj.pk:

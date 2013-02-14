@@ -1669,6 +1669,52 @@ class ModelResourceTestCase(TestCase):
         resource = NoQuerysetNoteResource()
         self.assertEqual(resource.build_filters(), {})
 
+    def test_xss_regressions(self):
+        # Make sure the body is JSON & the content-type is right.
+        resource = RelatedNoteResource()
+        request = HttpRequest()
+        request.method = 'GET'
+
+        request.GET = {
+            'format': 'xml',
+            'author__username__startswith': 'j',
+        }
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp['content-type'], 'application/xml; charset=utf-8')
+        self.assertEqual(resp.content, "<?xml version='1.0' encoding='utf-8'?>\n<response><error>Lookups are not allowed more than one level deep on the 'author' field.</error></response>")
+
+        request.GET = {
+            'format': 'json',
+            'author__<script>alert("XSS")</script>': 'j',
+        }
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp['content-type'], 'application/json')
+        self.assertEqual(resp.content, '{"error": "Lookups are not allowed more than one level deep on the \'author\' field."}')
+
+        request.GET = {
+            'format': 'json',
+            'limit': '<img%20src="http://ycombinator.com/images/y18.gif">',
+        }
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp['content-type'], 'application/json')
+        self.assertEqual(resp.content, '{"error": "Invalid limit \'<img%20src=\\"http://ycombinator.com/images/y18.gif\\">\' provided. Please provide a positive integer."}')
+
+        request.GET = {
+            'format': 'json',
+            'limit': '<img%20src="http://ycombinator.com/images/y18.gif">',
+        }
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp['content-type'], 'application/json')
+        self.assertEqual(resp.content, '{"error": "Invalid limit \'<img%20src=\\"http://ycombinator.com/images/y18.gif\\">\' provided. Please provide a positive integer."}')
+
+        request.GET = {
+            'format': 'json',
+            'offset': '<script>alert("XSS")</script>',
+        }
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp['content-type'], 'application/json')
+        self.assertEqual(resp.content, '{"error": "Invalid offset \'<script>alert(\\"XSS\\")</script>\' provided. Please provide an integer."}')
+
     def test_apply_sorting(self):
         resource = NoteResource()
         base_bundle = Bundle()
@@ -2346,7 +2392,8 @@ class ModelResourceTestCase(TestCase):
         # Try again with ``wrap_view`` for sanity.
         resp = resource.wrap_view('dispatch_detail')(request, pk=1)
         self.assertEqual(resp.status_code, 400)
-        self.assertEqual(resp.content, 'JSONP callback name is invalid.')
+        self.assertEqual(resp.content, '{"error": "JSONP callback name is invalid."}')
+        self.assertEqual(resp['content-type'], 'application/json')
 
         # valid JSONP callback should work
         request = HttpRequest()
