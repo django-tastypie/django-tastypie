@@ -46,9 +46,9 @@ class AnotherNoteResource(ModelResource):
 class SerializerTestCase(TestCase):
     def test_init(self):
         serializer_1 = Serializer()
-        self.assertEqual(serializer_1.formats, ['json', 'jsonp', 'xml', 'yaml', 'html', 'plist'])
+        self.assertEqual(serializer_1.formats, ['json', 'xml', 'yaml', 'html', 'plist'])
         self.assertEqual(serializer_1.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
-        self.assertEqual(serializer_1.supported_formats, ['application/json', 'text/javascript', 'application/xml', 'text/yaml', 'text/html', 'application/x-plist'])
+        self.assertEqual(serializer_1.supported_formats, ['application/json', 'application/xml', 'text/yaml', 'text/html', 'application/x-plist'])
 
         serializer_2 = Serializer(formats=['json', 'xml'])
         self.assertEqual(serializer_2.formats, ['json', 'xml'])

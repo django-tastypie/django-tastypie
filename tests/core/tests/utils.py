@@ -16,6 +16,7 @@ class MimeTestCase(TestCase):
 
     def test_determine_format(self):
         serializer = Serializer()
+        full_serializer = Serializer(formats=['json', 'jsonp', 'xml', 'yaml', 'html', 'plist'])
         request = HttpRequest()
 
         # Default.
@@ -25,8 +26,13 @@ class MimeTestCase(TestCase):
         request.GET = {'format': 'json'}
         self.assertEqual(determine_format(request, serializer), 'application/json')
 
+        # Disabled by default.
         request.GET = {'format': 'jsonp'}
-        self.assertEqual(determine_format(request, serializer), 'text/javascript')
+        self.assertEqual(determine_format(request, serializer), 'application/json')
+
+        # Explicitly enabled.
+        request.GET = {'format': 'jsonp'}
+        self.assertEqual(determine_format(request, full_serializer), 'text/javascript')
 
         request.GET = {'format': 'xml'}
         self.assertEqual(determine_format(request, serializer), 'application/xml')
@@ -44,8 +50,13 @@ class MimeTestCase(TestCase):
         request.META = {'HTTP_ACCEPT': 'application/json'}
         self.assertEqual(determine_format(request, serializer), 'application/json')
 
+        # Again, disabled by default.
         request.META = {'HTTP_ACCEPT': 'text/javascript'}
-        self.assertEqual(determine_format(request, serializer), 'text/javascript')
+        self.assertEqual(determine_format(request, serializer), 'application/json')
+
+        # Again, explicitly enabled.
+        request.META = {'HTTP_ACCEPT': 'text/javascript'}
+        self.assertEqual(determine_format(request, full_serializer), 'text/javascript')
 
         request.META = {'HTTP_ACCEPT': 'application/xml'}
         self.assertEqual(determine_format(request, serializer), 'application/xml')

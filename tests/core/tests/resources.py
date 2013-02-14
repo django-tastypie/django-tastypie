@@ -795,6 +795,7 @@ class NoteResource(ModelResource):
         }
         ordering = ['title', 'slug', 'resource_uri']
         queryset = Note.objects.filter(is_active=True)
+        serializer = Serializer(formats=['json', 'jsonp', 'xml', 'yaml', 'html', 'plist'])
 
     def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
         if bundle_or_obj is None:
