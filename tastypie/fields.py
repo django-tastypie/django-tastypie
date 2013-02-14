@@ -162,9 +162,9 @@ class ApiField(object):
                     return bundle.related_obj
             if self.blank:
                 return None
-            elif self.attribute and getattr(bundle.obj, self.attribute, None):
+            elif self.attribute and bundle.obj.pk and getattr(bundle.obj, self.attribute, None):
                 return getattr(bundle.obj, self.attribute)
-            elif self.instance_name and hasattr(bundle.obj, self.instance_name):
+            elif self.instance_name and bundle.obj.pk and hasattr(bundle.obj, self.instance_name):
                 return getattr(bundle.obj, self.instance_name)
             elif self.has_default():
                 if callable(self._default):
@@ -450,7 +450,7 @@ class RelatedField(ApiField):
         is a callable, and returns ``True``, the field will be included during
         dehydration.
         Defaults to ``all``.
-        
+
         Optionally accepts a ``full_list``, which indicated whether or not
         data should be fully dehydrated when the request is for a list of
         resources. Accepts ``True``, ``False`` or a callable that accepts
