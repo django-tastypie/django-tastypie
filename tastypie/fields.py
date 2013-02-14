@@ -149,7 +149,7 @@ class ApiField(object):
                     return bundle.related_obj
             if self.blank:
                 return None
-            elif self.attribute and getattr(bundle.obj, self.attribute, None):
+            elif self.attribute and bundle.obj.pk and getattr(bundle.obj, self.attribute, None):
                 return getattr(bundle.obj, self.attribute)
             elif self.instance_name and bundle.obj.pk and hasattr(bundle.obj, self.instance_name):
                 return getattr(bundle.obj, self.instance_name)
@@ -511,7 +511,7 @@ class RelatedField(ApiField):
         Based on the ``full_resource``, returns either the endpoint or the data
         from ``full_dehydrate`` for the related resource.
         """
-        if not self.full or bundle.request.META['REQUEST_METHOD'] in ('PUT', 'PATCH'):
+        if not self.full:
             # Be a good netizen.
             return related_resource.get_resource_uri(bundle)
         else:
