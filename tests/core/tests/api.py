@@ -18,20 +18,6 @@ class UserResource(ModelResource):
         resource_name = 'users'
         queryset = User.objects.all()
 
-class ParameterizedNoteResource(ModelResource):
-    """
-    A resource that requires the kwarg `param` to be
-    passed by the URL pattern.
-    """
-    
-    #def obj_get_list(self, bundle, **kwargs):
-    #    param = kwargs['param']
-    #    return super(ParameterizedNoteResource, self).obj_get_list(self, bundle, **kwargs)
-
-    class Meta:
-        resource_name = 'notes'
-        queryset = Note.objects.all()
-
 
 class ApiTestCase(TestCase):
     urls = 'core.tests.api_urls'
