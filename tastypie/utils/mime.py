@@ -1,5 +1,7 @@
 import mimeparse
 
+from tastypie.exceptions import BadRequest
+
 
 def determine_format(request, serializer, default_format='application/json'):
     """
@@ -13,6 +15,9 @@ def determine_format(request, serializer, default_format='application/json'):
 
     If still no format is found, returns the ``default_format`` (which defaults
     to ``application/json`` if not provided).
+
+    NOTE: callers *must* be prepared to handle BadRequest exceptions due to
+          malformed HTTP request headers!
     """
     # First, check if they forced the format.
     if request.GET.get('format'):
@@ -20,7 +25,7 @@ def determine_format(request, serializer, default_format='application/json'):
             return serializer.get_mime_for_format(request.GET['format'])
 
     # If callback parameter is present, use JSONP.
-    if request.GET.has_key('callback'):
+    if 'callback' in request.GET:
         return serializer.get_mime_for_format('jsonp')
 
     # Try to fallback on the Accepts header.
@@ -30,7 +35,11 @@ def determine_format(request, serializer, default_format='application/json'):
         # https://github.com/toastdriven/django-tastypie/issues#issue/12 for
         # more information.
         formats.reverse()
-        best_format = mimeparse.best_match(formats, request.META['HTTP_ACCEPT'])
+
+        try:
+            best_format = mimeparse.best_match(formats, request.META['HTTP_ACCEPT'])
+        except ValueError:
+            raise BadRequest('Invalid Accept header')
 
         if best_format:
             return best_format

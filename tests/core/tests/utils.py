@@ -1,5 +1,7 @@
 from django.http import HttpRequest
 from django.test import TestCase
+
+from tastypie.exceptions import BadRequest
 from tastypie.serializers import Serializer
 from tastypie.utils.mime import determine_format, build_content_type
 
@@ -84,3 +86,6 @@ class MimeTestCase(TestCase):
 
         request.META = {'HTTP_ACCEPT': 'text/javascript,application/json'}
         self.assertEqual(determine_format(request, serializer), 'application/json')
+
+        request.META = {'HTTP_ACCEPT': 'bogon'}
+        self.assertRaises(BadRequest, determine_format, request, serializer)
