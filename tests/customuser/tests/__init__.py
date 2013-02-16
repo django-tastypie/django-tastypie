@@ -1,0 +1,1 @@
+from customuser.tests import *
