@@ -2657,6 +2657,17 @@ class ModelResourceTestCase(TestCase):
         notes = NonQuerysetNoteResource().delete_list(request=request)
         self.assertEqual(len(Note.objects.all()), 4)
 
+    def test_obj_delete_list_filtered(self):
+        self.assertEqual(Note.objects.all().count(), 6)
+        
+        note_to_delete = Note.objects.filter(is_active=True)[0]
+        
+        request = HttpRequest()
+        request.method = 'DELETE'
+        request.GET = {'slug':str(note_to_delete.slug)}
+        NoteResource().delete_list(request=request)
+        self.assertEqual(len(Note.objects.all()), 5)
+        
     def test_obj_create(self):
         self.assertEqual(Note.objects.all().count(), 6)
         note = NoteResource()
