@@ -196,8 +196,11 @@ class ApiKeyAuthentication(Authentication):
         if not self.check_active(user):
             return False
 
-        request.user = user
-        return self.get_key(user, api_key)
+        key_auth_check = self.get_key(user, api_key)
+        if key_auth_check and not isinstance(key_auth_check, HttpUnauthorized):
+            request.user = user
+
+        return key_auth_check
 
     def get_key(self, user, api_key):
         """

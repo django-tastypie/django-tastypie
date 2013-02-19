@@ -5,6 +5,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
+from tastypie.bundle import Bundle
 from tastypie import fields
 from tastypie.serializers import Serializer
 from tastypie.resources import ModelResource
@@ -45,9 +46,9 @@ class AnotherNoteResource(ModelResource):
 class SerializerTestCase(TestCase):
     def test_init(self):
         serializer_1 = Serializer()
-        self.assertEqual(serializer_1.formats, ['json', 'jsonp', 'xml', 'yaml', 'html', 'plist'])
+        self.assertEqual(serializer_1.formats, ['json', 'xml', 'yaml', 'html', 'plist'])
         self.assertEqual(serializer_1.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
-        self.assertEqual(serializer_1.supported_formats, ['application/json', 'text/javascript', 'application/xml', 'text/yaml', 'text/html', 'application/x-plist'])
+        self.assertEqual(serializer_1.supported_formats, ['application/json', 'application/xml', 'text/yaml', 'text/html', 'application/x-plist'])
 
         serializer_2 = Serializer(formats=['json', 'xml'])
         self.assertEqual(serializer_2.formats, ['json', 'xml'])
@@ -300,9 +301,10 @@ class ResourceSerializationTestCase(TestCase):
     def setUp(self):
         super(ResourceSerializationTestCase, self).setUp()
         self.resource = NoteResource()
-        self.obj_list = [self.resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.resource.obj_get_list()]
+        base_bundle = Bundle()
+        self.obj_list = [self.resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.resource.obj_get_list(base_bundle)]
         self.another_resource = AnotherNoteResource()
-        self.another_obj_list = [self.another_resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.another_resource.obj_get_list()]
+        self.another_obj_list = [self.another_resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.another_resource.obj_get_list(base_bundle)]
 
     def test_to_xml_multirepr(self):
         serializer = Serializer()

@@ -19,7 +19,8 @@ Table Of Contents
    fields
    caching
    validation
-   authentication_authorization
+   authentication
+   authorization
    serialization
    throttling
    paginator

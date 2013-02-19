@@ -3,6 +3,7 @@ from django.http import HttpRequest
 from django.contrib.auth.models import User, Permission
 from core.models import Note
 from tastypie.authorization import Authorization, ReadOnlyAuthorization, DjangoAuthorization
+from tastypie.exceptions import Unauthorized
 from tastypie import fields
 from tastypie.resources import Resource, ModelResource
 
@@ -46,24 +47,54 @@ class AuthorizationTestCase(TestCase):
 
     def test_no_rules(self):
         request = HttpRequest()
-        for method in ('GET', 'POST', 'PUT', 'DELETE'):
-            request.method = method
-            self.assertTrue(NoRulesNoteResource()._meta.authorization.is_authorized(request))
+        resource = NoRulesNoteResource()
+        auth = resource._meta.authorization
+        bundle = resource.build_bundle(request=request)
+
+        bundle.request.method = 'GET'
+        self.assertEqual(len(auth.read_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.read_detail(resource.get_object_list(bundle.request)[0], bundle))
+
+        bundle.request.method = 'POST'
+        self.assertRaises(NotImplementedError, auth.create_list, resource.get_object_list(bundle.request), bundle)
+        self.assertTrue(auth.create_detail(resource.get_object_list(bundle.request)[0], bundle))
+
+        bundle.request.method = 'PUT'
+        self.assertEqual(len(auth.update_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.update_detail(resource.get_object_list(bundle.request)[0], bundle))
+
+        bundle.request.method = 'DELETE'
+        self.assertEqual(len(auth.delete_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.delete_detail(resource.get_object_list(bundle.request)[0], bundle))
 
     def test_read_only(self):
         request = HttpRequest()
-        request.method = 'GET'
-        self.assertTrue(ReadOnlyNoteResource()._meta.authorization.is_authorized(request))
+        resource = ReadOnlyNoteResource()
+        auth = resource._meta.authorization
+        bundle = resource.build_bundle(request=request)
 
-        for method in ('POST', 'PUT', 'DELETE'):
-            request = HttpRequest()
-            request.method = method
-            self.assertFalse(ReadOnlyNoteResource()._meta.authorization.is_authorized(request))
+        bundle.request.method = 'GET'
+        self.assertEqual(len(auth.read_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.read_detail(resource.get_object_list(bundle.request)[0], bundle))
+
+        bundle.request.method = 'POST'
+        self.assertEqual(len(auth.create_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.create_detail, resource.get_object_list(bundle.request)[0], bundle)
+
+        bundle.request.method = 'PUT'
+        self.assertEqual(len(auth.update_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.update_detail, resource.get_object_list(bundle.request)[0], bundle)
+
+        bundle.request.method = 'DELETE'
+        self.assertEqual(len(auth.delete_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.delete_detail, resource.get_object_list(bundle.request)[0], bundle)
+
 
 class DjangoAuthorizationTestCase(TestCase):
     fixtures = ['note_testdata']
 
     def setUp(self):
+        super(DjangoAuthorizationTestCase, self).setUp()
         self.add = Permission.objects.get_by_natural_key('add_note', 'core', 'note')
         self.change = Permission.objects.get_by_natural_key('change_note', 'core', 'note')
         self.delete = Permission.objects.get_by_natural_key('delete_note', 'core', 'note')
@@ -75,14 +106,27 @@ class DjangoAuthorizationTestCase(TestCase):
         self.assertFalse(self.user.get_all_permissions())
 
         request = HttpRequest()
-        request.method = 'GET'
         request.user = self.user
         # with no permissions, api is read-only
-        self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
+        resource = DjangoNoteResource()
+        auth = resource._meta.authorization
+        bundle = resource.build_bundle(request=request)
 
-        for method in ('POST', 'PUT', 'DELETE'):
-            request.method = method
-            self.assertFalse(DjangoNoteResource()._meta.authorization.is_authorized(request))
+        bundle.request.method = 'GET'
+        self.assertEqual(len(auth.read_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.read_detail(resource.get_object_list(bundle.request)[0], bundle))
+
+        bundle.request.method = 'POST'
+        self.assertEqual(len(auth.create_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.create_detail, resource.get_object_list(bundle.request)[0], bundle)
+
+        bundle.request.method = 'PUT'
+        self.assertEqual(len(auth.update_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.update_detail, resource.get_object_list(bundle.request)[0], bundle)
+
+        bundle.request.method = 'DELETE'
+        self.assertEqual(len(auth.delete_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.delete_detail, resource.get_object_list(bundle.request)[0], bundle)
 
     def test_add_perm(self):
         request = HttpRequest()
@@ -90,8 +134,28 @@ class DjangoAuthorizationTestCase(TestCase):
 
         # give add permission
         request.user.user_permissions.add(self.add)
-        request.method = 'POST'
-        self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
+
+        request = HttpRequest()
+        request.user = self.user
+        resource = DjangoNoteResource()
+        auth = resource._meta.authorization
+        bundle = resource.build_bundle(request=request)
+
+        bundle.request.method = 'GET'
+        self.assertEqual(len(auth.read_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.read_detail(resource.get_object_list(bundle.request)[0], bundle))
+
+        bundle.request.method = 'POST'
+        self.assertEqual(len(auth.create_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.create_detail(resource.get_object_list(bundle.request)[0], bundle))
+
+        bundle.request.method = 'PUT'
+        self.assertEqual(len(auth.update_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.update_detail, resource.get_object_list(bundle.request)[0], bundle)
+
+        bundle.request.method = 'DELETE'
+        self.assertEqual(len(auth.delete_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.delete_detail, resource.get_object_list(bundle.request)[0], bundle)
 
     def test_change_perm(self):
         request = HttpRequest()
@@ -99,8 +163,26 @@ class DjangoAuthorizationTestCase(TestCase):
 
         # give change permission
         request.user.user_permissions.add(self.change)
-        request.method = 'PUT'
-        self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
+
+        resource = DjangoNoteResource()
+        auth = resource._meta.authorization
+        bundle = resource.build_bundle(request=request)
+
+        bundle.request.method = 'GET'
+        self.assertEqual(len(auth.read_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.read_detail(resource.get_object_list(bundle.request)[0], bundle))
+
+        bundle.request.method = 'POST'
+        self.assertEqual(len(auth.create_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.create_detail, resource.get_object_list(bundle.request)[0], bundle)
+
+        bundle.request.method = 'PUT'
+        self.assertEqual(len(auth.update_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.update_detail(resource.get_object_list(bundle.request)[0], bundle))
+
+        bundle.request.method = 'DELETE'
+        self.assertEqual(len(auth.delete_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.delete_detail, resource.get_object_list(bundle.request)[0], bundle)
 
     def test_delete_perm(self):
         request = HttpRequest()
@@ -108,8 +190,26 @@ class DjangoAuthorizationTestCase(TestCase):
 
         # give delete permission
         request.user.user_permissions.add(self.delete)
-        request.method = 'DELETE'
-        self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
+
+        resource = DjangoNoteResource()
+        auth = resource._meta.authorization
+        bundle = resource.build_bundle(request=request)
+
+        bundle.request.method = 'GET'
+        self.assertEqual(len(auth.read_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.read_detail(resource.get_object_list(bundle.request)[0], bundle))
+
+        bundle.request.method = 'POST'
+        self.assertEqual(len(auth.create_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.create_detail, resource.get_object_list(bundle.request)[0], bundle)
+
+        bundle.request.method = 'PUT'
+        self.assertEqual(len(auth.update_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.update_detail, resource.get_object_list(bundle.request)[0], bundle)
+
+        bundle.request.method = 'DELETE'
+        self.assertEqual(len(auth.delete_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.delete_detail(resource.get_object_list(bundle.request)[0], bundle))
 
     def test_all(self):
         request = HttpRequest()
@@ -119,42 +219,22 @@ class DjangoAuthorizationTestCase(TestCase):
         request.user.user_permissions.add(self.change)
         request.user.user_permissions.add(self.delete)
 
-        for method in ('GET', 'OPTIONS', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH'):
-            request.method = method
-            self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
+        resource = DjangoNoteResource()
+        auth = resource._meta.authorization
+        bundle = resource.build_bundle(request=request)
 
-    def test_not_a_model(self):
-        request = HttpRequest()
-        request.user = self.user
+        bundle.request.method = 'GET'
+        self.assertEqual(len(auth.read_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.read_detail(resource.get_object_list(bundle.request)[0], bundle))
 
-        # give add permission
-        request.user.user_permissions.add(self.add)
-        request.method = 'POST'
-        self.assertTrue(NotAModelResource()._meta.authorization.is_authorized(request))
+        bundle.request.method = 'POST'
+        self.assertEqual(len(auth.create_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.create_detail(resource.get_object_list(bundle.request)[0], bundle))
 
-    def test_patch_perms(self):
-        request = HttpRequest()
-        request.user = self.user
-        request.method = 'PATCH'
+        bundle.request.method = 'PUT'
+        self.assertEqual(len(auth.update_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.update_detail(resource.get_object_list(bundle.request)[0], bundle))
 
-        # Not enough.
-        request.user.user_permissions.add(self.add)
-        self.assertFalse(DjangoNoteResource()._meta.authorization.is_authorized(request))
-
-        # Still not enough.
-        request.user.user_permissions.add(self.change)
-        self.assertFalse(DjangoNoteResource()._meta.authorization.is_authorized(request))
-
-        # Much better.
-        request.user.user_permissions.add(self.delete)
-        # Nuke the perm cache. :/
-        del request.user._perm_cache
-        self.assertTrue(DjangoNoteResource()._meta.authorization.is_authorized(request))
-
-    def test_unrecognized_method(self):
-        request = HttpRequest()
-        request.user = self.user
-
-        # Check a non-existent HTTP method.
-        request.method = 'EXPLODE'
-        self.assertFalse(DjangoNoteResource()._meta.authorization.is_authorized(request))
+        bundle.request.method = 'DELETE'
+        self.assertEqual(len(auth.delete_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.delete_detail(resource.get_object_list(bundle.request)[0], bundle))

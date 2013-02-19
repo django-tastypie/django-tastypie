@@ -61,7 +61,7 @@ class Serializer(object):
     This handles most types of data as well as the following output formats::
 
         * json
-        * jsonp
+        * jsonp (Disabled by default)
         * xml
         * yaml
         * html
@@ -71,7 +71,7 @@ class Serializer(object):
     various format methods (i.e. ``to_json``), by changing the
     ``formats/content_types`` options or by altering the other hook methods.
     """
-    formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'plist']
+    formats = ['json', 'xml', 'yaml', 'html', 'plist']
     content_types = {
         'json': 'application/json',
         'jsonp': 'text/javascript',

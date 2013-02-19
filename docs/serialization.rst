@@ -15,7 +15,7 @@ need to.
 The default ``Serializer`` supports the following formats:
 
 * json
-* jsonp
+* jsonp (Disabled by default)
 * xml
 * yaml
 * html
@@ -56,6 +56,20 @@ For example, to provide only JSON & binary plist serialization::
             resource_name = 'auth/user'
             excludes = ['email', 'password', 'is_superuser']
             serializer = Serializer(formats=['json', 'plist'])
+
+Enabling the built-in (but disabled by default) JSONP support looks like::
+
+    from django.contrib.auth.models import User
+    from tastypie.resources import ModelResource
+    from tastypie.serializers import Serializer
+
+
+    class UserResource(ModelResource):
+        class Meta:
+            queryset = User.objects.all()
+            resource_name = 'auth/user'
+            excludes = ['email', 'password', 'is_superuser']
+            serializer = Serializer(formats=['json', 'jsonp', 'xml', 'yaml', 'html', 'plist'])
 
 
 Implementing Your Own Serializer

@@ -105,6 +105,14 @@ Indicates whether the field is a unique identifier for the object.
 A human-readable description of the field exposed at the schema level.
 Defaults to the per-Field definition.
 
+``use_in``
+~~~~~~~~~~
+
+.. attribute:: ApiField.use_in
+
+Optionally omit this field in list or detail views.  It can be either 'all',
+'list', or 'detail' or a callable which accepts a bundle and returns a boolean
+value.
 
 Field Types
 -----------
@@ -215,7 +223,32 @@ Required.
 Indicates how the related ``Resource`` will appear post-``dehydrate``. If
 ``False``, the related ``Resource`` will appear as a URL to the endpoint of
 that resource. If ``True``, the result of the sub-resource's ``dehydrate`` will
-be included in full.
+be included in full. You can further control post-``dehydrate`` behaviour when
+requesting a resource or a list of resources by setting ``full_list`` and ``full_detail``.
+
+``full_list``
+~~~~~~~~~~~~~
+
+.. attribute:: RelatedField.full_list
+
+Indicates how the related ``Resource`` will appear post-``dehydrate`` when requesting a
+list of resources. The value is one of ``True``, ``False`` or a callable that accepts a
+bundle and returns ``True`` or ``False``. If ``False``, the related ``Resource`` will appear
+as a URL to the endpoint of that resource if accessing a list of resources.  If ``True`` and ``full``
+is also ``True``, the result of thesub-resource's ``dehydrate`` will be included in
+full. Default is ``True``
+
+``full_detail``
+~~~~~~~~~~~~~~~
+
+.. attribute:: RelatedField.full_detail
+
+Indicates how the related ``Resource`` will appear post-``dehydrate`` when requesting a
+single resource. The value is one of ``True``, ``False`` or a callable that accepts a
+bundle and returns ``True`` or ``False``. If ``False``, the related ``Resource`` will appear
+as a URL to the endpoint of that resource if accessing a specific resources. If ``True`` and ``full``
+is also ``True``, the result of thesub-resource's ``dehydrate`` will be included
+in full. Default is ``True``
 
 ``related_name``
 ~~~~~~~~~~~~~~~~
