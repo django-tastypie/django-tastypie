@@ -1,6 +1,8 @@
 import mimeparse
 
-from tastypie.exceptions import BadRequest
+from django.http import HttpResponse
+
+from tastypie.exceptions import BadRequest, ImmediateHttpResponse
 
 
 def determine_format(request, serializer, default_format='application/json'):
@@ -43,6 +45,14 @@ def determine_format(request, serializer, default_format='application/json'):
 
         if best_format:
             return best_format
+        else:
+            # Specific formats were requested but we do not support any of them.
+            # We'll return HTTP Not Acceptable to avoid confusion. Spec:
+            # http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.7
+            r = HttpResponse(status=406, mimetype="text/plain",
+                             # Note formats reversal above:
+                             content="Supported formats: %s" % " ".join(reversed(formats)))
+            raise ImmediateHttpResponse(response=r)
 
     # No valid 'Accept' header/formats. Sane default.
     return default_format
