@@ -4,7 +4,7 @@ django-tastypie
 
 Creating delicious APIs for Django apps since 2010.
 
-Currently in beta (v0.9.11) but being used actively in production on several
+Currently in beta (v0.9.13) but being used actively in production on several
 sites.
 
 
