@@ -71,28 +71,37 @@ class Serializer(object):
     various format methods (i.e. ``to_json``), by changing the
     ``formats/content_types`` options or by altering the other hook methods.
     """
+
     formats = ['json', 'xml', 'yaml', 'html', 'plist']
-    content_types = {
-        'json': 'application/json',
-        'jsonp': 'text/javascript',
-        'xml': 'application/xml',
-        'yaml': 'text/yaml',
-        'html': 'text/html',
-        'plist': 'application/x-plist',
-    }
+
+    content_types = {'json': 'application/json',
+                     'jsonp': 'text/javascript',
+                     'xml': 'application/xml',
+                     'yaml': 'text/yaml',
+                     'html': 'text/html',
+                     'plist': 'application/x-plist'}
 
     def __init__(self, formats=None, content_types=None, datetime_formatting=None):
-        self.supported_formats = []
-        self.datetime_formatting = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING', 'iso-8601')
+        if datetime_formatting is not None:
+            self.datetime_formatting = datetime_formatting
+        else:
+            self.datetime_formatting = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING', 'iso-8601')
 
-        if formats is not None:
-            self.formats = formats
+        self.supported_formats = []
 
         if content_types is not None:
             self.content_types = content_types
 
-        if datetime_formatting is not None:
-            self.datetime_formatting = datetime_formatting
+        if formats is not None:
+            self.formats = formats
+
+        if self.formats is Serializer.formats and hasattr(settings, 'TASTYPIE_DEFAULT_FORMATS'):
+            # We want TASTYPIE_DEFAULT_FORMATS to override unmodified defaults but not intentational changes
+            # on Serializer subclasses:
+            self.formats = settings.TASTYPIE_DEFAULT_FORMATS
+
+        if not isinstance(self.formats, (list, tuple)):
+            raise ImproperlyConfigured('Formats should be a list or tuple, not %r' % self.formats)
 
         for format in self.formats:
             try:

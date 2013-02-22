@@ -67,6 +67,34 @@ class SerializerTestCase(TestCase):
 
         self.assertRaises(ImproperlyConfigured, Serializer, formats=['json', 'xml'], content_types={'json': 'text/json'})
 
+    def test_default_formats_setting(self):
+        # When we drop support for Django 1.3 this boilerplate can be replaced with
+        # a simple django.test.utils.override_settings decorator:
+
+        old_formats = getattr(settings, 'TASTYPIE_DEFAULT_FORMATS', None)
+
+        try:
+            # Confirm that the setting will override the default values:
+            settings.TASTYPIE_DEFAULT_FORMATS = ('json', 'xml')
+            s = Serializer()
+            self.assertItemsEqual(s.formats, ['json', 'xml'])
+            self.assertItemsEqual(s.supported_formats, ['application/json', 'application/xml'])
+            self.assertDictEqual(s.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
+
+            # Confirm that subclasses which set their own formats list won't be overriden:
+            class JSONSerializer(Serializer):
+                formats = ['json']
+
+            js = JSONSerializer()
+            self.assertItemsEqual(js.formats, ['json'])
+            self.assertItemsEqual(js.supported_formats, ['application/json'])
+
+        finally:
+            if old_formats is None:
+                del settings.TASTYPIE_DEFAULT_FORMATS
+            else:
+                settings.TASTYPIE_DEFAULT_FORMATS = old_formats
+
     def get_sample1(self):
         return {
             'name': 'Daniel',

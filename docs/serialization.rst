@@ -12,21 +12,12 @@ As a result, Tastypie ships with a serializer that tries to meet the basic
 needs of most use cases, and the flexibility to go outside of that when you
 need to.
 
-The default ``Serializer`` supports the following formats:
-
-* json
-* jsonp (Disabled by default)
-* xml
-* yaml
-* html
-* plist (see http://explorapp.com/biplist/)
-
 Usage
 =====
 
 Using this class is simple. It is the default option on all ``Resource``
-classes unless otherwise specified. The following code is a no-op, but
-demonstrate how you could use your own serializer::
+classes unless otherwise specified. The following code is identical to the
+defaults but demonstrate how you could use your own serializer::
 
     from django.contrib.auth.models import User
     from tastypie.resources import ModelResource
@@ -41,9 +32,26 @@ demonstrate how you could use your own serializer::
             # Add it here.
             serializer = Serializer()
 
-Not everyone wants to install or support all the serialization options. To
-that end, you can limit the ones available by passing a ``formats=`` kwarg.
-For example, to provide only JSON & binary plist serialization::
+Configuring Allowed Formats
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The default ``Serializer`` supports the following formats:
+
+* json
+* jsonp (Disabled by default)
+* xml
+* yaml
+* html
+* plist (see http://explorapp.com/biplist/)
+
+Not everyone wants to install or support all the serialization options. If you
+would list to customize the list of supported formats for your entire site
+the :ref:`TASTYPIE_DEFAULT_FORMATS setting <settings.TASTYPIE_DEFAULT_FORMATS>`
+allows you to set the default format list site-wide.
+
+If you wish to change the format list for a specific resource, you can pass the
+list of supported formats using the ``formats=`` kwarg. For example, to provide
+only JSON & binary plist serialization::
 
     from django.contrib.auth.models import User
     from tastypie.resources import ModelResource

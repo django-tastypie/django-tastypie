@@ -98,3 +98,19 @@ An example::
     TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
 
 Defaults to ``iso-8601``.
+
+.. _settings.TASTYPIE_DEFAULT_FORMATS:
+
+``TASTYPIE_DEFAULT_FORMATS``
+================================
+
+**Optional**
+
+This setting allows you to globally configure the list of allowed serialization
+formats for your entire site.
+
+An example::
+
+    TASTYPIE_DEFAULT_FORMATS = ['json', 'xml']
+
+Defaults to ``['json', 'xml', 'yaml', 'html', 'plist']``.
