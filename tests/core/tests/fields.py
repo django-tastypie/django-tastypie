@@ -192,6 +192,11 @@ class CharFieldTestCase(TestCase):
         field_2 = CharField(default=20)
         self.assertEqual(field_2.dehydrate(bundle), u'20')
 
+    def test_utf8_bytestring(self):
+        unicode_str = u'abcd' + unichr(233)
+        field_1 = CharField()
+        self.assertEqual(field_1.convert(unicode_str.encode('utf-8')), unicode_str)
+
 
 class FileFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
