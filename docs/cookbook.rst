@@ -132,7 +132,10 @@ Another alternative approach is to override the ``dispatch`` method::
             return super(EntryResource, self).dispatch(request_type, request, **kwargs)
 
     # urls.py
-    from django.conf.urls.defaults import *
+    try:
+        from django.conf.urls import *
+    except ImportError:  # Django<=1.4
+        from django.conf.urls.defaults import *
     from myapp.api import EntryResource
 
     entry_resource = EntryResource()
@@ -151,7 +154,10 @@ approach uses Haystack_, though you could hook it up to any search technology.
 We leave the CRUD methods of the resource alone, choosing to add a new endpoint
 at ``/api/v1/notes/search/``::
 
-    from django.conf.urls.defaults import *
+    try:
+        from django.conf.urls import *
+    except ImportError:  # Django<=1.4
+        from django.conf.urls.defaults import *
     from django.core.paginator import Paginator, InvalidPage
     from django.http import Http404
     from haystack.query import SearchQuerySet
