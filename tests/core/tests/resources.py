@@ -57,6 +57,13 @@ class BasicResourceWithDifferentListAndDetailFields(Resource):
         bundle.obj.date_joined = bundle.data['date_joined']
         return bundle
 
+    def obj_get_list(self, bundle, **kwargs):
+        test_object_1 = TestObject()
+        test_object_1.name = 'Daniel'
+        test_object_1.view_count = 12
+        test_object_1.date_joined = aware_datetime(2010, 3, 30, 9, 0, 0)
+        return [test_object_1]
+
     class Meta:
         object_class = TestObject
         resource_name = 'basic'
@@ -764,6 +771,16 @@ class ResourceTestCase(TestCase):
         output = mangled.alter_list_data_to_serialize(request, data)
         self.assertEqual(output, {'testobjects': [{'abc': 123, 'hello': 'world'}]})
 
+    def test_get_list_with_use_in(self):
+        basic = BasicResourceWithDifferentListAndDetailFields()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+
+        basic_resource_list = json.loads(basic.get_list(request).content)['objects']
+        self.assertEquals(basic_resource_list[0]['name'], 'Daniel')
+        self.assertEquals(basic_resource_list[0]['view_count'], None)
+        self.assertEquals(basic_resource_list[0]['date_joined'],aware_datetime(2010, 3, 30, 9, 0, 0))
 
 # ====================
 # Model-based tests...
@@ -802,7 +819,6 @@ class NoteResource(ModelResource):
             return '/api/v1/notes/'
 
         return '/api/v1/notes/%s/' % bundle_or_obj.obj.id
-
 
 class NoQuerysetNoteResource(ModelResource):
     class Meta:
