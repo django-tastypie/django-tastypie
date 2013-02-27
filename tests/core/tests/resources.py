@@ -779,8 +779,10 @@ class ResourceTestCase(TestCase):
 
         basic_resource_list = json.loads(basic.get_list(request).content)['objects']
         self.assertEquals(basic_resource_list[0]['name'], 'Daniel')
-        self.assertEquals(basic_resource_list[0]['view_count'], None)
-        self.assertEquals(basic_resource_list[0]['date_joined'],aware_datetime(2010, 3, 30, 9, 0, 0))
+        self.assertEquals(basic_resource_list[0]['date_joined'], u'2010-03-30T09:00:00')
+
+        self.assertNotIn('view_count', basic_resource_list[0])
+        
 
 # ====================
 # Model-based tests...
