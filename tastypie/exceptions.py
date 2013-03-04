@@ -71,7 +71,7 @@ class InvalidFilterError(BadRequest):
     pass
 
 
-class InvalidSortError(TastypieError):
+class InvalidSortError(BadRequest):
     """
     Raised when the end user attempts to sort on a field that has not be
     explicitly allowed.
