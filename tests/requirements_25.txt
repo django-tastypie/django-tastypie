@@ -1,6 +1,7 @@
 django-oauth-plus
 oauth2
 lxml
+defusedxml
 python-digest
 pyyaml
 mimeparse>=0.1.3

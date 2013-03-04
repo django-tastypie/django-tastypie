@@ -1,6 +1,7 @@
 django-oauth-plus
 oauth2
 lxml
+defusedxml
 python-digest
 biplist
 pyyaml

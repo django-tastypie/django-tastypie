@@ -7,12 +7,13 @@ from django.core.serializers import json
 from django.utils import simplejson
 from django.utils.encoding import force_unicode
 from tastypie.bundle import Bundle
-from tastypie.exceptions import UnsupportedFormat
+from tastypie.exceptions import BadRequest, UnsupportedFormat
 from tastypie.utils import format_datetime, format_date, format_time, make_naive
 try:
-    import lxml
-    from lxml.etree import parse as parse_xml
-    from lxml.etree import Element, tostring
+    import defusedxml.lxml as lxml
+    from defusedxml.common import DefusedXmlException
+    from defusedxml.lxml import parse as parse_xml
+    from lxml.etree import Element, tostring, LxmlError
 except ImportError:
     lxml = None
 try:
@@ -71,28 +72,37 @@ class Serializer(object):
     various format methods (i.e. ``to_json``), by changing the
     ``formats/content_types`` options or by altering the other hook methods.
     """
+
     formats = ['json', 'xml', 'yaml', 'html', 'plist']
-    content_types = {
-        'json': 'application/json',
-        'jsonp': 'text/javascript',
-        'xml': 'application/xml',
-        'yaml': 'text/yaml',
-        'html': 'text/html',
-        'plist': 'application/x-plist',
-    }
+
+    content_types = {'json': 'application/json',
+                     'jsonp': 'text/javascript',
+                     'xml': 'application/xml',
+                     'yaml': 'text/yaml',
+                     'html': 'text/html',
+                     'plist': 'application/x-plist'}
 
     def __init__(self, formats=None, content_types=None, datetime_formatting=None):
-        self.supported_formats = []
-        self.datetime_formatting = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING', 'iso-8601')
+        if datetime_formatting is not None:
+            self.datetime_formatting = datetime_formatting
+        else:
+            self.datetime_formatting = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING', 'iso-8601')
 
-        if formats is not None:
-            self.formats = formats
+        self.supported_formats = []
 
         if content_types is not None:
             self.content_types = content_types
 
-        if datetime_formatting is not None:
-            self.datetime_formatting = datetime_formatting
+        if formats is not None:
+            self.formats = formats
+
+        if self.formats is Serializer.formats and hasattr(settings, 'TASTYPIE_DEFAULT_FORMATS'):
+            # We want TASTYPIE_DEFAULT_FORMATS to override unmodified defaults but not intentational changes
+            # on Serializer subclasses:
+            self.formats = settings.TASTYPIE_DEFAULT_FORMATS
+
+        if not isinstance(self.formats, (list, tuple)):
+            raise ImproperlyConfigured('Formats should be a list or tuple, not %r' % self.formats)
 
         for format in self.formats:
             try:
@@ -374,14 +384,24 @@ class Serializer(object):
 
         return tostring(self.to_etree(data, options), xml_declaration=True, encoding='utf-8')
 
-    def from_xml(self, content):
+    def from_xml(self, content, forbid_dtd=True, forbid_entities=True):
         """
         Given some XML data, returns a Python dictionary of the decoded data.
+
+        By default XML entity declarations and DTDs will raise a BadRequest
+        exception content but subclasses may choose to override this if
+        necessary.
         """
         if lxml is None:
             raise ImproperlyConfigured("Usage of the XML aspects requires lxml.")
 
-        return self.from_etree(parse_xml(StringIO(content)).getroot())
+        try:
+            parsed = parse_xml(StringIO(content), forbid_dtd=forbid_dtd,
+                               forbid_entities=forbid_entities)
+        except (LxmlError, DefusedXmlException):
+            raise BadRequest
+
+        return self.from_etree(parsed.getroot())
 
     def to_yaml(self, data, options=None):
         """
