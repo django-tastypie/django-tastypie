@@ -290,7 +290,9 @@ class Resource(object):
                 mail_admins(subject, message, fail_silently=True)
 
         # Prep the data going out.
-        data = {}
+        data = {
+            "error_message": "Not Found"
+        }
         if not response_class == HttpResponseNotFound:
             data["error_message"] = getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later.")
 
