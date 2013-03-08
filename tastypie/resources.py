@@ -290,9 +290,10 @@ class Resource(object):
                 mail_admins(subject, message, fail_silently=True)
 
         # Prep the data going out.
-        data = {
-            "error_message": getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later."),
-        }
+        data = {}
+        if not response_class == HttpResponseNotFound:
+            data["error_message"] = getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later.")
+
         return self.error_response(request, data, response_class=response_class)
 
     def _build_reverse_url(self, name, args=None, kwargs=None):
