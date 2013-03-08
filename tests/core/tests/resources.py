@@ -910,6 +910,14 @@ class AlwaysUserNoteResource(NoteResource):
     def get_object_list(self, request):
         return super(AlwaysUserNoteResource, self).get_object_list(request).filter(author=request.user)
 
+class UseInNoteResource(NoteResource):
+
+    content = fields.CharField(attribute='content', use_in='detail')
+    title = fields.CharField(attribute='title', use_in='list')
+
+    class Meta:
+        queryset = Note.objects.all()
+        authorization = Authorization()
 
 class UserResource(ModelResource):
     class Meta:
@@ -1926,6 +1934,14 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content, '{"meta": {"limit": 3, "next": "/api/v1/notes/?offset=3&limit=3&format=json", "offset": 0, "previous": null, "total_count": 5}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}]}')
 
+    def test_get_list_use_in(self):
+        #TODO CRISTIANO
+        resource = UseInNoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        resp = resource.get_list(request)
+        self.assertEqual(resp.status_code, 200)
+
     def test_get_detail(self):
         resource = NoteResource()
         request = HttpRequest()
@@ -1941,6 +1957,17 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.get_detail(request, pk=300)
         self.assertEqual(resp.status_code, 404)
+
+    def test_get_detail_use_in(self):
+        #TODO CRISTIANO
+        resource = UseInNoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        resp = resource.get_detail(request)
+        self.assertEqual(resp.status_code, 200)
+        import pdb
+        pdb.set_trace()
+
 
     def test_put_list(self):
         resource = NoteResource()
