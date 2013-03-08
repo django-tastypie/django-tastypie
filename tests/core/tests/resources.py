@@ -1963,11 +1963,8 @@ class ModelResourceTestCase(TestCase):
         resource = UseInNoteResource()
         request = HttpRequest()
         request.GET = {'format': 'json'}
-        resp = resource.get_detail(request)
+        resp = resource.get_detail(request, pk=1)
         self.assertEqual(resp.status_code, 200)
-        import pdb
-        pdb.set_trace()
-
 
     def test_put_list(self):
         resource = NoteResource()
