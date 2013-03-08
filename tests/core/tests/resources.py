@@ -1935,12 +1935,14 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.content, '{"meta": {"limit": 3, "next": "/api/v1/notes/?offset=3&limit=3&format=json", "offset": 0, "previous": null, "total_count": 5}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}]}')
 
     def test_get_list_use_in(self):
-        #TODO CRISTIANO
         resource = UseInNoteResource()
         request = HttpRequest()
         request.GET = {'format': 'json'}
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
+        resp = json.loads(resp.content)
+        for note in resp['objects']:
+            self.assertNotIn('content', note)
 
     def test_get_detail(self):
         resource = NoteResource()
@@ -1959,15 +1961,13 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 404)
 
     def test_get_detail_use_in(self):
-        #TODO CRISTIANO
         resource = UseInNoteResource()
         request = HttpRequest()
         request.GET = {'format': 'json'}
         resp = resource.get_detail(request, pk=1)
         self.assertEqual(resp.status_code, 200)
-        import pdb
-        pdb.set_trace()
-
+        resp = json.loads(resp.content)
+        self.assertNotIn('title', resp)
 
     def test_put_list(self):
         resource = NoteResource()
