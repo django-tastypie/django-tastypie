@@ -601,6 +601,8 @@ class Resource(object):
         """
         try:
             auth_result = self._meta.authorization.read_detail(object_list, bundle)
+            if not auth_result is True:
+                raise Unauthorized()
         except Unauthorized, e:
             self.unauthorized_result(e)
 
@@ -625,6 +627,8 @@ class Resource(object):
         """
         try:
             auth_result = self._meta.authorization.create_detail(object_list, bundle)
+            if not auth_result is True:
+                raise Unauthorized()
         except Unauthorized, e:
             self.unauthorized_result(e)
 
@@ -649,6 +653,8 @@ class Resource(object):
         """
         try:
             auth_result = self._meta.authorization.update_detail(object_list, bundle)
+            if not auth_result is True:
+                raise Unauthorized()
         except Unauthorized, e:
             self.unauthorized_result(e)
 
@@ -673,6 +679,8 @@ class Resource(object):
         """
         try:
             auth_result = self._meta.authorization.delete_detail(object_list, bundle)
+            if not auth_result:
+                raise Unauthorized()
         except Unauthorized, e:
             self.unauthorized_result(e)
 
