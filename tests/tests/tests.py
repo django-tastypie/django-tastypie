@@ -5,6 +5,10 @@ from tastypie.test import ResourceTestCase
 
 class TestApiClientTest(TestCase):
     def test_assertHttpAccepted(self):
+        message = 'status_code is %s'
+        if self.longMessage:  # in python2.7 longMessage is False
+            message = 'False is not True : ' + message
+
         class SomeTest(ResourceTestCase):
             def runTest(self):
                 pass
@@ -19,5 +23,5 @@ class TestApiClientTest(TestCase):
             tc.assertHttpAccepted(response)
 
         self.assertEqual(
-            ('False is not True : status_code is %s' % Response.status_code,),
+            (message % Response.status_code,),
             cm.exception.args)
