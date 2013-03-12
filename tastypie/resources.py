@@ -87,6 +87,7 @@ class ResourceOptions(object):
     always_return_data = False
     collection_name = 'objects'
     detail_uri_name = 'pk'
+    dehydrate = True
 
     def __new__(cls, meta=None):
         overrides = {}
@@ -1274,7 +1275,10 @@ class Resource(object):
 
         for obj in to_be_serialized[self._meta.collection_name]:
             bundle = self.build_bundle(obj=obj, request=request)
-            bundles.append(self.full_dehydrate(bundle))
+            if self._meta.dehydrate:
+                bundles.append(self.full_dehydrate(bundle))
+            else:
+                bundles.append(bundle)
 
         to_be_serialized[self._meta.collection_name] = bundles
         to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
