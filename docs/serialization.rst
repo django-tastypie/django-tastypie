@@ -113,10 +113,12 @@ like::
             data = self.to_simple(data, options)
             raw_data = StringIO.StringIO()
             if data['objects']:
-                writer = csv.DictWriter(raw_data, data['objects'][0].keys(),
+                fields = data['objects'][0].keys()
+                writer = csv.DictWriter(raw_data, fields,
                                         dialect="excel",
                                         extrasaction='ignore')
-                writer.writeheader()
+                header = dict(zip(fields, fields))
+                writer.writerow(header)  # In Python 2.7: `writer.writeheader()`
                 for item in data['objects']:
                     writer.writerow(item)
 
