@@ -154,7 +154,20 @@ Then running the tests is as simple as::
   # From the same directory as above:
   $ ./env/bin/pip install -U -r tests/requirements.txt
   $ cd tests
-  $ ./run_all_test.sh
+  $ ./run_all_test.py
+
+Runnnig only one app and/or one test case and/or one test::
+  # Only one app
+  $ ./run_all_test.py basic
+
+  # Only one test case
+  $ ./run_all_test.py authorization.PerUserAuthorizationTestCase
+
+  # Only one test
+  $ ./run_all_test.py core.NoCacheTestCase.test_get
+
+  # Mixed
+  $ ./run_all_tests.py basic authorization.PerUserAuthorizationTestCase core.NoCacheTestCase.test_get
 
 Tastypie is maintained with all tests passing at all times. If you find a
 failure, please `report it`_ along with the versions of the installed software.
