@@ -854,6 +854,12 @@ class VeryCustomNoteResource(NoteResource):
         fields = ['title', 'content', 'created', 'is_active']
 
 
+class CustomNoteResource(NoteResource):
+    def get_obj_create_kwargs(self, bundle):
+        author = User.objects.get(username=bundle.data['username'])
+        return {'author': author}
+
+
 class AutoNowNoteResource(ModelResource):
     class Meta:
         resource_name = 'autonownotes'
@@ -2755,6 +2761,18 @@ class ModelResourceTestCase(TestCase):
         note.obj_create(related_bundle)
         latest = NoteWithEditor.objects.get(slug='note-with-editor')
         self.assertEqual(latest.editor.username, u'zeus')
+
+    def test_obj_create_update_kwargs(self):
+        user = User.objects.create(username='john')
+        note = CustomNoteResource()
+        bundle = Bundle(data={
+            'username': user.username,
+            'title': "A new post!",
+            'slug': "a-new-post",
+        })
+        note.obj_create(bundle)
+        latest = Note.objects.get(slug='a-new-post')
+        self.assertEqual(latest.author, user)
 
     def test_obj_update(self):
         self.assertEqual(Note.objects.all().count(), 6)

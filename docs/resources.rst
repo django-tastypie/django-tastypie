@@ -1801,3 +1801,11 @@ relation and recreate the related data as needed.
 Handles generating a resource URI for a single resource.
 
 Uses the model's ``pk`` in order to create the URI.
+
+``get_obj_create_kwargs``
+--------------
+
+.. method:: ModelResource.get_obj_create_kwargs(self, bundle)
+
+Returns a dict which is used to update ``kwargs`` in
+``ModelResource.obj_create`` before creating the object.

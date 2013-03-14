@@ -2083,11 +2083,20 @@ class ModelResource(Resource):
         except ValueError:
             raise NotFound("Invalid resource lookup data provided (mismatched type).")
 
+    def get_obj_create_kwargs(self, bundle):
+        """
+        Returns a dict which is used to update ``kwargs`` in
+        ``ModelResource`` ``obj_create``.
+        """
+        return {}
+
     def obj_create(self, bundle, **kwargs):
         """
         A ORM-specific implementation of ``obj_create``.
         """
         bundle.obj = self._meta.object_class()
+
+        kwargs.update(self.get_obj_create_kwargs(bundle))
 
         for key, value in kwargs.items():
             setattr(bundle.obj, key, value)
