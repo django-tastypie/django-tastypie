@@ -120,8 +120,8 @@ Implementing your own ``Authorization`` classes is a relatively simple
 process. Anything that is API-compatible is acceptable, only the method names
 matter to Tastypie.
 
-An example implementation of a user only being able to "their" objects might
-look like::
+An example implementation of a user only being able to create, read, and update
+"their" objects might look like::
 
     from tastypie.authorization import Authorization
     from tastypie.exceptions import Unauthorized
