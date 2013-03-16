@@ -10,7 +10,6 @@ from django.db import transaction
 from django.db.models.sql.constants import QUERY_TERMS
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.utils.cache import patch_cache_control, patch_vary_headers
-from django.utils.six import text_type
 from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.bundle import Bundle
@@ -525,7 +524,7 @@ class Resource(object):
             allowed = []
 
         request_method = request.method.lower()
-        allows = ','.join(map(text_type.upper, allowed))
+        allows = ','.join(map(lambda x: x.upper(), allowed))
 
         if request_method == "options":
             response = HttpResponse(allows)
