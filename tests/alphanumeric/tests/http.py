@@ -1,5 +1,8 @@
 import httplib
-from django.utils import simplejson as json
+try:
+    import json
+except ImportError: # < Python 2.6
+    from django.utils import simplejson as json
 from testcases import TestServerTestCase
 
 
