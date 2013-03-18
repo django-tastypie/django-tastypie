@@ -108,3 +108,12 @@ class Bone(models.Model):
 
     def __unicode__(self):
         return u"%s" % (self.color)
+
+
+class Label(models.Model):
+    name = models.CharField(max_length=32)
+
+
+class Post(models.Model):
+    name = models.CharField(max_length=200)
+    label = models.ManyToManyField(Label, null=True)

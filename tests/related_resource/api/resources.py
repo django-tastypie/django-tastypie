@@ -5,6 +5,7 @@ from tastypie.authorization import Authorization
 from core.models import Note, MediaBit
 from related_resource.models import Category, Tag, ExtraData, Taggable,\
     TaggableTag, Person, Company, Product, Address, Dog, DogHouse, Bone
+from tests.related_resource.models import Label, Post
 
 
 class UserResource(ModelResource):
@@ -162,4 +163,19 @@ class DogResource(ModelResource):
     class Meta:
         queryset = Dog.objects.all()
         resource_name = 'dog'
+        authorization = Authorization()
+
+class LabelResource(ModelResource):
+    class Meta:
+        resource_name = 'label'
+        queryset = Label.objects.all()
+        authorization = Authorization()
+
+
+class PostResource(ModelResource):
+    label = fields.ToManyField(LabelResource, 'label', null=True)
+
+    class Meta:
+        queryset = Post.objects.all()
+        resource_name = 'post'
         authorization = Authorization()

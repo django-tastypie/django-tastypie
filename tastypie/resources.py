@@ -2371,7 +2371,10 @@ class ModelResource(Resource):
                     request=bundle.request,
                     objects_saved=bundle.objects_saved
                 )
-                related_resource.save(updated_related_bundle)
+                
+                #Only save related models if they're newly added.
+                if updated_related_bundle.obj._state.adding:
+                    related_resource.save(updated_related_bundle)
                 related_objs.append(updated_related_bundle.obj)
 
             related_mngr.add(*related_objs)
