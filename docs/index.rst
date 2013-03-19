@@ -34,6 +34,7 @@ interfaces.
    debugging
    who_uses
    contributing
+   release_notes/index
 
 
 Getting Help
