@@ -276,7 +276,8 @@ class Resource(object):
 
         if not response_code == 404 or send_broken_links:
             log = logging.getLogger('django.request.tastypie')
-            log.error('Internal Server Error: %s' % request.path, exc_info=sys.exc_info(), extra={'status_code': response_code, 'request':request})
+            log.error('Internal Server Error: %s' % request.path, exc_info=True,
+                      extra={'status_code': response_code, 'request': request})
 
             if django.VERSION < (1, 3, 0):
                 from django.core.mail import mail_admins
