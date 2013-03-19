@@ -11,7 +11,7 @@ import rose
 
 setup(
     name='django-tastypie',
-    version=rose.load_version('VERSION'),
+    version=rose.load_version('tastypie/VERSION'),
     description='A flexible & capable API layer for Django.',
     author='Daniel Lindsley',
     author_email='daniel@toastdriven.com',
