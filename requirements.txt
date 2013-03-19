@@ -1,4 +1,3 @@
-rose==1.0.0
 Django>=1.3.0
 mimeparse>=0.1.3
 python-dateutil>=2.1
