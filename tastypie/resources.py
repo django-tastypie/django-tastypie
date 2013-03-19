@@ -1282,7 +1282,7 @@ class Resource(object):
 
         for obj in to_be_serialized[self._meta.collection_name]:
             bundle = self.build_bundle(obj=obj, request=request)
-            bundles.append(self.full_dehydrate(bundle))
+            bundles.append(self.full_dehydrate(bundle, for_list=True))
 
         to_be_serialized[self._meta.collection_name] = bundles
         to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
@@ -1385,7 +1385,7 @@ class Resource(object):
             return http.HttpNoContent()
         else:
             to_be_serialized = {}
-            to_be_serialized[self._meta.collection_name] = [self.full_dehydrate(bundle) for bundle in bundles_seen]
+            to_be_serialized[self._meta.collection_name] = [self.full_dehydrate(bundle, for_list=True) for bundle in bundles_seen]
             to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
             return self.create_response(request, to_be_serialized, response_class=http.HttpAccepted)
 
@@ -1540,7 +1540,7 @@ class Resource(object):
 
                     # The object does exist, so this is an update-in-place.
                     bundle = self.build_bundle(obj=obj, request=request)
-                    bundle = self.full_dehydrate(bundle)
+                    bundle = self.full_dehydrate(bundle, for_list=True)
                     bundle = self.alter_detail_data_to_serialize(request, bundle)
                     self.update_in_place(request, bundle, data)
                 except (ObjectDoesNotExist, MultipleObjectsReturned):
@@ -1573,7 +1573,7 @@ class Resource(object):
             return http.HttpAccepted()
         else:
             to_be_serialized = {}
-            to_be_serialized['objects'] = [self.full_dehydrate(bundle) for bundle in bundles_seen]
+            to_be_serialized['objects'] = [self.full_dehydrate(bundle, for_list=True) for bundle in bundles_seen]
             to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
             return self.create_response(request, to_be_serialized, response_class=http.HttpAccepted)
 
@@ -1675,7 +1675,7 @@ class Resource(object):
             try:
                 obj = self.obj_get(bundle=base_bundle, **{self._meta.detail_uri_name: identifier})
                 bundle = self.build_bundle(obj=obj, request=request)
-                bundle = self.full_dehydrate(bundle)
+                bundle = self.full_dehydrate(bundle, for_list=True)
                 objects.append(bundle)
             except (ObjectDoesNotExist, Unauthorized):
                 not_found.append(identifier)

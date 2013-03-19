@@ -71,6 +71,7 @@ Contributors:
 * Andrew Austin (andrewaustin) for triaging, verifying and patching several tickets.
 * Numan Sachwani (numan) and Curtis Maloney (funkybob) for patch which allows fields to be omitted from list/detail form of resources.
 * Anton V. Yanchenko (simplylizz) for reporting and providing a patch for a security vulnerability involving ``MultiAuthentication`` and ``ApiKeyAuthentication``
+* Cristiano Lopes (cristiano2lopes) for minor bug fix in feature that allows fields to be omitted from list/detail form of resources.
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
