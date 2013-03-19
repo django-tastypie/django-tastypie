@@ -32,12 +32,12 @@ setup(
     },
     zip_safe=False,
     requires=[
-        'rose>=1.0.0',
+        'rose(>=1.0.0)',
         'mimeparse',
         'dateutil(>=1.5, !=2.0)',
     ],
     install_requires=[
-        'rose>=1.0.0',
+        'rose >= 1.0',
         'mimeparse',
         'python_dateutil >= 1.5, != 2.0',
     ],
