@@ -41,8 +41,8 @@ project = u'Tastypie'
 copyright = u'2010-2013, Daniel Lindsley, Cody Soyland, Matt Croydon, Josh Bohde & Issac Kelly'
 
 # TASTYPIE SPECIFIC
-import versiontools as vt
-RELEASE_VERSION = vt.load_version('../VERSION')
+import rose
+RELEASE_VERSION = rose.load_version('../VERSION')
 SHORT_VERSION = RELEASE_VERSION.split('-')[0]
 
 # The version info for the project you're documenting, acts as replacement for
