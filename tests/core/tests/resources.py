@@ -3,6 +3,7 @@ import copy
 import datetime
 from decimal import Decimal
 import django
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -13,6 +14,9 @@ from django import forms
 from django.http import HttpRequest, QueryDict, Http404
 from django.test import TestCase
 from django.utils import simplejson as json
+
+from mock import patch
+
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
 from tastypie.bundle import Bundle
@@ -101,6 +105,9 @@ class BasicResource(Resource):
     def hydrate_date_joined(self, bundle):
         bundle.obj.date_joined = bundle.data['date_joined']
         return bundle
+
+    def get_list(self, request, **kwargs):
+        raise NotImplementedError
 
 
 class AnotherBasicResource(BasicResource):
@@ -1249,6 +1256,16 @@ class ModelResourceTestCase(TestCase):
         )
         self.note_1.subjects.add(self.subject_1)
         self.note_1.subjects.add(self.subject_2)
+
+    @patch('django.core.signals.got_request_exception.send')
+    @patch('tastypie.resources.ModelResource.obj_get_list', side_effect=IOError)
+    def test_exception_handling(self, obj_get_list_mock, send_signal_mock):
+        request = HttpRequest()
+        request.method = 'GET'
+        resource = NoteResource()
+        res = resource.wrap_view('dispatch_list')(request)
+        self.assertTrue(obj_get_list_mock.called, msg="Test invalid: obj_get_list should have been dispatched")
+        self.assertTrue(send_signal_mock.called, msg="got_request_exception was not called after an error")
 
     def test_init(self):
         # Very minimal & stock.

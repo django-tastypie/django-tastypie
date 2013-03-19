@@ -38,6 +38,7 @@ setup(
         'mimeparse',
         'python_dateutil >= 1.5, != 2.0',
     ],
+    tests_require=['mock'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
