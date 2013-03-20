@@ -100,14 +100,15 @@ handle the children::
     class ParentResource(ModelResource):
         children = fields.ToManyField(ChildResource, 'children')
 
-        def prepend_urls(self):
+        def override_urls(self):
             return [
                 url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/children%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_children'), name="api_get_children"),
             ]
 
         def get_children(self, request, **kwargs):
+            basic_bundle = self.build_bundle(request=request)
             try:
-                obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
+                obj = self.cached_obj_get(bundle=basic_bundle, **self.remove_api_resource_names(kwargs))
             except ObjectDoesNotExist:
                 return HttpGone()
             except MultipleObjectsReturned:
