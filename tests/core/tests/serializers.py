@@ -1,13 +1,25 @@
 # -*- coding: utf-8 -*-
 import datetime
+import yaml
 from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
+from tastypie.bundle import Bundle
 from tastypie import fields
+from tastypie.exceptions import BadRequest
 from tastypie.serializers import Serializer
 from tastypie.resources import ModelResource
 from core.models import Note
+
+try:
+    import biplist
+except ImportError:
+    biplist = None
+
+
+class UnsafeObject(object):
+    pass
 
 
 class NoteResource(ModelResource):
@@ -35,9 +47,9 @@ class AnotherNoteResource(ModelResource):
 class SerializerTestCase(TestCase):
     def test_init(self):
         serializer_1 = Serializer()
-        self.assertEqual(serializer_1.formats, ['json', 'jsonp', 'xml', 'yaml', 'html', 'plist'])
+        self.assertEqual(serializer_1.formats, ['json', 'xml', 'yaml', 'html', 'plist'])
         self.assertEqual(serializer_1.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
-        self.assertEqual(serializer_1.supported_formats, ['application/json', 'text/javascript', 'application/xml', 'text/yaml', 'text/html', 'application/x-plist'])
+        self.assertEqual(serializer_1.supported_formats, ['application/json', 'application/xml', 'text/yaml', 'text/html', 'application/x-plist'])
 
         serializer_2 = Serializer(formats=['json', 'xml'])
         self.assertEqual(serializer_2.formats, ['json', 'xml'])
@@ -55,6 +67,34 @@ class SerializerTestCase(TestCase):
         self.assertEqual(serializer_4.supported_formats, ['application/x-plist', 'application/json'])
 
         self.assertRaises(ImproperlyConfigured, Serializer, formats=['json', 'xml'], content_types={'json': 'text/json'})
+
+    def test_default_formats_setting(self):
+        # When we drop support for Django 1.3 this boilerplate can be replaced with
+        # a simple django.test.utils.override_settings decorator:
+
+        old_formats = getattr(settings, 'TASTYPIE_DEFAULT_FORMATS', None)
+
+        try:
+            # Confirm that the setting will override the default values:
+            settings.TASTYPIE_DEFAULT_FORMATS = ('json', 'xml')
+            s = Serializer()
+            self.assertItemsEqual(s.formats, ['json', 'xml'])
+            self.assertItemsEqual(s.supported_formats, ['application/json', 'application/xml'])
+            self.assertDictEqual(s.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
+
+            # Confirm that subclasses which set their own formats list won't be overriden:
+            class JSONSerializer(Serializer):
+                formats = ['json']
+
+            js = JSONSerializer()
+            self.assertItemsEqual(js.formats, ['json'])
+            self.assertItemsEqual(js.supported_formats, ['application/json'])
+
+        finally:
+            if old_formats is None:
+                del settings.TASTYPIE_DEFAULT_FORMATS
+            else:
+                settings.TASTYPIE_DEFAULT_FORMATS = old_formats
 
     def get_sample1(self):
         return {
@@ -193,6 +233,14 @@ class SerializerTestCase(TestCase):
         data = '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><somelist type="list"><value>hello</value><value type="integer">1</value><value type="null"/></somelist><somehash type="hash"><pi type="float">3.14</pi><foo>bar</foo></somehash><false type="boolean">False</false><true type="boolean">True</true><somestring>hello</somestring></request>'
         self.assertEqual(serializer.from_xml(data), self.get_sample2())
 
+    def test_malformed_xml(self):
+        serializer = Serializer()
+        data = '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><somelist type="list"><valueNO CARRIER'
+        self.assertRaises(BadRequest, serializer.from_xml, data)
+
+        data = '<?xml version=\'1.0\' encoding=\'ascii\'?>\n<request><snowman>☃</snowman></request>'
+        self.assertRaises(BadRequest, serializer.from_xml, data)
+
     def test_to_json(self):
         serializer = Serializer()
 
@@ -233,19 +281,60 @@ class SerializerTestCase(TestCase):
         unserialized = serializer.from_yaml(serialized)
         self.assertEqual(sample_data, unserialized)
 
+    def test_unsafe_yaml(self):
+        serializer = Serializer()
+        evil_data = UnsafeObject()
+        serialized = yaml.dump(evil_data)
+        self.assertRaises(yaml.constructor.ConstructorError,
+                          serializer.from_yaml,
+                          serialized)
+
+    def test_unsafe_xml(self):
+        """
+        Entity expansion can be used to cause large memory usage after
+        deserialization for little memory usage from the attacker.
+        See https://pypi.python.org/pypi/defusedxml for more information.
+        """
+        serializer = Serializer()
+        data = """<!DOCTYPE bomb [<!ENTITY a "evil chars">]>
+        <bomb>&a;</bomb>
+        """
+        self.assertRaises(BadRequest, serializer.from_xml, data)
+
     def test_to_jsonp(self):
         serializer = Serializer()
 
         sample_1 = self.get_sample1()
         options = {'callback': 'myCallback'}
+        serialized = serializer.to_jsonp(sample_1, options=options)
+        serialized_json = serializer.to_json(sample_1)
+        self.assertEqual('myCallback(%s)' % serialized_json,
+                         serialized)
+
+    def test_invalid_jsonp_characters(self):
+        """
+        The newline characters \u2028 and \u2029 need to be escaped
+        in JSONP.
+        """
+        serializer = Serializer()
+
+        jsonp = serializer.to_jsonp({'foo': u'Hello \u2028\u2029world!'},
+                                    {'callback': 'callback'})
+        self.assertEqual(jsonp, u'callback({"foo": "Hello \\u2028\\u2029world!"})')
 
     def test_to_plist(self):
+        if not biplist:
+            return
+
         serializer = Serializer()
 
         sample_1 = self.get_sample1()
         self.assertEqual(serializer.to_plist(sample_1), 'bplist00bybiplist1.0\x00\xd4\x01\x02\x03\x04\x05\x06\x07\x08WsnowmanSageTname[date_joineda&\x03\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1e&*/;>@M\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\t\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00X')
 
     def test_from_plist(self):
+        if not biplist:
+            return
+
         serializer = Serializer()
 
         sample_1 = serializer.from_plist('bplist00bybiplist1.0\x00\xd4\x01\x02\x03\x04\x05\x06\x07\x08WsnowmanSageTname[date_joineda&\x03\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1e&*/;>@M\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\t\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00X')
@@ -261,18 +350,19 @@ class ResourceSerializationTestCase(TestCase):
     def setUp(self):
         super(ResourceSerializationTestCase, self).setUp()
         self.resource = NoteResource()
-        self.obj_list = [self.resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.resource.obj_get_list()]
+        base_bundle = Bundle()
+        self.obj_list = [self.resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.resource.obj_get_list(base_bundle)]
         self.another_resource = AnotherNoteResource()
-        self.another_obj_list = [self.another_resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.another_resource.obj_get_list()]
+        self.another_obj_list = [self.another_resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.another_resource.obj_get_list(base_bundle)]
 
     def test_to_xml_multirepr(self):
         serializer = Serializer()
-        self.assertEqual(serializer.to_xml(self.obj_list), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<objects><object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id>1</id><resource_uri></resource_uri></object><object><updated>2010-03-31T20:05:00</updated><created>2010-03-31T20:05:00</created><title>Another Post</title><is_active type="boolean">True</is_active><slug>another-post</slug><content>The dog ate my cat today. He looks seriously uncomfortable.</content><id>2</id><resource_uri></resource_uri></object><object><updated>2010-04-01T20:05:00</updated><created>2010-04-01T20:05:00</created><title>Recent Volcanic Activity.</title><is_active type="boolean">True</is_active><slug>recent-volcanic-activity</slug><content>My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.</content><id>4</id><resource_uri></resource_uri></object><object><updated>2010-04-02T10:05:00</updated><created>2010-04-02T10:05:00</created><title>Granny\'s Gone</title><is_active type="boolean">True</is_active><slug>grannys-gone</slug><content>Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!</content><id>6</id><resource_uri></resource_uri></object></objects>')
+        self.assertEqual(serializer.to_xml(self.obj_list), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<objects><object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id type="integer">1</id><resource_uri></resource_uri></object><object><updated>2010-03-31T20:05:00</updated><created>2010-03-31T20:05:00</created><title>Another Post</title><is_active type="boolean">True</is_active><slug>another-post</slug><content>The dog ate my cat today. He looks seriously uncomfortable.</content><id type="integer">2</id><resource_uri></resource_uri></object><object><updated>2010-04-01T20:05:00</updated><created>2010-04-01T20:05:00</created><title>Recent Volcanic Activity.</title><is_active type="boolean">True</is_active><slug>recent-volcanic-activity</slug><content>My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.</content><id type="integer">4</id><resource_uri></resource_uri></object><object><updated>2010-04-02T10:05:00</updated><created>2010-04-02T10:05:00</created><title>Granny\'s Gone</title><is_active type="boolean">True</is_active><slug>grannys-gone</slug><content>Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!</content><id type="integer">6</id><resource_uri></resource_uri></object></objects>')
 
     def test_to_xml_single(self):
         serializer = Serializer()
         resource = self.obj_list[0]
-        self.assertEqual(serializer.to_xml(resource), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id>1</id><resource_uri></resource_uri></object>')
+        self.assertEqual(serializer.to_xml(resource), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id type="integer">1</id><resource_uri></resource_uri></object>')
 
     def test_to_xml_nested(self):
         serializer = Serializer()
@@ -283,21 +373,21 @@ class ResourceSerializationTestCase(TestCase):
                 'object': resource,
             }
         }
-        self.assertEqual(serializer.to_xml(data), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><stuff type="hash"><foo>bar</foo><object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id>1</id><resource_uri></resource_uri></object></stuff></response>')
+        self.assertEqual(serializer.to_xml(data), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><stuff type="hash"><foo>bar</foo><object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id type="integer">1</id><resource_uri></resource_uri></object></stuff></response>')
 
     def test_to_json_multirepr(self):
         serializer = Serializer()
-        self.assertEqual(serializer.to_json(self.obj_list), '[{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": "2", "is_active": true, "resource_uri": "", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": "4", "is_active": true, "resource_uri": "", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": "6", "is_active": true, "resource_uri": "", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]')
+        self.assertEqual(serializer.to_json(self.obj_list), '[{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": 6, "is_active": true, "resource_uri": "", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]')
 
     def test_to_json_single(self):
         serializer = Serializer()
         resource = self.obj_list[0]
-        self.assertEqual(serializer.to_json(resource), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
+        self.assertEqual(serializer.to_json(resource), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
 
     def test_to_json_decimal_list_dict(self):
         serializer = Serializer()
         resource = self.another_obj_list[0]
-        self.assertEqual(serializer.to_json(resource), '{"aliases": ["Mr. Smith", "John Doe"], "content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "meta": {"threat": "high"}, "owed": "102.57", "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
+        self.assertEqual(serializer.to_json(resource), '{"aliases": ["Mr. Smith", "John Doe"], "content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "meta": {"threat": "high"}, "owed": "102.57", "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
 
     def test_to_json_nested(self):
         serializer = Serializer()
@@ -308,7 +398,7 @@ class ResourceSerializationTestCase(TestCase):
                 'object': resource,
             }
         }
-        self.assertEqual(serializer.to_json(data), '{"stuff": {"foo": "bar", "object": {"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": "1", "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}}}')
+        self.assertEqual(serializer.to_json(data), '{"stuff": {"foo": "bar", "object": {"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}}}')
 
 
 class StubbedSerializer(Serializer):

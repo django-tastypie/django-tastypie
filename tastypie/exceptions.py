@@ -25,6 +25,16 @@ class NotFound(TastypieError):
     pass
 
 
+class Unauthorized(TastypieError):
+    """
+    Raised when the request object is not accessible to the user.
+
+    This is different than the ``tastypie.http.HttpUnauthorized`` & is handled
+    differently internally.
+    """
+    pass
+
+
 class ApiFieldError(TastypieError):
     """
     Raised when there is a configuration error with a ``ApiField``.
@@ -61,7 +71,7 @@ class InvalidFilterError(BadRequest):
     pass
 
 
-class InvalidSortError(TastypieError):
+class InvalidSortError(BadRequest):
     """
     Raised when the end user attempts to sort on a field that has not be
     explicitly allowed.
@@ -80,7 +90,11 @@ class ImmediateHttpResponse(TastypieError):
         * for throttling
 
     """
-    response = HttpResponse("Nothing provided.")
+    _response = HttpResponse("Nothing provided.")
 
     def __init__(self, response):
-        self.response = response
+        self._response = response
+
+    @property
+    def response(self):
+        return self._response

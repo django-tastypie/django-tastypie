@@ -21,6 +21,19 @@ A plugin (actually two different ones that closely mirror each other) that
 nicely reformats JSON data in the browser.
 
 
+Extensions
+==========
+
+Tastypie-msgpack
+----------------
+
+https://github.com/stephenmcd/tastypie-msgpack
+
+Adds MsgPack_ support to Tastypie's serializer.
+
+.. _MsgPack: http://msgpack.org/
+
+
 Python
 ======
 
@@ -31,6 +44,29 @@ http://slumber.in/
 
 Slumber is a small Python library that makes it easy to access & work with
 APIs. It works for many others, but works especially well with Tastypie.
+
+Hammock
+-------
+
+https://github.com/kadirpekel/hammock
+
+Hammock is a fun module lets you deal with rest APIs by converting them into dead simple programmatic APIs.
+It uses popular ``requests`` module in backyard to provide full-fledged rest experience.
+
+Here is what it looks like::
+
+    >>> import hammock
+    >>> api = hammock.Hammock('http://localhost:8000')
+    >>> api.users('foo').posts('bar').comments.GET()
+    <Response [200]>
+
+drest
+-----
+
+http://drest.rtfd.org/
+
+drest is another small Python library. It focuses on extensibility & can also
+work with many different API, with an emphasis on Tastypie.
 
 
 json.tool

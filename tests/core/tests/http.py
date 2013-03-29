@@ -32,5 +32,7 @@ class HttpTestCase(TestCase):
         self.assertEqual(conflict.status_code, 409)
         gone = HttpGone()
         self.assertEqual(gone.status_code, 410)
+        toomanyrequests = HttpTooManyRequests()
+        self.assertEqual(toomanyrequests.status_code, 429)
         not_implemented = HttpNotImplemented()
         self.assertEqual(not_implemented.status_code, 501)
