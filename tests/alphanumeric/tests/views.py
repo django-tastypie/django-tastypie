@@ -1,9 +1,20 @@
+import django
 from django.http import HttpRequest
 from django.test import TestCase
-from django.utils import simplejson as json
+try:
+    import json
+except ImportError: # < Python 2.6
+    from django.utils import simplejson as json
 
 
 class ViewsTestCase(TestCase):
+    def setUp(self):
+        if django.VERSION >= (1, 4):
+            self.body_attr = "body"
+        else:
+            self.body_attr = "raw_post_data"
+        super(ViewsTestCase, self).setUp()
+
     def test_gets(self):
         resp = self.client.get('/api/v1/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
@@ -77,7 +88,7 @@ class ViewsTestCase(TestCase):
     def test_posts(self):
         request = HttpRequest()
         post_data = '{"name": "Ball", "artnr": "12345"}'
-        request._raw_post_data = post_data
+        setattr(request, "_" + self.body_attr, post_data)
         
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
@@ -93,7 +104,7 @@ class ViewsTestCase(TestCase):
         # With appended characters
         request = HttpRequest()
         post_data = '{"name": "Ball 2", "artnr": "12345ABC"}'
-        request._raw_post_data = post_data
+        setattr(request, "_" + self.body_attr, post_data)
         
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
@@ -109,7 +120,7 @@ class ViewsTestCase(TestCase):
         # With prepended characters
         request = HttpRequest()
         post_data = '{"name": "Ball 3", "artnr": "WK12345"}'
-        request._raw_post_data = post_data
+        setattr(request, "_" + self.body_attr, post_data)
         
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
@@ -125,7 +136,7 @@ class ViewsTestCase(TestCase):
         # Now Primary Keys with Slashes
         request = HttpRequest()
         post_data = '{"name": "Bigwheel", "artnr": "76123/03"}'
-        request._raw_post_data = post_data
+        setattr(request, "_" + self.body_attr, post_data)
         
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
@@ -140,7 +151,7 @@ class ViewsTestCase(TestCase):
         
         request = HttpRequest()
         post_data = '{"name": "Trampolin", "artnr": "WS65150/02"}'
-        request._raw_post_data = post_data
+        setattr(request, "_" + self.body_attr, post_data)
         
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)

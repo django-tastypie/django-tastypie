@@ -3,6 +3,8 @@ import copy
 import datetime
 from decimal import Decimal
 import django
+import json
+from mock import patch
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -13,9 +15,6 @@ from django.core.urlresolvers import reverse
 from django import forms
 from django.http import HttpRequest, QueryDict, Http404
 from django.test import TestCase
-from django.utils import simplejson as json
-
-from mock import patch
 
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
@@ -1256,6 +1255,11 @@ class ModelResourceTestCase(TestCase):
         )
         self.note_1.subjects.add(self.subject_1)
         self.note_1.subjects.add(self.subject_2)
+        
+        if django.VERSION >= (1, 4):
+            self.body_attr = "body"
+        else:
+            self.body_attr = "raw_post_data"
 
     @patch('django.core.signals.got_request_exception.send')
     @patch('tastypie.resources.ModelResource.obj_get_list', side_effect=IOError)
@@ -2013,7 +2017,7 @@ class ModelResourceTestCase(TestCase):
         request.method = 'PUT'
 
         self.assertEqual(Note.objects.count(), 6)
-        request.raw_post_data = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}'
+        setattr(request, self.body_attr, '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}')
 
         resp = resource.put_list(request)
         self.assertEqual(resp.status_code, 204)
@@ -2034,7 +2038,7 @@ class ModelResourceTestCase(TestCase):
         request.method = 'PUT'
 
         self.assertEqual(Note.objects.count(), 6)
-        request.raw_post_data = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}'
+        setattr(request, self.body_attr, '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}')
 
         always_resource = AlwaysDataNoteResourceUseIn()
         resp = always_resource.put_list(request)
@@ -2051,7 +2055,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
+        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}')
 
         resp = resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 201)
@@ -2059,7 +2063,7 @@ class ModelResourceTestCase(TestCase):
         new_note = Note.objects.get(slug='cat-is-back')
         self.assertEqual(new_note.content, "The cat is back. The dog coughed him up out back.")
 
-        request.raw_post_data = '{"content": "The cat is gone again. I think it was the rabbits that ate him this time.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Gone", "updated": "2010-04-03 20:05:00"}'
+        setattr(request, self.body_attr, '{"content": "The cat is gone again. I think it was the rabbits that ate him this time.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Gone", "updated": "2010-04-03 20:05:00"}')
 
         resp = resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 204)
@@ -2088,7 +2092,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": null}'
+        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": null}')
 
         resp = nullable_resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 204)
@@ -2104,7 +2108,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
+        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}')
 
         always_resource = AlwaysDataNoteResourceUseIn()
         resp = always_resource.put_detail(request, pk=new_note.pk)
@@ -2122,7 +2126,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.raw_post_data = '{"date": "2012-09-07", "username": "WAT", "message": "hello"}'
+        setattr(request, self.body_attr, '{"date": "2012-09-07", "username": "WAT", "message": "hello"}')
 
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, username="maraujop")
@@ -2134,7 +2138,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.raw_post_data = '{"date": "WAT", "username": "maraujop", "message": "hello"}'
+        setattr(request, self.body_attr, '{"date": "WAT", "username": "maraujop", "message": "hello"}')
 
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, date="2012-09-07")
@@ -2146,7 +2150,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.raw_post_data = '{"date": "2012-09-07", "username": "maraujop", "message": "WAT"}'
+        setattr(request, self.body_attr, '{"date": "2012-09-07", "username": "maraujop", "message": "WAT"}')
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, message="HELLO")
 
@@ -2160,7 +2164,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
+        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}')
 
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
