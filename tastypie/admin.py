@@ -9,5 +9,11 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
         model = ApiKey
         extra = 0
 
-    # Also.
-    admin.site.register(ApiKey)
+    ABSTRACT_APIKEY = getattr(settings, 'TASTYPIE_ABSTRACT_APIKEY', False)
+
+    if ABSTRACT_APIKEY and not isinstance(ABSTRACT_APIKEY, bool):
+        raise TypeError("'TASTYPIE_ABSTRACT_APIKEY' must be either 'True' "
+                        "or 'False'.")
+            
+    if not ABSTRACT_APIKEY:
+        admin.site.register(ApiKey)
