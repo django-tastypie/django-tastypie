@@ -105,7 +105,15 @@ objects. Hooking it up looks like::
   ``Authorization`` header. See `this post`_ for details (even though it
   only mentions Basic auth).
 
+.. note::
+
+   In some cases it may be useful to make the ``ApiKey`` model an `abstract
+   base class`_. To enable this, set ``settings.TASTYPIE_ABSTRACT_APIKEY`` to
+   ``True``. See `the documentation for this setting`_ for more information.
+
 .. _`this post`: http://www.nerdydork.com/basic-authentication-on-mod_wsgi.html
+.. _`abstract base class`: https://docs.djangoproject.com/en/dev/topics/db/models/#abstract-base-classes
+.. _`the documentation for this setting`: http://django-tastypie.readthedocs.org/en/latest/settings.html#tastypie-abstract-apikey
 
 ``SessionAuthentication``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
