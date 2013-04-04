@@ -4,6 +4,7 @@ from decimal import Decimal
 import re
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.utils import datetime_safe, importlib
+from django.core.urlresolvers import resolve
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.utils import dict_strip_unicode_keys, make_aware
@@ -25,7 +26,7 @@ class ApiField(object):
     dehydrated_type = 'string'
     help_text = ''
 
-    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, unique=False, help_text=None):
+    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, unique=False, help_text=None, use_in='all'):
         """
         Sets up the field. This is generally called when the containing
         ``Resource`` is initialized.
@@ -54,6 +55,14 @@ class ApiField(object):
         Optionally accepts ``help_text``, which lets you provide a
         human-readable description of the field exposed at the schema level.
         Defaults to the per-Field definition.
+
+        Optionally accepts ``use_in``. This may be one of ``list``, ``detail``
+        ``all`` or a callable which accepts a ``bundle`` and returns
+        ``True`` or ``False``. Indicates wheather this field will be included
+        during dehydration of a list of objects or a single object. If ``use_in``
+        is a callable, and returns ``True``, the field will be included during
+        dehydration.
+        Defaults to ``all``.
         """
         # Track what the index thinks this field is called.
         self.instance_name = None
@@ -65,6 +74,10 @@ class ApiField(object):
         self.readonly = readonly
         self.value = None
         self.unique = unique
+        self.use_in = 'all'
+
+        if use_in in ['all', 'detail', 'list'] or callable(use_in):
+            self.use_in = use_in
 
         if help_text:
             self.help_text = help_text
@@ -247,6 +260,14 @@ class DecimalField(ApiField):
 
         return Decimal(value)
 
+    def hydrate(self, bundle):
+        value = super(DecimalField, self).hydrate(bundle)
+
+        if value and not isinstance(value, Decimal):
+            value = Decimal(value)
+
+        return value
+
 
 class BooleanField(ApiField):
     """
@@ -386,7 +407,7 @@ class RelatedField(ApiField):
     self_referential = False
     help_text = 'A related resource. Can be either a URI or set of nested resource data.'
 
-    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, orm_extra={}, ordering=['pk']):
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, use_in='all', full_list=True, full_detail=True, orm_extra={}, ordering=['pk']):
         """
         Builds the field and prepares it to access to related data.
 
@@ -421,6 +442,26 @@ class RelatedField(ApiField):
         Optionally accepts ``help_text``, which lets you provide a
         human-readable description of the field exposed at the schema level.
         Defaults to the per-Field definition.
+
+        Optionally accepts ``use_in``. This may be one of ``list``, ``detail``
+        ``all`` or a callable which accepts a ``bundle`` and returns
+        ``True`` or ``False``. Indicates wheather this field will be included
+        during dehydration of a list of objects or a single object. If ``use_in``
+        is a callable, and returns ``True``, the field will be included during
+        dehydration.
+        Defaults to ``all``.
+        
+        Optionally accepts a ``full_list``, which indicated whether or not
+        data should be fully dehydrated when the request is for a list of
+        resources. Accepts ``True``, ``False`` or a callable that accepts
+        a bundle and returns ``True`` or ``False``. Depends on ``full``
+        being ``True``. Defaults to ``True``.
+
+        Optionally accepts a ``full_detail``, which indicated whether or not
+        data should be fully dehydrated when then request is for a single
+        resource. Accepts ``True``, ``False`` or a callable that accepts a
+        bundle and returns ``True`` or ``False``.Depends on ``full``
+        being ``True``. Defaults to ``True``.
         """
         self.instance_name = None
         self._resource = None
@@ -438,6 +479,12 @@ class RelatedField(ApiField):
         self._to_class = None
         self.orm_extra = orm_extra
         self.ordering = ordering
+        self.use_in = 'all'
+        self.full_list = full_list
+        self.full_detail = full_detail
+
+        if use_in in ['all', 'detail', 'list'] or callable(use_in):
+            self.use_in = use_in
 
         if self.to == 'self':
             self.self_referential = True
@@ -505,12 +552,18 @@ class RelatedField(ApiField):
         Based on the ``full_resource``, returns either the endpoint or the data
         from ``full_dehydrate`` for the related resource.
         """
-        if not self.full:
+        should_dehydrate_full_resource = self.should_full_dehydrate(bundle)
+
+        if not should_dehydrate_full_resource:
             # Be a good netizen.
             return related_resource.get_resource_uri(bundle)
         else:
             # ZOMG extra data and big payloads.
-            bundle = related_resource.build_bundle(obj=related_resource.instance, request=bundle.request)
+            bundle = related_resource.build_bundle(
+                obj=related_resource.instance,
+                request=bundle.request,
+                objects_saved=bundle.objects_saved
+            )
             return related_resource.full_dehydrate(bundle)
 
     def resource_from_uri(self, fk_resource, uri, request=None, related_obj=None, related_name=None):
@@ -520,7 +573,10 @@ class RelatedField(ApiField):
         """
         try:
             obj = fk_resource.get_via_uri(uri, request=request)
-            bundle = fk_resource.build_bundle(obj=obj, request=request)
+            bundle = fk_resource.build_bundle(
+                obj=obj,
+                request=request
+            )
             return fk_resource.full_dehydrate(bundle)
         except ObjectDoesNotExist:
             raise ApiFieldError("Could not find the provided object via resource URI '%s'." % uri)
@@ -532,7 +588,10 @@ class RelatedField(ApiField):
         """
         # Try to hydrate the data provided.
         data = dict_strip_unicode_keys(data)
-        fk_bundle = fk_resource.build_bundle(data=data, request=request)
+        fk_bundle = fk_resource.build_bundle(
+            data=data,
+            request=request
+        )
 
         if related_obj:
             fk_bundle.related_obj = related_obj
@@ -546,17 +605,18 @@ class RelatedField(ApiField):
 
         try:
             return fk_resource.obj_update(fk_bundle, skip_errors=True, **data)
-        except NotFound:
+        except (NotFound, TypeError):
             try:
                 # Attempt lookup by primary key
                 lookup_kwargs = dict((k, v) for k, v in data.iteritems() if getattr(fk_resource, k).unique)
 
                 if not lookup_kwargs:
                     raise NotFound()
+
                 return fk_resource.obj_update(fk_bundle, skip_errors=True, **lookup_kwargs)
             except NotFound:
                 fk_bundle = fk_resource.full_hydrate(fk_bundle)
-                fk_resource.is_valid(fk_bundle, request)
+                fk_resource.is_valid(fk_bundle)
                 return fk_bundle
         except MultipleObjectsReturned:
             return fk_resource.full_hydrate(fk_bundle)
@@ -566,7 +626,10 @@ class RelatedField(ApiField):
         Given an object with a ``pk`` attribute, the related resource
         is attempted to be loaded via that PK.
         """
-        bundle = fk_resource.build_bundle(obj=obj, request=request)
+        bundle = fk_resource.build_bundle(
+            obj=obj,
+            request=request
+        )
         return fk_resource.full_dehydrate(bundle)
 
     def build_related_resource(self, value, request=None, related_obj=None, related_name=None):
@@ -584,7 +647,10 @@ class RelatedField(ApiField):
             'related_name': related_name,
         }
 
-        if isinstance(value, basestring):
+        if isinstance(value, Bundle):
+            # Already hydrated, probably nested bundles. Just return.
+            return value
+        elif isinstance(value, basestring):
             # We got a URI. Load the object and assign it.
             return self.resource_from_uri(self.fk_resource, value, **kwargs)
         elif isinstance(value, Bundle):
@@ -601,6 +667,23 @@ class RelatedField(ApiField):
         else:
             raise ApiFieldError("The '%s' field was given data that was not a URI, not a dictionary-alike and does not have a 'pk' attribute: %s." % (self.instance_name, value))
 
+    def should_full_dehydrate(self, bundle):
+        """
+        Based on the ``full``, ``list_full`` and ``detail_full`` returns ``True`` or ``False``
+        indicating weather the resource should be fully dehydrated.
+        """
+        should_dehydrate_full_resource = False
+        if self.full:
+            is_details_view = resolve(bundle.request.path).url_name == "api_dispatch_detail"
+            if is_details_view:
+                if (not callable(self.full_detail) and self.full_detail) or (callable(self.full_detail) and self.full_detail(bundle)):
+                    should_dehydrate_full_resource = True
+            else:
+                if (not callable(self.full_list) and self.full_list) or (callable(self.full_list) and self.full_list(bundle)):
+                    should_dehydrate_full_resource = True
+
+        return should_dehydrate_full_resource
+
 
 class ToOneField(RelatedField):
     """
@@ -612,30 +695,36 @@ class ToOneField(RelatedField):
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
                  null=False, blank=False, readonly=False, full=False,
-                 unique=False, help_text=None):
+                 unique=False, help_text=None, use_in='all', full_list=True, full_detail=True):
         super(ToOneField, self).__init__(
             to, attribute, related_name=related_name, default=default,
             null=null, blank=blank, readonly=readonly, full=full,
-            unique=unique, help_text=help_text
+            unique=unique, help_text=help_text, use_in=use_in,
+            full_list=full_list, full_detail=full_detail
         )
         self.fk_resource = None
 
     def dehydrate(self, bundle):
-        attrs = self.attribute.split('__')
-        foreign_obj = bundle.obj
+        foreign_obj = None
 
-        for attr in attrs:
-            previous_obj = foreign_obj
-            try:
-                foreign_obj = getattr(foreign_obj, attr, None)
-            except ObjectDoesNotExist:
-                foreign_obj = None
+        if isinstance(self.attribute, basestring):
+            attrs = self.attribute.split('__')
+            foreign_obj = bundle.obj
 
-            if not foreign_obj:
-                if not self.null:
-                    raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
+            for attr in attrs:
+                previous_obj = foreign_obj
+                try:
+                    foreign_obj = getattr(foreign_obj, attr, None)
+                except ObjectDoesNotExist:
+                    foreign_obj = None
+        elif callable(self.attribute):
+            foreign_obj = self.attribute(bundle)
 
-                return None
+        if not foreign_obj:
+            if not self.null:
+                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
+
+            return None
 
         self.fk_resource = self.get_related_resource(foreign_obj)
         fk_bundle = Bundle(obj=foreign_obj, request=bundle.request)
@@ -678,11 +767,14 @@ class ToManyField(RelatedField):
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
                  null=False, blank=False, readonly=False, full=False,
-                 unique=False, help_text=None, orm_extra={}, ordering=['pk']):
+                 unique=False, help_text=None, use_in='all', full_list=True, full_detail=True,
+                 orm_extra={}, ordering=['pk']):
         super(ToManyField, self).__init__(
             to, attribute, related_name=related_name, default=default,
             null=null, blank=blank, readonly=readonly, full=full,
-            unique=unique, help_text=help_text, orm_extra=orm_extra, ordering=ordering
+            unique=unique, help_text=help_text, use_in=use_in,
+            full_list=full_list, full_detail=full_detail,
+            orm_extra=orm_extra, ordering=ordering
         )
         self.m2m_bundles = []
 

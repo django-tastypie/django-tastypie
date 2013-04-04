@@ -1,14 +1,19 @@
+import django
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.http import HttpRequest
 from django.test import TestCase
-from django.utils import simplejson as json
+try:
+    import json
+except ImportError: # < Python 2.6
+    from django.utils import simplejson as json
+from django.core.urlresolvers import reverse
 from core.models import Note, MediaBit
+from core.tests.resources import HttpRequest
 from core.tests.mocks import MockRequest
 from tastypie import fields
-from related_resource.api.resources import FreshNoteResource, CategoryResource
+from related_resource.api.resources import FreshNoteResource, CategoryResource, PersonResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData
+from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address
 
 
 class RelatedResourceTest(TestCase):
@@ -17,13 +22,17 @@ class RelatedResourceTest(TestCase):
     def setUp(self):
         super(RelatedResourceTest, self).setUp()
         self.user = User.objects.create(username="testy_mctesterson")
+        if django.VERSION >= (1, 4):
+            self.body_attr = "body"
+        else:
+            self.body_attr = "raw_post_data"
 
     def test_cannot_access_user_resource(self):
         resource = api.canonical_resource_for('users')
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.raw_post_data = '{"username": "foobar"}'
+        setattr(request, self.body_attr, '{"username": "foobar"}')
         resp = resource.wrap_view('dispatch_detail')(request, pk=self.user.pk)
 
         self.assertEqual(resp.status_code, 405)
@@ -35,7 +44,7 @@ class RelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": null}'
+        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": null}')
 
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
@@ -44,7 +53,7 @@ class RelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-2", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": {"id": %s, "username": "foobar"}}' % self.user.id
+        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-2", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": {"id": %s, "username": "foobar"}}' % self.user.id)
 
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
@@ -60,6 +69,10 @@ class CategoryResourceTest(TestCase):
         self.parent_cat_2 = Category.objects.create(parent=None, name='Mom')
         self.child_cat_1 = Category.objects.create(parent=self.parent_cat_1, name='Son')
         self.child_cat_2 = Category.objects.create(parent=self.parent_cat_2, name='Daughter')
+        if django.VERSION >= (1, 4):
+            self.body_attr = "body"
+        else:
+            self.body_attr = "raw_post_data"
 
     def test_correct_relation(self):
         resource = api.canonical_resource_for('category')
@@ -86,7 +99,7 @@ class CategoryResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.raw_post_data = '{"parent": null, "name": "Son"}'
+        setattr(request, self.body_attr, '{"parent": null, "name": "Son"}')
 
         # Before the PUT, there should be a parent.
         self.assertEqual(Category.objects.get(pk=self.child_cat_1.pk).parent.pk, self.parent_cat_1.pk)
@@ -111,6 +124,11 @@ class ExplicitM2MResourceRegressionTest(TestCase):
 
         # Give each tag some extra data (the lookup of this data is what makes the test fail)
         self.extradata_1 = ExtraData.objects.create(tag=self.tag_1, name='additional')
+        
+        if django.VERSION >= (1, 4):
+            self.body_attr = "body"
+        else:
+            self.body_attr = "raw_post_data"
 
     def test_correct_setup(self):
         request = MockRequest()
@@ -132,6 +150,7 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         self.assertEqual(data['name'], 'exam')
 
         resource = api.canonical_resource_for('tag')
+        request.path = "/v1/tag/%(pk)s/" % {'pk': self.tag_1.pk}
         resp = resource.wrap_view('dispatch_detail')(request, pk=self.tag_1.pk)
         data = json.loads(resp.content)
         self.assertEqual(resp.status_code, 200)
@@ -146,7 +165,7 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        request.raw_post_data = '{"name": "school", "taggabletags": [ ]}'
+        setattr(request, self.body_attr, '{"name": "school", "taggabletags": [ ]}')
 
         # Prior to the addition of ``blank=True``, this would
         # fail badly.
@@ -166,6 +185,13 @@ class ExplicitM2MResourceRegressionTest(TestCase):
 
 class OneToManySetupTestCase(TestCase):
     urls = 'related_resource.api.urls'
+    
+    def setUp(self):
+        super(OneToManySetupTestCase, self).setUp()
+        if django.VERSION >= (1, 4):
+            self.body_attr = "body"
+        else:
+            self.body_attr = "raw_post_data"
 
     def test_one_to_many(self):
         # Sanity checks.
@@ -189,7 +215,7 @@ class OneToManySetupTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        request.raw_post_data = json.dumps(data)
+        setattr(request, self.body_attr, json.dumps(data))
 
         resp = fnr.post_list(request)
         self.assertEqual(resp.status_code, 201)
@@ -204,6 +230,15 @@ class FullCategoryResource(CategoryResource):
 
 
 class RelatedPatchTestCase(TestCase):
+    urls = 'related_resource.api.urls'
+    
+    def setUp(self):
+        super(RelatedPatchTestCase, self).setUp()
+        if django.VERSION >= (1, 4):
+            self.body_attr = "body"
+        else:
+            self.body_attr = "raw_post_data"
+
     def test_patch_to_one(self):
         resource = FullCategoryResource()
         cat1 = Category.objects.create(name='Dad')
@@ -212,15 +247,253 @@ class RelatedPatchTestCase(TestCase):
         request = HttpRequest()
         request.GET = {'format': 'json'}
         request.method = 'PATCH'
+        request.path = "/v1/category/%(pk)s/" % {'pk': cat2.pk}
         request._read_started = False
 
         data = {
             'name': 'Kid'
         }
 
-        request._raw_post_data = request._body = json.dumps(data)
+        setattr(request, "_" + self.body_attr, json.dumps(data))
         self.assertEqual(cat2.name, 'Child')
         resp = resource.patch_detail(request, pk=cat2.pk)
         self.assertEqual(resp.status_code, 202)
         cat2 = Category.objects.get(pk=2)
         self.assertEqual(cat2.name, 'Kid')
+
+
+class NestedRelatedResourceTest(TestCase):
+    urls = 'related_resource.api.urls'
+
+    def setUp(self):
+        super(NestedRelatedResourceTest, self).setUp()
+        if django.VERSION >= (1, 4):
+            self.body_attr = "body"
+        else:
+            self.body_attr = "raw_post_data"
+
+    def test_one_to_one(self):
+        """
+        Test a related ToOne resource with a nested full ToOne resource
+        """
+        self.assertEqual(Person.objects.count(), 0)
+        self.assertEqual(Company.objects.count(), 0)
+        self.assertEqual(Address.objects.count(), 0)
+
+        pr = PersonResource()
+
+        data = {
+            'name': 'Joan Rivers',
+            'company': {
+                'name': 'Yum Yum Pie Factory!',
+                'address': {
+                    'line': 'Somewhere, Utah'
+                }
+            }
+        }
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        setattr(request, self.body_attr, json.dumps(data))
+        resp = pr.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+
+        pk = Person.objects.all()[0].pk
+        request = MockRequest()
+        request.method = 'GET'
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
+        resp = pr.get_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 200)
+
+        person = json.loads(resp.content)
+        self.assertEqual(person['name'], 'Joan Rivers')
+
+        company = person['company']
+        self.assertEqual(company['name'], 'Yum Yum Pie Factory!')
+
+        address = company['address']
+        self.assertEqual(address['line'], 'Somewhere, Utah')
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
+        setattr(request, self.body_attr, resp.content)
+        resp = pr.put_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 204)
+
+    def test_one_to_many(self):
+        """
+        Test a related ToOne resource with a nested full ToMany resource
+        """
+        self.assertEqual(Person.objects.count(), 0)
+        self.assertEqual(Company.objects.count(), 0)
+        self.assertEqual(Product.objects.count(), 0)
+
+        pr = PersonResource()
+
+        data = {
+            'name': 'Joan Rivers',
+            'company': {
+                'name': 'Yum Yum Pie Factory!',
+                'products': [
+                    {
+                        'name': 'Tasty Pie'
+                    }
+                ]
+            }
+        }
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        setattr(request, self.body_attr, json.dumps(data))
+        resp = pr.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(Person.objects.count(), 1)
+        self.assertEqual(Company.objects.count(), 1)
+        self.assertEqual(Product.objects.count(), 1)
+
+        pk = Person.objects.all()[0].pk
+        request = MockRequest()
+        request.method = 'GET'
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
+        resp = pr.get_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 200)
+
+        person = json.loads(resp.content)
+        self.assertEqual(person['name'], 'Joan Rivers')
+
+        company = person['company']
+        self.assertEqual(company['name'], 'Yum Yum Pie Factory!')
+        self.assertEqual(len(company['products']), 1)
+
+        product = company['products'][0]
+        self.assertEqual(product['name'], 'Tasty Pie')
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
+        setattr(request, self.body_attr, json.dumps(person))
+        resp = pr.put_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 204)
+
+    def test_many_to_one(self):
+        """
+        Test a related ToMany resource with a nested full ToOne resource
+        """
+        self.assertEqual(Person.objects.count(), 0)
+        self.assertEqual(Dog.objects.count(), 0)
+        self.assertEqual(DogHouse.objects.count(), 0)
+
+        pr = PersonResource()
+
+        data = {
+            'name': 'Joan Rivers',
+            'dogs': [
+                {
+                    'name': 'Snoopy',
+                    'house': {
+                        'color': 'Red'
+                    }
+                }
+            ]
+        }
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        setattr(request, self.body_attr, json.dumps(data))
+        resp = pr.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(Person.objects.count(), 1)
+        self.assertEqual(Dog.objects.count(), 1)
+        self.assertEqual(DogHouse.objects.count(), 1)
+
+        pk = Person.objects.all()[0].pk
+        request = MockRequest()
+        request.method = 'GET'
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
+        resp = pr.get_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 200)
+
+        person = json.loads(resp.content)
+        self.assertEqual(person['name'], 'Joan Rivers')
+        self.assertEqual(len(person['dogs']), 1)
+
+        dog = person['dogs'][0]
+        self.assertEqual(dog['name'], 'Snoopy')
+
+        house = dog['house']
+        self.assertEqual(house['color'], 'Red')
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        setattr(request, self.body_attr, json.dumps(person))
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
+        resp = pr.put_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 204)
+
+    def test_many_to_many(self):
+        """
+        Test a related ToMany resource with a nested full ToMany resource
+        """
+        self.assertEqual(Person.objects.count(), 0)
+        self.assertEqual(Dog.objects.count(), 0)
+        self.assertEqual(Bone.objects.count(), 0)
+
+        pr = PersonResource()
+
+        data = {
+            'name': 'Joan Rivers',
+            'dogs': [
+                {
+                    'name': 'Snoopy',
+                    'bones': [
+                        {
+                            'color': 'white'
+                        }
+                    ]
+                }
+            ]
+        }
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.path = reverse('api_dispatch_list', kwargs={'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
+        setattr(request, self.body_attr, json.dumps(data))
+        resp = pr.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(Person.objects.count(), 1)
+        self.assertEqual(Dog.objects.count(), 1)
+        self.assertEqual(Bone.objects.count(), 1)
+
+        pk = Person.objects.all()[0].pk
+        request = MockRequest()
+        request.method = 'GET'
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
+        resp = pr.get_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 200)
+
+        person = json.loads(resp.content)
+        self.assertEqual(person['name'], 'Joan Rivers')
+        self.assertEqual(len(person['dogs']), 1)
+
+        dog = person['dogs'][0]
+        self.assertEqual(dog['name'], 'Snoopy')
+        self.assertEqual(len(dog['bones']), 1)
+
+        bone = dog['bones'][0]
+        self.assertEqual(bone['color'], 'white')
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        setattr(request, self.body_attr, json.dumps(person))
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
+        resp = pr.put_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 204)

@@ -104,46 +104,56 @@ demonstrating how one might go about implementing your own ``Cache``.
 HTTP Cache-Control
 ==================
 
-The HTTP protocol defines a ``Cache-Control`` header which can be used to tell
+The HTTP protocol defines a ``Cache-Control`` header, which can be used to tell
 clients and intermediaries who is allowed to cache a response and for how long.
 Mark Nottingham has a `general caching introduction`_ and the `Django cache
 documentation`_ describes how to set caching-related headers in your code. The
-range of possible options is beyond the scope of this documentation but it's
-important to know that by default tastypie will prevent responses from being
+range of possible options is beyond the scope of this documentation, but it's
+important to know that, by default, Tastypie will prevent responses from being
 cached to ensure that clients always receive current information.
 
 .. _general caching introduction: http://www.mnot.net/cache_docs/
-.. _Django cache documentation:
-    https://docs.djangoproject.com/en/dev/topics/cache/#controlling-cache-using-other-headers
+.. _Django cache documentation: https://docs.djangoproject.com/en/dev/topics/cache/#controlling-cache-using-other-headers
 
-To override the default ``no-cache`` response your ``Resource`` should ensure
-that ``create_response`` sets a ``Cache-Control`` value on the response, which
-causes tastypie not to generate the default header.
+To override the default ``no-cache`` response, your ``Resource`` should ensure
+that your ``cache`` class implements ``cache_control``. The default
+``SimpleCache`` does this by default. It uses the timeout passed to the
+initialization as the ``max-age`` and ``s-maxage``. By default, it does not
+claim to know if the results should be public or privately cached but this can
+be changed by passing either a ``public=True`` or a ``private=True`` to the
+initialization of the ``SimpleClass``.
 
-One way to do this involves a mixin class::
+Behind the scenes, the return value from the ``cache_control`` method is passed
+to the `cache_control`_ helper provided by Django. If you wish to add your own
+methods to it, you can do so by overloading the ``cache_control`` method and
+modifying the dictionary it returns.::
 
-    from django.utils.cache import patch_cache_control
+    from tastypie.cache import SimpleCache
 
-    class ClientCachedResource(object):
-        """Mixin class which sets Cache-Control headers on API responses
-           using a ``cache_control`` dictionary from the resource's Meta
-           class"""
+    class NoTransformCache(SimpleCache):
 
-        def create_response(self, request, data, **response_kwargs):
-            response = super(ClientCachedResource, self).create_response(request, data,
-                                                                         **response_kwargs)
+        def cache_control(self):
+            control = super(NoTransformCache, self).cache_control()
+            control.update({"no_transform": True})
+            return control
 
-            if (request.method == "GET" and response.status_code == 200
-                and hasattr(self.Meta, "cache_control")):
-
-                cache_control = self.Meta.cache_control.copy()
-                patch_cache_control(response, **cache_control)
-
-            return response
+.. _cache_control: https://docs.djangoproject.com/en/dev/topics/cache/?from=olddocs#controlling-cache-using-other-headers
 
 
-This can be added to your resources as desired to allow configurations::
+HTTP Vary
+=========
 
-    class RarelyUpdatedResource(ClientCachedResource, Resource):
+The HTTP protocol defines a ``Vary`` header, which can be used to tell clients
+and intermediaries on what headers your response varies. This allows clients to
+store a correct response for each type. By default, Tastypie will send the
+``Vary: Accept`` header so that a seperate response is cached for each
+``Content-Type``. However, if you wish to change this, simply pass a list to
+the ``varies`` kwarg of any ``Cache`` class.
+
+It is important to note that if a list is passed, Tastypie not automatically
+include the ``Vary: Accept`` and you should include it as a member of your
+list.::
+
+    class ExampleResource(Resource):
         class Meta:
-            cache_control = {"max_age": 43200, "s_maxage": 7 * 86400}
+            cache = SimpleCache(varies=["Accept", "Cookie"])

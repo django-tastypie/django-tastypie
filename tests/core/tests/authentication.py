@@ -1,11 +1,12 @@
 import base64
+import os
 import time
 import warnings
-from django.contrib.auth.models import User
-from django.core import mail
+from django.conf import settings
+from django.contrib.auth.models import AnonymousUser, User
 from django.http import HttpRequest
 from django.test import TestCase
-from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, DigestAuthentication, OAuthAuthentication, MultiAuthentication
+from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, SessionAuthentication, DigestAuthentication, OAuthAuthentication, MultiAuthentication
 from tastypie.http import HttpUnauthorized
 from tastypie.models import ApiKey, create_api_key
 
@@ -221,6 +222,73 @@ class ApiKeyAuthenticationTestCase(TestCase):
         self.assertTrue(auth.is_authenticated(request))
 
 
+class SessionAuthenticationTestCase(TestCase):
+    fixtures = ['note_testdata.json']
+
+    def test_is_authenticated(self):
+        auth = SessionAuthentication()
+        request = HttpRequest()
+        request.method = 'POST'
+        request.COOKIES = {
+            settings.CSRF_COOKIE_NAME: 'abcdef1234567890abcdef1234567890'
+        }
+
+        # No CSRF token.
+        request.META = {}
+        self.assertFalse(auth.is_authenticated(request))
+
+        # Invalid CSRF token.
+        request.META = {
+            'HTTP_X_CSRFTOKEN': 'abc123'
+        }
+        self.assertFalse(auth.is_authenticated(request))
+
+        # Not logged in.
+        request.META = {
+            'HTTP_X_CSRFTOKEN': 'abcdef1234567890abcdef1234567890'
+        }
+        request.user = AnonymousUser()
+        self.assertFalse(auth.is_authenticated(request))
+
+        # Logged in.
+        request.user = User.objects.get(username='johndoe')
+        self.assertTrue(auth.is_authenticated(request))
+
+        # Logged in (with GET & no token).
+        request.method = 'GET'
+        request.META = {}
+        request.user = User.objects.get(username='johndoe')
+        self.assertTrue(auth.is_authenticated(request))
+
+        # Secure & wrong referrer.
+        os.environ["HTTPS"] = "on"
+        request.method = 'POST'
+        request.META = {
+            'HTTP_X_CSRFTOKEN': 'abcdef1234567890abcdef1234567890'
+        }
+        request.META['HTTP_HOST'] = 'example.com'
+        request.META['HTTP_REFERER'] = ''
+        self.assertFalse(auth.is_authenticated(request))
+
+        # Secure & correct referrer.
+        request.META['HTTP_REFERER'] = 'https://example.com/'
+        self.assertTrue(auth.is_authenticated(request))
+
+        os.environ["HTTPS"] = "off"
+
+    def test_get_identifier(self):
+        auth = SessionAuthentication()
+        request = HttpRequest()
+
+        # Not logged in.
+        request.user = AnonymousUser()
+        self.assertEqual(auth.get_identifier(request), '')
+
+        # Logged in.
+        request.user = User.objects.get(username='johndoe')
+        self.assertEqual(auth.get_identifier(request), 'johndoe')
+
+
 class DigestAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
 
@@ -403,6 +471,49 @@ class OAuthAuthenticationTestCase(TestCase):
 
 class MultiAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
+
+    def test_apikey_and_authentication_enforce_user(self):
+        session_auth = SessionAuthentication()
+        api_key_auth = ApiKeyAuthentication()
+        auth = MultiAuthentication(api_key_auth, session_auth)
+        john_doe = User.objects.get(username='johndoe')
+        request1 = HttpRequest()
+        request2 = HttpRequest()
+        request3 = HttpRequest()
+
+        request1.method = 'POST'
+        request1.META = {
+            'HTTP_X_CSRFTOKEN': 'abcdef1234567890abcdef1234567890'
+        }
+        request1.COOKIES = {
+            settings.CSRF_COOKIE_NAME: 'abcdef1234567890abcdef1234567890'
+        }
+        request1.user = john_doe
+
+        request2.POST['username'] = 'janedoe'
+        request2.POST['api_key'] = 'invalid key'
+
+        request3.method = 'POST'
+        request3.META = {
+            'HTTP_X_CSRFTOKEN': 'abcdef1234567890abcdef1234567890'
+        }
+        request3.COOKIES = {
+            settings.CSRF_COOKIE_NAME: 'abcdef1234567890abcdef1234567890'
+        }
+        request3.user = john_doe
+        request3.POST['username'] = 'janedoe'
+        request3.POST['api_key'] = 'invalid key'
+
+        #session auth should pass if since john_doe is logged in
+        self.assertTrue(session_auth.is_authenticated(request1))
+        #api key auth should fail because of invalid api key
+        self.assertEqual(isinstance(api_key_auth.is_authenticated(request2), HttpUnauthorized), True)
+
+        #multi auth shouldn't change users if api key auth fails
+        #multi auth passes since session auth is valid
+        self.assertEqual(request3.user.username, 'johndoe')
+        self.assertTrue(auth.is_authenticated(request3))
+        self.assertEqual(request3.user.username, 'johndoe')
 
     def test_apikey_and_authentication(self):
         auth = MultiAuthentication(ApiKeyAuthentication(), Authentication())

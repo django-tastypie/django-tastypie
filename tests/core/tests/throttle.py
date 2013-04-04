@@ -129,3 +129,10 @@ class CacheDBThrottleTestCase(TestCase):
         self.assertEqual(len(cache.get('daniel_accesses')), 0)
         self.assertEqual(ApiAccess.objects.count(), 7)
         self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 4)
+
+
+class ModelTestCase(TestCase):
+    def test_unicode(self):
+        access = ApiAccess(identifier="testing", accessed=0)
+        self.assertEqual(unicode(access), 'testing @ 0')
+

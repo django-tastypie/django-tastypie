@@ -30,6 +30,16 @@
 
     {
         "fields": {
+            "date": "2012-09-07",
+            "username": "MARAUJOP",
+            "message": "hello"
+        },
+        "model": "core.daterecord",
+        "pk": 1
+    },
+
+    {
+        "fields": {
             "author": 1,
             "title": "First Post!",
             "slug": "first-post",
@@ -115,5 +125,24 @@
         },
         "model": "core.mediabit",
         "pk": 1
+    },
+
+    {
+        "fields": {
+            "name": "Signups",
+            "slug": "signups",
+            "count": 1
+        },
+        "model": "core.counter",
+        "pk": 1
+    },
+    {
+        "fields": {
+            "name": "Logins",
+            "slug": "logins",
+            "count": 4
+        },
+        "model": "core.counter",
+        "pk": 2
     }
 ]

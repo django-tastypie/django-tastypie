@@ -52,7 +52,7 @@ Contributors:
 * Aaron Elliot Ross for a patch to invalid pagination.
 * Randall Degges for patch_list method documentation patch.
 * Alexis Svinartchouk (zvin) for patching field type fix for AutoFields.
-* Mike W (mik3y) for a cookbook entry on pretty-printed JSON serialization.
+* Mike W (mik3y) for a cookbook entry on pretty-printed JSON serialization & converting 'objects' to Meta.collection_name.
 * Taylor Mitchell (tmitchell) for finding and patching a bug in the paginator query encoding.
 * D.B. Tsai (dbtsai) & DuJour for funding:
     * The work to make non-pk URIs work better
@@ -60,6 +60,20 @@ Contributors:
 * Julien Bouquillon (revolunet) for authentication and authorization docs fixes.
 * Andrey Voronov (eyvoro) for fixing a typo in the AUTHORS file.
 * D.B. Tsai (dbtsai) for a fix relating to ``detail_uri_kwargs``.
+* maraujop for a patch adding to ``X-HTTP-Method-Override`` support.
+* Donald Stufft (dstufft) for patching ToOneField callable attributes & for bumping the dateutil reqs.
+* Vladimir Volodin (vvolodin) for patching ToManyField callable attributes.
+* Mike Urbanski (mcu) for patching ``Paginator.get_limit``.
+* Jason Brownbridge (jbrownbridge) for patching multiple ``offset/limit`` params appearing in pagination URIs.
+* Mitar for compatability patches with django-tastypie-mongoengine
+* Jeremy Dunck (jdunck) for a patch adding an index to ``ApiKey``.
+* Wes Winham (winhamwr) for a documentation patch.
+* Andrew Austin (andrewaustin) for triaging, verifying and patching several tickets.
+* Numan Sachwani (numan) and Curtis Maloney (funkybob) for patch which allows fields to be omitted from list/detail form of resources.
+* Anton V. Yanchenko (simplylizz) for reporting and providing a patch for a security vulnerability involving ``MultiAuthentication`` and ``ApiKeyAuthentication``
+* Cristiano Lopes (cristiano2lopes) for minor bug fix in feature that allows fields to be omitted from list/detail form of resources.
+* Andrew McCloud (amccloud) for a patch improving integration with error logging tools by dispatching Django's got_request_exception when appropriate
+* Vitaly Babiy (vbabiy) form validation, and django 1.5 support. 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 

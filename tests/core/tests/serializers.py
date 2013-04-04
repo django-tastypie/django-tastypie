@@ -5,7 +5,9 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
+from tastypie.bundle import Bundle
 from tastypie import fields
+from tastypie.exceptions import BadRequest
 from tastypie.serializers import Serializer
 from tastypie.resources import ModelResource
 from core.models import Note
@@ -45,9 +47,9 @@ class AnotherNoteResource(ModelResource):
 class SerializerTestCase(TestCase):
     def test_init(self):
         serializer_1 = Serializer()
-        self.assertEqual(serializer_1.formats, ['json', 'jsonp', 'xml', 'yaml', 'html', 'plist'])
+        self.assertEqual(serializer_1.formats, ['json', 'xml', 'yaml', 'html', 'plist'])
         self.assertEqual(serializer_1.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
-        self.assertEqual(serializer_1.supported_formats, ['application/json', 'text/javascript', 'application/xml', 'text/yaml', 'text/html', 'application/x-plist'])
+        self.assertEqual(serializer_1.supported_formats, ['application/json', 'application/xml', 'text/yaml', 'text/html', 'application/x-plist'])
 
         serializer_2 = Serializer(formats=['json', 'xml'])
         self.assertEqual(serializer_2.formats, ['json', 'xml'])
@@ -65,6 +67,34 @@ class SerializerTestCase(TestCase):
         self.assertEqual(serializer_4.supported_formats, ['application/x-plist', 'application/json'])
 
         self.assertRaises(ImproperlyConfigured, Serializer, formats=['json', 'xml'], content_types={'json': 'text/json'})
+
+    def test_default_formats_setting(self):
+        # When we drop support for Django 1.3 this boilerplate can be replaced with
+        # a simple django.test.utils.override_settings decorator:
+
+        old_formats = getattr(settings, 'TASTYPIE_DEFAULT_FORMATS', None)
+
+        try:
+            # Confirm that the setting will override the default values:
+            settings.TASTYPIE_DEFAULT_FORMATS = ('json', 'xml')
+            s = Serializer()
+            self.assertItemsEqual(s.formats, ['json', 'xml'])
+            self.assertItemsEqual(s.supported_formats, ['application/json', 'application/xml'])
+            self.assertDictEqual(s.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
+
+            # Confirm that subclasses which set their own formats list won't be overriden:
+            class JSONSerializer(Serializer):
+                formats = ['json']
+
+            js = JSONSerializer()
+            self.assertItemsEqual(js.formats, ['json'])
+            self.assertItemsEqual(js.supported_formats, ['application/json'])
+
+        finally:
+            if old_formats is None:
+                del settings.TASTYPIE_DEFAULT_FORMATS
+            else:
+                settings.TASTYPIE_DEFAULT_FORMATS = old_formats
 
     def get_sample1(self):
         return {
@@ -203,6 +233,14 @@ class SerializerTestCase(TestCase):
         data = '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><somelist type="list"><value>hello</value><value type="integer">1</value><value type="null"/></somelist><somehash type="hash"><pi type="float">3.14</pi><foo>bar</foo></somehash><false type="boolean">False</false><true type="boolean">True</true><somestring>hello</somestring></request>'
         self.assertEqual(serializer.from_xml(data), self.get_sample2())
 
+    def test_malformed_xml(self):
+        serializer = Serializer()
+        data = '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><somelist type="list"><valueNO CARRIER'
+        self.assertRaises(BadRequest, serializer.from_xml, data)
+
+        data = '<?xml version=\'1.0\' encoding=\'ascii\'?>\n<request><snowman>☃</snowman></request>'
+        self.assertRaises(BadRequest, serializer.from_xml, data)
+
     def test_to_json(self):
         serializer = Serializer()
 
@@ -251,11 +289,38 @@ class SerializerTestCase(TestCase):
                           serializer.from_yaml,
                           serialized)
 
+    def test_unsafe_xml(self):
+        """
+        Entity expansion can be used to cause large memory usage after
+        deserialization for little memory usage from the attacker.
+        See https://pypi.python.org/pypi/defusedxml for more information.
+        """
+        serializer = Serializer()
+        data = """<!DOCTYPE bomb [<!ENTITY a "evil chars">]>
+        <bomb>&a;</bomb>
+        """
+        self.assertRaises(BadRequest, serializer.from_xml, data)
+
     def test_to_jsonp(self):
         serializer = Serializer()
 
         sample_1 = self.get_sample1()
         options = {'callback': 'myCallback'}
+        serialized = serializer.to_jsonp(sample_1, options=options)
+        serialized_json = serializer.to_json(sample_1)
+        self.assertEqual('myCallback(%s)' % serialized_json,
+                         serialized)
+
+    def test_invalid_jsonp_characters(self):
+        """
+        The newline characters \u2028 and \u2029 need to be escaped
+        in JSONP.
+        """
+        serializer = Serializer()
+
+        jsonp = serializer.to_jsonp({'foo': u'Hello \u2028\u2029world!'},
+                                    {'callback': 'callback'})
+        self.assertEqual(jsonp, u'callback({"foo": "Hello \\u2028\\u2029world!"})')
 
     def test_to_plist(self):
         if not biplist:
@@ -285,9 +350,10 @@ class ResourceSerializationTestCase(TestCase):
     def setUp(self):
         super(ResourceSerializationTestCase, self).setUp()
         self.resource = NoteResource()
-        self.obj_list = [self.resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.resource.obj_get_list()]
+        base_bundle = Bundle()
+        self.obj_list = [self.resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.resource.obj_get_list(base_bundle)]
         self.another_resource = AnotherNoteResource()
-        self.another_obj_list = [self.another_resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.another_resource.obj_get_list()]
+        self.another_obj_list = [self.another_resource.full_dehydrate(self.resource.build_bundle(obj=obj)) for obj in self.another_resource.obj_get_list(base_bundle)]
 
     def test_to_xml_multirepr(self):
         serializer = Serializer()

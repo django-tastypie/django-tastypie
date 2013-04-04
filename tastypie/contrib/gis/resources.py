@@ -4,7 +4,10 @@
 from urllib import unquote
 
 from django.contrib.gis.db.models import GeometryField
-from django.utils import simplejson
+try:
+    import json as simplejson
+except ImportError: # < Python 2.6
+    from django.utils import simplejson
 from django.contrib.gis.geos import GEOSGeometry
 
 from tastypie.fields import ApiField, CharField

@@ -14,6 +14,7 @@ interfaces.
    non_orm_data_sources
    tools
    testing
+   compatibility_notes
 
    resources
    bundles
@@ -21,16 +22,19 @@ interfaces.
    fields
    caching
    validation
-   authentication_authorization
+   authentication
+   authorization
    serialization
    throttling
    paginator
    geodjango
+   content_types
 
    cookbook
    debugging
    who_uses
    contributing
+   release_notes/index
 
 
 Getting Help
@@ -87,8 +91,8 @@ the necessary bits via the included ``requirements.txt``:
 Required
 --------
 
-* Python 2.5+
-* Django 1.2+
+* Python 2.6+
+* Django 1.3+
 * mimeparse 0.1.3+ (http://code.google.com/p/mimeparse/)
 
   * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
