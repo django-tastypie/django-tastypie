@@ -654,7 +654,7 @@ class RelatedField(ApiField):
         elif isinstance(value, Bundle):
             # We got a valid bundle object, the RelatedField had full=True
             return value
-        elif hasattr(value, 'items'):
+        elif isinstance(value, dict):
             # We've got a data dictionary.
             # Since this leads to creation, this is the only one of these
             # methods that might care about "parent" data.
