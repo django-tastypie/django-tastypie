@@ -4,6 +4,12 @@ Master (v0.9.14)
 None yet.
 
 
+v0.9.13
+=======
+
+[2013-03-15] 2dff249 - Authorization methods that were previously expected to raise ``Unauthorized`` must now always return ``True`` if the authorization succeeds
+
+
 v0.9.12
 =======
 
