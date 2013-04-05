@@ -12,21 +12,12 @@ As a result, Tastypie ships with a serializer that tries to meet the basic
 needs of most use cases, and the flexibility to go outside of that when you
 need to.
 
-The default ``Serializer`` supports the following formats:
-
-* json
-* jsonp
-* xml
-* yaml
-* html
-* plist (see http://explorapp.com/biplist/)
-
 Usage
 =====
 
 Using this class is simple. It is the default option on all ``Resource``
-classes unless otherwise specified. The following code is a no-op, but
-demonstrate how you could use your own serializer::
+classes unless otherwise specified. The following code is identical to the
+defaults but demonstrate how you could use your own serializer::
 
     from django.contrib.auth.models import User
     from tastypie.resources import ModelResource
@@ -41,9 +32,26 @@ demonstrate how you could use your own serializer::
             # Add it here.
             serializer = Serializer()
 
-Not everyone wants to install or support all the serialization options. To
-that end, you can limit the ones available by passing a ``formats=`` kwarg.
-For example, to provide only JSON & binary plist serialization::
+Configuring Allowed Formats
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The default ``Serializer`` supports the following formats:
+
+* json
+* jsonp (Disabled by default)
+* xml
+* yaml
+* html
+* plist (see http://explorapp.com/biplist/)
+
+Not everyone wants to install or support all the serialization options. If you
+would list to customize the list of supported formats for your entire site
+the :ref:`TASTYPIE_DEFAULT_FORMATS setting <settings.TASTYPIE_DEFAULT_FORMATS>`
+allows you to set the default format list site-wide.
+
+If you wish to change the format list for a specific resource, you can pass the
+list of supported formats using the ``formats=`` kwarg. For example, to provide
+only JSON & binary plist serialization::
 
     from django.contrib.auth.models import User
     from tastypie.resources import ModelResource
@@ -56,6 +64,53 @@ For example, to provide only JSON & binary plist serialization::
             resource_name = 'auth/user'
             excludes = ['email', 'password', 'is_superuser']
             serializer = Serializer(formats=['json', 'plist'])
+
+Enabling the built-in (but disabled by default) JSONP support looks like::
+
+    from django.contrib.auth.models import User
+    from tastypie.resources import ModelResource
+    from tastypie.serializers import Serializer
+
+
+    class UserResource(ModelResource):
+        class Meta:
+            queryset = User.objects.all()
+            resource_name = 'auth/user'
+            excludes = ['email', 'password', 'is_superuser']
+            serializer = Serializer(formats=['json', 'jsonp', 'xml', 'yaml', 'html', 'plist'])
+
+
+Serialization Security
+======================
+
+Deserialization of input from unknown or untrusted sources is an intrinsically
+risky endeavor and vulnerabilities are regularly found in popular format
+libraries. Tastypie adopts and recommends the following approach:
+
+* Support the minimum required set of formats in your application.
+  If you do not require a format, it's much safer to disable it
+  completely. See :ref:`TASTYPIE_DEFAULT_FORMATS setting <settings.TASTYPIE_DEFAULT_FORMATS>`.
+* Some parsers offer additional safety check for use with untrusted content.
+  The standard Tastypie Serializer attempts to be secure by default using
+  features like PyYAML's
+  `safe_load <http://pyyaml.org/wiki/PyYAMLDocumentation#LoadingYAML>`_ function
+  and the defusedxml_ security wrapper for popular Python XML libraries.
+
+  .. note::
+
+      Tastypie's precautions only apply to the default :class:`Serializer`. If
+      you have written your own serializer subclass we strongly recommend that
+      you review your code to ensure that it uses the same precautions.
+
+      If backwards compatibility forces you to load files which require risky
+      features we strongly recommend enabling those features only for the
+      necessary resources and making your authorization checks as strict as
+      possible. The :doc:`authentication` and :doc:`authorization` checks happen
+      before deserialization so, for example, a resource which only allowed
+      POST or PUT requests to be made by administrators is far less exposed than
+      a general API open to the unauthenticated internet.
+
+.. _defusedxml: https://pypi.python.org/pypi/defusedxml
 
 
 Implementing Your Own Serializer

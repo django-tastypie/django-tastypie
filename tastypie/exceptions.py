@@ -71,7 +71,7 @@ class InvalidFilterError(BadRequest):
     pass
 
 
-class InvalidSortError(TastypieError):
+class InvalidSortError(BadRequest):
     """
     Raised when the end user attempts to sort on a field that has not be
     explicitly allowed.
@@ -90,7 +90,11 @@ class ImmediateHttpResponse(TastypieError):
         * for throttling
 
     """
-    response = HttpResponse("Nothing provided.")
+    _response = HttpResponse("Nothing provided.")
 
     def __init__(self, response):
-        self.response = response
+        self._response = response
+
+    @property
+    def response(self):
+        return self._response

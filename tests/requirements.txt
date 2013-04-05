@@ -1,8 +1,10 @@
 django-oauth-plus
 oauth2
 lxml
+defusedxml
 python-digest
 biplist
 pyyaml
 mimeparse>=0.1.3
 python-dateutil>=2.1
+mock

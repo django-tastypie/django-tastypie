@@ -1,6 +1,9 @@
 import httplib
 from testcases import TestServerTestCase
-from django.utils import simplejson as json
+try:
+    import json
+except ImportError: # < Python 2.6
+    from django.utils import simplejson as json
 
 
 class HTTPTestCase(TestServerTestCase):
@@ -21,6 +24,25 @@ class HTTPTestCase(TestServerTestCase):
         data = response.read()
         self.assertEqual(response.status, 200)
         self.assertEqual(data, '{"cached_users": {"list_endpoint": "/api/v1/cached_users/", "schema": "/api/v1/cached_users/schema/"}, "notes": {"list_endpoint": "/api/v1/notes/", "schema": "/api/v1/notes/schema/"}, "private_cached_users": {"list_endpoint": "/api/v1/private_cached_users/", "schema": "/api/v1/private_cached_users/schema/"}, "public_cached_users": {"list_endpoint": "/api/v1/public_cached_users/", "schema": "/api/v1/public_cached_users/schema/"}, "users": {"list_endpoint": "/api/v1/users/", "schema": "/api/v1/users/schema/"}}')
+
+    def test_get_apis_invalid_accept(self):
+        connection = self.get_connection()
+        connection.request('GET', '/api/v1/', headers={'Accept': 'invalid'})
+        response = connection.getresponse()
+        connection.close()
+        data = response.read()
+        self.assertEqual(response.status, 400, "Invalid HTTP Accept headers should return HTTP 400")
+
+    def test_get_resource_invalid_accept(self):
+        """Invalid HTTP Accept headers should return HTTP 400"""
+        # We need to test this twice as there's a separate dispatch path for resources:
+
+        connection = self.get_connection()
+        connection.request('GET', '/api/v1/notes/', headers={'Accept': 'invalid'})
+        response = connection.getresponse()
+        connection.close()
+        data = response.read()
+        self.assertEqual(response.status, 400, "Invalid HTTP Accept headers should return HTTP 400")
 
     def test_get_apis_xml(self):
         connection = self.get_connection()

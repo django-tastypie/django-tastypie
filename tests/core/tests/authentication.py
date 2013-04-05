@@ -472,6 +472,49 @@ class OAuthAuthenticationTestCase(TestCase):
 class MultiAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
 
+    def test_apikey_and_authentication_enforce_user(self):
+        session_auth = SessionAuthentication()
+        api_key_auth = ApiKeyAuthentication()
+        auth = MultiAuthentication(api_key_auth, session_auth)
+        john_doe = User.objects.get(username='johndoe')
+        request1 = HttpRequest()
+        request2 = HttpRequest()
+        request3 = HttpRequest()
+
+        request1.method = 'POST'
+        request1.META = {
+            'HTTP_X_CSRFTOKEN': 'abcdef1234567890abcdef1234567890'
+        }
+        request1.COOKIES = {
+            settings.CSRF_COOKIE_NAME: 'abcdef1234567890abcdef1234567890'
+        }
+        request1.user = john_doe
+
+        request2.POST['username'] = 'janedoe'
+        request2.POST['api_key'] = 'invalid key'
+
+        request3.method = 'POST'
+        request3.META = {
+            'HTTP_X_CSRFTOKEN': 'abcdef1234567890abcdef1234567890'
+        }
+        request3.COOKIES = {
+            settings.CSRF_COOKIE_NAME: 'abcdef1234567890abcdef1234567890'
+        }
+        request3.user = john_doe
+        request3.POST['username'] = 'janedoe'
+        request3.POST['api_key'] = 'invalid key'
+
+        #session auth should pass if since john_doe is logged in
+        self.assertTrue(session_auth.is_authenticated(request1))
+        #api key auth should fail because of invalid api key
+        self.assertEqual(isinstance(api_key_auth.is_authenticated(request2), HttpUnauthorized), True)
+
+        #multi auth shouldn't change users if api key auth fails
+        #multi auth passes since session auth is valid
+        self.assertEqual(request3.user.username, 'johndoe')
+        self.assertTrue(auth.is_authenticated(request3))
+        self.assertEqual(request3.user.username, 'johndoe')
+
     def test_apikey_and_authentication(self):
         auth = MultiAuthentication(ApiKeyAuthentication(), Authentication())
         request = HttpRequest()

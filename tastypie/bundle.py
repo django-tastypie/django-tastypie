@@ -16,7 +16,9 @@ class Bundle(object):
                  request=None,
                  related_obj=None,
                  related_name=None,
-                 objects_saved=None):
+                 objects_saved=None,
+                 related_objects_to_save=None,
+                 ):
         self.obj = obj
         self.data = data or {}
         self.request = request or HttpRequest()
@@ -24,6 +26,7 @@ class Bundle(object):
         self.related_name = related_name
         self.errors = {}
         self.objects_saved = objects_saved or set()
+        self.related_objects_to_save = related_objects_to_save or {}
 
     def __repr__(self):
         return "<Bundle for obj: '%s' and with data: '%s'>" % (self.obj, self.data)

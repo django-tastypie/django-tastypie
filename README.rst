@@ -4,15 +4,15 @@ django-tastypie
 
 Creating delicious APIs for Django apps since 2010.
 
-Currently in beta (v0.9.11) but being used actively in production on several
+Currently in beta (v0.9.14) but being used actively in production on several
 sites.
 
 
 Requirements
 ============
 
-Required
---------
+Core
+----
 
 * Python 2.6+
 * Django 1.3+
@@ -22,13 +22,17 @@ Required
 
 * dateutil (http://labix.org/python-dateutil) >= 1.5, < 2.0
 
+Format Support
+--------------
+
+* XML: lxml 3 (http://lxml.de/) and defusedxml (https://pypi.python.org/pypi/defusedxml)
+* YAML: pyyaml (http://pyyaml.org/)
+* binary plist: biplist (http://explorapp.com/biplist/)
+
 Optional
 --------
 
-* python_digest (https://bitbucket.org/akoha/python-digest/)
-* lxml (http://lxml.de/) if using the XML serializer
-* pyyaml (http://pyyaml.org/) if using the YAML serializer
-* biplist (http://explorapp.com/biplist/) if using the binary plist serializer
+* HTTP Digest authentication: python_digest (https://bitbucket.org/akoha/python-digest/)
 
 
 What's It Look Like?
@@ -98,17 +102,17 @@ Reference Material
 * http://jacobian.org/writing/rest-worst-practices/
 
 
-Commercial Support
-==================
+Security 
+========
 
-If you're using Tastypie in a commercial environment, paid support is available
-from `Toast Driven`_. Services offered include:
+Tastypie is committed to providing a flexible and secure API, and was designed
+with many security features and options in mind. Due to the complex nature of
+APIs and the constant discovery of new attack vectors and vulnerabilities,
+no software is immune to security holes. We rely on our community to report
+and help us investigate security issues.
 
-* Advice/help with setup
-* Implementation in your project
-* Bugfixes in Tastypie itself
-* Features in Tastypie itself
+If you come across a security hole **please do not open a Github issue**.
+Instead, **drop us an email** at ``tastypie-security@googlegroups.com``
 
-If you're interested, please contact Daniel Lindsley (daniel@toastdriven.com).
-
-.. _`Toast Driven`: http://toastdriven.com/
+We'll then work together to investigate and resolve the problem so we can
+announce a solution along with the vulnerability.

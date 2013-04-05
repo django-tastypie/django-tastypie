@@ -10,6 +10,7 @@ from django.middleware.csrf import _sanitize_token, constant_time_compare
 from django.utils.http import same_origin
 from django.utils.translation import ugettext as _
 from tastypie.http import HttpUnauthorized
+from tastypie.compat import User, username_field
 
 try:
     from hashlib import sha1
@@ -178,7 +179,7 @@ class ApiKeyAuthentication(Authentication):
         Should return either ``True`` if allowed, ``False`` if not or an
         ``HttpResponse`` if you need something custom.
         """
-        from django.contrib.auth.models import User
+        from tastypie.compat import User
 
         try:
             username, api_key = self.extract_credentials(request)
@@ -189,15 +190,19 @@ class ApiKeyAuthentication(Authentication):
             return self._unauthorized()
 
         try:
-            user = User.objects.get(username=username)
+            lookup_kwargs = {username_field: username}
+            user = User.objects.get(**lookup_kwargs)
         except (User.DoesNotExist, User.MultipleObjectsReturned):
             return self._unauthorized()
 
         if not self.check_active(user):
             return False
 
-        request.user = user
-        return self.get_key(user, api_key)
+        key_auth_check = self.get_key(user, api_key)
+        if key_auth_check and not isinstance(key_auth_check, HttpUnauthorized):
+            request.user = user
+
+        return key_auth_check
 
     def get_key(self, user, api_key):
         """
@@ -274,7 +279,7 @@ class SessionAuthentication(Authentication):
 
         This implementation returns the user's username.
         """
-        return request.user.username
+        return getattr(request.user, username_field)
 
 
 class DigestAuthentication(Authentication):
@@ -354,10 +359,9 @@ class DigestAuthentication(Authentication):
         return True
 
     def get_user(self, username):
-        from django.contrib.auth.models import User
-
         try:
-            user = User.objects.get(username=username)
+            lookup_kwargs = {username_field: username}
+            user = User.objects.get(**lookup_kwargs)
         except (User.DoesNotExist, User.MultipleObjectsReturned):
             return False
 

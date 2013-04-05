@@ -1,4 +1,7 @@
-from django.conf.urls.defaults import *
+try:
+    from django.conf.urls import *
+except ImportError: # Django < 1.4
+    from django.conf.urls.defaults import *
 from tastypie.api import NamespacedApi
 from namespaced.api.resources import NamespacedNoteResource, NamespacedUserResource
 
