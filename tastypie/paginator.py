@@ -81,7 +81,7 @@ class Paginator(object):
         """
         Determines the proper starting offset of results to return.
 
-        It attempst to use the user-provided ``offset`` from the GET parameters,
+        It attempts to use the user-provided ``offset`` from the GET parameters,
         if specified. Otherwise, it falls back to the object-level ``offset``.
 
         Default is 0.
