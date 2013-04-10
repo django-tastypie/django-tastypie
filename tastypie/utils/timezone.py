@@ -17,7 +17,12 @@ try:
         return value
 
     def now():
-        return timezone.localtime(timezone.now())
+        d = timezone.now()
+
+        if d.tzinfo:
+            return timezone.localtime(timezone.now())
+
+        return d
 
 except ImportError:
     now = datetime.datetime.now
