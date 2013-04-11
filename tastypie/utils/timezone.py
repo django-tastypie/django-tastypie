@@ -17,6 +17,8 @@ try:
         return value
 
     def now():
+        if hasattr(timezone, "template_localtime"):
+            return timezone.template_localtime(timezone.now())
         return timezone.localtime(timezone.now())
 
 except ImportError:
