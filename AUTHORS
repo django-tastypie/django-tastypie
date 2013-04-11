@@ -76,6 +76,7 @@ Contributors:
 * Vitaly Babiy (vbabiy) form validation, and django 1.5 support. 
 * Nathaniel Tucker (ntucker) django 1.5 support.
 * Soren Hansen (sorenh) Fixing tests for django 1.3.
+* Michal Dub (MichalMaM) Fixed broken datetime now for django 1.5 with setting USE_TZ set to False
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
