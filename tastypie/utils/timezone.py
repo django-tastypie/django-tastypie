@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import datetime
 from django.conf import settings
 
@@ -17,14 +19,21 @@ try:
         return value
 
     def now():
-        return timezone.localtime(timezone.now())
+        d = timezone.now()
+
+        if d.tzinfo:
+            return timezone.localtime(timezone.now())
+
+        return d
 
 except ImportError:
     now = datetime.datetime.now
     make_aware = make_naive = lambda x: x
 
+
 def aware_date(*args, **kwargs):
     return make_aware(datetime.date(*args, **kwargs))
+
 
 def aware_datetime(*args, **kwargs):
     return make_aware(datetime.datetime(*args, **kwargs))
