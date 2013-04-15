@@ -115,6 +115,25 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         # Give each tag some extra data (the lookup of this data is what makes the test fail)
         self.extradata_1 = ExtraData.objects.create(tag=self.tag_1, name='additional')
 
+    def test_put_saves_explicit_through_m2m_resource(self):
+        resource = api.canonical_resource_for('tag')
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.raw_post_data = '{"resource_uri": "/api/v1/tag/%d/", "name": "important", "taggabletags": [{"taggable": {"resource_uri": "/api/v1/taggable/%d/", "name": "foo"}}]}' % (self.tag_1.pk, self.taggable_1.pk, )
+        request.path = reverse(
+            'api_dispatch_detail', kwargs={'pk': self.tag_1.pk,
+            'resource_name': resource._meta.resource_name,
+            'api_name': resource._meta.api_name})
+
+        resp = resource.put_detail(request)
+
+        new_taggable_1 = Taggable.objects.get(pk=self.taggable_1.pk)
+
+        self.assertEquals(resp.status_code, 204)
+        self.assertEquals(new_taggable_1.name, "foo")
+
     def test_correct_setup(self):
         request = MockRequest()
         request.GET = {'format': 'json'}
