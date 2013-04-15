@@ -672,7 +672,7 @@ class RelatedField(ApiField):
         """
         should_dehydrate_full_resource = False
         if self.full:
-            is_details_view = resolve(bundle.request.path).url_name == "api_dispatch_detail"
+            is_details_view = resolve(bundle.request.path_info).url_name == "api_dispatch_detail"
             if is_details_view:
                 if (not callable(self.full_detail) and self.full_detail) or (callable(self.full_detail) and self.full_detail(bundle)):
                     should_dehydrate_full_resource = True
