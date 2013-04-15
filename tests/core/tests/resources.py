@@ -1238,6 +1238,20 @@ class CounterResource(ModelResource):
         return new_shiny
 
 
+class CounterAuthorization(Authorization):
+    def update_detail(self, object_list, bundle, *args, **kwargs):
+        bundle._update_auth_call_count = getattr(bundle, '_update_auth_call_count', 0) + 1
+        return True
+
+
+class CounterUpdateDetailResource(ModelResource):
+    count = fields.IntegerField('count', default=0, null=True)
+
+    class Meta:
+        queryset = Counter.objects.all()
+        authorization = CounterAuthorization()
+
+
 class ModelResourceTestCase(TestCase):
     fixtures = ['note_testdata.json']
     urls = 'core.tests.field_urls'
@@ -3120,6 +3134,22 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(Counter.objects.all().count(), 2)
         counter = Counter.objects.get(pk=1)
         self.assertEqual(counter.count, 1)
+
+    def test_obj_update_full_hydrate_on_update_authorization(self):
+        counter = Counter.objects.get(pk=1)
+
+        cr = CounterUpdateDetailResource()
+        counter_bundle = cr.build_bundle(data={
+            "pk": counter.pk,
+            "name": "Signups",
+            "slug": "signups",
+        }, obj=Counter())
+        cr.obj_update(counter_bundle, pk=1)
+
+        counter = Counter.objects.get(pk=1)
+        self.assertEquals(counter_bundle._update_auth_call_count, 1)
+        self.assertEquals(counter_bundle.obj.name, "Signups")
+        self.assertEquals(counter_bundle.obj.slug, "signups")
 
     def test_obj_delete(self):
         self.assertEqual(Note.objects.all().count(), 6)

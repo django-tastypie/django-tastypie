@@ -2206,7 +2206,6 @@ class ModelResource(Resource):
             except ObjectDoesNotExist:
                 raise NotFound("A model instance matching the provided arguments could not be found.")
 
-        self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
         bundle = self.full_hydrate(bundle)
         return self.save(bundle, skip_errors=skip_errors)
 
