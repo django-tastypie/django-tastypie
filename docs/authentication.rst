@@ -76,7 +76,8 @@ it is present) and their password should also correspond to that entry.
 As an alternative to requiring sensitive data like a password, the
 ``ApiKeyAuthentication`` allows you to collect just username & a
 machine-generated api key. Tastypie ships with a special ``Model`` just for
-this purpose, so you'll need to ensure ``tastypie`` is in ``INSTALLED_APPS``.
+this purpose, so you'll need to ensure ``tastypie`` is in ``INSTALLED_APPS`` and 
+that the model's database tables have been created (e.g. via ``django-admin.py syncdb``).
 
 To use this mechanism, the end user can either specify an ``Authorization``
 header or pass the ``username/api_key`` combination as ``GET/POST`` parameters.
