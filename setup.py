@@ -36,7 +36,7 @@ setup(
     ],
     install_requires=[
         'mimeparse',
-        'python_dateutil >= 1.5, != 2.0',
+        'python-dateutil >= 1.5, != 2.0',
     ],
     tests_require=['mock'],
     classifiers=[
