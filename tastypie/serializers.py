@@ -383,7 +383,7 @@ class Serializer(object):
         options = options or {}
 
         if lxml is None:
-            raise ImproperlyConfigured("Usage of the XML aspects requires lxml.")
+            raise ImproperlyConfigured("Usage of the XML aspects requires lxml and defusedxml.")
 
         return tostring(self.to_etree(data, options), xml_declaration=True, encoding='utf-8')
 
@@ -396,7 +396,7 @@ class Serializer(object):
         necessary.
         """
         if lxml is None:
-            raise ImproperlyConfigured("Usage of the XML aspects requires lxml.")
+            raise ImproperlyConfigured("Usage of the XML aspects requires lxml and defusedxml.")
 
         try:
             parsed = parse_xml(StringIO(content), forbid_dtd=forbid_dtd,
