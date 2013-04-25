@@ -57,5 +57,9 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
         """
         A signal for hooking up automatic ``ApiKey`` creation.
         """
+        # Turn off signal when loading fixture data
+        # cf https://code.djangoproject.com/ticket/20136
+        if kwargs['raw']:
+            return
         if kwargs.get('created') is True:
             ApiKey.objects.create(user=kwargs.get('instance'))
