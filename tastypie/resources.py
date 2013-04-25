@@ -378,7 +378,7 @@ class Resource(object):
 
         return self._meta.serializer.serialize(data, format, options)
 
-    def deserialize(self, request, data, format='application/json'):
+    def deserialize(self, request, format=None):
         """
         Given a request, data and a format, deserializes the given data.
 
@@ -387,7 +387,15 @@ class Resource(object):
 
         Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
         """
-        deserialized = self._meta.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        if format is None:
+            format = request.META.get('CONTENT_TYPE', 'application/json')
+
+        if format.startswith('multipart'):
+            deserialized = request.POST.copy()
+            deserialized.update(request.FILES)
+        else:
+            deserialized = self._meta.serializer.deserialize(request.raw_post_data, format=format)
+
         return deserialized
 
     def alter_list_data_to_serialize(self, request, data):
@@ -1170,7 +1178,7 @@ class Resource(object):
         Return ``HttpAccepted`` (202 Accepted) if
         ``Meta.always_return_data = True``.
         """
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_list_data(request, deserialized)
 
         if not self._meta.collection_name in deserialized:
@@ -1217,7 +1225,7 @@ class Resource(object):
         ``Meta.always_return_data = True``, return ``HttpAccepted`` (202
         Accepted).
         """
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
 
@@ -1252,7 +1260,7 @@ class Resource(object):
         If ``Meta.always_return_data = True``, there will be a populated body
         of serialized data.
         """
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
         updated_bundle = self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
@@ -1356,7 +1364,7 @@ class Resource(object):
         other than ``objects`` (default).
         """
         request = convert_post_to_patch(request)
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, format=request.META.get('CONTENT_TYPE', 'application/json'))
 
         collection_name = self._meta.collection_name
         deleted_collection_name = 'deleted_%s' % collection_name
@@ -1366,6 +1374,7 @@ class Resource(object):
         if len(deserialized[collection_name]) and 'put' not in self._meta.detail_allowed_methods:
             raise ImmediateHttpResponse(response=http.HttpMethodNotAllowed())
 
+        bundles_seen = []
         for data in deserialized[collection_name]:
             # If there's a resource_uri then this is either an
             # update-in-place or a create-via-PUT.
@@ -1380,18 +1389,21 @@ class Resource(object):
                     bundle = self.full_dehydrate(bundle)
                     bundle = self.alter_detail_data_to_serialize(request, bundle)
                     self.update_in_place(request, bundle, data)
+                    bundles_seen.append(bundle)
                 except (ObjectDoesNotExist, MultipleObjectsReturned):
                     # The object referenced by resource_uri doesn't exist,
                     # so this is a create-by-PUT equivalent.
                     data = self.alter_deserialized_detail_data(request, data)
                     bundle = self.build_bundle(data=dict_strip_unicode_keys(data), request=request)
-                    self.obj_create(bundle, request=request)
+                    self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
+                    bundles_seen.append(bundle)
             else:
                 # There's no resource URI, so this is a create call just
                 # like a POST to the list resource.
                 data = self.alter_deserialized_detail_data(request, data)
                 bundle = self.build_bundle(data=dict_strip_unicode_keys(data), request=request)
-                self.obj_create(bundle, request=request)
+                self.obj_create(bundle, request=request, **self.remove_api_resource_names(kwargs))
+                bundles_seen.append(bundle)
 
         deleted_collection = deserialized.get(deleted_collection_name, [])
         if deleted_collection:
@@ -1402,7 +1414,13 @@ class Resource(object):
                 obj = self.get_via_uri(uri, request=request)
                 self.obj_delete(request=request, _obj=obj)
 
-        return http.HttpAccepted()
+        if not self._meta.always_return_data:
+            return http.HttpAccepted()
+        else:
+            to_be_serialized = {}
+            to_be_serialized[self._meta.collection_name] = [self.full_dehydrate(bundle) for bundle in bundles_seen]
+            to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
+            return self.create_response(request, to_be_serialized, response_class=http.HttpAccepted)
 
     def patch_detail(self, request, **kwargs):
         """
@@ -1433,7 +1451,7 @@ class Resource(object):
         bundle = self.alter_detail_data_to_serialize(request, bundle)
 
         # Now update the bundle in-place.
-        deserialized = self.deserialize(request, request.raw_post_data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, format=request.META.get('CONTENT_TYPE', 'application/json'))
         self.update_in_place(request, bundle, deserialized)
 
         if not self._meta.always_return_data:
