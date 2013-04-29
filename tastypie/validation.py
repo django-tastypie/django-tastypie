@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 from django.core.exceptions import ImproperlyConfigured
 from django.forms import ModelForm
 from django.forms.models import model_to_dict
-
+from django.db.models.fields.related import RelatedField
 
 class Validation(object):
     """
@@ -45,6 +45,13 @@ class FormValidation(Validation):
         super(FormValidation, self).__init__(**kwargs)
 
     def form_args(self, bundle):
+        '''
+        Use the model data to generate the form arguments to be used for
+        validation.  In the case of fields that had to be hydrated (such as
+        FK relationships), be sure to use the hydrated value (comes from 
+        model_to_dict()) rather than the value in bundle.data, since the latter
+        would likely not validate as the form won't expect a URI.
+        '''
         data = bundle.data
 
         # Ensure we get a bound Form, regardless of the state of the bundle.
@@ -52,14 +59,22 @@ class FormValidation(Validation):
             data = {}
 
         kwargs = {'data': {}}
-
         if hasattr(bundle.obj, 'pk'):
             if issubclass(self.form_class, ModelForm):
                 kwargs['instance'] = bundle.obj
 
             kwargs['data'] = model_to_dict(bundle.obj)
-
-        kwargs['data'].update(data)
+            # iterate over the fields in the object and find those that are
+            # related fields - FK, M2M, O2M, etc.  In those cases, we need
+            # to *not* use the data in the bundle, since it is a URI to a
+            # resource.  Instead, use the output of model_to_dict for 
+            # validation, since that is already properly hydrated.
+            for field in bundle.obj._meta.fields:
+                if field.name in bundle.data: 
+                    if not isinstance(field, RelatedField):
+                        kwargs['data'][field.name]=bundle.data[field.name]
+        else:
+            kwargs['data'].update(data)
         return kwargs
 
     def is_valid(self, bundle, request=None):
