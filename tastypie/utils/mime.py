@@ -1,6 +1,7 @@
-import mimeparse
+from __future__ import unicode_literals
 
 from tastypie.exceptions import BadRequest
+from tastypie.utils import mimeparse
 
 
 def determine_format(request, serializer, default_format='application/json'):

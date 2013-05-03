@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 import datetime
 from StringIO import StringIO
 import django

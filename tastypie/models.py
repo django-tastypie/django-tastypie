@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 import hmac
 import time
 from django.conf import settings
@@ -17,10 +18,10 @@ class ApiAccess(models.Model):
     url = models.CharField(max_length=255, blank=True, default='')
     request_method = models.CharField(max_length=10, blank=True, default='')
     accessed = models.PositiveIntegerField()
-    
+
     def __unicode__(self):
         return u"%s @ %s" % (self.identifier, self.accessed)
-    
+
     def save(self, *args, **kwargs):
         self.accessed = int(time.time())
         return super(ApiAccess, self).save(*args, **kwargs)
@@ -36,13 +37,13 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
 
         def __unicode__(self):
             return u"%s for %s" % (self.key, self.user)
-        
+
         def save(self, *args, **kwargs):
             if not self.key:
                 self.key = self.generate_key()
-            
+
             return super(ApiKey, self).save(*args, **kwargs)
-        
+
         def generate_key(self):
             # Get a random UUID.
             new_uuid = uuid.uuid4()
@@ -51,8 +52,8 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
 
         class Meta:
             abstract = getattr(settings, 'TASTYPIE_ABSTRACT_APIKEY', False)
-    
-    
+
+
     def create_api_key(sender, **kwargs):
         """
         A signal for hooking up automatic ``ApiKey`` creation.

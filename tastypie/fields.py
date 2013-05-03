@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 import datetime
 from dateutil.parser import parse
 from decimal import Decimal
@@ -450,7 +451,7 @@ class RelatedField(ApiField):
         is a callable, and returns ``True``, the field will be included during
         dehydration.
         Defaults to ``all``.
-        
+
         Optionally accepts a ``full_list``, which indicated whether or not
         data should be fully dehydrated when the request is for a list of
         resources. Accepts ``True``, ``False`` or a callable that accepts
