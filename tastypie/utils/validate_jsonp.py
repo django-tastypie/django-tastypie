@@ -3,7 +3,7 @@
 # Placed into the Public Domain by tav <tav@espians.com>
 
 """Validate Javascript Identifiers for use as JSON-P callback parameters."""
-
+from __future__ import unicode_literals
 import re
 
 from unicodedata import category
@@ -48,7 +48,7 @@ is_reserved_js_word = frozenset([
 
     # potentially reserved in a future version of the ES5 standard
     # 'let', 'yield'
-    
+
     ]).__contains__
 
 # ------------------------------------------------------------------------------
@@ -81,7 +81,7 @@ def is_valid_javascript_identifier(identifier, escape=r'\u', ucd_cat=category):
             except Exception:
                 return False
             add_char(segment[4:])
-            
+
         identifier = u''.join(new)
 
     if is_reserved_js_word(identifier):

@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 import time
 from urlparse import urlparse
 from django.conf import settings
