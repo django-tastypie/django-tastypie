@@ -1,5 +1,7 @@
-0.9.13 / 0.9.14 *SECURITY HARDENING*
-====================================
+v0.9.13
+=======
+
+*SECURITY HARDENING*
 
 The latest version of Tastypie includes a number of important security fixes and all users are strongly
 encouraged to upgrade.
