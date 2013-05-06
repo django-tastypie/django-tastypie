@@ -62,6 +62,10 @@ class HttpGone(HttpResponse):
     status_code = 410
 
 
+class HttpUnprocessableEntity(HttpResponse):
+    status_code = 422
+
+
 class HttpTooManyRequests(HttpResponse):
     status_code = 429
 
