@@ -11,9 +11,11 @@ from core.models import Note, MediaBit
 from core.tests.resources import HttpRequest
 from core.tests.mocks import MockRequest
 from tastypie import fields
-from related_resource.api.resources import FreshNoteResource, CategoryResource, PersonResource
+from related_resource.api.resources import FreshNoteResource, CategoryResource, PersonResource, PocketResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address
+from related_resource.models import Category, Tag, Taggable, TaggableTag, \
+    ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Pen, \
+    Pocket, PenOrder
 from related_resource.models import Label
 from django.db.models.signals import pre_save
 
@@ -117,7 +119,7 @@ class ExplicitM2MResourceRegressionTest(TestCase):
 
         # Give each tag some extra data (the lookup of this data is what makes the test fail)
         self.extradata_1 = ExtraData.objects.create(tag=self.tag_1, name='additional')
-        
+
 
     def test_correct_setup(self):
         request = MockRequest()
@@ -172,6 +174,114 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         self.assertEqual(deserialized['name'], 'school')
 
 
+class M2MWithThroughTestCase(TestCase):
+    urls = 'related_resource.api.urls'
+
+    def setUp(self):
+        super(M2MWithThroughTestCase, self).setUp()
+
+        self.pen_res = api.canonical_resource_for('pen')
+        self.pocket_res = api.canonical_resource_for('pocket')
+
+        self.pen_1 = Pen.objects.create(brand='Bic')
+        self.pen_2 = Pen.objects.create(brand='Parker')
+        self.pen_3 = Pen.objects.create(brand='Cross')
+        self.pocket_1 = Pocket.objects.create(name='Left')
+        self.pocket_2 = Pocket.objects.create(name='Coat')
+
+        PenOrder.objects.create(pen=self.pen_3, pocket=self.pocket_2)
+
+    def test_create_pocket(self):
+        """Creating a new object utilizing the 'through' class"""
+
+        body = json.dumps({
+            'name': 'Right',
+            'pens': [
+                self.pen_res.get_resource_uri(self.pen_1),
+                self.pen_res.get_resource_uri(self.pen_2)
+            ]
+        })
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.set_body(body)
+
+        resp = self.pocket_res.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp.status_code, 201)
+
+        # GET the created object (through its headers.location)
+        self.assertTrue(resp.has_header('location'))
+        location = resp['Location']
+
+        resp = self.client.get(location, data={'format': 'json'})
+        self.assertEqual(resp.status_code, 200)
+
+        deserialized = json.loads(resp.content)
+        self.assertEqual(deserialized['name'], 'Right')
+        self.assertEqual(len(deserialized['pens']), 2)
+
+    def check_has(self, url, count):
+        resp = self.client.get(url, data={'format': 'json'})
+        self.assertEqual(resp.status_code, 200)
+
+        deserialized = json.loads(resp.content)
+        self.assertEqual(len(deserialized['pens']), count)
+
+    def test_update_pocket_add(self):
+        """Add a relationship using the 'through' class"""
+
+        pr = PocketResource()
+        body = json.dumps({
+            'pens': [self.pen_res.get_resource_uri(self.pen_3)]
+        })
+        url = reverse('api_dispatch_detail', kwargs={
+            'pk': self.pocket_1.pk,
+            'resource_name': pr._meta.resource_name,
+            'api_name': pr._meta.api_name
+        })
+
+        # Left pocket has 0 pens before test
+        self.check_has(url, 0)
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.path = url
+        request.set_body(body)
+
+        resp = pr.put_detail(request, pk=self.pocket_1.pk)
+        self.assertEqual(resp.status_code, 204)
+
+        # Left pocket has 1 pen after test
+        self.check_has(url, 1)
+
+    def test_update_pocket_remove(self):
+        """Remove a relationship using the 'through' class"""
+
+        pr = PocketResource()
+        url = reverse('api_dispatch_detail', kwargs={
+            'pk': self.pocket_2.pk,
+            'resource_name': pr._meta.resource_name,
+            'api_name': pr._meta.api_name
+        })
+
+        # Coat pocket has 1 pen before test
+        self.check_has(url, 1)
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.path = url
+        request.set_body('{"pens": []}')
+
+        resp = pr.put_detail(request, pk=self.pocket_2.pk)
+        self.assertEqual(resp.status_code, 204)
+
+        # Coat pocket has no pens before test
+        self.check_has(url, 0)
+
+
 class OneToManySetupTestCase(TestCase):
     urls = 'related_resource.api.urls'
 
@@ -213,7 +323,7 @@ class FullCategoryResource(CategoryResource):
 
 class RelatedPatchTestCase(TestCase):
     urls = 'related_resource.api.urls'
-    
+
     def setUp(self):
         super(RelatedPatchTestCase, self).setUp()
         #this test doesn't use MockRequest, so the body attribute is different.
@@ -482,7 +592,7 @@ class NestedRelatedResourceTest(TestCase):
         request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
-        
+
         self.assertEqual(Bone.objects.count(), 1)
         bone = Bone.objects.all()[0]
         self.assertEqual(bone.color, 'gray')
@@ -523,7 +633,7 @@ class RelatedSaveCallsTest(TestCase):
             'name': 'Foo',
             'parent': resource.get_resource_uri(parent)
         })
-        
+
         request.set_body(body)
 
         with self.assertNumQueries(2):
@@ -550,7 +660,7 @@ class RelatedSaveCallsTest(TestCase):
         })
 
         request.set_body(body)
-        
+
         resource.post_list(request) #_save_fails_test will explode if Label is saved
 
 
@@ -567,9 +677,9 @@ class RelatedSaveCallsTest(TestCase):
         body_dict = {'name':'school',
                      'taggabletags':[{'extra':7}]
                      }
-        
+
         request.set_body(json.dumps(body_dict))
-        
+
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp.status_code, 201)
 
@@ -579,17 +689,17 @@ class RelatedSaveCallsTest(TestCase):
         self.assertEqual(taggable_tag.extra, 7)
 
         body_dict['taggabletags'] = [{'extra':1234}]
-        
+
         request.set_body(json.dumps(body_dict))
 
-        request.path = reverse('api_dispatch_detail', kwargs={'pk': tag.pk, 
-                                                              'resource_name': resource._meta.resource_name, 
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': tag.pk,
+                                                              'resource_name': resource._meta.resource_name,
                                                               'api_name': resource._meta.api_name})
 
         resource.put_detail(request)
-        
+
         #'extra' should have changed
         tag = Tag.objects.all()[0]
         taggable_tag = tag.taggabletags.all()[0]
         self.assertEqual(taggable_tag.extra, 1234)
-        
+

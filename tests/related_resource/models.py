@@ -118,3 +118,18 @@ class Label(models.Model):
 class Post(models.Model):
     name = models.CharField(max_length=200)
     label = models.ManyToManyField(Label, null=True)
+
+
+class Pen(models.Model):
+    brand = models.CharField(max_length=20)
+
+
+class Pocket(models.Model):
+    name = models.CharField(max_length=20)
+    pens = models.ManyToManyField(Pen, through='PenOrder', blank=True)
+
+
+class PenOrder(models.Model):
+    pen = models.ForeignKey(Pen)
+    pocket = models.ForeignKey(Pocket)
+    order = models.IntegerField(default=0)

@@ -4,7 +4,8 @@ from tastypie.resources import ModelResource
 from tastypie.authorization import Authorization
 from core.models import Note, MediaBit
 from related_resource.models import Category, Tag, ExtraData, Taggable,\
-    TaggableTag, Person, Company, Product, Address, Dog, DogHouse, Bone
+    TaggableTag, Person, Company, Product, Address, Dog, DogHouse, Bone, \
+    Pen, Pocket, PenOrder
 from tests.related_resource.models import Label, Post
 
 
@@ -178,4 +179,21 @@ class PostResource(ModelResource):
     class Meta:
         queryset = Post.objects.all()
         resource_name = 'post'
+        authorization = Authorization()
+
+
+class PenResource(ModelResource):
+
+    class Meta:
+        queryset = Pen.objects.all()
+        resource_name = 'pen'
+        authorization = Authorization()
+
+
+class PocketResource(ModelResource):
+    pens = fields.ToManyField(PenResource, 'pens', null=True)
+
+    class Meta:
+        queryset = Pocket.objects.all()
+        resource_name = 'pocket'
         authorization = Authorization()
