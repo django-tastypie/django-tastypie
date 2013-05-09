@@ -2423,13 +2423,21 @@ class ModelResource(Resource):
                     request=bundle.request,
                     objects_saved=bundle.objects_saved
                 )
-                
+
                 #Only save related models if they're newly added.
                 if updated_related_bundle.obj._state.adding:
                     related_resource.save(updated_related_bundle)
                 related_objs.append(updated_related_bundle.obj)
 
-            related_mngr.add(*related_objs)
+            if hasattr(related_mngr, 'add'):
+                related_mngr.add(*related_objs)
+            else:
+                # handle m2m with a "through" class
+                for other_obj in related_objs:
+                    related_mngr.through.objects.get_or_create(**{
+                        related_mngr.source_field_name: bundle.obj,
+                        related_mngr.target_field_name: other_obj
+                    })
 
     def detail_uri_kwargs(self, bundle_or_obj):
         """
