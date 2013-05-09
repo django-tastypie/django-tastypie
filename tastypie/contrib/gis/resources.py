@@ -28,7 +28,7 @@ class GeometryApiField(ApiField):
             return value
         return simplejson.dumps(value)
 
-    def dehydrate(self, obj):
+    def dehydrate(self, obj, for_list=False):
         return self.convert(super(GeometryApiField, self).dehydrate(obj))
 
     def convert(self, value):
