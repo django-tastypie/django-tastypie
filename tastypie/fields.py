@@ -673,7 +673,7 @@ class RelatedField(ApiField):
         should_dehydrate_full_resource = False
         if self.full:
             
-            if not bundle.request: # default to True if no bundle request is available
+            if not bundle.request or not bundle.request.path: # default to True if no bundle request is available
                 should_dehydrate_full_resource = True
             else:
                 is_details_view = resolve(bundle.request.path).url_name == "api_dispatch_detail"
