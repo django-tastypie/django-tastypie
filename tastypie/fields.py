@@ -668,17 +668,22 @@ class RelatedField(ApiField):
     def should_full_dehydrate(self, bundle):
         """
         Based on the ``full``, ``list_full`` and ``detail_full`` returns ``True`` or ``False``
-        indicating weather the resource should be fully dehydrated.
+        indicating whether the resource should be fully dehydrated.
         """
         should_dehydrate_full_resource = False
         if self.full:
-            is_details_view = resolve(bundle.request.path).url_name == "api_dispatch_detail"
-            if is_details_view:
-                if (not callable(self.full_detail) and self.full_detail) or (callable(self.full_detail) and self.full_detail(bundle)):
-                    should_dehydrate_full_resource = True
+            
+            if not bundle.request: # default to True if no bundle request is available
+                should_dehydrate_full_resource = True
             else:
-                if (not callable(self.full_list) and self.full_list) or (callable(self.full_list) and self.full_list(bundle)):
-                    should_dehydrate_full_resource = True
+                is_details_view = resolve(bundle.request.path).url_name == "api_dispatch_detail"
+
+                if is_details_view:
+                    if (not callable(self.full_detail) and self.full_detail) or (callable(self.full_detail) and self.full_detail(bundle)):
+                        should_dehydrate_full_resource = True
+                else:
+                    if (not callable(self.full_list) and self.full_list) or (callable(self.full_list) and self.full_list(bundle)):
+                        should_dehydrate_full_resource = True
 
         return should_dehydrate_full_resource
 
