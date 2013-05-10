@@ -76,7 +76,8 @@ it is present) and their password should also correspond to that entry.
 As an alternative to requiring sensitive data like a password, the
 ``ApiKeyAuthentication`` allows you to collect just username & a
 machine-generated api key. Tastypie ships with a special ``Model`` just for
-this purpose, so you'll need to ensure ``tastypie`` is in ``INSTALLED_APPS``.
+this purpose, so you'll need to ensure ``tastypie`` is in ``INSTALLED_APPS`` and 
+that the model's database tables have been created (e.g. via ``django-admin.py syncdb``).
 
 To use this mechanism, the end user can either specify an ``Authorization``
 header or pass the ``username/api_key`` combination as ``GET/POST`` parameters.
@@ -105,7 +106,15 @@ objects. Hooking it up looks like::
   ``Authorization`` header. See `this post`_ for details (even though it
   only mentions Basic auth).
 
+.. note::
+
+   In some cases it may be useful to make the ``ApiKey`` model an `abstract
+   base class`_. To enable this, set ``settings.TASTYPIE_ABSTRACT_APIKEY`` to
+   ``True``. See `the documentation for this setting`_ for more information.
+
 .. _`this post`: http://www.nerdydork.com/basic-authentication-on-mod_wsgi.html
+.. _`abstract base class`: https://docs.djangoproject.com/en/dev/topics/db/models/#abstract-base-classes
+.. _`the documentation for this setting`: http://django-tastypie.readthedocs.org/en/latest/settings.html#tastypie-abstract-apikey
 
 ``SessionAuthentication``
 ~~~~~~~~~~~~~~~~~~~~~~~~~

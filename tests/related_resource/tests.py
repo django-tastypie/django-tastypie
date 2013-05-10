@@ -14,7 +14,8 @@ from tastypie import fields
 from related_resource.api.resources import FreshNoteResource, CategoryResource, PersonResource
 from related_resource.api.urls import api
 from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address
-
+from related_resource.models import Label
+from django.db.models.signals import pre_save
 
 class RelatedResourceTest(TestCase):
     urls = 'related_resource.api.urls'
@@ -22,17 +23,13 @@ class RelatedResourceTest(TestCase):
     def setUp(self):
         super(RelatedResourceTest, self).setUp()
         self.user = User.objects.create(username="testy_mctesterson")
-        if django.VERSION >= (1, 4):
-            self.body_attr = "body"
-        else:
-            self.body_attr = "raw_post_data"
 
     def test_cannot_access_user_resource(self):
         resource = api.canonical_resource_for('users')
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, '{"username": "foobar"}')
+        request.set_body('{"username": "foobar"}')
         resp = resource.wrap_view('dispatch_detail')(request, pk=self.user.pk)
 
         self.assertEqual(resp.status_code, 405)
@@ -44,7 +41,7 @@ class RelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": null}')
+        request.set_body('{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": null}')
 
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
@@ -53,7 +50,7 @@ class RelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-2", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": {"id": %s, "username": "foobar"}}' % self.user.id)
+        request.set_body('{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-2", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": {"id": %s, "username": "foobar"}}' % self.user.id)
 
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
@@ -69,10 +66,6 @@ class CategoryResourceTest(TestCase):
         self.parent_cat_2 = Category.objects.create(parent=None, name='Mom')
         self.child_cat_1 = Category.objects.create(parent=self.parent_cat_1, name='Son')
         self.child_cat_2 = Category.objects.create(parent=self.parent_cat_2, name='Daughter')
-        if django.VERSION >= (1, 4):
-            self.body_attr = "body"
-        else:
-            self.body_attr = "raw_post_data"
 
     def test_correct_relation(self):
         resource = api.canonical_resource_for('category')
@@ -99,7 +92,7 @@ class CategoryResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, '{"parent": null, "name": "Son"}')
+        request.set_body('{"parent": null, "name": "Son"}')
 
         # Before the PUT, there should be a parent.
         self.assertEqual(Category.objects.get(pk=self.child_cat_1.pk).parent.pk, self.parent_cat_1.pk)
@@ -125,10 +118,6 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         # Give each tag some extra data (the lookup of this data is what makes the test fail)
         self.extradata_1 = ExtraData.objects.create(tag=self.tag_1, name='additional')
         
-        if django.VERSION >= (1, 4):
-            self.body_attr = "body"
-        else:
-            self.body_attr = "raw_post_data"
 
     def test_correct_setup(self):
         request = MockRequest()
@@ -165,7 +154,7 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        setattr(request, self.body_attr, '{"name": "school", "taggabletags": [ ]}')
+        request.set_body('{"name": "school", "taggabletags": [ ]}')
 
         # Prior to the addition of ``blank=True``, this would
         # fail badly.
@@ -185,13 +174,6 @@ class ExplicitM2MResourceRegressionTest(TestCase):
 
 class OneToManySetupTestCase(TestCase):
     urls = 'related_resource.api.urls'
-    
-    def setUp(self):
-        super(OneToManySetupTestCase, self).setUp()
-        if django.VERSION >= (1, 4):
-            self.body_attr = "body"
-        else:
-            self.body_attr = "raw_post_data"
 
     def test_one_to_many(self):
         # Sanity checks.
@@ -215,7 +197,7 @@ class OneToManySetupTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        setattr(request, self.body_attr, json.dumps(data))
+        request.set_body(json.dumps(data))
 
         resp = fnr.post_list(request)
         self.assertEqual(resp.status_code, 201)
@@ -234,10 +216,11 @@ class RelatedPatchTestCase(TestCase):
     
     def setUp(self):
         super(RelatedPatchTestCase, self).setUp()
+        #this test doesn't use MockRequest, so the body attribute is different.
         if django.VERSION >= (1, 4):
-            self.body_attr = "body"
+            self.body_attr = "_body"
         else:
-            self.body_attr = "raw_post_data"
+            self.body_attr = "_raw_post_data"
 
     def test_patch_to_one(self):
         resource = FullCategoryResource()
@@ -254,7 +237,7 @@ class RelatedPatchTestCase(TestCase):
             'name': 'Kid'
         }
 
-        setattr(request, "_" + self.body_attr, json.dumps(data))
+        setattr(request, self.body_attr, json.dumps(data))
         self.assertEqual(cat2.name, 'Child')
         resp = resource.patch_detail(request, pk=cat2.pk)
         self.assertEqual(resp.status_code, 202)
@@ -264,13 +247,6 @@ class RelatedPatchTestCase(TestCase):
 
 class NestedRelatedResourceTest(TestCase):
     urls = 'related_resource.api.urls'
-
-    def setUp(self):
-        super(NestedRelatedResourceTest, self).setUp()
-        if django.VERSION >= (1, 4):
-            self.body_attr = "body"
-        else:
-            self.body_attr = "raw_post_data"
 
     def test_one_to_one(self):
         """
@@ -295,7 +271,7 @@ class NestedRelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        setattr(request, self.body_attr, json.dumps(data))
+        request.set_body(json.dumps(data))
         resp = pr.post_list(request)
         self.assertEqual(resp.status_code, 201)
 
@@ -319,7 +295,7 @@ class NestedRelatedResourceTest(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'PUT'
         request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
-        setattr(request, self.body_attr, resp.content)
+        request.set_body(resp.content)
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
 
@@ -348,7 +324,7 @@ class NestedRelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        setattr(request, self.body_attr, json.dumps(data))
+        request.set_body(json.dumps(data))
         resp = pr.post_list(request)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(Person.objects.count(), 1)
@@ -358,7 +334,6 @@ class NestedRelatedResourceTest(TestCase):
         pk = Person.objects.all()[0].pk
         request = MockRequest()
         request.method = 'GET'
-        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
         resp = pr.get_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 200)
 
@@ -375,8 +350,7 @@ class NestedRelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
-        setattr(request, self.body_attr, json.dumps(person))
+        request.set_body(json.dumps(person))
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
 
@@ -405,7 +379,7 @@ class NestedRelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        setattr(request, self.body_attr, json.dumps(data))
+        request.set_body(json.dumps(data))
         resp = pr.post_list(request)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(Person.objects.count(), 1)
@@ -432,7 +406,7 @@ class NestedRelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, json.dumps(person))
+        request.set_body(json.dumps(person))
         request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
@@ -465,7 +439,7 @@ class NestedRelatedResourceTest(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'POST'
         request.path = reverse('api_dispatch_list', kwargs={'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
-        setattr(request, self.body_attr, json.dumps(data))
+        request.set_body(json.dumps(data))
         resp = pr.post_list(request)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(Person.objects.count(), 1)
@@ -493,7 +467,129 @@ class NestedRelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, json.dumps(person))
+        request.set_body(json.dumps(person))
         request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
+
+        #Change just a nested resource via PUT
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        person['dogs'][0]['bones'][0]['color'] = 'gray'
+        body = json.dumps(person)
+        request.set_body(body)
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
+        resp = pr.put_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 204)
+        
+        self.assertEqual(Bone.objects.count(), 1)
+        bone = Bone.objects.all()[0]
+        self.assertEqual(bone.color, 'gray')
+
+
+class RelatedSaveCallsTest(TestCase):
+    urls = 'related_resource.api.urls'
+
+    def test_one_query_for_post_list(self):
+        """
+        Posting a new detail with no related objects
+        should require one query to save the object
+        """
+        resource = api.canonical_resource_for('category')
+
+        request = MockRequest()
+        body = json.dumps({
+            'name': 'Foo',
+            'parent': None
+        })
+        request.set_body(body)
+
+        with self.assertNumQueries(1):
+            resp = resource.post_list(request)
+
+
+    def test_two_queries_for_post_list(self):
+        """
+        Posting a new detail with one related object, referenced via its
+        ``resource_uri`` should require two queries: one to save the
+        object, and one to lookup the related object.
+        """
+        parent = Category.objects.create(name='Bar')
+        resource = api.canonical_resource_for('category')
+
+        request = MockRequest()
+        body = json.dumps({
+            'name': 'Foo',
+            'parent': resource.get_resource_uri(parent)
+        })
+        
+        request.set_body(body)
+
+        with self.assertNumQueries(2):
+            resp = resource.post_list(request)
+
+    def test_no_save_m2m_unchanged(self):
+        """
+        Posting a new detail with a related m2m object shouldn't
+        save the m2m object unless the m2m object is provided inline.
+        """
+        def _save_fails_test(sender, **kwargs):
+            self.fail("Should not have saved Label")
+
+        pre_save.connect(_save_fails_test, sender=Label)
+        l1 = Label.objects.get(name='coffee')
+        resource = api.canonical_resource_for('post')
+        label_resource = api.canonical_resource_for('label')
+
+        request = MockRequest()
+
+        body = json.dumps({
+            'name': 'test post',
+            'label': [label_resource.get_resource_uri(l1)],
+        })
+
+        request.set_body(body)
+        
+        resource.post_list(request) #_save_fails_test will explode if Label is saved
+
+
+    def test_save_m2m_changed(self):
+        """
+        Posting a new or updated detail object with a related m2m object
+        should save the m2m object if it's included inline.
+        """
+
+        resource = api.canonical_resource_for('tag')
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        body_dict = {'name':'school',
+                     'taggabletags':[{'extra':7}]
+                     }
+        
+        request.set_body(json.dumps(body_dict))
+        
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp.status_code, 201)
+
+        #'extra' should have been set
+        tag = Tag.objects.all()[0]
+        taggable_tag = tag.taggabletags.all()[0]
+        self.assertEqual(taggable_tag.extra, 7)
+
+        body_dict['taggabletags'] = [{'extra':1234}]
+        
+        request.set_body(json.dumps(body_dict))
+
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': tag.pk, 
+                                                              'resource_name': resource._meta.resource_name, 
+                                                              'api_name': resource._meta.api_name})
+
+        resource.put_detail(request)
+        
+        #'extra' should have changed
+        tag = Tag.objects.all()[0]
+        taggable_tag = tag.taggabletags.all()[0]
+        self.assertEqual(taggable_tag.extra, 1234)
+        
