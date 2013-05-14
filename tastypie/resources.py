@@ -543,7 +543,7 @@ class Resource(object):
             allowed = []
 
         request_method = request.method.lower()
-        allows = ','.join(map(str.upper, allowed))
+        allows = ','.join(map(lambda x: x.upper(), allowed))
 
         if request_method == "options":
             response = HttpResponse(allows)
