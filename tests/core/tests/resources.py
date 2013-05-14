@@ -108,6 +108,9 @@ class BasicResource(Resource):
     def get_list(self, request, **kwargs):
         raise NotImplementedError
 
+class BasicResourceWithUnicodeListAllowedMethods(BasicResource):
+    class Meta(BasicResource.Meta):
+        list_allowed_methods = [u'get']
 
 class AnotherBasicResource(BasicResource):
     name = fields.CharField(attribute='name')
@@ -714,6 +717,9 @@ class ResourceTestCase(TestCase):
         request_method = basic.method_check(request, allowed=['get'])
         self.assertEqual(request_method, 'get')
 
+        # Allowed (unicode, for Python 2.* with `from __future__ import unicode_literals`)
+        request_method = basic.method_check(request, allowed=[u'get'])
+
         # Allowed (multiple).
         request_method = basic.method_check(request, allowed=['post', 'get', 'put'])
         self.assertEqual(request_method, 'get')
@@ -788,7 +794,7 @@ class ResourceTestCase(TestCase):
         self.assertEquals(basic_resource_list[0]['date_joined'], u'2010-03-30T09:00:00')
 
         self.assertNotIn('view_count', basic_resource_list[0])
-        
+
 
 # ====================
 # Model-based tests...
