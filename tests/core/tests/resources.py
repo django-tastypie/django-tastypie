@@ -108,9 +108,6 @@ class BasicResource(Resource):
     def get_list(self, request, **kwargs):
         raise NotImplementedError
 
-class BasicResourceWithUnicodeListAllowedMethods(BasicResource):
-    class Meta(BasicResource.Meta):
-        list_allowed_methods = [u'get']
 
 class AnotherBasicResource(BasicResource):
     name = fields.CharField(attribute='name')
