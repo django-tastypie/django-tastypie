@@ -450,7 +450,7 @@ class RelatedField(ApiField):
         is a callable, and returns ``True``, the field will be included during
         dehydration.
         Defaults to ``all``.
-        
+
         Optionally accepts a ``full_list``, which indicated whether or not
         data should be fully dehydrated when the request is for a list of
         resources. Accepts ``True``, ``False`` or a callable that accepts
@@ -668,7 +668,7 @@ class RelatedField(ApiField):
     def should_full_dehydrate(self, bundle, for_list):
         """
         Based on the ``full``, ``list_full`` and ``detail_full`` returns ``True`` or ``False``
-        indicating weather the resource should be fully dehydrated.
+        indicating whether the resource should be fully dehydrated.
         """
         should_dehydrate_full_resource = False
         if self.full:
