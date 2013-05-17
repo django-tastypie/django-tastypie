@@ -68,3 +68,10 @@ I-Am-CC.org
 under a Creative Commons license.
 
 * http://i-am-cc.org/api/?format=json
+
+Dbpatterns
+----------
+
+Dbpatterns is a service that allows you to create, share, explore database models on the web.
+
+* http://dbpatterns.com
