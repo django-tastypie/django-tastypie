@@ -137,7 +137,10 @@ class Serializer(object):
         data = make_naive(data)
         if self.datetime_formatting == 'rfc-2822':
             return format_datetime(data)
-
+        if self.datetime_formatting == 'iso-8601-strict':
+            # Remove microseconds to strictly adhere to iso-8601
+            data = data - datetime.timedelta(microseconds = data.microsecond)
+            
         return data.isoformat()
 
     def format_date(self, data):
@@ -165,6 +168,9 @@ class Serializer(object):
         """
         if self.datetime_formatting == 'rfc-2822':
             return format_time(data)
+        if self.datetime_formatting == 'iso-8601-strict':
+            # Remove microseconds to strictly adhere to iso-8601
+            data = (datetime.datetime.combine(datetime.date(1,1,1),data) - datetime.timedelta(microseconds = data.microsecond)).time()
 
         return data.isoformat()
 
