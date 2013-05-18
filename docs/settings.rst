@@ -91,13 +91,13 @@ Defaults to ``False``.
 **Optional**
 
 This setting allows you to globally choose what format your datetime/date/time
-data will be formatted in. Valid options are ``iso-8601`` & ``rfc-2822``.
+data will be formatted in. Valid options are ``iso-8601``, ``iso-8601-strict`` & ``rfc-2822``.
 
 An example::
 
     TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
 
-Defaults to ``iso-8601``.
+Defaults to ``iso-8601``. ``iso-8601`` includes microseconds if available, use ``iso-8601-strict`` to strip them.
 
 .. _settings.TASTYPIE_DEFAULT_FORMATS:
 
