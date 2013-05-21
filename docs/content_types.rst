@@ -68,3 +68,21 @@ field or attribute types. When you define it, you must also define the other
 models and match them to their resources in a dictionary, and pass that as the
 first argument, the second argument is the name of the attribute on the model
 that holds the GenericForeignKey.
+
+If you want to include the related objects on the other side of the (fake) relationship:
+
+Taking the Note model as example, for a minimal working example:
+
+class Note(models.Model):
+    ...
+    tags = generic.GenericRelation(TaggedItem, object_id_field='object_id', content_type_field='content_type')
+    ...
+    
+class NoteResource(ModelResource):
+    
+    tags = fields.ToManyField('path.to.api.TaggedItemResource', 'tags')
+
+    class Meta:
+        resource_name = 'notes'
+        queryset = Note.objects.all()
+
