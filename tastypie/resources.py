@@ -2183,8 +2183,7 @@ class ModelResource(Resource):
 
             if field_object.attribute:
                 value = field_object.hydrate(bundle)
-
-            lookup_kwargs[identifier] = value
+                lookup_kwargs[identifier] = value
 
         return lookup_kwargs
 
