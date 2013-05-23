@@ -396,7 +396,7 @@ class Resource(object):
 
         return self._meta.serializer.serialize(data, format, options)
 
-    def deserialize(self, request, data, format='application/json'):
+    def deserialize(self, request, data, format=None):
         """
         Given a request, data and a format, deserializes the given data.
 
@@ -405,7 +405,9 @@ class Resource(object):
 
         Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
         """
-        deserialized = self._meta.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        if format is None:
+            format = request.META.get('CONTENT_TYPE', 'application/json')
+        deserialized = self._meta.serializer.deserialize(data, format=format)
         return deserialized
 
     def alter_list_data_to_serialize(self, request, data):
@@ -2423,7 +2425,7 @@ class ModelResource(Resource):
                     request=bundle.request,
                     objects_saved=bundle.objects_saved
                 )
-                
+
                 #Only save related models if they're newly added.
                 if updated_related_bundle.obj._state.adding:
                     related_resource.save(updated_related_bundle)
