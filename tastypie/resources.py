@@ -244,7 +244,7 @@ class Resource(object):
                 data = {"error": e.messages}
                 return self.error_response(request, data, response_class=http.HttpBadRequest)
             except Exception, e:
-                if hasattr(e, 'response'):
+                if isinstance(getattr(e, 'response', None), HttpResponse):
                     return e.response
 
                 # A real, non-expected exception.

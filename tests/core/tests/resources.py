@@ -13,7 +13,7 @@ from django.core.exceptions import FieldError, MultipleObjectsReturned
 from django.core import mail
 from django.core.urlresolvers import reverse
 from django import forms
-from django.http import HttpRequest, QueryDict, Http404
+from django.http import HttpRequest, QueryDict, Http404, HttpResponseServerError
 from django.test import TestCase
 
 from tastypie.authentication import BasicAuthentication
@@ -3671,6 +3671,14 @@ class BustedResource(BasicResource):
 
     def post_list(self, request, **kwargs):
         raise Http404("Not here either")
+      
+    def post_detail(self, request, **kwargs):
+        error = YouFail()
+        if kwargs['good_response']:
+          error.response = HttpResponseServerError()
+        else:
+          error.response = 'Evil response!'
+        raise error
 
 
 class BustedResourceTestCase(TestCase):
@@ -3776,3 +3784,15 @@ class BustedResourceTestCase(TestCase):
         self.request.method = 'POST'
         resp = self.resource.wrap_view('post_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 404)
+        
+    def test_error_with_response(self):
+        self.request.method = 'POST'
+        resp = self.resource.wrap_view('post_detail')(self.request, good_response=True)
+        self.assertEqual(resp.status_code, 500)
+        self.assertEqual(resp.content, '')
+        
+    def test_error_with_invalid_response(self):
+        self.request.method = 'POST'
+        resp = self.resource.wrap_view('post_detail')(self.request, good_response=False)
+        self.assertEqual(resp.status_code, 500)
+        self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
