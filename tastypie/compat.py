@@ -17,6 +17,7 @@ if django.VERSION >= (1, 5):
         # This can happen is when setting up the create_api_key signal, in your
         # custom user module.
         User = None
+        username_field = None
 else:
     from django.contrib.auth.models import User
     username_field = 'username'
