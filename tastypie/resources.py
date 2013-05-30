@@ -2274,8 +2274,8 @@ class ModelResource(Resource):
             if bundle.obj and self.get_bundle_detail_data(bundle):
                 bundle.obj.delete()
 
-    def create_identifier(self, obj):
-        return u"%s.%s.%s" % (obj._meta.app_label, obj._meta.module_name, obj.pk)
+    def create_identifier(self, obj, field_name=None):
+        return u"%s%s.%s.%s" % (field_name + '.' if field_name else '',obj._meta.app_label, obj._meta.module_name, obj.pk)
 
     def save(self, bundle, skip_errors=False):
         self.is_valid(bundle)
@@ -2347,7 +2347,7 @@ class ModelResource(Resource):
 
                 # Before we build the bundle & try saving it, let's make sure we
                 # haven't already saved it.
-                obj_id = self.create_identifier(related_obj)
+                obj_id = self.create_identifier(related_obj,field_name)
 
                 if obj_id in bundle.objects_saved:
                     # It's already been saved. We're done here.
@@ -2410,7 +2410,7 @@ class ModelResource(Resource):
 
                 # Before we build the bundle & try saving it, let's make sure we
                 # haven't already saved it.
-                obj_id = self.create_identifier(related_bundle.obj)
+                obj_id = self.create_identifier(related_bundle.obj,field_name)
 
                 if obj_id in bundle.objects_saved:
                     # It's already been saved. We're done here.
