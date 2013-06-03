@@ -5,7 +5,6 @@ import django
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.db.models.signals import pre_save
 from django.test import TestCase
 
 from tastypie import fields
@@ -596,31 +595,6 @@ class RelatedSaveCallsTest(TestCase):
 
         with self.assertNumQueries(2):
             resp = resource.post_list(request)
-
-    def test_no_save_m2m_unchanged(self):
-        """
-        Posting a new detail with a related m2m object shouldn't
-        save the m2m object unless the m2m object is provided inline.
-        """
-        def _save_fails_test(sender, **kwargs):
-            self.fail("Should not have saved Label")
-
-        pre_save.connect(_save_fails_test, sender=Label)
-        l1 = Label.objects.get(name='coffee')
-        resource = api.canonical_resource_for('post')
-        label_resource = api.canonical_resource_for('label')
-
-        request = MockRequest()
-
-        body = json.dumps({
-            'name': 'test post',
-            'label': [label_resource.get_resource_uri(l1)],
-        })
-
-        request.set_body(body)
-
-        resource.post_list(request) #_save_fails_test will explode if Label is saved
-
 
     def test_save_m2m_changed(self):
         """
