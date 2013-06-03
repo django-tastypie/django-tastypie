@@ -147,7 +147,7 @@ class DogHouseResource(ModelResource):
 
 
 class BoneResource(ModelResource):
-    dog = fields.ToOneField('related_resource.api.resources.DogResource', 'dog')
+    dog = fields.ToOneField('related_resource.api.resources.DogResource', 'dog', null=True)
 
     class Meta:
         queryset = Bone.objects.all()
@@ -197,3 +197,4 @@ class JobResource(ModelResource):
         resource_name = 'job'
         authorization = Authorization()
         allowed_methods = ('get','put','post')
+

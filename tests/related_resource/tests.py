@@ -634,3 +634,46 @@ class RelatedSaveCallsTest(TestCase):
         tag = Tag.objects.all()[0]
         taggable_tag = tag.taggabletags.all()[0]
         self.assertEqual(taggable_tag.extra, 1234)
+
+    def test_no_save_m2m_unchanged_exisitng_data_persists(self):
+        """
+        Data should persist when posting an updated detail object with
+        unchanged reverse realated objects.
+        """
+
+        person = Person.objects.create(name='Ryan')
+        dog = Dog.objects.create(name='Wilfred', owner=person)
+        bone1 = Bone.objects.create(color='White', dog=dog)
+        bone2 = Bone.objects.create(color='Grey', dog=dog)
+        
+        self.assertEqual(dog.bones.count(), 2)
+        
+        resource = api.canonical_resource_for('dog')
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request._load_post_and_files = lambda *args, **kwargs: None
+        body_dict = {
+            'id': dog.id,
+            'name': 'Wilfred',
+            'bones': [
+                {'id': bone1.id, 'color':  bone1.color},
+                {'id': bone2.id, 'color':  bone2.color}
+            ]
+        }
+        
+        request.set_body(json.dumps(body_dict))
+        
+        resp = resource.wrap_view('dispatch_detail')(request, pk=dog.pk)
+        
+        self.assertEqual(resp.status_code, 204)
+
+        dog = Dog.objects.all()[0]
+        
+        dog_bones = dog.bones.all()
+        
+        self.assertEqual(len(dog_bones), 2)
+        
+        self.assertEqual(dog_bones[0], bone1)
+        self.assertEqual(dog_bones[1], bone2)
+

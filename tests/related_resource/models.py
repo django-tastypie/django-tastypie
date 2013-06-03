@@ -103,7 +103,7 @@ class Dog(models.Model):
         return u"%s" % (self.name)
 
 class Bone(models.Model):
-    dog = models.ForeignKey(Dog, related_name='bones')
+    dog = models.ForeignKey(Dog, related_name='bones', null=True)
     color = models.CharField(max_length=32)
 
     def __unicode__(self):
@@ -116,10 +116,10 @@ class Post(models.Model):
     name = models.CharField(max_length=200)
     label = models.ManyToManyField(Label, null=True)
 
-
 class Job(models.Model):
     name = models.CharField(max_length=200)
 
 class Payment(models.Model):
     scheduled = models.DateTimeField()
     job = models.OneToOneField(Job, related_name="payment", null=True)
+
