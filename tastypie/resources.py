@@ -2232,7 +2232,8 @@ class BaseModelResource(Resource):
         return u"%s.%s.%s" % (obj._meta.app_label, obj._meta.module_name, obj.pk)
 
     def save(self, bundle, skip_errors=False):
-        self.is_valid(bundle)
+        if not self.is_valid(bundle):
+            return http.HttpForbidden("Failed data validation.")
 
         if bundle.errors and not skip_errors:
             raise ImmediateHttpResponse(response=self.error_response(bundle.request, bundle.errors))
