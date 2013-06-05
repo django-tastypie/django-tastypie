@@ -87,7 +87,71 @@ something like the following::
             ]
 
 The added URLconf matches before the standard URLconf included by default &
-matches on the username provided in the URL.
+matches on the username provided in the URL. Note: this does not adapt the 
+resource_uris in the returned result and additionally the old access method,
+i.e. "pk" is still valid and can be used.
+
+
+Advanced Example of Using Non-PK Data For Your URLs
+----------------------------------------------------
+
+This example improves on the one above in several aspects.
+
+ * The URIs in the result set will be correct
+ * If pk_field isn't set, then it switches to the standard method, so you can
+   play around with using your field or not.
+ * The resource is not accessible under the original URI anymore, so you are not
+   leaking data that you might not want to leak.
+   
+Change pk_field to your preferred field and adapt the pk_field_regex is needed::
+
+    class UserResource(ModelResource):
+        class Meta:
+            queryset = User.objects.all()
+            pk_field = 'profile__uuid'
+            pk_field_regex = '[0-9a-fA-F]{32}'
+    
+        def resource_uri_kwargs(self, bundle_or_obj=None):
+            """
+                Changing kwargs for uri so that the url resolve works.
+                Traversing bundle_or_obj in case we're using related objects.
+                Removing "pk" in case we're using our own field.
+            """
+            kwargs = super(UserResource, self).resource_uri_kwargs(bundle_or_obj)
+            if (    bundle_or_obj is not None
+                and getattr(self._meta, 'pk_field', 'pk') != 'pk'):
+                value = bundle_or_obj
+                if isinstance(bundle_or_obj, Bundle):
+                    value = bundle_or_obj.obj
+                for attribute in self._meta.pk_field.split("__"):
+                    value = getattr(value, attribute)
+                kwargs[self._meta.pk_field] = value
+                kwargs.pop('pk', None)
+            return kwargs
+    
+        def base_urls(self):
+            """
+                Overriding base_urls to make sure that the old pk regex is not
+                included anymore. api_get_multiple needs to be removed (in our
+                case because we're not using continuous numbers) and
+                api_dispatch_detail needs to be changed.
+            """
+            urls = super(UserResource, self).base_urls()
+    
+            if (getattr(self._meta, 'pk_field', 'pk') != 'pk'):
+                urls = [x for x in urls if (    x.name != "api_get_multiple"
+                                            and x.name != "api_dispatch_detail")]
+    
+                urls += [ url(r"^(?P<resource_name>%s)/(?P<%s>%s)%s$" % (
+                                                       self._meta.resource_name,
+                                                       self._meta.pk_field,
+                                                       self._meta.pk_field_regex,
+                                                       trailing_slash()
+                                                       ),
+                                                self.wrap_view('dispatch_detail'),
+                                                name="api_dispatch_detail")]
+            return urls
+
 
 
 Nested Resources
