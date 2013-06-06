@@ -59,7 +59,7 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
         """
         # Turn off signal when loading fixture data
         # cf https://code.djangoproject.com/ticket/20136
-        if kwargs['raw']:
+        if kwargs.get('raw', False):
             return
         if kwargs.get('created') is True:
             ApiKey.objects.create(user=kwargs.get('instance'))
