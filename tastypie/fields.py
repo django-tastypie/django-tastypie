@@ -595,29 +595,30 @@ class RelatedField(ApiField):
             fk_bundle.related_obj = related_obj
             fk_bundle.related_name = related_name
 
-        # We need to check to see if updates are allowed on the FK
-        # resource. If not, we'll just return a populated bundle instead
-        # of mistakenly updating something that should be read-only.
-        if not fk_resource.can_update():
-            return fk_resource.full_hydrate(fk_bundle)
-
-        try:
-            return fk_resource.obj_update(fk_bundle, skip_errors=True, **data)
-        except (NotFound, TypeError):
+        unique_keys = dict((k, v) for k, v in data.iteritems() if k == 'pk' or (hasattr(fk_resource, k) and getattr(fk_resource, k).unique))
+        
+        # If we have no unique keys, we shouldn't go look for some resource that 
+        # happens to match other kwargs. In the case of a create, it might be the
+        # completely wrong resource.
+        # We also need to check to see if updates are allowed on the FK resource. 
+        if unique_keys and fk_resource.can_update():            
             try:
-                # Attempt lookup by primary key
-                lookup_kwargs = dict((k, v) for k, v in data.iteritems() if getattr(fk_resource, k).unique)
+                return fk_resource.obj_update(fk_bundle, skip_errors=True, **data)
+            except (NotFound, TypeError):
+                try:
+                    # Attempt lookup by primary key
+                    return fk_resource.obj_update(fk_bundle, skip_errors=True, **unique_keys)
+                except NotFound:
+                    pass
+            except MultipleObjectsReturned:
+                pass
 
-                if not lookup_kwargs:
-                    raise NotFound()
-
-                return fk_resource.obj_update(fk_bundle, skip_errors=True, **lookup_kwargs)
-            except NotFound:
-                fk_bundle = fk_resource.full_hydrate(fk_bundle)
-                fk_resource.is_valid(fk_bundle)
-                return fk_bundle
-        except MultipleObjectsReturned:
-            return fk_resource.full_hydrate(fk_bundle)
+        # If we shouldn't update a resource, or we couldn't find a matching
+        # resource we'll just return a populated bundle instead
+        # of mistakenly updating something that should be read-only.
+        fk_bundle = fk_resource.full_hydrate(fk_bundle)
+        fk_resource.is_valid(fk_bundle)
+        return fk_bundle
 
     def resource_from_pk(self, fk_resource, obj, request=None, related_obj=None, related_name=None):
         """

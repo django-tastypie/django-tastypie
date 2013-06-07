@@ -4,7 +4,7 @@ from tastypie.resources import ModelResource
 from tastypie.authorization import Authorization
 from core.models import Note, MediaBit
 from related_resource.models import Category, Tag, ExtraData, Taggable,\
-    TaggableTag, Person, Company, Product, Address, Dog, DogHouse, Bone
+    TaggableTag, Person, Company, Product, Address, Dog, DogHouse, Bone, Job, Payment
 from tests.related_resource.models import Label, Post
 
 
@@ -179,3 +179,21 @@ class PostResource(ModelResource):
         queryset = Post.objects.all()
         resource_name = 'post'
         authorization = Authorization()
+
+class PaymentResource(ModelResource):
+    job = fields.ToOneField('related_resource.api.resources.JobResource', 'job')
+
+    class Meta:
+        queryset = Payment.objects.all()
+        resource_name = 'payment'
+        authorization = Authorization()
+        allowed_methods = ('get','put','post')
+
+class JobResource(ModelResource):
+    payment = fields.ToOneField(PaymentResource, 'payment', related_name='job')
+
+    class Meta:
+        queryset = Job.objects.all()
+        resource_name = 'job'
+        authorization = Authorization()
+        allowed_methods = ('get','put','post')

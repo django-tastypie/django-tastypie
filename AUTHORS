@@ -79,6 +79,7 @@ Contributors:
 * Matt DeBoard (mattdeboard) for a patch to optionally set ``abstract = True`` on the ApiKey model.
 * Paul Grau (graup) Addition of iso-8601-strict to available TASTYPIE_DATETIME_FORMATTING.
 * Eric Plumb (professorplumb) for fixing the nested resource example in the cookbook.
+* Willem Bult (willembult) for fixing a bug with updating updating foreign key resources during create.
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
