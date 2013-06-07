@@ -11,11 +11,12 @@ from core.models import Note, MediaBit
 from core.tests.resources import HttpRequest
 from core.tests.mocks import MockRequest
 from tastypie import fields
-from related_resource.api.resources import FreshNoteResource, CategoryResource, PersonResource
+from related_resource.api.resources import FreshNoteResource, CategoryResource, PersonResource, JobResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address
+from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment
 from related_resource.models import Label
 from django.db.models.signals import pre_save
+from datetime import datetime, tzinfo, timedelta
 
 class RelatedResourceTest(TestCase):
     urls = 'related_resource.api.urls'
@@ -209,6 +210,49 @@ class OneToManySetupTestCase(TestCase):
 
 class FullCategoryResource(CategoryResource):
     parent = fields.ToOneField('self', 'parent', null=True, full=True)
+
+class RelationshipOppositeFromModelTestCase(TestCase):
+    '''
+        On the model, the Job relationship is defined on the Payment.
+        On the resource, the PaymentResource is defined on the JobResource as well
+    '''
+    def setUp(self):
+        super(RelationshipOppositeFromModelTestCase, self).setUp()
+
+        # a job with a payment exists to start with
+        self.some_time_str = datetime.now().strftime('%Y-%m-%d %H:%M')
+        job = Job.objects.create(name='SomeJob')
+        payment = Payment.objects.create(job=job, scheduled=self.some_time_str)
+        
+    def test_create_similar(self):
+        # We submit to job with the related payment included.
+        # Note that on the resource, the payment related resource is defined
+        # On the model, the Job class does not have a payment field,
+        # but it has a reverse relationship defined by the Payment class
+        resource = JobResource()
+        data = {
+            'name': 'OtherJob', 
+            'payment': {
+                'scheduled': self.some_time_str
+            }
+        }
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.set_body(json.dumps(data))
+
+        resp = resource.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(Job.objects.count(), 2)
+        self.assertEqual(Payment.objects.count(), 2)
+
+        new_job = Job.objects.all().order_by('-id')[0]
+        new_payment = Payment.objects.all().order_by('-id')[0]
+
+        self.assertEqual(new_job.name, 'OtherJob')
+        self.assertEqual(new_job, new_payment.job)
+
 
 
 class RelatedPatchTestCase(TestCase):
