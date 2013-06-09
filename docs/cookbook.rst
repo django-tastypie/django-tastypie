@@ -80,6 +80,7 @@ something like the following::
     class UserResource(ModelResource):
         class Meta:
             queryset = User.objects.all()
+            detail_uri_name = 'username'
 
         def prepend_urls(self):
             return [
