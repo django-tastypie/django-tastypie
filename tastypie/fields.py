@@ -7,7 +7,7 @@ from django.utils import datetime_safe, importlib
 from django.core.urlresolvers import resolve
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
-from tastypie.utils import dict_strip_unicode_keys, make_aware
+from tastypie.utils import dict_strip_unicode_keys, make_aware, is_naive
 
 
 class NOT_PROVIDED:
@@ -329,7 +329,9 @@ class DateField(ApiField):
 
             if match:
                 data = match.groupdict()
-                return datetime_safe.date(int(data['year']), int(data['month']), int(data['day']))
+                return datetime_safe.date(int(data['year']),
+                                          int(data['month']),
+                                          int(data['day']))
             else:
                 raise ApiFieldError("Date provided to '%s' field doesn't appear to be a valid date string: '%s'" % (self.instance_name, value))
 
@@ -367,9 +369,16 @@ class DateTimeField(ApiField):
 
             if match:
                 data = match.groupdict()
-                return make_aware(datetime_safe.datetime(int(data['year']), int(data['month']), int(data['day']), int(data['hour']), int(data['minute']), int(data['second'])))
+                return make_aware(datetime_safe.datetime(int(data['year']),
+                                                         int(data['month']),
+                                                         int(data['day']),
+                                                         int(data['hour']),
+                                                         int(data['minute']),
+                                                         int(data['second'])))
             else:
                 raise ApiFieldError("Datetime provided to '%s' field doesn't appear to be a valid datetime string: '%s'" % (self.instance_name, value))
+        if is_naive(value):
+            value = make_aware(value)
 
         return value
 
@@ -450,7 +459,7 @@ class RelatedField(ApiField):
         is a callable, and returns ``True``, the field will be included during
         dehydration.
         Defaults to ``all``.
-        
+
         Optionally accepts a ``full_list``, which indicated whether or not
         data should be fully dehydrated when the request is for a list of
         resources. Accepts ``True``, ``False`` or a callable that accepts

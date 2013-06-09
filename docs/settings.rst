@@ -99,10 +99,27 @@ An example::
 
 Defaults to ``iso-8601``.
 
+``TASTYPIE_DATETIME_FORMATTING_TIMEZONE``
+=========================================
+
+**Optional**
+
+This setting allows you to include timzone information in your datetime
+formating.  It only effects ``iso-8601``, as ``rfc-2822`` displays timezones
+by default.  If the datetime object has ``tzinfo`` set, it will use that
+timezone.  Otherwise it will use the default timezone set in
+``settings.TIME_ZONE``.
+
+An example::
+
+    TASTYPIE_DATETIME_FORMATTING_TIMEZONE = True
+
+Defaults to ``False``.
+
 .. _settings.TASTYPIE_DEFAULT_FORMATS:
 
 ``TASTYPIE_DEFAULT_FORMATS``
-================================
+============================
 
 **Optional**
 

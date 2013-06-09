@@ -4,6 +4,10 @@ from django.test import TestCase
 from tastypie.exceptions import BadRequest
 from tastypie.serializers import Serializer
 from tastypie.utils.mime import determine_format, build_content_type
+from tastypie.utils.timezone import make_aware, make_naive, is_aware, is_naive, get_default_timezone
+
+from datetime import datetime
+from dateutil.tz import gettz
 
 
 class MimeTestCase(TestCase):
@@ -89,3 +93,44 @@ class MimeTestCase(TestCase):
 
         request.META = {'HTTP_ACCEPT': 'bogon'}
         self.assertRaises(BadRequest, determine_format, request, serializer)
+
+
+class TimezoneTestCase(TestCase):
+    def test_make_aware_same_tz(self):
+        dt = datetime(2010, 12, 16, 2, 31, 33)
+        self.assertFalse(is_aware(dt))
+        dt_aware = make_aware(dt)
+        self.assertTrue(is_aware(dt_aware))
+        self.assertEqual(dt_aware.tzinfo.tzname(dt), 'CST')
+
+    def test_make_aware_different_tz(self):
+        tzinfo = gettz('Asia/Singapore')
+        dt = datetime(2010, 12, 16, 2, 31, 33)
+        self.assertFalse(is_aware(dt))
+        dt_aware = make_aware(dt, tzinfo)
+        self.assertTrue(is_aware(dt_aware))
+        self.assertEqual(dt_aware.tzinfo, tzinfo)
+
+    def test_make_naive_same_tz(self):
+        tzinfo = get_default_timezone()
+        dt = datetime(2010, 12, 16, 2, 31, 33, tzinfo=tzinfo)
+        self.assertTrue(is_aware(dt))
+        dt_naive = make_naive(dt)
+        self.assertFalse(is_aware(dt_naive))
+
+    def test_make_naive_different_tz(self):
+        tzinfo = gettz('Asia/Singapore')
+        default_tz = get_default_timezone()
+        dt = datetime(2010, 12, 16, 2, 31, 33, tzinfo=tzinfo)
+        self.assertTrue(is_aware(dt))
+        dt_naive = make_naive(dt)  # Should be chicago
+        self.assertFalse(is_aware(dt_naive))
+        # Same tz -> no change in dt.
+        time_difference = default_tz.utcoffset(dt) - tzinfo.utcoffset(dt)
+        dt_comparison = datetime(2010, 12, 16, 2, 31, 33) + time_difference
+        self.assertEqual(dt_naive, dt_comparison)
+
+    def test_get_default_tz(self):
+        tzinfo = get_default_timezone()
+        dt = datetime(2010, 12, 16, 2, 31, 33)
+        self.assertEqual(tzinfo.tzname(dt), 'CST')

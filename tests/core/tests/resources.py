@@ -25,7 +25,7 @@ from tastypie.paginator import Paginator
 from tastypie.resources import Resource, ModelResource, ALL, ALL_WITH_RELATIONS, convert_post_to_put, convert_post_to_patch
 from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
-from tastypie.utils import aware_datetime, make_naive
+from tastypie.utils import aware_datetime, make_naive, is_aware, is_naive
 from tastypie.validation import FormValidation
 from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord, Counter
 from core.tests.mocks import MockRequest
@@ -1272,7 +1272,7 @@ class ModelResourceTestCase(TestCase):
         )
         self.note_1.subjects.add(self.subject_1)
         self.note_1.subjects.add(self.subject_2)
-        
+
         if django.VERSION >= (1, 4):
             self.body_attr = "body"
         else:
@@ -1964,7 +1964,7 @@ class ModelResourceTestCase(TestCase):
         res = json.loads(resp.content)
         self.assertTrue('error' in res.keys())
         self.assertTrue('monkey' in res['error']) #Error looks like "No matching \'monkey\' field for ordering on.
-        
+
         # Test to make sure we're not inadvertently caching the QuerySet.
         request.GET = {'format': 'json'}
         resp = resource.get_list(request)
@@ -2337,8 +2337,9 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 202)
         self.assertEqual(Note.objects.count(), 6)
         note = Note.objects.get(pk=1)
+        expected_created = aware_datetime(2010, 4, 3, 20, 5) if is_aware(note.created) else datetime.datetime(2010, 4, 3, 20, 5)
         self.assertEqual(note.content, "The cat is back. The dog coughed him up out back.")
-        self.assertEqual(note.created, aware_datetime(2010, 4, 3, 20, 5))
+        self.assertEqual(note.created, expected_created)
 
         request._raw_post_data = request._body = '{"content": "The cat is gone again. I think it was the rabbits that ate him this time."}'
 
@@ -2377,8 +2378,9 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 202)
         self.assertEqual(Note.objects.count(), 6)
         note = Note.objects.get(pk=1)
+        expected_created = aware_datetime(2010, 4, 3, 20, 5) if is_aware(note.created) else datetime.datetime(2010, 4, 3, 20, 5)
         self.assertEqual(note.content, "The cat is back. The dog coughed him up out back.")
-        self.assertEqual(note.created, aware_datetime(2010, 4, 3, 20, 5))
+        self.assertEqual(note.created, expected_created)
 
         request._raw_post_data = request._body = '{"content": "The cat is gone again. I think it was the rabbits that ate him this time."}'
 
@@ -2561,25 +2563,29 @@ class ModelResourceTestCase(TestCase):
 
         note = NoteResource()
         note_obj = note.obj_get(base_bundle, pk=1)
+        expected_created = aware_datetime(2010, 3, 30, 20, 5) if is_aware(note_obj.created) else datetime.datetime(2010, 3, 30, 20, 5)
+        expected_updated = aware_datetime(2010, 3, 30, 20, 5) if is_aware(note_obj.updated) else datetime.datetime(2010, 3, 30, 20, 5)
         self.assertEqual(note_obj.content, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
-        self.assertEqual(note_obj.created, aware_datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(note_obj.created, expected_created)
         self.assertEqual(note_obj.is_active, True)
         self.assertEqual(note_obj.slug, u'first-post')
         self.assertEqual(note_obj.title, u'First Post!')
-        self.assertEqual(note_obj.updated, aware_datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(note_obj.updated, expected_updated)
 
         custom = VeryCustomNoteResource()
         custom_obj = custom.obj_get(base_bundle, pk=1)
+        expected_created = aware_datetime(2010, 3, 30, 20, 5) if is_aware(custom_obj.created) else datetime.datetime(2010, 3, 30, 20, 5)
         self.assertEqual(custom_obj.content, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
-        self.assertEqual(custom_obj.created, aware_datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(custom_obj.created, expected_created)
         self.assertEqual(custom_obj.is_active, True)
         self.assertEqual(custom_obj.author.username, u'johndoe')
         self.assertEqual(custom_obj.title, u'First Post!')
 
         related = RelatedNoteResource()
         related_obj = related.obj_get(base_bundle, pk=1)
+        expected_created = aware_datetime(2010, 3, 30, 20, 5) if is_aware(related_obj.created) else datetime.datetime(2010, 3, 30, 20, 5)
         self.assertEqual(related_obj.content, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
-        self.assertEqual(related_obj.created, aware_datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(related_obj.created, expected_created)
         self.assertEqual(related_obj.is_active, True)
         self.assertEqual(related_obj.author.username, u'johndoe')
         self.assertEqual(related_obj.title, u'First Post!')
@@ -2897,15 +2903,15 @@ class ModelResourceTestCase(TestCase):
 
     def test_obj_delete_list_filtered(self):
         self.assertEqual(Note.objects.all().count(), 6)
-        
+
         note_to_delete = Note.objects.filter(is_active=True)[0]
-        
+
         request = HttpRequest()
         request.method = 'DELETE'
         request.GET = {'slug':str(note_to_delete.slug)}
         NoteResource().delete_list(request=request)
         self.assertEqual(len(Note.objects.all()), 5)
-        
+
     def test_obj_create(self):
         self.assertEqual(Note.objects.all().count(), 6)
         note = NoteResource()
@@ -3075,8 +3081,9 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(Note.objects.all().count(), 6)
         note = NoteResource()
         note_obj = note.obj_get(base_bundle, pk=1)
+        expected_created = aware_datetime(2010, 3, 30, 20, 5) if is_aware(note_obj.created) else datetime.datetime(2010, 3, 30, 20, 5)
         self.assertEqual(note_obj.title, u'Yet another another new post!')
-        self.assertEqual(note_obj.created, aware_datetime(2010, 3, 30, 20, 5))
+        self.assertEqual(note_obj.created, expected_created)
         note_bundle = note.build_bundle(obj=note_obj)
         note_bundle = note.full_dehydrate(note_bundle)
         note_bundle.data['title'] = 'OMGOMGOMGOMG!'
@@ -3084,10 +3091,11 @@ class ModelResourceTestCase(TestCase):
         note.obj_update(note_bundle, pk=1, created='2010-03-30T20:05:00')
         self.assertEqual(Note.objects.all().count(), 6)
         numero_uno = Note.objects.get(pk=1)
+        expected_created = aware_datetime(2011, 11, 23, 1, 0, 0) if is_aware(numero_uno.created) else datetime.datetime(2011, 11, 23, 1, 0, 0)
         self.assertEqual(numero_uno.title, u'OMGOMGOMGOMG!')
         self.assertEqual(numero_uno.slug, u'yet-another-another-new-post')
         self.assertEqual(numero_uno.content, u'WHEEEEEE!')
-        self.assertEqual(numero_uno.created, aware_datetime(2011, 11, 23, 1, 0))
+        self.assertEqual(numero_uno.created, expected_created)
 
         # Now try a lookup that should fail.
         note = NoteResource()
