@@ -64,6 +64,32 @@ Javascript's use, you could do the following::
             "user_json": ur.serialize(None, ur.full_dehydrate(ur_bundle), 'application/json'),
         })
 
+Example of getting a list of users::
+
+    def user_list(request):
+        res = UserResource()
+        request_bundle = res.build_bundle(request=request)
+        queryset = res.obj_get_list(request_bundle)
+
+        bundles = []
+        for obj in queryset:
+            bundle = res.build_bundle(obj=obj, request=request)
+            bundles.append(res.full_dehydrate(bundle, for_list=True))
+
+        list_json = res.serialize(None, bundles, "application/json")
+
+        return render_to_response('myapp/user_list.html', {
+            # Other things here.
+            "list_json": list_json,
+        })
+
+Then in template you could convert JSON into JavaScript object::
+
+    <script>
+        var json = "{{list_json|escapejs}}";
+        var users = JSON.parse(json);
+    </script>
+
 
 Using Non-PK Data For Your URLs
 -------------------------------
