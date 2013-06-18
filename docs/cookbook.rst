@@ -53,15 +53,18 @@ Javascript's use, you could do the following::
 
 
     def user_detail(request, username):
-        ur = UserResource()
-        user = ur.obj_get(username=username)
+        res = UserResource()
+        request_bundle = res.build_bundle(request=request)
+        user = res.obj_get(request_bundle, username=username)
 
         # Other things get prepped to go into the context then...
 
-        ur_bundle = ur.build_bundle(obj=user, request=request)
-        return render_to_response('myapp/user_detail.html', {
+        user_bundle = res.build_bundle(obj=user, request=request)
+        user_json = res.serialize(None, res.full_dehydrate(user_bundle), "application/json")
+
+        return render_to_response("myapp/user_detail.html", {
             # Other things here.
-            "user_json": ur.serialize(None, ur.full_dehydrate(ur_bundle), 'application/json'),
+            "user_json": user_json,
         })
 
 
