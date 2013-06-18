@@ -90,6 +90,7 @@ Contributors:
 * Michael Thornhill (mthornhill) for strict dict checking bugfix
 * Fedor Baart (siggyf) for an update on the serializer
 * Alexey Kotlyarov (koterpillar) - fixing DateField/DateTimeField.
+* Yuri Govorushchenko (metametadata) for documentation fixes.
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
