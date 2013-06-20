@@ -4,7 +4,7 @@ django-tastypie
 
 Creating delicious APIs for Django apps since 2010.
 
-Currently in beta (v0.9.14) but being used actively in production on several
+Currently in beta (0.9.16-dev) but being used actively in production on several
 sites.
 
 
@@ -102,7 +102,7 @@ Reference Material
 * http://jacobian.org/writing/rest-worst-practices/
 
 
-Security 
+Security
 ========
 
 Tastypie is committed to providing a flexible and secure API, and was designed

@@ -33,3 +33,30 @@ class Article(models.Model):
             self.slug = slugify(self.title)
 
         return super(Article, self).save(*args, **kwargs)
+
+
+class Shop(models.Model):
+    name = models.CharField(max_length=255)
+    owner = models.ForeignKey(User)
+
+    def __unicode__(self):
+        return u"Shop: {name}".format(name=self.name)
+
+
+class Item(models.Model):
+    name = models.CharField(max_length=255)
+    user = models.ForeignKey(User)
+    shop = models.ForeignKey(Shop)
+    similar = models.ManyToManyField("Item")
+
+    def __unicode__(self):
+        return u"Item: {name}".format(name=self.name)
+
+
+class Account(models.Model):
+    name = models.CharField(max_length=255)
+    email = models.EmailField(max_length=255)
+    user = models.OneToOneField(User, related_name="account")
+
+    def __unicode__(self):
+        return u"Account: {name}-{email}".format(name=self.name, email=self.email)

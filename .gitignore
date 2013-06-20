@@ -7,6 +7,8 @@ dist
 build
 MANIFEST
 tests/tastypie.db
+tests/tastypie-test.db
+tests/tastypie-test.db-journal
 .buildinfo
 .tox
 env

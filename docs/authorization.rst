@@ -61,6 +61,13 @@ The most advanced form of authorization, this checks the permission a user
 has granted to them (via ``django.contrib.auth.models.Permission``). In
 conjunction with the admin, this is a very effective means of control.
 
+``ObjectAuthorization``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+This authorization class to further limit the object. This creating per-user resources.
+Checks if object belong to user or to something that the user indicated.
+You can use this two ways. For comparing two objects or for comparing what return your function.
+For more information check :ref:`creating_per_user_resources`.
 
 The ``Authorization`` API
 =========================

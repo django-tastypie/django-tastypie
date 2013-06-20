@@ -1,4 +1,5 @@
-from tastypie.exceptions import TastypieError, Unauthorized
+from django.core.exceptions import ObjectDoesNotExist
+from tastypie.exceptions import Unauthorized
 
 
 class Authorization(object):
@@ -13,14 +14,6 @@ class Authorization(object):
         """
         self.resource_meta = instance
         return self
-
-    def apply_limits(self, request, object_list):
-        """
-        Deprecated.
-
-        FIXME: REMOVE BEFORE 1.0
-        """
-        raise TastypieError("Authorization classes no longer support `apply_limits`. Please update to using `read_list`.")
 
     def read_list(self, object_list, bundle):
         """
@@ -242,3 +235,128 @@ class DjangoAuthorization(Authorization):
             raise Unauthorized("You are not allowed to access that resource.")
 
         return True
+
+
+class ObjectAuthorization(Authorization):
+    """
+        Class provides object authorization.
+    """
+
+    text_unauth = "You are not allowed to access that resource."
+
+    def __init__(self, which_obj="user", func=None):
+        self.which_obj_list = which_obj.split("__")
+        self.func = func
+
+    def check_attribute(self, obj):
+        for attr in self.which_obj_list:
+            obj = obj.__getattribute__(attr)
+        return obj
+
+    def check_value_pk(self, obj):
+        """
+            Checks values from data.
+
+            .. note::
+                If user doesn't provide required data (KeyError), then raise Unauthorized.
+        """
+        for attr in self.which_obj_list:
+            try:
+                obj = obj[attr]
+            except KeyError:
+                raise Unauthorized(self.text_unauth)
+
+        if hasattr(obj, 'keys'):
+            obj = obj['id']
+        else:
+            obj = filter(lambda x: x, obj.split("/"))[-1]
+
+        return int(obj)
+
+    def read_list(self, object_list, bundle):
+        """
+            .. note::
+                Exception ObjectAuthorization raised when user does not provide connect for relations objects.
+
+                e.g.
+                We have two instances of class (User - user1, Account - account). Both exists, but Account is not related to User.
+                So, if we want get User object, and we set authorization in Meta class in our ModelResource like:
+                    authorization = ObjectAuthorization("account")
+                Then we got exception ObjectDoesNotExist.
+        """
+        allowed = []
+
+        if self.func:
+            for obj in object_list:
+                try:
+                    which_obj = self.check_attribute(obj)
+                except ObjectDoesNotExist:
+                    continue
+
+                if which_obj.__class__.__name__ == "RelatedManager":
+                    # isinstance doesn't work
+                    which_obj = which_obj.all()
+                    obj_from_func = self.func(bundle.request).get()
+
+                    if obj_from_func in which_obj:
+                        allowed.append(obj)
+                else:
+                    obj_from_func = self.func(bundle.request)
+
+                    if obj_from_func == which_obj:
+                        allowed.append(obj)
+        else:
+            for obj in object_list:
+                try:
+                    which_obj = self.check_attribute(obj)
+                except ObjectDoesNotExist:
+                    continue
+
+                if bundle.request.user == which_obj:
+                    allowed.append(obj)
+
+        return allowed
+
+    def read_detail(self, object_list, bundle):
+        which_obj = self.check_attribute(bundle.obj)
+
+        if self.func:
+            if which_obj.__class__.__name__ == "RelatedManager":
+                which_obj = which_obj.get()
+                obj_from_func = self.func(bundle.request).get()
+            else:
+                obj_from_func = self.func(bundle.request)
+
+            if not (obj_from_func == which_obj):
+                raise Unauthorized(self.text_unauth)
+        else:
+            if not (bundle.request.user == which_obj):
+                raise Unauthorized(self.text_unauth)
+
+        return True
+
+    def create_list(self, object_list, bundle):
+        return self.read_list(object_list, bundle)
+
+    def create_detail(self, object_list, bundle):
+        bundle_obj_pk = self.check_value_pk(bundle.data)
+
+        if self.func and self.func(bundle.request).pk == bundle_obj_pk:
+            return True
+        else:
+            if bundle.request.user.pk == bundle_obj_pk:
+                return True
+
+        raise Unauthorized(self.text_unauth)
+
+    def update_list(self, object_list, bundle):
+        return self.create_list(object_list, bundle)
+
+    def update_detail(self, object_list, bundle):
+        return self.create_detail(object_list, bundle)
+
+    def delete_list(self, object_list, bundle):
+        return self.read_list(object_list, bundle)
+
+    def delete_detail(self, object_list, bundle):
+        return self.read_detail(object_list, bundle)

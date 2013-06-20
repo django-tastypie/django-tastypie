@@ -2,11 +2,11 @@ from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import ObjectDoesNotExist
 from tastypie.authentication import BasicAuthentication
-from tastypie.authorization import Authorization
+from tastypie.authorization import Authorization, ObjectAuthorization
 from tastypie.exceptions import Unauthorized
 from tastypie import fields
 from tastypie.resources import ModelResource
-from ..models import AuthorProfile, Article
+from ..models import AuthorProfile, Article, Shop, Item, Account
 
 
 class PerUserAuthorization(Authorization):
@@ -29,7 +29,7 @@ class PerUserAuthorization(Authorization):
     def update_detail(self, object_list, bundle):
         if getattr(bundle.obj, 'pk', None):
             try:
-                obj = object_list.get(pk=bundle.obj.pk)
+                object_list.get(pk=bundle.obj.pk)
 
                 for profile in bundle.obj.authors.all():
                     if bundle.request.user.pk == profile.user.pk:
@@ -90,3 +90,54 @@ class ArticleResource(ModelResource):
         queryset = Article.objects.all()
         authentication = BasicAuthentication()
         authorization = PerUserAuthorization()
+
+
+class ShopResource(ModelResource):
+    owner = fields.ToOneField(UserResource, 'owner', full=True)
+
+    class Meta:
+        queryset = Shop.objects.all()
+        authentication = BasicAuthentication()
+        authorization = ObjectAuthorization("owner")
+
+
+class ItemShopOwnerResource(ModelResource):
+    user = fields.ToOneField(UserResource, 'user', full=True)
+    shop = fields.ToOneField(ShopResource, 'shop', full=True)
+
+    class Meta:
+        queryset = Item.objects.all()
+        authentication = BasicAuthentication()
+        authorization = ObjectAuthorization("shop__owner")
+
+
+class ItemResource(ModelResource):
+    user = fields.ToOneField(UserResource, 'user', full=True)
+    shop = fields.ToOneField(ShopResource, 'shop', full=True)
+
+    class Meta:
+        queryset = Item.objects.all()
+        authentication = BasicAuthentication()
+        authorization = ObjectAuthorization()
+
+
+class AccountResource(ModelResource):
+    user = fields.ToOneField(UserResource, 'user', full=True)
+
+    class Meta:
+        queryset = Account.objects.all()
+        authentication = BasicAuthentication()
+        authorization = ObjectAuthorization()
+
+
+def get_account(request):
+    return request.user.account
+
+
+class UserFuncResource(ModelResource):
+    account = fields.ToOneField(AccountResource, 'account', full=True)
+
+    class Meta:
+        queryset = User.objects.all()
+        authentication = BasicAuthentication()
+        authorization = ObjectAuthorization("account", get_account)
