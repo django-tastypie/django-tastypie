@@ -1,4 +1,3 @@
-from django.core.exceptions import ObjectDoesNotExist
 from tastypie.exceptions import Unauthorized
 
 
@@ -240,27 +239,51 @@ class DjangoAuthorization(Authorization):
 class ObjectAuthorization(Authorization):
     """
         Class provides object authorization.
+
+        This class requires path to field which will be compared to
+        authorized user. Or you can pass own function, and compare any object
+        which you want.
+
+        How to use this class, see docblock of __init__ method.
     """
 
     text_unauth = "You are not allowed to access that resource."
 
-    def __init__(self, which_obj="user", func=None):
-        self.which_obj_list = which_obj.split("__")
+    def __init__(self, filter_path="user", func=None):
+        """
+            :param str filter_path: path to field which will be compared
+            :param function func: user's function
+
+            .. note::
+                You can pass your function (func arg). Function must return
+                field which later will be compared to your filter.
+        """
+        self.filter_path = filter_path
         self.func = func
 
-    def check_attribute(self, obj):
-        for attr in self.which_obj_list:
+    def get_obj_from_path(self, obj):
+        for attr in self.filter_path.split("__"):
             obj = obj.__getattribute__(attr)
         return obj
 
-    def check_value_pk(self, obj):
+    def get_pk(self, obj):
         """
-            Checks values from data.
+            Get pk from object.
+
+            :param dict obj: dict object like
+                {"owner": "/api/v1/user/1", "name": "MyShop", ...} or
+                {"shop": {"owner": {"username": "user_name", ...}, ..}, ..}
 
             .. note::
-                If user doesn't provide required data (KeyError), then raise Unauthorized.
+                If user doesn't provide required data (KeyError) then raise
+                Unauthorized.
+
+                For condition below loop:
+                    If object is dict then get value from id key.
+                    If object is string like ("/api/v1/shop/1/"), split them
+                    filter, and get last value (ID).
         """
-        for attr in self.which_obj_list:
+        for attr in self.filter_path.split("__"):
             try:
                 obj = obj[attr]
             except KeyError:
@@ -273,90 +296,50 @@ class ObjectAuthorization(Authorization):
 
         return int(obj)
 
-    def read_list(self, object_list, bundle):
-        """
-            .. note::
-                Exception ObjectAuthorization raised when user does not provide connect for relations objects.
-
-                e.g.
-                We have two instances of class (User - user1, Account - account). Both exists, but Account is not related to User.
-                So, if we want get User object, and we set authorization in Meta class in our ModelResource like:
-                    authorization = ObjectAuthorization("account")
-                Then we got exception ObjectDoesNotExist.
-        """
-        allowed = []
-
+    def auth_list(self, object_list, bundle):
         if self.func:
-            for obj in object_list:
-                try:
-                    which_obj = self.check_attribute(obj)
-                except ObjectDoesNotExist:
-                    continue
-
-                if which_obj.__class__.__name__ == "RelatedManager":
-                    # isinstance doesn't work
-                    which_obj = which_obj.all()
-                    obj_from_func = self.func(bundle.request).get()
-
-                    if obj_from_func in which_obj:
-                        allowed.append(obj)
-                else:
-                    obj_from_func = self.func(bundle.request)
-
-                    if obj_from_func == which_obj:
-                        allowed.append(obj)
+            return object_list.\
+                filter(**{self.filter_path: self.func(bundle.request)})
         else:
-            for obj in object_list:
-                try:
-                    which_obj = self.check_attribute(obj)
-                except ObjectDoesNotExist:
-                    continue
+            return object_list.\
+                filter(**{self.filter_path: bundle.request.user})
 
-                if bundle.request.user == which_obj:
-                    allowed.append(obj)
-
-        return allowed
-
-    def read_detail(self, object_list, bundle):
-        which_obj = self.check_attribute(bundle.obj)
+    def auth_detail(self, object_list, bundle):
+        obj_from_path = self.get_obj_from_path(bundle.obj)
 
         if self.func:
-            if which_obj.__class__.__name__ == "RelatedManager":
-                which_obj = which_obj.get()
-                obj_from_func = self.func(bundle.request).get()
-            else:
-                obj_from_func = self.func(bundle.request)
-
-            if not (obj_from_func == which_obj):
+            if not (self.func(bundle.request) == obj_from_path):
                 raise Unauthorized(self.text_unauth)
         else:
-            if not (bundle.request.user == which_obj):
+            if not (bundle.request.user == obj_from_path):
                 raise Unauthorized(self.text_unauth)
 
         return True
 
-    def create_list(self, object_list, bundle):
-        return self.read_list(object_list, bundle)
+    def read_list(self, object_list, bundle):
+        return self.auth_list(object_list, bundle)
+
+    def read_detail(self, object_list, bundle):
+        return self.auth_detail(object_list, bundle)
 
     def create_detail(self, object_list, bundle):
-        bundle_obj_pk = self.check_value_pk(bundle.data)
+        bundle_obj_pk = self.get_pk(bundle.data)
 
         if self.func and self.func(bundle.request).pk == bundle_obj_pk:
             return True
-        else:
-            if bundle.request.user.pk == bundle_obj_pk:
-                return True
+        elif bundle.request.user.pk == bundle_obj_pk:
+            return True
 
         raise Unauthorized(self.text_unauth)
 
     def update_list(self, object_list, bundle):
-        return self.create_list(object_list, bundle)
+        return self.auth_list(object_list, bundle)
 
     def update_detail(self, object_list, bundle):
-        return self.create_detail(object_list, bundle)
+        return self.auth_detail(object_list, bundle)
 
     def delete_list(self, object_list, bundle):
-        return self.read_list(object_list, bundle)
+        return self.auth_list(object_list, bundle)
 
     def delete_detail(self, object_list, bundle):
-        return self.read_detail(object_list, bundle)
+        return self.auth_detail(object_list, bundle)

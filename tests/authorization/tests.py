@@ -429,43 +429,43 @@ class ObjectAuthorizationTestCase(ResourceTestCase):
         }, authentication=self.user_auth_2))
         self.assertEqual(Account.objects.count(), 3)
 
-    def test_obj_put_and_patch_list(self):
+    def test_obj_patch_list(self):
         # items
         resp = self.api_client.get('/api/v1/item/', format='json', authentication=self.user_auth_1)
         self.assertHttpOK(resp)
         data = json.loads(resp.content)
-        # change and put
+        # change and patch
         data['objects'][0]['name'] = 'Item1edit'
         data['objects'][1]['name'] = 'Item2edit'
         data['objects'][2]['name'] = 'Item3edit'
-        self.assertHttpAccepted(self.api_client.put('/api/v1/item/', format='json', data=data, authentication=self.user_auth_1))
+        self.assertHttpAccepted(self.api_client.patch('/api/v1/item/', format='json', data=data, authentication=self.user_auth_1))
         self.assertEqual(Item.objects.get(pk=self.item_1.pk).name, 'Item1edit')
         self.assertEqual(Item.objects.get(pk=self.item_2.pk).name, 'Item2edit')
         self.assertEqual(Item.objects.get(pk=self.item_3.pk).name, 'Item3edit')
         # unauthorized this changes for user2
-        self.assertHttpUnauthorized(self.api_client.put('/api/v1/item/', format='json', data=data, authentication=self.user_auth_2))
+        self.assertHttpUnauthorized(self.api_client.patch('/api/v1/item/', format='json', data=data, authentication=self.user_auth_2))
 
         # shops
         resp = self.api_client.get('/api/v1/shop/', format='json', authentication=self.user_auth_1)
         self.assertHttpOK(resp)
         data = json.loads(resp.content)
-        # change and put
+        # change and patch
         data['objects'][0]['name'] = 'Shop1edit_hihi'
-        self.assertHttpAccepted(self.api_client.put('/api/v1/shop/', format='json', data=data, authentication=self.user_auth_1))
+        self.assertHttpAccepted(self.api_client.patch('/api/v1/shop/', format='json', data=data, authentication=self.user_auth_1))
         self.assertEqual(Shop.objects.get(pk=self.shop_1.pk).name, 'Shop1edit_hihi')
         # unauthorized this changes for user2
-        self.assertHttpUnauthorized(self.api_client.put('/api/v1/shop/', format='json', data=data, authentication=self.user_auth_2))
+        self.assertHttpUnauthorized(self.api_client.patch('/api/v1/shop/', format='json', data=data, authentication=self.user_auth_2))
 
         # accounts
         resp = self.api_client.get('/api/v1/userfunc/', format='json', authentication=self.user_auth_1)
         self.assertHttpOK(resp)
         data = json.loads(resp.content)
-        # change and put
+        # change and patch
         data['objects'][0]['username'] = 'test_user_1_edit'
-        self.assertHttpAccepted(self.api_client.put('/api/v1/userfunc/', format='json', data=data, authentication=self.user_auth_1))
+        self.assertHttpAccepted(self.api_client.patch('/api/v1/userfunc/', format='json', data=data, authentication=self.user_auth_1))
         self.assertEqual(User.objects.get(pk=self.user_1.pk).username, 'test_user_1_edit')
         # unauthorized this changes for user2
-        self.assertHttpUnauthorized(self.api_client.put('/api/v1/userfunc/', format='json', data=data, authentication=self.user_auth_2))
+        self.assertHttpUnauthorized(self.api_client.patch('/api/v1/userfunc/', format='json', data=data, authentication=self.user_auth_2))
 
         # we changed username, so we have to new auth
         self.user_auth_1 = self.create_basic('test_user_1_edit', 'password')
@@ -543,7 +543,76 @@ class ObjectAuthorizationTestCase(ResourceTestCase):
         }, authentication=self.user_auth_2))
         self.assertEqual(Item.objects.get(pk=self.item_4.pk).name, 'Item4edit_shop_owner')
 
-        # Shop owner not auth; but used PATCH
+        # Shop owner not auth
+        self.assertHttpUnauthorized(self.api_client.put(self.itemshopowner_uri_4, format='json', data={
+            'name': 'Item4edit_shop_owner_2',
+        }, authentication=self.user_auth_1))
+        self.assertEqual(Item.objects.get(pk=self.item_4.pk).name, 'Item4edit_shop_owner')
+
+    def test_obj_patch_detail(self):
+        # Item auth
+        self.assertHttpAccepted(self.api_client.patch(self.item_uri_1, format='json', data={
+            'name': 'Item1edit_obj_put_detail',
+            'user': self.user_uri_1,
+        }, authentication=self.user_auth_1))
+        self.assertEqual(Item.objects.get(pk=self.item_1.pk).name, 'Item1edit_obj_put_detail')
+
+        # Item auth (change in similar)
+        self.assertHttpAccepted(self.api_client.patch(self.item_uri_3, format='json', data={
+            'name': 'Item3edit_obj_put_list',
+            'user': self.user_uri_1,
+            'similar': [self.item_uri_1, ]
+        }, authentication=self.user_auth_1))
+        self.assertEqual(Item.objects.get(pk=self.item_3.pk).name, 'Item3edit_obj_put_list')
+        self.assertEqual(len(Item.objects.get(pk=self.item_3.pk).similar.all()), 2)
+
+        # Item not auth
+        self.assertHttpUnauthorized(self.api_client.patch(self.item_uri_1, format='json', data={
+            'name': 'Item1edit2_obj_put_detail',
+            'user': self.user_uri_1,
+        }, authentication=self.user_auth_2))
+        self.assertEqual(Item.objects.get(pk=self.item_1.pk).name, 'Item1edit_obj_put_detail')
+
+        # Shop auth
+        self.assertHttpAccepted(self.api_client.patch(self.shop_uri_1, format='json', data={
+            'name': 'Shop1edit_obj_put_detail',
+            'owner': self.user_uri_1,
+        }, authentication=self.user_auth_1))
+        self.assertEqual(Shop.objects.get(pk=self.shop_1.pk).name, 'Shop1edit_obj_put_detail')
+
+        # Shop not auth
+        self.assertHttpUnauthorized(self.api_client.patch(self.shop_uri_1, format='json', data={
+            'name': 'Shop1edit2_obj_put_detail',
+            'owner': self.user_uri_1,
+        }, authentication=self.user_auth_2))
+        self.assertEqual(Shop.objects.get(pk=self.shop_1.pk).name, 'Shop1edit_obj_put_detail')
+
+        # Account auth
+        self.assertHttpAccepted(self.api_client.patch(self.userfunc_uri_1, format='json', data={
+            'username': 'test_user_1_edit',
+            'account': self.account_uri_1,
+        }, authentication=self.user_auth_1))
+        self.assertEqual(User.objects.get(pk=self.user_1.pk).username, 'test_user_1_edit')
+
+        # Account not auth
+        self.assertHttpUnauthorized(self.api_client.patch(self.userfunc_uri_1, format='json', data={
+            'username': 'test_user_1_edit_2',
+            'account': self.account_uri_1,
+        }, authentication=self.user_auth_2))
+        self.assertEqual(User.objects.get(pk=self.user_1.pk).username, 'test_user_1_edit')
+
+        # Shop owner
+        resp = self.api_client.get(self.itemshopowner_uri_4, format='json', authentication=self.user_auth_2)
+        self.assertHttpOK(resp)
+        data = json.loads(resp.content)
+        self.assertHttpAccepted(self.api_client.patch(self.itemshopowner_uri_4, format='json', data={
+            'name': 'Item4edit_shop_owner',
+            'user': data['user'],
+            'shop': data['shop'],
+        }, authentication=self.user_auth_2))
+        self.assertEqual(Item.objects.get(pk=self.item_4.pk).name, 'Item4edit_shop_owner')
+
+        # Shop owner not auth
         self.assertHttpUnauthorized(self.api_client.patch(self.itemshopowner_uri_4, format='json', data={
             'name': 'Item4edit_shop_owner_2',
         }, authentication=self.user_auth_1))
