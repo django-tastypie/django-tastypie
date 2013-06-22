@@ -249,14 +249,15 @@ class ObjectAuthorization(Authorization):
 
     text_unauth = "You are not allowed to access that resource."
 
-    def __init__(self, filter_path="user", func=None):
+    def __init__(self, filter_path="user", func=lambda request: request.user):
         """
             :param str filter_path: path to field which will be compared
             :param function func: user's function
 
             .. note::
                 You can pass your function (func arg). Function must return
-                field which later will be compared to your filter.
+                field which later will be compared to your filter. Default
+                function return user object.
         """
         self.filter_path = filter_path
         self.func = func
@@ -297,24 +298,16 @@ class ObjectAuthorization(Authorization):
         return int(obj)
 
     def auth_list(self, object_list, bundle):
-        if self.func:
-            return object_list.\
-                filter(**{self.filter_path: self.func(bundle.request)})
-        else:
-            return object_list.\
-                filter(**{self.filter_path: bundle.request.user})
+        return object_list.\
+            filter(**{self.filter_path: self.func(bundle.request)})
 
     def auth_detail(self, object_list, bundle):
         obj_from_path = self.get_obj_from_path(bundle.obj)
 
-        if self.func:
-            if not (self.func(bundle.request) == obj_from_path):
-                raise Unauthorized(self.text_unauth)
-        else:
-            if not (bundle.request.user == obj_from_path):
-                raise Unauthorized(self.text_unauth)
+        if self.func(bundle.request) == obj_from_path:
+            return True
 
-        return True
+        raise Unauthorized(self.text_unauth)
 
     def read_list(self, object_list, bundle):
         return self.auth_list(object_list, bundle)
@@ -325,9 +318,7 @@ class ObjectAuthorization(Authorization):
     def create_detail(self, object_list, bundle):
         bundle_obj_pk = self.get_pk(bundle.data)
 
-        if self.func and self.func(bundle.request).pk == bundle_obj_pk:
-            return True
-        elif bundle.request.user.pk == bundle_obj_pk:
+        if self.func(bundle.request).pk == bundle_obj_pk:
             return True
 
         raise Unauthorized(self.text_unauth)
