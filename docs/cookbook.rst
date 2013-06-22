@@ -200,20 +200,19 @@ at ``/api/v1/notes/search/``::
 
 .. _Haystack: http://haystacksearch.org/
 
+.. _creating_per_user_resources:
 
 Creating per-user resources
 ---------------------------
 
 One might want to create an API which will require every user to authenticate
-and every user will be working only with objects associated with them. Let's see
-how to implement it for two basic operations: listing and creation of an object.
+and every user will be working only with objects associated with them.
 
-For listing we want to list only objects for which 'user' field matches
-'request.user'. This could be done by applying a filter in the ``apply_authorization_limits``
-method of your resource.
+For this we want to list only objects for which 'user' field matches
+'request.user'. This could be done by applying ``ObjectAuthorization``
+class.
 
-For creating we'd have to wrap ``obj_create`` method of ``ModelResource``. Then the
-resulting code will look something like::
+Code will look something like::
 
     # myapp/api/resources.py
     class EnvironmentResource(ModelResource):
@@ -222,13 +221,64 @@ resulting code will look something like::
             resource_name = 'environment'
             list_allowed_methods = ['get', 'post']
             authentication = ApiKeyAuthentication()
+            authorization = ObjectAuthorization()
+
+Something more complicated::
+
+    # myapp/api/resources.py
+    class UserResource(ModelResource):
+        class Meta:
+            queryset = User.objects.all()
+            authentication = BasicAuthentication()
             authorization = Authorization()
 
-        def obj_create(self, bundle, **kwargs):
-            return super(EnvironmentResource, self).obj_create(bundle, user=bundle.request.user)
 
-        def apply_authorization_limits(self, request, object_list):
-            return object_list.filter(user=request.user)
+    class ShopResource(ModelResource):
+        owner = fields.ToOneField(UserResource, 'owner', full=True)
+
+        class Meta:
+            queryset = Shop.objects.all()
+            authentication = BasicAuthentication()
+            authorization = ObjectAuthorization("owner")
+
+
+    class ItemResource(ModelResource):
+        shop = fields.ToOneField(ShopResource, 'shop', full=True)
+
+        class Meta:
+            queryset = Item.objects.all()
+            authentication = ApiKeyAuthentication()
+            authorization = ObjectAuthorization("shop__owner")
+
+And another example::
+
+    # myapp/api/resources.py
+    class UserResource(ModelResource):
+        class Meta:
+            queryset = User.objects.all()
+            authentication = BasicAuthentication()
+            authorization = Authorization()
+
+    class AccountResource(ModelResource):
+        user = fields.ToOneField(UserResource, 'user', full=True)
+
+        class Meta:
+            queryset = Account.objects.all()
+            authentication = BasicAuthentication()
+            authorization = ObjectAuthorization()
+
+
+    def get_account(request):
+        return request.user.account
+
+
+    class UserFuncResource(ModelResource):
+        account = fields.ToOneField(AccountResource, 'account', full=True)
+
+        class Meta:
+            queryset = User.objects.all()
+            authentication = BasicAuthentication()
+            authorization = ObjectAuthorization("account", get_account)
 
 camelCase JSON Serialization
 ----------------------------

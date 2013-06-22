@@ -105,9 +105,7 @@ As an example, we'll walk through what a GET request to a list endpoint (say
   * A fetch of the available objects via ``Resource.obj_get_list``. In the case
     of ``ModelResource``, this builds the ORM filters to apply
     (``ModelResource.build_filters``). It then gets the ``QuerySet`` via
-    ``ModelResource.get_object_list`` (which performs
-    ``Resource.apply_authorization_limits`` to possibly limit the set the user
-    can work with) and applies the built filters to it.
+    ``ModelResource.get_object_list`` and applies the built filters to it.
   * It then sorts the objects based on user input
     (``ModelResource.apply_sorting``).
   * Then it paginates the results using the supplied ``Paginator`` & pulls out
@@ -1184,16 +1182,6 @@ A hook to allow making returning the list of available objects.
 
 ``ModelResource`` includes a full working version specific to Django's
 ``Models``.
-
-``apply_authorization_limits``
-------------------------------
-
-.. method:: Resource.apply_authorization_limits(self, request, object_list)
-
-Allows the ``Authorization`` class to further limit the object list.
-Also a hook to customize per ``Resource``.
-
-Calls ``Authorization.apply_limits`` if available.
 
 ``can_create``
 --------------
