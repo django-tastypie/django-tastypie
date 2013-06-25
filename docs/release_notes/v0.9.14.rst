@@ -1,0 +1,20 @@
+v0.9.14
+=======
+
+:date: 2013-03-19
+
+An emergency release **removing** a failed attempt at using ``rose`` to handle
+versioning.
+
+
+Features
+--------
+
+* None
+
+
+Bugfixes
+--------
+
+* Removed the dependency on ``rose``, which wasn't effective at de-duplicating
+  the version information. :(

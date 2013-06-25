@@ -48,6 +48,9 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
             new_uuid = uuid.uuid4()
             # Hmac that beast.
             return hmac.new(str(new_uuid), digestmod=sha1).hexdigest()
+
+        class Meta:
+            abstract = getattr(settings, 'TASTYPIE_ABSTRACT_APIKEY', False)
     
     
     def create_api_key(sender, **kwargs):

@@ -55,7 +55,7 @@ to its constructor. You supply a Django ``Form`` (or ``ModelForm``, though
 ``Bundle`` against the form.
 
 This class **DOES NOT** alter the data sent, only verifies it. If you
-want to alter the data, please use the ``CleanDataFormValidation`` class
+want to alter the data, please use the ``CleanedDataFormValidation`` class
 instead.
 
 .. warning::

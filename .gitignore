@@ -10,3 +10,4 @@ tests/tastypie.db
 .buildinfo
 .tox
 env
+env3

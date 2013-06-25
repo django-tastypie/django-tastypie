@@ -1,0 +1,46 @@
+v0.9.15
+=======
+
+:date: 2013-05-02
+
+This release is primarily a bugfix release. It makes using Tastypie with
+Django 1.5 more friendly, better exceptions
+
+
+Features
+--------
+
+* Drops Python 2.5 support. Yes, this is a feature that will pave the way for
+  Tastypie on Python 3 support.
+* Added ``TASTYPIE_ABSTRACT_APIKEY``, which allows switching the ``ApiKey``
+  model out. (SHA: b8f4b9c)
+
+
+Bugfixes
+--------
+
+* Better support for Django 1.5:
+
+    * Removed deprecation warnings (SHA: bb01761)
+    * Numerous custom User improvements (SHA: d24b390)
+
+* Expanded places ``use_in`` is used (SHA: b32c45)
+* Authorization is now only called once with a full bundle (SHA: f06f41)
+* Changed ``for_list`` to accept a boolean (SHA: 01e620)
+* Only save related models that have changed (SHA: 6efdea)
+* Better exception reporting, especially in conjunction with Sentry
+
+    * (SHA: 3f9ce0)
+    * (SHA: 4adf11)
+
+* Configuration warning about ``defusedxml`` (SHA: aa8d9fd)
+* Fixed a dependency in ``setup.py`` (SHA: cb0fe7)
+* Release notes became a thing! Hooray! (SHA: 95e2499)
+* Documentation updates:
+
+    * Typo in ``CleanedDataFormValidation`` (SHA: bf252a)
+    * CamelCase JSON (SHA: bf252a)
+    * Docstring typo (SHA: e86dad)
+    * Per-user resource (SHA: a77b28c)
+    * Added more details about creating the ``ApiKey`` model (SHA: 80f9b8)
+

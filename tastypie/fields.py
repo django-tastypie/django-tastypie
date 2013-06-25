@@ -100,7 +100,7 @@ class ApiField(object):
 
         return self._default
 
-    def dehydrate(self, bundle):
+    def dehydrate(self, bundle, for_list=True):
         """
         Takes data from the provided object and prepares it for the
         resource.
@@ -545,12 +545,12 @@ class RelatedField(ApiField):
 
         return self._to_class
 
-    def dehydrate_related(self, bundle, related_resource):
+    def dehydrate_related(self, bundle, related_resource, for_list=True):
         """
         Based on the ``full_resource``, returns either the endpoint or the data
         from ``full_dehydrate`` for the related resource.
         """
-        should_dehydrate_full_resource = self.should_full_dehydrate(bundle)
+        should_dehydrate_full_resource = self.should_full_dehydrate(bundle, for_list=for_list)
 
         if not should_dehydrate_full_resource:
             # Be a good netizen.
@@ -665,14 +665,14 @@ class RelatedField(ApiField):
         else:
             raise ApiFieldError("The '%s' field was given data that was not a URI, not a dictionary-alike and does not have a 'pk' attribute: %s." % (self.instance_name, value))
 
-    def should_full_dehydrate(self, bundle):
+    def should_full_dehydrate(self, bundle, for_list):
         """
         Based on the ``full``, ``list_full`` and ``detail_full`` returns ``True`` or ``False``
         indicating weather the resource should be fully dehydrated.
         """
         should_dehydrate_full_resource = False
         if self.full:
-            is_details_view = resolve(bundle.request.path).url_name == "api_dispatch_detail"
+            is_details_view = not for_list
             if is_details_view:
                 if (not callable(self.full_detail) and self.full_detail) or (callable(self.full_detail) and self.full_detail(bundle)):
                     should_dehydrate_full_resource = True
@@ -702,7 +702,7 @@ class ToOneField(RelatedField):
         )
         self.fk_resource = None
 
-    def dehydrate(self, bundle):
+    def dehydrate(self, bundle, for_list=True):
         foreign_obj = None
 
         if isinstance(self.attribute, basestring):
@@ -726,7 +726,7 @@ class ToOneField(RelatedField):
 
         self.fk_resource = self.get_related_resource(foreign_obj)
         fk_bundle = Bundle(obj=foreign_obj, request=bundle.request)
-        return self.dehydrate_related(fk_bundle, self.fk_resource)
+        return self.dehydrate_related(fk_bundle, self.fk_resource, for_list=for_list)
 
     def hydrate(self, bundle):
         value = super(ToOneField, self).hydrate(bundle)
@@ -774,7 +774,7 @@ class ToManyField(RelatedField):
         )
         self.m2m_bundles = []
 
-    def dehydrate(self, bundle):
+    def dehydrate(self, bundle, for_list=True):
         if not bundle.obj or not bundle.obj.pk:
             if not self.null:
                 raise ApiFieldError("The model '%r' does not have a primary key and can not be used in a ToMany context." % bundle.obj)
@@ -817,7 +817,7 @@ class ToManyField(RelatedField):
             m2m_resource = self.get_related_resource(m2m)
             m2m_bundle = Bundle(obj=m2m, request=bundle.request)
             self.m2m_resources.append(m2m_resource)
-            m2m_dehydrated.append(self.dehydrate_related(m2m_bundle, m2m_resource))
+            m2m_dehydrated.append(self.dehydrate_related(m2m_bundle, m2m_resource, for_list=for_list))
 
         return m2m_dehydrated
 
@@ -873,7 +873,7 @@ class TimeField(ApiField):
     dehydrated_type = 'time'
     help_text = 'A time as string. Ex: "20:05:23"'
 
-    def dehydrate(self, obj):
+    def dehydrate(self, obj, for_list=True):
         return self.convert(super(TimeField, self).dehydrate(obj))
 
     def convert(self, value):

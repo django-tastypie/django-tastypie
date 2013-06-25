@@ -224,8 +224,8 @@ resulting code will look something like::
             authentication = ApiKeyAuthentication()
             authorization = Authorization()
 
-        def obj_create(self, bundle, request=None, **kwargs):
-            return super(EnvironmentResource, self).obj_create(bundle, request, user=request.user)
+        def obj_create(self, bundle, **kwargs):
+            return super(EnvironmentResource, self).obj_create(bundle, user=bundle.request.user)
 
         def apply_authorization_limits(self, request, object_list):
             return object_list.filter(user=request.user)
@@ -239,6 +239,9 @@ code in Javascript. You can create a custom serializer that emits
 values in camelCase instead::
 
     from tastypie.serializers import Serializer
+
+    import re
+    import json
 
     class CamelCaseJSONSerializer(Serializer):
         formats = ['json']
@@ -268,11 +271,11 @@ values in camelCase instead::
 
             camelized_data = camelize(data)
 
-            return simplejson.dumps(camelized_data, sort_keys=True)
+            return json.dumps(camelized_data, sort_keys=True)
 
         def from_json(self, content):
             # Changes camelCase names to underscore_separated names to go from javascript convention to python convention
-            data = simplejson.loads(content)
+            data = json.loads(content)
 
             def camelToUnderscore(match):
                 return match.group()[0] + "_" + match.group()[1].lower()
@@ -290,9 +293,9 @@ values in camelCase instead::
                     return data
                 return data
 
-        underscored_data = underscorize(data)
+            underscored_data = underscorize(data)
 
-        return underscored_data
+            return underscored_data
 
 Pretty-printed JSON Serialization
 ---------------------------------

@@ -543,7 +543,7 @@ class Resource(object):
             allowed = []
 
         request_method = request.method.lower()
-        allows = ','.join(map(str.upper, allowed))
+        allows = ','.join([s.upper() for s in allowed])
 
         if request_method == "options":
             response = HttpResponse(allows)
@@ -862,7 +862,7 @@ class Resource(object):
                 field_object.api_name = self._meta.api_name
                 field_object.resource_name = self._meta.resource_name
 
-            bundle.data[field_name] = field_object.dehydrate(bundle)
+            bundle.data[field_name] = field_object.dehydrate(bundle, for_list=for_list)
 
             # Check for an optional method to do further dehydration.
             method = getattr(self, "dehydrate_%s" % field_name, None)
@@ -2206,7 +2206,6 @@ class ModelResource(Resource):
             except ObjectDoesNotExist:
                 raise NotFound("A model instance matching the provided arguments could not be found.")
 
-        self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
         bundle = self.full_hydrate(bundle)
         return self.save(bundle, skip_errors=skip_errors)
 
@@ -2424,7 +2423,10 @@ class ModelResource(Resource):
                     request=bundle.request,
                     objects_saved=bundle.objects_saved
                 )
-                related_resource.save(updated_related_bundle)
+                
+                #Only save related models if they're newly added.
+                if updated_related_bundle.obj._state.adding:
+                    related_resource.save(updated_related_bundle)
                 related_objs.append(updated_related_bundle.obj)
 
             related_mngr.add(*related_objs)
