@@ -66,7 +66,7 @@ your project or ``PYTHONPATH``.
       * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
 
     * ``dateutil`` (http://labix.org/python-dateutil)
-    * **OPTIONAL** - ``lxml`` (http://lxml.de/) if using the XML serializer
+    * **OPTIONAL** - ``lxml`` (http://lxml.de/) AND ``defusedxml`` (https://pypi.python.org/pypi/defusedxml) if using the XML serializer
     * **OPTIONAL** - ``pyyaml`` (http://pyyaml.org/) if using the YAML serializer
     * **OPTIONAL** - ``uuid`` (present in 2.5+, downloadable from
       http://pypi.python.org/pypi/uuid/) if using the ``ApiKey`` authentication
