@@ -742,7 +742,7 @@ class ToOneFieldTestCase(TestCase):
         field_3 = ToOneField(UserResource, 'author')
         field_3.instance_name = 'fk'
         bundle.data['fk'] = '/api/v1/users/abc/'
-        self.assertRaises(NotFound, field_3.hydrate, bundle)
+        self.assertRaises(ApiFieldError, field_3.hydrate, bundle)
 
         # A real, live attribute!
         field_4 = ToOneField(UserResource, 'author')
@@ -1246,7 +1246,7 @@ class ToManyFieldTestCase(TestCase):
         field_4 = ToManyField(SubjectResource, 'subjects')
         field_4.instance_name = 'm2m'
         bundle_4 = Bundle(data={'m2m': ['/api/v1/subjects/abc/']})
-        self.assertRaises(NotFound, field_4.hydrate_m2m, bundle_4)
+        self.assertRaises(ApiFieldError, field_4.hydrate_m2m, bundle_4)
 
         # A real, live attribute!
         field_5 = ToManyField(SubjectResource, 'subjects')
