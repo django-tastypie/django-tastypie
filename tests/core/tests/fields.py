@@ -8,7 +8,7 @@ from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.fields import *
 from tastypie.resources import ModelResource
-from core.models import Note, Subject, MediaBit
+from core.models import Note, NoteWithEditor, Subject, MediaBit
 from core.tests.mocks import MockRequest
 
 from tastypie.utils import aware_datetime, aware_date
@@ -835,6 +835,12 @@ class ToOneFieldTestCase(TestCase):
         fk_bundle = field_13.hydrate(bundle)
         self.assertEqual(fk_bundle.obj.username, u'johndoe')
         self.assertEqual(fk_bundle.obj.email, u'john@doe.com')
+
+        # Missing foreign key value in input
+        field_14 = ToOneField(User, 'editor')
+        field_14.instance_name = 'fk'
+        bundle_14 = Bundle(obj=NoteWithEditor())
+        self.assertRaises(ApiFieldError, field_14.hydrate, bundle_14)
 
     def test_resource_from_uri(self):
         ur = UserResource()
