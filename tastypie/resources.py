@@ -1,14 +1,12 @@
 from __future__ import unicode_literals
 from __future__ import with_statement
+from copy import deepcopy
 import sys
 import logging
 import warnings
 import django
 from django.conf import settings
-try:
-    from django.conf.urls import patterns, url
-except ImportError: # Django < 1.4
-    from django.conf.urls.defaults import patterns, url
+from django.conf.urls import patterns, url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, ValidationError
 from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404, get_script_prefix
 from django.core.signals import got_request_exception
@@ -30,26 +28,6 @@ from tastypie.throttle import BaseThrottle
 from tastypie.utils import is_valid_jsonp_callback_value, dict_strip_unicode_keys, trailing_slash
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.validation import Validation
-try:
-    set
-except NameError:
-    from sets import Set as set
-# copycompat deprecated in Django 1.5.  If python version is at least 2.5, it
-# is safe to use the native python copy module.
-# The ``copy`` module became function-friendly in Python 2.5 and
-# ``copycompat`` was added in post 1.1.1 Django (r11901)..
-if sys.version_info >= (2,5):
-    try:
-        from copy import deepcopy
-    except ImportError:
-        from django.utils.copycompat import deepcopy
-else:
-    # For python older than 2.5, we must be running a version of Django before
-    # copycompat was deprecated.
-    try:
-        from django.utils.copycompat import deepcopy
-    except ImportError:
-        from copy import deepcopy
 # If ``csrf_exempt`` isn't present, stub it.
 try:
     from django.views.decorators.csrf import csrf_exempt
@@ -238,13 +216,13 @@ class Resource(object):
                     patch_cache_control(response, no_cache=True)
 
                 return response
-            except (BadRequest, fields.ApiFieldError), e:
+            except (BadRequest, fields.ApiFieldError) as e:
                 data = {"error": e.args[0] if getattr(e, 'args') else ''}
                 return self.error_response(request, data, response_class=http.HttpBadRequest)
-            except ValidationError, e:
+            except ValidationError as e:
                 data = {"error": e.messages}
                 return self.error_response(request, data, response_class=http.HttpBadRequest)
-            except Exception, e:
+            except Exception as e:
                 if hasattr(e, 'response'):
                     return e.response
 
@@ -609,7 +587,7 @@ class Resource(object):
         """
         try:
             auth_result = self._meta.authorization.read_list(object_list, bundle)
-        except Unauthorized, e:
+        except Unauthorized as e:
             self.unauthorized_result(e)
 
         return auth_result
@@ -623,7 +601,7 @@ class Resource(object):
             auth_result = self._meta.authorization.read_detail(object_list, bundle)
             if not auth_result is True:
                 raise Unauthorized()
-        except Unauthorized, e:
+        except Unauthorized as e:
             self.unauthorized_result(e)
 
         return auth_result
@@ -635,7 +613,7 @@ class Resource(object):
         """
         try:
             auth_result = self._meta.authorization.create_list(object_list, bundle)
-        except Unauthorized, e:
+        except Unauthorized as e:
             self.unauthorized_result(e)
 
         return auth_result
@@ -649,7 +627,7 @@ class Resource(object):
             auth_result = self._meta.authorization.create_detail(object_list, bundle)
             if not auth_result is True:
                 raise Unauthorized()
-        except Unauthorized, e:
+        except Unauthorized as e:
             self.unauthorized_result(e)
 
         return auth_result
@@ -661,7 +639,7 @@ class Resource(object):
         """
         try:
             auth_result = self._meta.authorization.update_list(object_list, bundle)
-        except Unauthorized, e:
+        except Unauthorized as e:
             self.unauthorized_result(e)
 
         return auth_result
@@ -675,7 +653,7 @@ class Resource(object):
             auth_result = self._meta.authorization.update_detail(object_list, bundle)
             if not auth_result is True:
                 raise Unauthorized()
-        except Unauthorized, e:
+        except Unauthorized as e:
             self.unauthorized_result(e)
 
         return auth_result
@@ -687,7 +665,7 @@ class Resource(object):
         """
         try:
             auth_result = self._meta.authorization.delete_list(object_list, bundle)
-        except Unauthorized, e:
+        except Unauthorized as e:
             self.unauthorized_result(e)
 
         return auth_result
@@ -701,7 +679,7 @@ class Resource(object):
             auth_result = self._meta.authorization.delete_detail(object_list, bundle)
             if not auth_result:
                 raise Unauthorized()
-        except Unauthorized, e:
+        except Unauthorized as e:
             self.unauthorized_result(e)
 
         return auth_result
@@ -1242,7 +1220,7 @@ class Resource(object):
 
         try:
             serialized = self.serialize(request, errors, desired_format)
-        except BadRequest, e:
+        except BadRequest as e:
             error = "Additional errors occurred, but serialization of those errors failed."
 
             if settings.DEBUG:
