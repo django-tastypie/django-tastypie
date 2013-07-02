@@ -429,7 +429,7 @@ class OAuthAuthentication(Authentication):
 
             try:
                 self.validate_token(request, consumer, token)
-            except oauth2.Error, e:
+            except oauth2.Error as e:
                 return oauth_provider.utils.send_oauth_error(e)
 
             if consumer and token:

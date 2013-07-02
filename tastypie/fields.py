@@ -885,7 +885,7 @@ class TimeField(ApiField):
     def to_time(self, s):
         try:
             dt = parse(s)
-        except ValueError, e:
+        except ValueError as e:
             raise ApiFieldError(str(e))
         else:
             return datetime.time(dt.hour, dt.minute, dt.second)

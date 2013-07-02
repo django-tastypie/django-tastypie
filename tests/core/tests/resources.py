@@ -698,7 +698,7 @@ class ResourceTestCase(TestCase):
         try:
             basic.method_check(request)
             self.fail("Should have thrown an exception.")
-        except ImmediateHttpResponse, e:
+        except ImmediateHttpResponse as e:
             self.assertEqual(e.response['Allow'], '')
 
         # Not an allowed request.
@@ -707,7 +707,7 @@ class ResourceTestCase(TestCase):
         try:
             basic.method_check(request, allowed=['post'])
             self.fail("Should have thrown an exception.")
-        except ImmediateHttpResponse, e:
+        except ImmediateHttpResponse as e:
             self.assertEqual(e.response['Allow'], 'POST')
 
         # Allowed (single).
@@ -728,7 +728,7 @@ class ResourceTestCase(TestCase):
         try:
             basic.method_check(request, allowed=['get', 'put', 'delete', 'patch'])
             self.fail("Should have thrown an exception.")
-        except ImmediateHttpResponse, e:
+        except ImmediateHttpResponse as e:
             self.assertEqual(e.response['Allow'], 'GET,PUT,DELETE,PATCH')
 
         # Allowed (multiple).
@@ -788,7 +788,7 @@ class ResourceTestCase(TestCase):
         self.assertEquals(basic_resource_list[0]['date_joined'], u'2010-03-30T09:00:00')
 
         self.assertNotIn('view_count', basic_resource_list[0])
-        
+
 
 # ====================
 # Model-based tests...
@@ -1269,7 +1269,7 @@ class ModelResourceTestCase(TestCase):
         )
         self.note_1.subjects.add(self.subject_1)
         self.note_1.subjects.add(self.subject_2)
-        
+
         if django.VERSION >= (1, 4):
             self.body_attr = "body"
         else:
@@ -1890,7 +1890,7 @@ class ModelResourceTestCase(TestCase):
         try:
             resp = resource.get_list(request)
             self.fail()
-        except BadRequest, e:
+        except BadRequest as e:
             pass
 
         # Try again with ``wrap_view`` for sanity.
@@ -1902,7 +1902,7 @@ class ModelResourceTestCase(TestCase):
         try:
             resp = resource.get_list(request)
             self.fail()
-        except BadRequest, e:
+        except BadRequest as e:
             pass
 
         # Then an out of range limit.
@@ -1910,7 +1910,7 @@ class ModelResourceTestCase(TestCase):
         try:
             resp = resource.get_list(request)
             self.fail()
-        except BadRequest, e:
+        except BadRequest as e:
             pass
 
         # Valid slice.
@@ -1961,7 +1961,7 @@ class ModelResourceTestCase(TestCase):
         res = json.loads(resp.content)
         self.assertTrue('error' in res.keys())
         self.assertTrue('monkey' in res['error']) #Error looks like "No matching \'monkey\' field for ordering on.
-        
+
         # Test to make sure we're not inadvertently caching the QuerySet.
         request.GET = {'format': 'json'}
         resp = resource.get_list(request)
@@ -2602,7 +2602,7 @@ class ModelResourceTestCase(TestCase):
         try:
             resp = resource.dispatch_detail(request, pk=1)
             self.fail()
-        except BadRequest, e:
+        except BadRequest as e:
             pass
 
         # Try again with ``wrap_view`` for sanity.
@@ -2804,7 +2804,7 @@ class ModelResourceTestCase(TestCase):
         try:
             resp = resource.dispatch('list', request)
             self.fail()
-        except ImmediateHttpResponse, e:
+        except ImmediateHttpResponse as e:
             self.assertEqual(e.response.status_code, 429)
             self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
@@ -2812,7 +2812,7 @@ class ModelResourceTestCase(TestCase):
         try:
             resp = resource.dispatch('list', request)
             self.fail()
-        except ImmediateHttpResponse, e:
+        except ImmediateHttpResponse as e:
             self.assertEqual(e.response.status_code, 429)
             self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
@@ -2894,15 +2894,15 @@ class ModelResourceTestCase(TestCase):
 
     def test_obj_delete_list_filtered(self):
         self.assertEqual(Note.objects.all().count(), 6)
-        
+
         note_to_delete = Note.objects.filter(is_active=True)[0]
-        
+
         request = HttpRequest()
         request.method = 'DELETE'
         request.GET = {'slug':str(note_to_delete.slug)}
         NoteResource().delete_list(request=request)
         self.assertEqual(len(Note.objects.all()), 5)
-        
+
     def test_obj_create(self):
         self.assertEqual(Note.objects.all().count(), 6)
         note = NoteResource()
@@ -3478,13 +3478,13 @@ class ModelResourceTestCase(TestCase):
         try:
             too_many = ponr.obj_get(bundle=base_bundle, is_active=True, pk__gte=1)
             self.fail()
-        except MultipleObjectsReturned, e:
+        except MultipleObjectsReturned as e:
             self.assertEqual(str(e), "More than 'Note' matched 'is_active=True, pk__gte=1'.")
 
         try:
             too_many = ponr.obj_get(bundle=base_bundle, pk=1000000)
             self.fail()
-        except Note.DoesNotExist, e:
+        except Note.DoesNotExist as e:
             self.assertEqual(str(e), "Couldn't find an instance of 'Note' which matched 'pk=1000000'.")
 
     def test_browser_cache(self):
@@ -3614,7 +3614,7 @@ class BasicAuthResourceTestCase(TestCase):
         try:
             resp = resource.dispatch_list(request)
             self.fail()
-        except ImmediateHttpResponse, e:
+        except ImmediateHttpResponse as e:
             self.assertEqual(e.response.status_code, 401)
 
         # Try again with ``wrap_view`` for sanity.
@@ -3638,7 +3638,7 @@ class BasicAuthResourceTestCase(TestCase):
         try:
             resp = resource.dispatch_detail(request, pk=1)
             self.fail()
-        except ImmediateHttpResponse, e:
+        except ImmediateHttpResponse as e:
             self.assertEqual(e.response.status_code, 401)
 
         # Try again with ``wrap_view`` for sanity.
