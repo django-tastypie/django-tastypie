@@ -92,12 +92,8 @@ Required
 --------
 
 * Python 2.6+
-* Django 1.3+
-* mimeparse 0.1.3+ (http://code.google.com/p/mimeparse/)
-
-  * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
-
-* dateutil (http://labix.org/python-dateutil) >= 1.5, < 2.0
+* Django 1.5+
+* dateutil (http://labix.org/python-dateutil) >= 2.1
 
 Optional
 --------

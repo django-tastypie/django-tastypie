@@ -2,10 +2,7 @@ import django
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
-try:
-    import json
-except ImportError: # < Python 2.6
-    from django.utils import simplejson as json
+from django.utils import simplejson as json
 from django.core.urlresolvers import reverse
 from core.models import Note, MediaBit
 from core.tests.resources import HttpRequest
@@ -118,7 +115,7 @@ class ExplicitM2MResourceRegressionTest(TestCase):
 
         # Give each tag some extra data (the lookup of this data is what makes the test fail)
         self.extradata_1 = ExtraData.objects.create(tag=self.tag_1, name='additional')
-        
+
 
     def test_correct_setup(self):
         request = MockRequest()
@@ -257,7 +254,7 @@ class RelationshipOppositeFromModelTestCase(TestCase):
 
 class RelatedPatchTestCase(TestCase):
     urls = 'related_resource.api.urls'
-    
+
     def setUp(self):
         super(RelatedPatchTestCase, self).setUp()
         #this test doesn't use MockRequest, so the body attribute is different.
@@ -526,7 +523,7 @@ class NestedRelatedResourceTest(TestCase):
         request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
-        
+
         self.assertEqual(Bone.objects.count(), 1)
         bone = Bone.objects.all()[0]
         self.assertEqual(bone.color, 'gray')
@@ -567,7 +564,7 @@ class RelatedSaveCallsTest(TestCase):
             'name': 'Foo',
             'parent': resource.get_resource_uri(parent)
         })
-        
+
         request.set_body(body)
 
         with self.assertNumQueries(2):
@@ -594,7 +591,7 @@ class RelatedSaveCallsTest(TestCase):
         })
 
         request.set_body(body)
-        
+
         resource.post_list(request) #_save_fails_test will explode if Label is saved
 
 
@@ -611,9 +608,9 @@ class RelatedSaveCallsTest(TestCase):
         body_dict = {'name':'school',
                      'taggabletags':[{'extra':7}]
                      }
-        
+
         request.set_body(json.dumps(body_dict))
-        
+
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp.status_code, 201)
 
@@ -623,17 +620,16 @@ class RelatedSaveCallsTest(TestCase):
         self.assertEqual(taggable_tag.extra, 7)
 
         body_dict['taggabletags'] = [{'extra':1234}]
-        
+
         request.set_body(json.dumps(body_dict))
 
-        request.path = reverse('api_dispatch_detail', kwargs={'pk': tag.pk, 
-                                                              'resource_name': resource._meta.resource_name, 
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': tag.pk,
+                                                              'resource_name': resource._meta.resource_name,
                                                               'api_name': resource._meta.api_name})
 
         resource.put_detail(request)
-        
+
         #'extra' should have changed
         tag = Tag.objects.all()[0]
         taggable_tag = tag.taggabletags.all()[0]
         self.assertEqual(taggable_tag.extra, 1234)
-        
