@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 from __future__ import with_statement
 from copy import deepcopy
-import sys
 import logging
 import warnings
 import django
@@ -11,6 +10,7 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, 
 from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404, get_script_prefix
 from django.core.signals import got_request_exception
 from django.db import transaction
+from django.db.models.constants import LOOKUP_SEP
 from django.db.models.sql.constants import QUERY_TERMS
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.utils.cache import patch_cache_control, patch_vary_headers
@@ -35,11 +35,6 @@ except ImportError:
     def csrf_exempt(func):
         return func
 
-# Django 1.5 has moved this constant up one level.
-try:
-    from django.db.models.constants import LOOKUP_SEP
-except ImportError:
-    from django.db.models.sql.constants import LOOKUP_SEP
 
 
 class NOT_AVAILABLE:
@@ -272,17 +267,6 @@ class Resource(object):
             log = logging.getLogger('django.request.tastypie')
             log.error('Internal Server Error: %s' % request.path, exc_info=True,
                       extra={'status_code': response_code, 'request': request})
-
-            if django.VERSION < (1, 3, 0):
-                from django.core.mail import mail_admins
-                subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), request.path)
-                try:
-                    request_repr = repr(request)
-                except:
-                    request_repr = "Request repr() unavailable"
-
-                message = "%s\n\n%s" % (the_trace, request_repr)
-                mail_admins(subject, message, fail_silently=True)
 
         # Send the signal so other apps are aware of the exception.
         got_request_exception.send(self.__class__, request=request)
@@ -1326,11 +1310,7 @@ class Resource(object):
         If ``Meta.always_return_data = True``, there will be a populated body
         of serialized data.
         """
-        if django.VERSION >= (1, 4):
-            body = request.body
-        else:
-            body = request.raw_post_data
-        deserialized = self.deserialize(request, body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
         updated_bundle = self.obj_create(bundle, **self.remove_api_resource_names(kwargs))
@@ -1367,11 +1347,7 @@ class Resource(object):
         Return ``HttpAccepted`` (202 Accepted) if
         ``Meta.always_return_data = True``.
         """
-        if django.VERSION >= (1, 4):
-            body = request.body
-        else:
-            body = request.raw_post_data
-        deserialized = self.deserialize(request, body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_list_data(request, deserialized)
 
         if not self._meta.collection_name in deserialized:
@@ -1420,11 +1396,7 @@ class Resource(object):
         ``Meta.always_return_data = True``, return ``HttpAccepted`` (202
         Accepted).
         """
-        if django.VERSION >= (1, 4):
-            body = request.body
-        else:
-            body = request.raw_post_data
-        deserialized = self.deserialize(request, body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
         bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
 
@@ -1533,11 +1505,7 @@ class Resource(object):
         other than ``objects`` (default).
         """
         request = convert_post_to_patch(request)
-        if django.VERSION >= (1, 4):
-            body = request.body
-        else:
-            body = request.raw_post_data
-        deserialized = self.deserialize(request, body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
 
         collection_name = self._meta.collection_name
         deleted_collection_name = 'deleted_%s' % collection_name
@@ -1627,11 +1595,7 @@ class Resource(object):
         bundle = self.alter_detail_data_to_serialize(request, bundle)
 
         # Now update the bundle in-place.
-        if django.VERSION >= (1, 4):
-            body = request.body
-        else:
-            body = request.raw_post_data
-        deserialized = self.deserialize(request, body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         self.update_in_place(request, bundle, deserialized)
 
         if not self._meta.always_return_data:
@@ -1961,19 +1925,9 @@ class ModelResource(Resource):
 
         if getattr(self._meta, 'queryset', None) is not None:
             # Get the possible query terms from the current QuerySet.
-            if hasattr(self._meta.queryset.query.query_terms, 'keys'):
-                # Django 1.4 & below compatibility.
-                query_terms = self._meta.queryset.query.query_terms.keys()
-            else:
-                # Django 1.5+.
-                query_terms = self._meta.queryset.query.query_terms
+            query_terms = self._meta.queryset.query.query_terms
         else:
-            if hasattr(QUERY_TERMS, 'keys'):
-                # Django 1.4 & below compatibility.
-                query_terms = QUERY_TERMS.keys()
-            else:
-                # Django 1.5+.
-                query_terms = QUERY_TERMS
+            query_terms = QUERY_TERMS
 
         for filter_expr, value in filters.items():
             filter_bits = filter_expr.split(LOOKUP_SEP)

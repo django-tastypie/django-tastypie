@@ -59,12 +59,9 @@ your project or ``PYTHONPATH``.
 
   1. Download the dependencies:
 
-    * Python 2.4+
-    * Django 1.0+ (tested on Django 1.1+)
+    * Python 2.6+
+    * Django 1.5+
     * ``mimeparse`` 0.1.3+ (http://code.google.com/p/mimeparse/)
-
-      * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
-
     * ``dateutil`` (http://labix.org/python-dateutil)
     * **OPTIONAL** - ``lxml`` (http://lxml.de/) if using the XML serializer
     * **OPTIONAL** - ``pyyaml`` (http://pyyaml.org/) if using the YAML serializer
