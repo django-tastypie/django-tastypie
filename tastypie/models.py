@@ -48,7 +48,7 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
             # Get a random UUID.
             new_uuid = uuid.uuid4()
             # Hmac that beast.
-            return hmac.new(str(new_uuid), digestmod=sha1).hexdigest()
+            return hmac.new(new_uuid.bytes, digestmod=sha1).hexdigest()
 
         class Meta:
             abstract = getattr(settings, 'TASTYPIE_ABSTRACT_APIKEY', False)
