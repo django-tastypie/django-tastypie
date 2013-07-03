@@ -1,7 +1,11 @@
 from __future__ import unicode_literals
-from urllib import urlencode
 from django.conf import settings
 from tastypie.exceptions import BadRequest
+
+try:
+    from urllib.parse import urlencode
+except ImportError:
+    from urllib import urlencode
 
 
 class Paginator(object):

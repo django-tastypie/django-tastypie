@@ -14,6 +14,8 @@ from django.db.models.constants import LOOKUP_SEP
 from django.db.models.sql.constants import QUERY_TERMS
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.utils.cache import patch_cache_control, patch_vary_headers
+from django.utils import six
+
 from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.bundle import Bundle
@@ -28,6 +30,7 @@ from tastypie.throttle import BaseThrottle
 from tastypie.utils import is_valid_jsonp_callback_value, dict_strip_unicode_keys, trailing_slash
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.validation import Validation
+
 # If ``csrf_exempt`` isn't present, stub it.
 try:
     from django.views.decorators.csrf import csrf_exempt
@@ -117,7 +120,7 @@ class DeclarativeMetaclass(type):
         except NameError:
             pass
 
-        for field_name, obj in attrs.items():
+        for field_name, obj in attrs.copy().items():
             # Look for ``dehydrated_type`` instead of doing ``isinstance``,
             # which can break down if Tastypie is re-namespaced as something
             # else.
@@ -2259,7 +2262,7 @@ class ModelResource(Resource):
             if field_object.readonly:
                 continue
 
-            if field_object.blank and not bundle.data.has_key(field_name):
+            if field_object.blank and not field_name in bundle.data:
                 continue
 
             # Get the object.
@@ -2321,7 +2324,7 @@ class ModelResource(Resource):
             # Get the manager.
             related_mngr = None
 
-            if isinstance(field_object.attribute, basestring):
+            if isinstance(field_object.attribute, six.string_types):
                 related_mngr = getattr(bundle.obj, field_object.attribute)
             elif callable(field_object.attribute):
                 related_mngr = field_object.attribute(bundle)

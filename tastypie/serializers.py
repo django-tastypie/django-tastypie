@@ -1,15 +1,17 @@
 from __future__ import unicode_literals
 import datetime
-from StringIO import StringIO
 import django
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.serializers import json
 from django.utils import simplejson
-from django.utils.encoding import force_unicode
+from django.utils import six
+from django.utils.encoding import force_text
+
 from tastypie.bundle import Bundle
 from tastypie.exceptions import BadRequest, UnsupportedFormat
 from tastypie.utils import format_datetime, format_date, format_time, make_naive
+
 try:
     import defusedxml.lxml as lxml
     from defusedxml.common import DefusedXmlException
@@ -17,11 +19,13 @@ try:
     from lxml.etree import Element, tostring, LxmlError
 except ImportError:
     lxml = None
+
 try:
     import yaml
     from django.core.serializers import pyyaml
 except ImportError:
     yaml = None
+
 try:
     import biplist
 except ImportError:
@@ -246,7 +250,7 @@ class Serializer(object):
         elif data is None:
             return None
         else:
-            return force_unicode(data)
+            return force_text(data)
 
     def to_etree(self, data, options=None, name=None, depth=0):
         """
@@ -303,7 +307,7 @@ class Serializer(object):
                 if isinstance(simple_data, unicode):
                     element.text = simple_data
                 else:
-                    element.text = force_unicode(simple_data)
+                    element.text = force_text(simple_data)
 
         return element
 
@@ -397,7 +401,7 @@ class Serializer(object):
             raise ImproperlyConfigured("Usage of the XML aspects requires lxml and defusedxml.")
 
         try:
-            parsed = parse_xml(StringIO(content), forbid_dtd=forbid_dtd,
+            parsed = parse_xml(six.StringIO(content), forbid_dtd=forbid_dtd,
                                forbid_entities=forbid_entities)
         except (LxmlError, DefusedXmlException):
             raise BadRequest
@@ -483,5 +487,5 @@ def get_type_string(data):
         return 'hash'
     elif data is None:
         return 'null'
-    elif isinstance(data, basestring):
+    elif isinstance(data, six.string_types):
         return 'string'

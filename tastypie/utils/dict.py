@@ -10,6 +10,6 @@ def dict_strip_unicode_keys(uni_dict):
     data = {}
 
     for key, value in uni_dict.items():
-        data[six.bytes_type(key)] = value
+        data[six.binary_type(key)] = value
 
     return data
