@@ -5,7 +5,7 @@ from decimal import Decimal
 import re
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.utils import datetime_safe, importlib
-from django.core.urlresolvers import resolve
+from django.utils import six
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.utils import dict_strip_unicode_keys, make_aware
@@ -155,7 +155,7 @@ class ApiField(object):
         """
         if self.readonly:
             return None
-        if not bundle.data.has_key(self.instance_name):
+        if not self.instance_name in bundle.data:
             if getattr(self, 'is_related', False) and not getattr(self, 'is_m2m', False):
                 # We've got an FK (or alike field) & a possible parent object.
                 # Check for it.
@@ -325,7 +325,7 @@ class DateField(ApiField):
         if value is None:
             return None
 
-        if isinstance(value, basestring):
+        if isinstance(value, six.string_types):
             match = DATE_REGEX.search(value)
 
             if match:
@@ -363,7 +363,7 @@ class DateTimeField(ApiField):
         if value is None:
             return None
 
-        if isinstance(value, basestring):
+        if isinstance(value, six.string_types):
             match = DATETIME_REGEX.search(value)
 
             if match:
@@ -524,7 +524,7 @@ class RelatedField(ApiField):
         if self._to_class:
             return self._to_class
 
-        if not isinstance(self.to, basestring):
+        if not isinstance(self.to, six.string_types):
             self._to_class = self.to
             return self._to_class
 
@@ -650,7 +650,7 @@ class RelatedField(ApiField):
         if isinstance(value, Bundle):
             # Already hydrated, probably nested bundles. Just return.
             return value
-        elif isinstance(value, basestring):
+        elif isinstance(value, six.string_types):
             # We got a URI. Load the object and assign it.
             return self.resource_from_uri(self.fk_resource, value, **kwargs)
         elif isinstance(value, Bundle):
@@ -707,7 +707,7 @@ class ToOneField(RelatedField):
     def dehydrate(self, bundle, for_list=True):
         foreign_obj = None
 
-        if isinstance(self.attribute, basestring):
+        if isinstance(self.attribute, six.string_types):
             attrs = self.attribute.split('__')
             foreign_obj = bundle.obj
 
@@ -787,7 +787,7 @@ class ToManyField(RelatedField):
         previous_obj = bundle.obj
         attr = self.attribute
 
-        if isinstance(self.attribute, basestring):
+        if isinstance(self.attribute, six.string_types):
             attrs = self.attribute.split('__')
             the_m2ms = bundle.obj
 
@@ -879,7 +879,7 @@ class TimeField(ApiField):
         return self.convert(super(TimeField, self).dehydrate(obj))
 
     def convert(self, value):
-        if isinstance(value, basestring):
+        if isinstance(value, six.string_types):
             return self.to_time(value)
         return value
 
