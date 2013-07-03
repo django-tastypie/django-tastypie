@@ -74,14 +74,8 @@ your project or ``PYTHONPATH``.
   3. Either symlink the ``tastypie`` directory into your project or copy the
      directory in. What ever works best for you.
 
-.. note::
-
-    Once tastypie reaches version 1.0, it will become officially available on
-    PyPI_. Once that is the case, a ``sudo pip install tastypie`` or ``sudo
-    easy_install tastypie`` should be available.
-
 .. _GitHub: http://github.com/toastdriven/django-tastypie
-.. _PyPI: http://pypi.python.org/
+.. _PyPI: http://pypi.python.org/pypi/django-tastypie
 
 
 Configuration
