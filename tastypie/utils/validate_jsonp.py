@@ -147,9 +147,6 @@ def test():
       >>> is_valid_javascript_identifier(r'\u0062') # u'b'
       True
 
-      >>> is_valid_javascript_identifier(r'\u62')
-      False
-
       >>> is_valid_javascript_identifier(r'\u0020')
       False
 
