@@ -3,7 +3,7 @@ from __future__ import with_statement
 from copy import deepcopy
 import logging
 import warnings
-import django
+
 from django.conf import settings
 from django.conf.urls import patterns, url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, ValidationError
@@ -154,7 +154,7 @@ class DeclarativeMetaclass(type):
         return new_class
 
 
-class Resource(object):
+class Resource(six.with_metaclass(DeclarativeMetaclass)):
     """
     Handles the data, request dispatch and responding to requests.
 
@@ -165,8 +165,6 @@ class Resource(object):
     This class tries to be non-model specific, so it can be hooked up to other
     data sources, such as search results, files, other data, etc.
     """
-    __metaclass__ = DeclarativeMetaclass
-
     def __init__(self, api_name=None):
         self.fields = deepcopy(self.base_fields)
 
@@ -257,7 +255,7 @@ class Resource(object):
 
         if settings.DEBUG:
             data = {
-                "error_message": unicode(exception),
+                "error_message": six.text_type(exception),
                 "traceback": the_trace,
             }
             return self.error_response(request, data, response_class=response_class)
@@ -1716,7 +1714,7 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
         return new_class
 
 
-class ModelResource(Resource):
+class BaseModelResource(Resource):
     """
     A subclass of ``Resource`` designed to work with Django's ``Models``.
 
@@ -1726,8 +1724,6 @@ class ModelResource(Resource):
     Given that it is aware of Django's ORM, it also handles the CRUD data
     operations of the resource.
     """
-    __metaclass__ = ModelDeclarativeMetaclass
-
     @classmethod
     def should_skip_field(cls, field):
         """
@@ -2197,7 +2193,7 @@ class ModelResource(Resource):
         Necessary because PATCH should be atomic (all-success or all-fail)
         and the only way to do this neatly is at the database level.
         """
-        return super(ModelResource, self).patch_list(request, **kwargs)
+        return super(BaseModelResource, self).patch_list(request, **kwargs)
 
     def rollback(self, bundles):
         """
@@ -2382,6 +2378,10 @@ class ModelResource(Resource):
             kwargs[self._meta.detail_uri_name] = getattr(bundle_or_obj, self._meta.detail_uri_name)
 
         return kwargs
+
+
+class ModelResource(six.with_metaclass(ModelDeclarativeMetaclass, BaseModelResource)):
+    pass
 
 
 class NamespacedModelResource(ModelResource):
