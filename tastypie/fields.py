@@ -597,12 +597,12 @@ class RelatedField(ApiField):
             fk_bundle.related_name = related_name
 
         unique_keys = dict((k, v) for k, v in data.iteritems() if k == 'pk' or (hasattr(fk_resource, k) and getattr(fk_resource, k).unique))
-        
-        # If we have no unique keys, we shouldn't go look for some resource that 
+
+        # If we have no unique keys, we shouldn't go look for some resource that
         # happens to match other kwargs. In the case of a create, it might be the
         # completely wrong resource.
-        # We also need to check to see if updates are allowed on the FK resource. 
-        if unique_keys and fk_resource.can_update():            
+        # We also need to check to see if updates are allowed on the FK resource.
+        if unique_keys and fk_resource.can_update():
             try:
                 return fk_resource.obj_update(fk_bundle, skip_errors=True, **data)
             except (NotFound, TypeError):
