@@ -407,7 +407,7 @@ class RelatedField(ApiField):
     self_referential = False
     help_text = 'A related resource. Can be either a URI or set of nested resource data.'
 
-    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, use_in='all', full_list=True, full_detail=True, orm_extra={}, ordering=['pk']):
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, use_in='all', full_list=True, full_detail=True, orm_extra=None, ordering=None):
         """
         Builds the field and prepares it to access to related data.
 
@@ -768,7 +768,7 @@ class ToManyField(RelatedField):
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
                  null=False, blank=False, readonly=False, full=False,
                  unique=False, help_text=None, use_in='all', full_list=True, full_detail=True,
-                 orm_extra={}, ordering=['pk']):
+                 orm_extra=None, ordering=None):
         super(ToManyField, self).__init__(
             to, attribute, related_name=related_name, default=default,
             null=null, blank=blank, readonly=readonly, full=full,
@@ -818,8 +818,12 @@ class ToManyField(RelatedField):
         # TODO: Also model-specific and leaky. Relies on there being a
         #       ``Manager`` there.
         try:
+          m2ms = the_m2ms.all()
           # Try to add any extra query and ordering
-          m2ms = the_m2ms.all().extra(**self.orm_extra).order_by(*self.ordering)
+          if self.orm_extra is not None:
+            m2ms = m2ms.extra(**self.orm_extra)
+          if self.ordering is not None:
+            m2ms = m2ms.order_by(*self.ordering)
         except AttributeError:
           m2ms = the_m2ms.all()
         for m2m in m2ms:
