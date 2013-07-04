@@ -607,7 +607,7 @@ class RelatedField(ApiField):
         except (NotFound, TypeError):
             try:
                 # Attempt lookup by primary key
-                lookup_kwargs = dict((k, v) for k, v in data.iteritems() if getattr(fk_resource, k).unique)
+                lookup_kwargs = dict((k, v) for k, v in data.items() if getattr(fk_resource, k).unique)
 
                 if not lookup_kwargs:
                     raise NotFound()

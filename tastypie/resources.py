@@ -1692,7 +1692,7 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
         new_class = super(ModelDeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
         include_fields = getattr(new_class._meta, 'fields', [])
         excludes = getattr(new_class._meta, 'excludes', [])
-        field_names = new_class.base_fields.keys()
+        field_names = list(new_class.base_fields.keys())
 
         for field_name in field_names:
             if field_name == 'resource_uri':
