@@ -251,7 +251,7 @@ class Serializer(object):
             return self.format_time(data)
         elif isinstance(data, bool):
             return data
-        elif type(data) in (long, int, float):
+        elif type(data) in (six.integer_types, float):
             return data
         elif data is None:
             return None
@@ -310,7 +310,7 @@ class Serializer(object):
                 element.set('type', get_type_string(simple_data))
 
             if data_type != 'null':
-                if isinstance(simple_data, unicode):
+                if isinstance(simple_data, six.text_type):
                     element.text = simple_data
                 else:
                     element.text = force_text(simple_data)
@@ -481,7 +481,7 @@ def get_type_string(data):
     """
     data_type = type(data)
 
-    if data_type in (int, long):
+    if data_type in six.integer_types:
         return 'integer'
     elif data_type == float:
         return 'float'

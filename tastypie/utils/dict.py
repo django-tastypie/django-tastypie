@@ -7,9 +7,12 @@ def dict_strip_unicode_keys(uni_dict):
 
     Useful for converting a dict to a kwarg-able format.
     """
+    if six.PY3:
+        return uni_dict
+
     data = {}
 
     for key, value in uni_dict.items():
-        data[six.binary_type(key)] = value
+        data[six.binary_type(key, encoding='ascii')] = value
 
     return data
