@@ -107,7 +107,8 @@ handle the children::
 
         def get_children(self, request, **kwargs):
             try:
-                obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
+                bundle = self.build_bundle(data={'pk': kwargs['pk']}, request=request)
+                obj = self.cached_obj_get(bundle=bundle, **self.remove_api_resource_names(kwargs))
             except ObjectDoesNotExist:
                 return HttpGone()
             except MultipleObjectsReturned:
