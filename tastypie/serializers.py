@@ -251,7 +251,7 @@ class Serializer(object):
             return self.format_time(data)
         elif isinstance(data, bool):
             return data
-        elif type(data) in (six.integer_types, float):
+        elif isinstance(data, (six.integer_types, float)):
             return data
         elif data is None:
             return None
