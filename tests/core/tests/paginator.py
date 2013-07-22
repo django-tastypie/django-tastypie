@@ -265,7 +265,7 @@ class PaginatorTestCase(TestCase):
         self.assertTrue('a=1' in meta['previous'])
         self.assertTrue('a=2' in meta['previous'])
         self.assertTrue('limit=2' in meta['next'])
-        self.assertTrue('offset=0' in meta['next'])
+        self.assertTrue('offset=4' in meta['next'])
         self.assertTrue('a=1' in meta['next'])
         self.assertTrue('a=2' in meta['next'])
 
