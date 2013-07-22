@@ -15,6 +15,7 @@ from django.core.urlresolvers import reverse
 from django import forms
 from django.http import HttpRequest, QueryDict, Http404
 from django.test import TestCase
+from django.utils.encoding import force_text
 from django.utils import six
 
 from tastypie.authentication import BasicAuthentication
@@ -755,13 +756,13 @@ class ResourceTestCase(TestCase):
         data = {'hello': 'world'}
         output = basic.create_response(request, data)
         self.assertEqual(output.status_code, 200)
-        self.assertEqual(six.text_type(output.content), '{"hello": "world"}')
+        self.assertEqual(force_text(output.content), '{"hello": "world"}')
 
         request.GET = {'format': 'xml'}
         data = {'objects': [{'hello': 'world', 'abc': 123}], 'meta': {'page': 1}}
         output = basic.create_response(request, data)
         self.assertEqual(output.status_code, 200)
-        self.assertEqual(six.text_type(output.content), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><objects type="list"><object type="hash"><abc type="integer">123</abc><hello>world</hello></object></objects><meta type="hash"><page type="integer">1</page></meta></response>')
+        self.assertEqual(force_text(output.content), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><objects type="list"><object type="hash"><abc type="integer">123</abc><hello>world</hello></object></objects><meta type="hash"><page type="integer">1</page></meta></response>')
 
     def test_mangled(self):
         mangled = MangledBasicResource()
@@ -784,7 +785,7 @@ class ResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'GET'
 
-        basic_resource_list = json.loads(six.text_type(basic.get_list(request).content))['objects']
+        basic_resource_list = json.loads(force_text(basic.get_list(request).content))['objects']
         self.assertEquals(basic_resource_list[0]['name'], 'Daniel')
         self.assertEquals(basic_resource_list[0]['date_joined'], u'2010-03-30T09:00:00')
 
@@ -3415,23 +3416,23 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(punr._pre_limits, 0)
         # Shouldn't hit the DB yet.
         self.assertEqual(punr._post_limits, 0)
-        self.assertEqual(len(json.loads(six.text_type(punr.get_list(request=empty_request).content))['objects']), 4)
+        self.assertEqual(len(json.loads(force_text(punr.get_list(request=empty_request).content))['objects']), 4)
 
         # Requests with an Anonymous user get no objects.
         anony_bundle = punr.build_bundle(request=anony_request)
         self.assertEqual(punr.authorized_read_list(punr.get_object_list(anony_request), anony_bundle).count(), 0)
-        self.assertEqual(len(json.loads(six.text_type(punr.get_list(request=anony_request).content))['objects']), 0)
+        self.assertEqual(len(json.loads(force_text(punr.get_list(request=anony_request).content))['objects']), 0)
 
         # Requests with an authenticated user get all objects for that user
         # that are active.
         authed_bundle = punr.build_bundle(request=authed_request)
         self.assertEqual(punr.authorized_read_list(punr.get_object_list(authed_request), authed_bundle).count(), 2)
-        self.assertEqual(len(json.loads(six.text_type(punr.get_list(request=authed_request).content))['objects']), 2)
+        self.assertEqual(len(json.loads(force_text(punr.get_list(request=authed_request).content))['objects']), 2)
 
         # Demonstrate that a different user gets different objects.
         authed_bundle_2 = punr.build_bundle(request=authed_request_2)
         self.assertEqual(punr.authorized_read_list(punr.get_object_list(authed_request_2), authed_bundle_2).count(), 2)
-        self.assertEqual(len(json.loads(six.text_type(punr.get_list(request=authed_request_2).content))['objects']), 2)
+        self.assertEqual(len(json.loads(force_text(punr.get_list(request=authed_request_2).content))['objects']), 2)
         self.assertEqual(list(punr.authorized_read_list(punr.get_object_list(authed_request), authed_bundle).values_list('id', flat=True)), [1, 2])
         self.assertEqual(list(punr.authorized_read_list(punr.get_object_list(authed_request_2), authed_bundle_2).values_list('id', flat=True)), [4, 6])
 
@@ -3451,13 +3452,13 @@ class ModelResourceTestCase(TestCase):
         # Since the objects weren't filtered, we hit everything.
         self.assertEqual(ponr._post_limits, 6)
 
-        self.assertEqual(len(json.loads(six.text_type(ponr.get_list(request=empty_request).content))['objects']), 2)
+        self.assertEqual(len(json.loads(force_text(ponr.get_list(request=empty_request).content))['objects']), 2)
         self.assertEqual(ponr._pre_limits, 0)
         # Since the objects weren't filtered, we again hit everything.
         self.assertEqual(ponr._post_limits, 6)
 
         empty_request.GET['is_active'] = True
-        self.assertEqual(len(json.loads(six.text_type(ponr.get_list(request=empty_request).content))['objects']), 2)
+        self.assertEqual(len(json.loads(force_text(ponr.get_list(request=empty_request).content))['objects']), 2)
         self.assertEqual(ponr._pre_limits, 0)
         # This time, the objects were filtered, so we should only iterate over
         # a (hopefully much smaller) subset.
@@ -3585,7 +3586,7 @@ class ModelResourceTestCase(TestCase):
         resource = AlternativeCollectionNameNoteResource()
         request = HttpRequest()
         response = resource.get_list(request)
-        response_data = json.loads(six.text_type(response.content))
+        response_data = json.loads(force_text(response.content))
         self.assertTrue('alt_objects' in response_data)
 
 
