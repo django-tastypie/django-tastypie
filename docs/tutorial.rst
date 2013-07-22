@@ -61,12 +61,10 @@ your project or ``PYTHONPATH``.
 
     * Python 2.6+
     * Django 1.5+
-    * ``mimeparse`` 0.1.3+ (http://code.google.com/p/mimeparse/)
+    * ``python-mimeparse`` 0.1.4+ (http://pypi.python.org/pypi/python-mimeparse)
     * ``dateutil`` (http://labix.org/python-dateutil)
     * **OPTIONAL** - ``lxml`` (http://lxml.de/) if using the XML serializer
     * **OPTIONAL** - ``pyyaml`` (http://pyyaml.org/) if using the YAML serializer
-    * **OPTIONAL** - ``uuid`` (present in 2.5+, downloadable from
-      http://pypi.python.org/pypi/uuid/) if using the ``ApiKey`` authentication
 
   2. Either check out tastypie from GitHub_ or to pull a release off PyPI_.
      Doing ``sudo pip install django-tastypie`` or
