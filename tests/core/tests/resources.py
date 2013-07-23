@@ -3739,3 +3739,25 @@ class BustedResourceTestCase(TestCase):
         self.request.method = 'POST'
         resp = self.resource.wrap_view('post_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 404)
+
+
+class ObjectlessResource(Resource):
+    test = fields.CharField(default='objectless_test')
+
+    class Meta:
+        resource_name = 'objectless'
+
+    def get_object_list(self, request):
+        return [TestObject()]
+
+
+class ObjectlessResourceTestCase(TestCase):
+    def test_dispatch_list(self):
+        resource = ObjectlessResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+
+        resp = resource.dispatch_list(request)
+        self.assertEqual(resp.status_code, 200)
+
