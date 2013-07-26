@@ -78,17 +78,17 @@ class SerializerTestCase(TestCase):
             # Confirm that the setting will override the default values:
             settings.TASTYPIE_DEFAULT_FORMATS = ('json', 'xml')
             s = Serializer()
-            self.assertItemsEqual(s.formats, ['json', 'xml'])
-            self.assertItemsEqual(s.supported_formats, ['application/json', 'application/xml'])
-            self.assertDictEqual(s.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
+            self.assertEqual(list(s.formats), ['json', 'xml'])
+            self.assertEqual(list(s.supported_formats), ['application/json', 'application/xml'])
+            self.assertEqual(s.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
 
             # Confirm that subclasses which set their own formats list won't be overriden:
             class JSONSerializer(Serializer):
                 formats = ['json']
 
             js = JSONSerializer()
-            self.assertItemsEqual(js.formats, ['json'])
-            self.assertItemsEqual(js.supported_formats, ['application/json'])
+            self.assertEqual(list(js.formats), ['json'])
+            self.assertEqual(list(js.supported_formats), ['application/json'])
 
         finally:
             if old_formats is None:
@@ -230,16 +230,18 @@ class SerializerTestCase(TestCase):
         # so we can make extra special sure it looks right.
         binary_xml = serializer.to_xml(sample_1)
         unicode_xml = binary_xml.decode('utf-8')
-        self.assertEqual(unicode_xml, u'<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><snowman>☃</snowman><age type="integer">27</age><name>Daniel</name><date_joined>2010-03-27</date_joined></response>')
+        self.assertEqual(unicode_xml, u'<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><age type="integer">27</age><date_joined>2010-03-27</date_joined><name>Daniel</name><snowman>☃</snowman></response>')
 
     def test_to_xml2(self):
         serializer = Serializer()
         sample_2 = self.get_sample2()
-        self.assertEqual(serializer.to_xml(sample_2), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><somelist type="list"><value>hello</value><value type="integer">1</value><value type="null"/></somelist><somehash type="hash"><pi type="float">3.14</pi><foo>bar</foo></somehash><false type="boolean">False</false><true type="boolean">True</true><somestring>hello</somestring></response>')
+        binary_xml = serializer.to_xml(sample_2)
+        unicode_xml = binary_xml.decode('utf-8')
+        self.assertEqual(unicode_xml, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><false type="boolean">False</false><somehash type="hash"><foo>bar</foo><pi type="float">3.14</pi></somehash><somelist type="list"><value>hello</value><value type="integer">1</value><value type="null"/></somelist><somestring>hello</somestring><true type="boolean">True</true></response>')
 
     def test_from_xml(self):
         serializer = Serializer()
-        data = '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><snowman>☃</snowman><age type="integer">27</age><name>Daniel</name><date_joined>2010-03-27</date_joined><rocksdahouse type="boolean">True</rocksdahouse></request>'
+        data = u'<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><snowman>☃</snowman><age type="integer">27</age><name>Daniel</name><date_joined>2010-03-27</date_joined><rocksdahouse type="boolean">True</rocksdahouse></request>'
         self.assertEqual(serializer.from_xml(data), {'rocksdahouse': True, 'age': 27, 'name': 'Daniel', 'date_joined': '2010-03-27', 'snowman': u'☃'})
 
     def test_from_xml2(self):
@@ -250,9 +252,6 @@ class SerializerTestCase(TestCase):
     def test_malformed_xml(self):
         serializer = Serializer()
         data = '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><somelist type="list"><valueNO CARRIER'
-        self.assertRaises(BadRequest, serializer.from_xml, data)
-
-        data = '<?xml version=\'1.0\' encoding=\'ascii\'?>\n<request><snowman>☃</snowman></request>'
         self.assertRaises(BadRequest, serializer.from_xml, data)
 
     def test_to_json(self):
@@ -277,7 +276,7 @@ class SerializerTestCase(TestCase):
         serialized = serializer.to_xml(sample_data)
         # "response" tags need to be changed to "request" to deserialize properly.
         # A string substitution works here.
-        serialized = serialized.replace('response', 'request')
+        serialized = serialized.decode('utf-8').replace('response', 'request')
         unserialized = serializer.from_xml(serialized)
         self.assertEqual(sample_data, unserialized)
 
