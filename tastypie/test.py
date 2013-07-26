@@ -25,7 +25,7 @@ class TestApiClient(object):
         Given a short name (such as ``json`` or ``xml``), returns the full content-type
         for it (``application/json`` or ``application/xml`` in this case).
         """
-        return self.serializer.content_types.get(short_format, 'json')
+        return self.serializer.content_types.get(short_format or 'json')
 
     def get(self, uri, format='json', data=None, authentication=None, **kwargs):
         """
