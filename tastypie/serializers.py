@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 import datetime
+import re
 import django
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -16,7 +17,7 @@ try:
     import defusedxml.lxml as lxml
     from defusedxml.common import DefusedXmlException
     from defusedxml.lxml import parse as parse_xml
-    from lxml.etree import Element, tostring, LxmlError
+    from lxml.etree import Element, tostring, LxmlError, XMLParser
 except ImportError:
     lxml = None
 
@@ -30,6 +31,9 @@ try:
     import biplist
 except ImportError:
     biplist = None
+
+
+XML_ENCODING = re.compile('<\?xml.*?\?>', re.IGNORECASE)
 
 
 # Ugh & blah.
@@ -266,6 +270,7 @@ class Serializer(object):
                 element = Element('objects')
             for item in data:
                 element.append(self.to_etree(item, options, depth=depth+1))
+                element[:] = sorted(element, key=lambda x: x.tag)
         elif isinstance(data, dict):
             if depth == 0:
                 element = Element(name or 'response')
@@ -274,10 +279,12 @@ class Serializer(object):
                 element.set('type', 'hash')
             for (key, value) in data.items():
                 element.append(self.to_etree(value, options, name=key, depth=depth+1))
+                element[:] = sorted(element, key=lambda x: x.tag)
         elif isinstance(data, Bundle):
             element = Element(name or 'object')
             for field_name, field_object in data.data.items():
                 element.append(self.to_etree(field_object, options, name=field_name, depth=depth+1))
+                element[:] = sorted(element, key=lambda x: x.tag)
         elif hasattr(data, 'dehydrated_type'):
             if getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == False:
                 if data.full:
@@ -401,10 +408,16 @@ class Serializer(object):
             raise ImproperlyConfigured("Usage of the XML aspects requires lxml and defusedxml.")
 
         try:
-            parsed = parse_xml(six.StringIO(content), forbid_dtd=forbid_dtd,
-                               forbid_entities=forbid_entities)
+            # Stripping the encoding declaration. Because lxml.
+            # See http://lxml.de/parsing.html, "Python unicode strings".
+            content = XML_ENCODING.sub('', content)
+            parsed = parse_xml(
+                six.StringIO(content),
+                forbid_dtd=forbid_dtd,
+                forbid_entities=forbid_entities
+            )
         except (LxmlError, DefusedXmlException):
-            raise BadRequest
+            raise BadRequest()
 
         return self.from_etree(parsed.getroot())
 
