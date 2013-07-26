@@ -83,32 +83,32 @@ class BasicAuthenticationTestCase(TestCase):
         self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
 
         # No password.
-        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('daniel')
+        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('daniel'.encode('utf-8')).decode('utf-8')
         self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
 
         # Wrong user/password.
-        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('daniel:pass')
+        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('daniel:pass'.encode('utf-8')).decode('utf-8')
         self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
 
         # Correct user/password.
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass'.encode('utf-8')).decode('utf-8')
         self.assertEqual(auth.is_authenticated(request), True)
 
         # Regression: Password with colon.
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass:word')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass:word')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass:word'.encode('utf-8')).decode('utf-8')
         self.assertEqual(auth.is_authenticated(request), True)
 
         # Capitalization shouldn't matter.
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass:word')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'bAsIc %s' % base64.b64encode('johndoe:pass:word')
+        request.META['HTTP_AUTHORIZATION'] = 'bAsIc %s' % base64.b64encode('johndoe:pass:word'.encode('utf-8')).decode('utf-8')
         self.assertEqual(auth.is_authenticated(request), True)
 
     def test_check_active_true(self):
@@ -118,7 +118,7 @@ class BasicAuthenticationTestCase(TestCase):
         bob_doe = User.objects.get(username='bobdoe')
         bob_doe.set_password('pass')
         bob_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('bobdoe:pass')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('bobdoe:pass'.encode('utf-8')).decode('utf-8')
         self.assertFalse(auth.is_authenticated(request))
 
     def test_check_active_false(self):
@@ -128,7 +128,7 @@ class BasicAuthenticationTestCase(TestCase):
         bob_doe = User.objects.get(username='bobdoe')
         bob_doe.set_password('pass')
         bob_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('bobdoe:pass')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('bobdoe:pass'.encode('utf-8')).decode('utf-8')
         self.assertTrue(auth.is_authenticated(request))
 
 
@@ -320,12 +320,12 @@ class DigestAuthenticationTestCase(TestCase):
         self.assertEqual(isinstance(auth_request, HttpUnauthorized), True)
 
         # No password.
-        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('daniel')
+        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('daniel'.encode('utf-8')).decode('utf-8')
         auth_request = auth.is_authenticated(request)
         self.assertEqual(isinstance(auth_request, HttpUnauthorized), True)
 
         # Wrong user/password.
-        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('daniel:pass')
+        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('daniel:pass'.encode('utf-8')).decode('utf-8')
         auth_request = auth.is_authenticated(request)
         self.assertEqual(isinstance(auth_request, HttpUnauthorized), True)
 
@@ -577,7 +577,7 @@ class MultiAuthenticationTestCase(TestCase):
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass'.encode('utf-8')).decode('utf-8')
         self.assertEqual(auth.is_authenticated(request), True)
 
 

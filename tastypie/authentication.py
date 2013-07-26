@@ -116,7 +116,7 @@ class BasicAuthentication(Authentication):
             (auth_type, data) = request.META['HTTP_AUTHORIZATION'].split()
             if auth_type.lower() != 'basic':
                 return self._unauthorized()
-            user_pass = base64.b64decode(data)
+            user_pass = base64.b64decode(data).decode('utf-8')
         except:
             return self._unauthorized()
 
