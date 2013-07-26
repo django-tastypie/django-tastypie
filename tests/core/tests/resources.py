@@ -2610,7 +2610,7 @@ class ModelResourceTestCase(TestCase):
         # Try again with ``wrap_view`` for sanity.
         resp = resource.wrap_view('dispatch_detail')(request, pk=1)
         self.assertEqual(resp.status_code, 400)
-        self.assertEqual(six.text_types(resp.content), '{"error": "JSONP callback name is invalid."}')
+        self.assertEqual(force_text(resp.content), '{"error": "JSONP callback name is invalid."}')
         self.assertEqual(resp['content-type'], 'application/json')
 
         # valid JSONP callback should work
@@ -3621,12 +3621,12 @@ class BasicAuthResourceTestCase(TestCase):
 
         # Try again with ``wrap_view`` for sanity.
         resp = resource.wrap_view('dispatch_list')(request)
-        self.assertEqual(e.response.status_code, 401)
+        self.assertEqual(resp.status_code, 401)
 
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass'.encode('utf-8')).decode('utf-8')
 
         resp = resource.dispatch_list(request)
         self.assertEqual(resp.status_code, 200)
@@ -3645,12 +3645,12 @@ class BasicAuthResourceTestCase(TestCase):
 
         # Try again with ``wrap_view`` for sanity.
         resp = resource.wrap_view('dispatch_detail')(request, pk=1)
-        self.assertEqual(e.response.status_code, 401)
+        self.assertEqual(resp.status_code, 401)
 
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass'.encode('utf-8')).decode('utf-8')
 
         resp = resource.dispatch_list(request)
         self.assertEqual(resp.status_code, 200)
