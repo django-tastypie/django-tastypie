@@ -599,7 +599,7 @@ class Resource(object):
         self._meta.throttle.accessed(self._meta.authentication.get_identifier(request), url=request.get_full_path(), request_method=request_method)
 
     def unauthorized_result(self, exception):
-        raise ImmediateHttpResponse(response=http.HttpUnauthorized())
+        raise ImmediateHttpResponse(response=http.HttpUnauthorized(exception))
 
     def authorized_read_list(self, object_list, bundle):
         """

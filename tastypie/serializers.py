@@ -12,6 +12,7 @@ from django.utils.encoding import force_unicode
 from tastypie.bundle import Bundle
 from tastypie.exceptions import BadRequest, UnsupportedFormat
 from tastypie.utils import format_datetime, format_date, format_time, make_naive
+from django.utils.encoding import smart_str
 try:
     import defusedxml.lxml as lxml
     from defusedxml.common import DefusedXmlException
@@ -329,7 +330,7 @@ class Serializer(object):
                 if element.tag in ('object', 'objects'):
                     return self.from_etree(element)
             return dict((element.tag, self.from_etree(element)) for element in elements)
-        elif data.tag == 'object' or data.get('type') == 'hash':
+        elif data.tag == 'object' or data.tag == 'response' or data.get('type') == 'hash':
             return dict((element.tag, self.from_etree(element)) for element in data.getchildren())
         elif data.tag == 'objects' or data.get('type') == 'list':
             return [self.from_etree(element) for element in data.getchildren()]
@@ -357,9 +358,9 @@ class Serializer(object):
         data = self.to_simple(data, options)
 
         if django.get_version() >= '1.5':
-            return json.json.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
+            return smart_str(json.json.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False))
         else:
-            return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
+            return smart_str(simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False))
 
     def from_json(self, content):
         """
