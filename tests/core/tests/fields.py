@@ -742,7 +742,7 @@ class ToOneFieldTestCase(TestCase):
         field_3 = ToOneField(UserResource, 'author')
         field_3.instance_name = 'fk'
         bundle.data['fk'] = '/api/v1/users/abc/'
-        self.assertRaises(NotFound, field_3.hydrate, bundle)
+        self.assertRaises(ApiFieldError, field_3.hydrate, bundle)
 
         # A real, live attribute!
         field_4 = ToOneField(UserResource, 'author')
@@ -835,6 +835,12 @@ class ToOneFieldTestCase(TestCase):
         fk_bundle = field_13.hydrate(bundle)
         self.assertEqual(fk_bundle.obj.username, u'johndoe')
         self.assertEqual(fk_bundle.obj.email, u'john@doe.com')
+
+        # Resource URI matching multiple resources.
+        field_14 = ToOneField(UserResource, 'author')
+        field_14.instance_name = 'fk'
+        bundle.data['fk'] = '/api/v1/users/'
+        self.assertRaises(ApiFieldError, field_14.hydrate, bundle)
 
     def test_resource_from_uri(self):
         ur = UserResource()
@@ -1246,7 +1252,7 @@ class ToManyFieldTestCase(TestCase):
         field_4 = ToManyField(SubjectResource, 'subjects')
         field_4.instance_name = 'm2m'
         bundle_4 = Bundle(data={'m2m': ['/api/v1/subjects/abc/']})
-        self.assertRaises(NotFound, field_4.hydrate_m2m, bundle_4)
+        self.assertRaises(ApiFieldError, field_4.hydrate_m2m, bundle_4)
 
         # A real, live attribute!
         field_5 = ToManyField(SubjectResource, 'subjects')
@@ -1317,6 +1323,12 @@ class ToManyFieldTestCase(TestCase):
         media_bundle_list = field_10.hydrate_m2m(bundle_10)
         self.assertEqual(len(media_bundle_list), 1)
         self.assertEqual(media_bundle_list[0].obj.title, u'Foo!')
+
+        # Resource URI matching multiple resources.
+        field_11 = ToManyField(SubjectResource, 'subjects')
+        field_11.instance_name = 'm2m'
+        bundle_11 = Bundle(data={'m2m': ['/api/v1/subjects/']})
+        self.assertRaises(ApiFieldError, field_11.hydrate_m2m, bundle_11)
 
     def test_traversed_attribute_dehydrate(self):
         mediabit = MediaBit(id=1, note=self.note_1)
