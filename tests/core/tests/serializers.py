@@ -120,6 +120,9 @@ class SerializerTestCase(TestCase):
         serializer = Serializer(datetime_formatting='iso-8601')
         self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33')
 
+        serializer = Serializer(datetime_formatting='iso-8601-strict')
+        self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33, 10)), '2010-12-16T02:31:33')
+
         serializer = Serializer(datetime_formatting='rfc-2822')
         self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), u'Thu, 16 Dec 2010 02:31:33 -0600')
 
@@ -132,6 +135,10 @@ class SerializerTestCase(TestCase):
         settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601'
         serializer = Serializer()
         self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33')
+
+        settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601-strict'
+        serializer = Serializer()
+        self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33, 10)), '2010-12-16T02:31:33')
 
         settings.TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
         serializer = Serializer()
@@ -182,6 +189,9 @@ class SerializerTestCase(TestCase):
         serializer = Serializer(datetime_formatting='iso-8601')
         self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), '02:31:33')
 
+        serializer = Serializer(datetime_formatting='iso-8601-strict')
+        self.assertEqual(serializer.format_time(datetime.time(2, 31, 33, 10)), '02:31:33')
+
         serializer = Serializer(datetime_formatting='rfc-2822')
         self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), u'02:31:33 -0600')
 
@@ -194,6 +204,10 @@ class SerializerTestCase(TestCase):
         settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601'
         serializer = Serializer()
         self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), '02:31:33')
+
+        settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601-strict'
+        serializer = Serializer()
+        self.assertEqual(serializer.format_time(datetime.time(2, 31, 33, 10)), '02:31:33')
 
         settings.TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
         serializer = Serializer()
