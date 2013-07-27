@@ -11,7 +11,7 @@ from tastypie.resources import ModelResource
 from core.models import Note, Subject, MediaBit
 from core.tests.mocks import MockRequest
 
-from tastypie.utils import aware_datetime, aware_date
+from tastypie.utils import aware_datetime, aware_date, is_aware, is_naive
 
 
 class ApiFieldTestCase(TestCase):
@@ -417,7 +417,12 @@ class TimeFieldTestCase(TestCase):
         bundle = Bundle(obj=note)
 
         field_1 = TimeField(attribute='created')
-        self.assertEqual(field_1.dehydrate(bundle), aware_datetime(2010, 3, 30, 20, 5))
+        dehydrated = field_1.dehydrate(bundle)
+        if is_aware(dehydrated):
+            expected = aware_datetime(2010, 3, 30, 20, 5)
+        else:
+            expected = datetime.datetime(2010, 3, 30, 20, 5)
+        self.assertEqual(dehydrated, expected)
 
         field_2 = TimeField(default=datetime.time(23, 5, 58))
         self.assertEqual(field_2.dehydrate(bundle), datetime.time(23, 5, 58))
@@ -479,7 +484,12 @@ class DateFieldTestCase(TestCase):
         bundle = Bundle(obj=note)
 
         field_1 = DateField(attribute='created')
-        self.assertEqual(field_1.dehydrate(bundle), aware_datetime(2010, 3, 30, 20, 5))
+        dehydrated = field_1.dehydrate(bundle)
+        if is_aware(dehydrated):
+            expected = aware_datetime(2010, 3, 30, 20, 5)
+        else:
+            expected = datetime.datetime(2010, 3, 30, 20, 5)
+        self.assertEqual(dehydrated, expected)
 
         field_2 = DateField(default=datetime.date(2010, 4, 1))
         self.assertEqual(field_2.dehydrate(bundle), datetime.date(2010, 4, 1))

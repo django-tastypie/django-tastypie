@@ -11,7 +11,9 @@ except ImportError: # < Python 2.6
 from django.utils.encoding import force_unicode
 from tastypie.bundle import Bundle
 from tastypie.exceptions import BadRequest, UnsupportedFormat
-from tastypie.utils import format_datetime, format_date, format_time, make_naive
+from tastypie.utils import (format_datetime, format_date, format_time,
+                            make_naive, is_naive, make_aware, is_aware,
+                            get_default_timezone)
 try:
     import defusedxml.lxml as lxml
     from defusedxml.common import DefusedXmlException
@@ -74,6 +76,12 @@ class Serializer(object):
     It was designed to make changing behavior easy, either by overridding the
     various format methods (i.e. ``to_json``), by changing the
     ``formats/content_types`` options or by altering the other hook methods.
+
+    This will also check for what format to format datetimes in,
+    either iso-8601 (default) or rfc-2822.
+    This is set with ``datetime_formatting``.
+    if ``datetime_formatting_timezone`` is True, the timezone information
+    will be serialized as well.
     """
 
     formats = ['json', 'xml', 'yaml', 'html', 'plist']
@@ -85,11 +93,25 @@ class Serializer(object):
                      'html': 'text/html',
                      'plist': 'application/x-plist'}
 
-    def __init__(self, formats=None, content_types=None, datetime_formatting=None):
+    def __init__(self,
+                 formats=None,
+                 content_types=None,
+                 datetime_formatting=None,
+                 datetime_formatting_timezone=None):
         if datetime_formatting is not None:
             self.datetime_formatting = datetime_formatting
         else:
             self.datetime_formatting = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING', 'iso-8601')
+
+        if datetime_formatting_timezone is not None:
+            self.datetime_formatting_timezone = datetime_formatting_timezone
+        else:
+            self.datetime_formatting_timezone = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING_TIMEZONE', False)
+
+        if getattr(settings, 'USE_TZ', False):
+            self.tzinfo = get_default_timezone()
+        else:
+            self.tzinfo = None
 
         self.supported_formats = []
 
@@ -134,7 +156,10 @@ class Serializer(object):
 
         Default is ``iso-8601``, which looks like "2010-12-16T03:02:14".
         """
-        data = make_naive(data)
+        if not self.datetime_formatting_timezone and is_aware(data):
+            data = make_naive(data, self.tzinfo)
+        elif self.datetime_formatting_timezone and is_naive(data):
+            data = make_aware(data, self.tzinfo)
         if self.datetime_formatting == 'rfc-2822':
             return format_datetime(data)
 

@@ -144,6 +144,68 @@ class SerializerTestCase(TestCase):
         # Restore.
         settings.TASTYPIE_DATETIME_FORMATTING = old_format
 
+    def test_format_datetime_timezone(self):
+        # Timezone aware test. False (default and old behaviour)
+        old_use_tz_formatting = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING_TIMEZONE', False)
+        old_tz_formatting = getattr(settings, 'TASTYPIE_DATETIME_FORMATTING', None)
+        old_use_tz = getattr(settings, 'USE_TZ', None)
+
+        settings.TASTYPIE_DATETIME_FORMATTING_TIMEZONE = False
+        settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601'
+        settings.USE_TZ = True
+
+        serializer = Serializer()
+        self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33')
+
+        settings.TASTYPIE_DATETIME_FORMATTING_TIMEZONE = False
+        settings.TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
+        settings.USE_TZ = True
+        serializer = Serializer()
+        self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), u'Thu, 16 Dec 2010 02:31:33 -0600')
+
+        # with tz info enabled
+        settings.TASTYPIE_DATETIME_FORMATTING_TIMEZONE = True
+        settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601'
+        settings.USE_TZ = True
+        serializer = Serializer()
+        self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33-06:00')
+
+        settings.TASTYPIE_DATETIME_FORMATTING_TIMEZONE = True
+        settings.TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
+        settings.USE_TZ = True
+        serializer = Serializer()
+        self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), u'Thu, 16 Dec 2010 02:31:33 -0600')
+
+        # Test aware datetime
+        from dateutil.tz import gettz
+        settings.TASTYPIE_DATETIME_FORMATTING_TIMEZONE = True
+        settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601'
+        settings.USE_TZ = True
+        serializer = Serializer()
+        tzinfo = gettz('Asia/Singapore')
+        dt = datetime.datetime(2010, 12, 16, 2, 31, 33, tzinfo=tzinfo)
+        self.assertEqual(serializer.format_datetime(dt), '2010-12-16T02:31:33+08:00')
+
+        settings.TASTYPIE_DATETIME_FORMATTING_TIMEZONE = True
+        settings.TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
+        settings.USE_TZ = True
+        serializer = Serializer()
+        self.assertEqual(serializer.format_datetime(dt), u'Thu, 16 Dec 2010 02:31:33 +0800')
+
+        if old_use_tz_formatting:
+            settings.TASTYPIE_DATETIME_FORMATTING_TIMEZONE = old_use_tz_formatting
+        else:
+            del settings.TASTYPIE_DATETIME_FORMATTING_TIMEZONE
+        if old_tz_formatting:
+            settings.TASTYPIE_DATETIME_FORMATTING = old_tz_formatting
+        else:
+            del settings.TASTYPIE_DATETIME_FORMATTING
+        if old_use_tz:
+            settings.USE_TZ = old_use_tz
+        else:
+            del settings.USE_TZ
+
+
     def test_format_date(self):
         serializer = Serializer()
         self.assertEqual(serializer.format_date(datetime.date(2010, 12, 16)), '2010-12-16')
