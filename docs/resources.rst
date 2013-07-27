@@ -622,7 +622,8 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   If you place any callables in this, they'll only be evaluated once (when
   the ``Meta`` class is instantiated). This especially affects things that
-  are date/time related. Please see the :ref:cookbook for a way around this.
+  are date/time related. Please see the :doc:`cookbook </cookbook>` for a way
+  around this.
 
 ``fields``
 ----------
