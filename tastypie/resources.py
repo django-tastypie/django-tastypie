@@ -1302,6 +1302,9 @@ class Resource(object):
         paginator = self._meta.paginator_class(request.GET, sorted_objects, resource_uri=self.get_resource_uri(), limit=self._meta.limit, max_limit=self._meta.max_limit, collection_name=self._meta.collection_name)
         to_be_serialized = paginator.page()
 
+        to_be_serialized[self._meta.collection_name] = self.alter_queryset(
+            request, to_be_serialized[self._meta.collection_name], **kwargs)
+
         # Dehydrate the bundles in preparation for serialization.
         bundles = []
 
@@ -1677,6 +1680,16 @@ class Resource(object):
             'request': request,
         }
         return self.obj_update(bundle=original_bundle, **kwargs)
+
+    def alter_queryset(self, request, qs, **kwargs):
+        """
+        Allows you to alter the final QuerySet before it is dehydrated into a
+        list of resources.
+
+        Allows you to apply things like ``prefetch_related`` https://docs.djangoproject.com/en/dev/ref/models/querysets/#prefetch-related
+        to improve performance.
+        """
+        return qs
 
     def get_schema(self, request, **kwargs):
         """

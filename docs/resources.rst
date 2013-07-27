@@ -1801,3 +1801,14 @@ relation and recreate the related data as needed.
 Handles generating a resource URI for a single resource.
 
 Uses the model's ``pk`` in order to create the URI.
+
+``alter_queryset``
+-------------------
+
+.. method:: ModelResource.alter_queryset(self, request, qs, **kwargs)
+
+Allows you to make final alterations to the queryset before it is dehydrated into
+a list of resources.
+
+Ideal for applying ``prefetch_related`` to your queryset.
+
