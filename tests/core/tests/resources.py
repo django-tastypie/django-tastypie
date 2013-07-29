@@ -762,7 +762,7 @@ class ResourceTestCase(TestCase):
         data = {'objects': [{'hello': 'world', 'abc': 123}], 'meta': {'page': 1}}
         output = basic.create_response(request, data)
         self.assertEqual(output.status_code, 200)
-        self.assertEqual(force_text(output.content), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><objects type="list"><object type="hash"><abc type="integer">123</abc><hello>world</hello></object></objects><meta type="hash"><page type="integer">1</page></meta></response>')
+        self.assertEqual(force_text(output.content), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><meta type="hash"><page type="integer">1</page></meta><objects type="list"><object type="hash"><abc type="integer">123</abc><hello>world</hello></object></objects></response>')
 
     def test_mangled(self):
         mangled = MangledBasicResource()
@@ -2059,7 +2059,7 @@ class ModelResourceTestCase(TestCase):
         always_resource = AlwaysDataNoteResourceUseIn()
         resp = always_resource.put_list(request)
         self.assertEqual(resp.status_code, 202)
-        content = json.loads(resp.content)
+        content = json.loads(resp.content.decode('utf-8'))
         self.assertTrue(len(content['objects']) == 1)
         for note in content['objects']:
             self.assertIn('constant', note)
@@ -3513,7 +3513,7 @@ class ModelResourceTestCase(TestCase):
     def test_custom_paginator(self):
         mock_request = MockRequest()
         customs = CustomPageNoteResource().get_list(mock_request)
-        data = json.loads(customs.content)
+        data = json.loads(customs.content.decode('utf-8'))
         self.assertEqual(len(data), 3)
         self.assertEqual(len(data['objects']), 6)
         self.assertEqual(data['extra'], 'Some extra stuff here.')

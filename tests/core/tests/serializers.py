@@ -356,12 +356,16 @@ class ResourceSerializationTestCase(TestCase):
 
     def test_to_xml_multirepr(self):
         serializer = Serializer()
-        self.assertEqual(serializer.to_xml(self.obj_list), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<objects><object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id type="integer">1</id><resource_uri></resource_uri></object><object><updated>2010-03-31T20:05:00</updated><created>2010-03-31T20:05:00</created><title>Another Post</title><is_active type="boolean">True</is_active><slug>another-post</slug><content>The dog ate my cat today. He looks seriously uncomfortable.</content><id type="integer">2</id><resource_uri></resource_uri></object><object><updated>2010-04-01T20:05:00</updated><created>2010-04-01T20:05:00</created><title>Recent Volcanic Activity.</title><is_active type="boolean">True</is_active><slug>recent-volcanic-activity</slug><content>My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.</content><id type="integer">4</id><resource_uri></resource_uri></object><object><updated>2010-04-02T10:05:00</updated><created>2010-04-02T10:05:00</created><title>Granny\'s Gone</title><is_active type="boolean">True</is_active><slug>grannys-gone</slug><content>Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!</content><id type="integer">6</id><resource_uri></resource_uri></object></objects>')
+        binary_xml = serializer.to_xml(self.obj_list)
+        unicode_xml = binary_xml.decode('utf-8')
+        self.assertEqual(unicode_xml, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<objects><object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><created>2010-03-30T20:05:00</created><id type="integer">1</id><is_active type="boolean">True</is_active><resource_uri></resource_uri><slug>first-post</slug><title>First Post!</title><updated>2010-03-30T20:05:00</updated></object><object><content>The dog ate my cat today. He looks seriously uncomfortable.</content><created>2010-03-31T20:05:00</created><id type="integer">2</id><is_active type="boolean">True</is_active><resource_uri></resource_uri><slug>another-post</slug><title>Another Post</title><updated>2010-03-31T20:05:00</updated></object><object><content>My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.</content><created>2010-04-01T20:05:00</created><id type="integer">4</id><is_active type="boolean">True</is_active><resource_uri></resource_uri><slug>recent-volcanic-activity</slug><title>Recent Volcanic Activity.</title><updated>2010-04-01T20:05:00</updated></object><object><content>Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!</content><created>2010-04-02T10:05:00</created><id type="integer">6</id><is_active type="boolean">True</is_active><resource_uri></resource_uri><slug>grannys-gone</slug><title>Granny\'s Gone</title><updated>2010-04-02T10:05:00</updated></object></objects>')
 
     def test_to_xml_single(self):
         serializer = Serializer()
         resource = self.obj_list[0]
-        self.assertEqual(serializer.to_xml(resource), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id type="integer">1</id><resource_uri></resource_uri></object>')
+        binary_xml = serializer.to_xml(resource)
+        unicode_xml = binary_xml.decode('utf-8')
+        self.assertEqual(unicode_xml, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><created>2010-03-30T20:05:00</created><id type="integer">1</id><is_active type="boolean">True</is_active><resource_uri></resource_uri><slug>first-post</slug><title>First Post!</title><updated>2010-03-30T20:05:00</updated></object>')
 
     def test_to_xml_nested(self):
         serializer = Serializer()
@@ -372,7 +376,9 @@ class ResourceSerializationTestCase(TestCase):
                 'object': resource,
             }
         }
-        self.assertEqual(serializer.to_xml(data), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><stuff type="hash"><foo>bar</foo><object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id type="integer">1</id><resource_uri></resource_uri></object></stuff></response>')
+        binary_xml = serializer.to_xml(data)
+        unicode_xml = binary_xml.decode('utf-8')
+        self.assertEqual(unicode_xml, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><stuff type="hash"><foo>bar</foo><object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><created>2010-03-30T20:05:00</created><id type="integer">1</id><is_active type="boolean">True</is_active><resource_uri></resource_uri><slug>first-post</slug><title>First Post!</title><updated>2010-03-30T20:05:00</updated></object></stuff></response>')
 
     def test_to_json_multirepr(self):
         serializer = Serializer()
