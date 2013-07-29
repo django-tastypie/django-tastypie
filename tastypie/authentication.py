@@ -311,8 +311,14 @@ class DigestAuthentication(Authentication):
     def _unauthorized(self):
         response = HttpUnauthorized()
         new_uuid = uuid.uuid4()
-        opaque = hmac.new(str(new_uuid), digestmod=sha1).hexdigest()
-        response['WWW-Authenticate'] = python_digest.build_digest_challenge(time.time(), getattr(settings, 'SECRET_KEY', ''), self.realm, opaque, False)
+        opaque = hmac.new(str(new_uuid).encode('utf-8'), digestmod=sha1).hexdigest()
+        response['WWW-Authenticate'] = python_digest.build_digest_challenge(
+            timestamp=time.time(),
+            secret=getattr(settings, 'SECRET_KEY', ''),
+            realm=self.realm,
+            opaque=opaque,
+            stale=False
+        )
         return response
 
     def is_authenticated(self, request, **kwargs):

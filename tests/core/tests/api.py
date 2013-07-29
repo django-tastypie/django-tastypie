@@ -128,7 +128,7 @@ class ApiTestCase(TestCase):
 
         resp = api.top_level(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"notes": {"list_endpoint": "/api/v1/notes/", "schema": "/api/v1/notes/schema/"}, "users": {"list_endpoint": "/api/v1/users/", "schema": "/api/v1/users/schema/"}}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"notes": {"list_endpoint": "/api/v1/notes/", "schema": "/api/v1/notes/schema/"}, "users": {"list_endpoint": "/api/v1/users/", "schema": "/api/v1/users/schema/"}}')
 
     def test_top_level_jsonp(self):
         api = Api()
@@ -141,7 +141,7 @@ class ApiTestCase(TestCase):
         resp = api.top_level(request)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp['content-type'].split(';')[0], 'text/javascript')
-        self.assertEqual(resp.content, 'foo({"notes": {"list_endpoint": "/api/v1/notes/", "schema": "/api/v1/notes/schema/"}, "users": {"list_endpoint": "/api/v1/users/", "schema": "/api/v1/users/schema/"}})')
+        self.assertEqual(resp.content.decode('utf-8'), 'foo({"notes": {"list_endpoint": "/api/v1/notes/", "schema": "/api/v1/notes/schema/"}, "users": {"list_endpoint": "/api/v1/users/", "schema": "/api/v1/users/schema/"}})')
 
         request = HttpRequest()
         request.META = {'HTTP_ACCEPT': 'text/javascript'}
