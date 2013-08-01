@@ -98,7 +98,10 @@ class ResourceOptions(object):
         if overrides.get('detail_allowed_methods', None) is None:
             overrides['detail_allowed_methods'] = allowed_methods
 
-        return object.__new__(type('ResourceOptions', (cls,), overrides))
+        if six.PY3:
+            return object.__new__(type('ResourceOptions', (cls,), overrides))
+        else:
+            return object.__new__(type(b'ResourceOptions', (cls,), overrides))
 
 
 class DeclarativeMetaclass(type):
@@ -507,7 +510,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             allowed = []
 
         request_method = request.method.lower()
-        allows = ','.join([s.upper() for s in allowed])
+        allows = ','.join([meth.upper() for meth in allowed])
 
         if request_method == "options":
             response = HttpResponse(allows)

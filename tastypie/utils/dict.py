@@ -1,3 +1,4 @@
+from django.utils.encoding import smart_bytes
 from django.utils import six
 
 
@@ -13,6 +14,6 @@ def dict_strip_unicode_keys(uni_dict):
     data = {}
 
     for key, value in uni_dict.items():
-        data[six.binary_type(key, encoding='ascii')] = value
+        data[smart_bytes(key)] = value
 
     return data
