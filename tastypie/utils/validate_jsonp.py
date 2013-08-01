@@ -58,7 +58,7 @@ is_reserved_js_word = frozenset([
 # the core validation functions
 # ------------------------------------------------------------------------------
 
-def is_valid_javascript_identifier(identifier, escape=r'\u', ucd_cat=category):
+def is_valid_javascript_identifier(identifier, escape=r'\\u', ucd_cat=category):
     """Return whether the given ``id`` is a valid Javascript identifier."""
 
     if not identifier:
