@@ -1242,9 +1242,21 @@ class CounterResource(ModelResource):
 
 
 class CounterAuthorization(Authorization):
+    def create_detail(self, object_list, bundle, *args, **kwargs):
+        bundle._create_auth_call_count = getattr(bundle, '_create_auth_call_count', 0) + 1
+        return True
+
     def update_detail(self, object_list, bundle, *args, **kwargs):
         bundle._update_auth_call_count = getattr(bundle, '_update_auth_call_count', 0) + 1
         return True
+
+
+class CounterCreateDetailResource(ModelResource):
+    count = fields.IntegerField('count', default=0, null=True)
+
+    class Meta:
+        queryset = Counter.objects.all()
+        authorization = CounterAuthorization()
 
 
 class CounterUpdateDetailResource(ModelResource):
@@ -3004,6 +3016,18 @@ class ModelResourceTestCase(TestCase):
         note.obj_create(related_bundle)
         latest = NoteWithEditor.objects.get(slug='note-with-editor')
         self.assertEqual(latest.editor.username, u'zeus')
+
+    def test_obj_create_full_hydrate_on_create_authorization(self):
+        cr = CounterCreateDetailResource()
+        counter_bundle = cr.build_bundle(data={
+            "name": "About",
+            "slug": "about",
+        }, obj=Counter())
+        cr.obj_create(counter_bundle)
+
+        self.assertEquals(counter_bundle._create_auth_call_count, 1)
+        self.assertEquals(counter_bundle.obj.name, "About")
+        self.assertEquals(counter_bundle.obj.slug, "about")
 
     def test_obj_update(self):
         self.assertEqual(Note.objects.all().count(), 6)
