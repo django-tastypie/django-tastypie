@@ -714,7 +714,7 @@ class Resource(object):
         ``Resource._meta.object_class`` is created so that attempts to access
         ``bundle.obj`` do not fail.
         """
-        if obj is None:
+        if obj is None and self._meta.object_class:
             obj = self._meta.object_class()
 
         return Bundle(

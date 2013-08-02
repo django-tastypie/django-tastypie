@@ -3800,3 +3800,20 @@ class BustedResourceTestCase(TestCase):
         self.request.method = 'POST'
         resp = self.resource.wrap_view('post_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 404)
+
+
+class ObjectlessResource(Resource):
+    test = fields.CharField(default='objectless_test')
+
+    class Meta:
+        resource_name = 'objectless'
+
+
+class ObjectlessResourceTestCase(TestCase):
+    def test_build_bundle(self):
+        resource = ObjectlessResource()
+
+        bundle = resource.build_bundle()
+
+        self.assertTrue(bundle is not None)
+
