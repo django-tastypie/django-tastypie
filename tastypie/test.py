@@ -381,6 +381,12 @@ class ResourceTestCase(TestCase):
         """
         return self.assertEqual(resp.status_code, 410)
 
+    def assertHttpUnprocessableEntity(self, resp):
+        """
+        Ensures the response is returning a HTTP 422.
+        """
+        return self.assertEqual(resp.status_code, 422)
+
     def assertHttpTooManyRequests(self, resp):
         """
         Ensures the response is returning a HTTP 429.
