@@ -4,6 +4,35 @@
 Tastypie Cookbook
 =================
 
+Creating a Full OAuth 2.0 API
+-------------------------
+
+It is common to use django to provision OAuth 2.0 tokens for users and then
+have Tasty Pie use these tokens to authenticate users to the API. `Follow this tutorial <http://ianalexandr.com/blog/building-a-true-oauth-20-api-with-django-and-tasty-pie.html>`_ and `use this custom authentication class <https://github.com/ianalexander/django-oauth2-tastypie>`_ to enable
+OAuth 2.0 authentication with Tasty Pie.::
+
+    # api.py
+    from tastypie.resources import ModelResource
+    from tastypie.authorization import DjangoAuthorization
+    from polls.models import Poll, Choice
+    from tastypie import fields
+    from authentication import OAuth20Authentication
+
+    class ChoiceResource(ModelResource):
+        class Meta:
+            queryset = Choice.objects.all()
+            resource_name = 'choice'
+            authorization = DjangoAuthorization()
+            authentication = OAuth20Authentication()
+
+    class PollResource(ModelResource):
+        choices = fields.ToManyField(ChoiceResource, 'choice_set', full=True)
+        class Meta:
+            queryset = Poll.objects.all()
+            resource_name = 'poll'
+            authorization = DjangoAuthorization()
+            authentication = OAuth20Authentication()
+            
 
 Adding Custom Values
 --------------------
