@@ -15,6 +15,7 @@ from related_resource.models import Label
 from django.db.models.signals import pre_save
 from datetime import datetime, tzinfo, timedelta
 
+
 class RelatedResourceTest(TestCase):
     urls = 'related_resource.api.urls'
 
@@ -73,7 +74,7 @@ class CategoryResourceTest(TestCase):
         resp = resource.wrap_view('dispatch_detail')(request, pk=self.parent_cat_1.pk)
 
         self.assertEqual(resp.status_code, 200)
-        data = json.loads(resp.content)
+        data = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(data['parent'], None)
         self.assertEqual(data['name'], 'Dad')
 
@@ -81,7 +82,7 @@ class CategoryResourceTest(TestCase):
         resp = resource.wrap_view('dispatch_detail')(request, pk=self.child_cat_2.pk)
 
         self.assertEqual(resp.status_code, 200)
-        data = json.loads(resp.content)
+        data = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(data['parent'], '/v1/category/2/')
         self.assertEqual(data['name'], 'Daughter')
 
@@ -125,21 +126,21 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         # Verify the explicit 'through' relationships has been created correctly
         resource = api.canonical_resource_for('taggabletag')
         resp = resource.wrap_view('dispatch_detail')(request, pk=self.taggabletag_1.pk)
-        data = json.loads(resp.content)
+        data = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(data['tag'], '/v1/tag/1/')
         self.assertEqual(data['taggable'], '/v1/taggable/1/')
 
         resource = api.canonical_resource_for('taggable')
         resp = resource.wrap_view('dispatch_detail')(request, pk=self.taggable_1.pk)
-        data = json.loads(resp.content)
+        data = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(data['name'], 'exam')
 
         resource = api.canonical_resource_for('tag')
         request.path = "/v1/tag/%(pk)s/" % {'pk': self.tag_1.pk}
         resp = resource.wrap_view('dispatch_detail')(request, pk=self.tag_1.pk)
-        data = json.loads(resp.content)
+        data = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(data['name'], 'important')
 
@@ -165,7 +166,7 @@ class ExplicitM2MResourceRegressionTest(TestCase):
 
         resp = self.client.get(location, data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        deserialized = json.loads(resp.content)
+        deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 5)
         self.assertEqual(deserialized['name'], 'school')
 
@@ -323,7 +324,7 @@ class NestedRelatedResourceTest(TestCase):
         resp = pr.get_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 200)
 
-        person = json.loads(resp.content)
+        person = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(person['name'], 'Joan Rivers')
 
         company = person['company']
@@ -336,7 +337,7 @@ class NestedRelatedResourceTest(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'PUT'
         request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
-        request.set_body(resp.content)
+        request.set_body(resp.content.decode('utf-8'))
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
 
@@ -378,7 +379,7 @@ class NestedRelatedResourceTest(TestCase):
         resp = pr.get_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 200)
 
-        person = json.loads(resp.content)
+        person = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(person['name'], 'Joan Rivers')
 
         company = person['company']
@@ -434,7 +435,7 @@ class NestedRelatedResourceTest(TestCase):
         resp = pr.get_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 200)
 
-        person = json.loads(resp.content)
+        person = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(person['name'], 'Joan Rivers')
         self.assertEqual(len(person['dogs']), 1)
 
@@ -494,7 +495,7 @@ class NestedRelatedResourceTest(TestCase):
         resp = pr.get_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 200)
 
-        person = json.loads(resp.content)
+        person = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(person['name'], 'Joan Rivers')
         self.assertEqual(len(person['dogs']), 1)
 
