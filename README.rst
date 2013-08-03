@@ -28,7 +28,7 @@ Format Support
 Optional
 --------
 
-* HTTP Digest authentication: python_digest (https://bitbucket.org/akoha/python-digest/)
+* HTTP Digest authentication: python3-digest (https://bitbucket.org/akoha/python-digest/)
 
 
 What's It Look Like?
