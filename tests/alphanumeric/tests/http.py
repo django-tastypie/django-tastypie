@@ -1,10 +1,18 @@
 from django.utils import simplejson as json
+from django.utils import six
 from testcases import TestServerTestCase
 
 try:
     from http.client import HTTPConnection
 except ImportError:
     from httplib import HTTPConnection
+
+
+def header_name(name):
+    if six.PY3:
+        return name
+    else:
+        return name.lower()
 
 
 class HTTPTestCase(TestServerTestCase):
@@ -102,7 +110,7 @@ class HTTPTestCase(TestServerTestCase):
         connection.request('POST', '/api/v1/products/', body=post_data, headers={'Accept': 'application/json', 'Content-type': 'application/json'})
         response = connection.getresponse()
         self.assertEqual(response.status, 201)
-        self.assertEqual(dict(response.getheaders())['Location'], 'http://localhost:8001/api/v1/products/A76124/03/')
+        self.assertEqual(dict(response.getheaders())[header_name('Location')], 'http://localhost:8001/api/v1/products/A76124/03/')
 
         # make sure posted object exists
         connection.request('GET', '/api/v1/products/A76124/03/', headers={'Accept': 'application/json'})

@@ -596,7 +596,7 @@ class RelatedField(ApiField):
             fk_bundle.related_obj = related_obj
             fk_bundle.related_name = related_name
 
-        unique_keys = dict((k, v) for k, v in data.iteritems() if k == 'pk' or (hasattr(fk_resource, k) and getattr(fk_resource, k).unique))
+        unique_keys = dict((k, v) for k, v in data.items() if k == 'pk' or (hasattr(fk_resource, k) and getattr(fk_resource, k).unique))
 
         # If we have no unique keys, we shouldn't go look for some resource that
         # happens to match other kwargs. In the case of a create, it might be the

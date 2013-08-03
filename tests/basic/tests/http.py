@@ -1,10 +1,18 @@
 from testcases import TestServerTestCase
 from django.utils import simplejson as json
+from django.utils import six
 
 try:
     from http.client import HTTPConnection
 except ImportError:
     from httplib import HTTPConnection
+
+
+def header_name(name):
+    if six.PY3:
+        return name
+    else:
+        return name.lower()
 
 
 class HTTPTestCase(TestServerTestCase):
@@ -68,7 +76,7 @@ class HTTPTestCase(TestServerTestCase):
         connection.request('POST', '/api/v1/notes/', body=post_data, headers={'Accept': 'application/json', 'Content-type': 'application/json'})
         response = connection.getresponse()
         self.assertEqual(response.status, 201)
-        self.assertEqual(dict(response.getheaders())['Location'], 'http://localhost:8001/api/v1/notes/3/')
+        self.assertEqual(dict(response.getheaders())[header_name('Location')], 'http://localhost:8001/api/v1/notes/3/')
 
         # make sure posted object exists
         connection.request('GET', '/api/v1/notes/3/', headers={'Accept': 'application/json'})
@@ -96,7 +104,7 @@ class HTTPTestCase(TestServerTestCase):
         self.assertEqual(response.status, 200)
 
         headers = dict(response.getheaders())
-        vary = headers.get("Vary", "")
+        vary = headers.get(header_name('Vary'), "")
         vary_types = [x.strip().lower() for x in vary.split(",") if x.strip()]
         self.assertIn("accept", vary_types)
 
@@ -108,7 +116,7 @@ class HTTPTestCase(TestServerTestCase):
         self.assertEqual(response.status, 200)
 
         headers = dict(response.getheaders())
-        cache_control = set([x.strip().lower() for x in headers["Cache-Control"].split(",") if x.strip()])
+        cache_control = set([x.strip().lower() for x in headers[header_name("Cache-Control")].split(",") if x.strip()])
 
         self.assertEqual(cache_control, set(["s-maxage=3600", "max-age=3600"]))
         self.assertTrue('"johndoe"' in response.read().decode('utf-8'))
@@ -121,7 +129,7 @@ class HTTPTestCase(TestServerTestCase):
         self.assertEqual(response.status, 200)
 
         headers = dict(response.getheaders())
-        cache_control = set([x.strip().lower() for x in headers["Cache-Control"].split(",") if x.strip()])
+        cache_control = set([x.strip().lower() for x in headers[header_name("Cache-Control")].split(",") if x.strip()])
 
         self.assertEqual(cache_control, set(["s-maxage=3600", "max-age=3600", "public"]))
         self.assertTrue('"johndoe"' in response.read().decode('utf-8'))
@@ -134,7 +142,7 @@ class HTTPTestCase(TestServerTestCase):
         self.assertEqual(response.status, 200)
 
         headers = dict(response.getheaders())
-        cache_control = set([x.strip().lower() for x in headers["Cache-Control"].split(",") if x.strip()])
+        cache_control = set([x.strip().lower() for x in headers[header_name("Cache-Control")].split(",") if x.strip()])
 
         self.assertEqual(cache_control, set(["s-maxage=3600", "max-age=3600", "private"]))
         self.assertTrue('"johndoe"' in response.read().decode('utf-8'))
