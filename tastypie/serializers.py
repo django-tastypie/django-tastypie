@@ -217,6 +217,9 @@ class Serializer(object):
         if desired_format is None:
             raise UnsupportedFormat("The format indicated '%s' had no available deserialization method. Please check your ``formats`` and ``content_types`` on your Serializer." % format)
 
+        if isinstance(content, six.binary_type):
+            content = force_text(content)
+
         deserialized = getattr(self, "from_%s" % desired_format)(content)
         return deserialized
 
