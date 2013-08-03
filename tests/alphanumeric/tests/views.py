@@ -15,13 +15,13 @@ class ViewsTestCase(TestCase):
     def test_gets(self):
         resp = self.client.get('/api/v1/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        deserialized = json.loads(resp.content)
+        deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 1)
         self.assertEqual(deserialized['products'], {'list_endpoint': '/api/v1/products/', 'schema': '/api/v1/products/schema/'})
 
         resp = self.client.get('/api/v1/products/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        deserialized = json.loads(resp.content)
+        deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 2)
         self.assertEqual(deserialized['meta']['limit'], 20)
         self.assertEqual(len(deserialized['objects']), 6)
@@ -30,13 +30,13 @@ class ViewsTestCase(TestCase):
 
         resp = self.client.get('/api/v1/products/11111/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        deserialized = json.loads(resp.content)
+        deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 5)
         self.assertEqual(deserialized['name'], u'Skateboardrampe')
 
         resp = self.client.get('/api/v1/products/set/11111;76123/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        deserialized = json.loads(resp.content)
+        deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 1)
         self.assertEqual(len(deserialized['objects']), 2)
         self.assertEqual([obj['name'] for obj in deserialized['objects']], [u'Skateboardrampe', u'Bigwheel'])
@@ -44,13 +44,13 @@ class ViewsTestCase(TestCase):
         # Same tests with \w+ instead of \d+ for primary key regexp:
         resp = self.client.get('/api/v1/products/WS65150-01/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        deserialized = json.loads(resp.content)
+        deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 5)
         self.assertEqual(deserialized['name'], u'Trampolin')
 
         resp = self.client.get('/api/v1/products/set/WS65150-01;65100A-01/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        deserialized = json.loads(resp.content)
+        deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 1)
         self.assertEqual(len(deserialized['objects']), 2)
         self.assertEqual([obj['name'] for obj in deserialized['objects']], [u'Trampolin', u'Laufrad'])
@@ -58,26 +58,26 @@ class ViewsTestCase(TestCase):
         # And now Slashes
         resp = self.client.get('/api/v1/products/76123/01/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        deserialized = json.loads(resp.content)
+        deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 5)
         self.assertEqual(deserialized['name'], u'Bigwheel')
 
         resp = self.client.get('/api/v1/products/set/76123/01;65100A-01/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        deserialized = json.loads(resp.content)
+        deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 1)
         self.assertEqual(len(deserialized['objects']), 2)
         self.assertEqual([obj['name'] for obj in deserialized['objects']], [u'Bigwheel', u'Laufrad'])
 
         resp = self.client.get('/api/v1/products/WS65150/01-01/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        deserialized = json.loads(resp.content)
+        deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 5)
         self.assertEqual(deserialized['name'], u'Trampolin')
 
         resp = self.client.get('/api/v1/products/set/76123/01;WS65150/01-01/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        deserialized = json.loads(resp.content)
+        deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 1)
         self.assertEqual(len(deserialized['objects']), 2)
         self.assertEqual([obj['name'] for obj in deserialized['objects']], [u'Bigwheel', u'Trampolin'])
@@ -94,7 +94,7 @@ class ViewsTestCase(TestCase):
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/12345/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        obj = json.loads(resp.content)
+        obj = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(obj['name'], 'Ball')
         self.assertEqual(obj['artnr'], '12345')
 
@@ -110,7 +110,7 @@ class ViewsTestCase(TestCase):
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/12345ABC/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        obj = json.loads(resp.content)
+        obj = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(obj['name'], 'Ball 2')
         self.assertEqual(obj['artnr'], '12345ABC')
 
@@ -126,7 +126,7 @@ class ViewsTestCase(TestCase):
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/WK12345/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        obj = json.loads(resp.content)
+        obj = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(obj['name'], 'Ball 3')
         self.assertEqual(obj['artnr'], 'WK12345')
 
@@ -142,7 +142,7 @@ class ViewsTestCase(TestCase):
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/76123/03/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        obj = json.loads(resp.content)
+        obj = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(obj['name'], 'Bigwheel')
         self.assertEqual(obj['artnr'], '76123/03')
 
@@ -157,6 +157,6 @@ class ViewsTestCase(TestCase):
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/WS65150/02/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        obj = json.loads(resp.content)
+        obj = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(obj['name'], 'Trampolin')
         self.assertEqual(obj['artnr'], 'WS65150/02')

@@ -15,7 +15,7 @@ class FilteringErrorsTestCase(TestCase):
             'created__gte':'2010-03-31'
         })
         self.assertEqual(resp.status_code, 200)
-        deserialized = json.loads(resp.content)
+        deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized['objects']), Note.objects.filter(created__gte='2010-03-31').count())
 
 
@@ -40,7 +40,7 @@ class PostNestResouceValidationTestCase(TestCase):
 
         resp = self.client.post('/api/v1/notes/', data=data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
-        note = json.loads(self.client.get(resp['location']).content)
+        note = json.loads(self.client.get(resp['location']).content.decode('utf-8'))
         self.assertTrue(note['annotated'])
 
     def test_invalid_data(self):
@@ -54,7 +54,7 @@ class PostNestResouceValidationTestCase(TestCase):
 
         resp = self.client.post('/api/v1/notes/', data=data, content_type='application/json')
         self.assertEqual(resp.status_code, 400)
-        self.assertEqual(json.loads(resp.content), {
+        self.assertEqual(json.loads(resp.content.decode('utf-8')), {
             'notes': {
                 'title': ['This field is required.']
             },
@@ -77,7 +77,7 @@ class PutDetailNestResouceValidationTestCase(TestCase):
 
         resp = self.client.put('/api/v1/notes/1/', data=data, content_type='application/json')
         self.assertEqual(resp.status_code, 204)
-        note = json.loads(self.client.get('/api/v1/notes/1/', content_type='application/json').content)
+        note = json.loads(self.client.get('/api/v1/notes/1/', content_type='application/json').content.decode('utf-8'))
         self.assertTrue(note['annotated'])
         self.assertEqual('test-title', note['slug'])
 
@@ -91,7 +91,7 @@ class PutDetailNestResouceValidationTestCase(TestCase):
 
         resp = self.client.put('/api/v1/notes/1/', data=data, content_type='application/json')
         self.assertEqual(resp.status_code, 400)
-        self.assertEqual(json.loads(resp.content), {
+        self.assertEqual(json.loads(resp.content.decode('utf-8')), {
             'notes': {
                 'slug': ['This field is required.'],
                 'title': ['This field is required.']
@@ -128,9 +128,9 @@ class PutListNestResouceValidationTestCase(TestCase):
 
         resp = self.client.put('/api/v1/notes/', data=data, content_type='application/json')
         self.assertEqual(resp.status_code, 204)
-        note = json.loads(self.client.get('/api/v1/notes/1/', content_type='application/json').content)
+        note = json.loads(self.client.get('/api/v1/notes/1/', content_type='application/json').content.decode('utf-8'))
         self.assertTrue(note['annotated'])
-        note = json.loads(self.client.get('/api/v1/notes/2/', content_type='application/json').content)
+        note = json.loads(self.client.get('/api/v1/notes/2/', content_type='application/json').content.decode('utf-8'))
         self.assertTrue(note['annotated'])
 
     def test_invalid_data(self):
@@ -152,7 +152,7 @@ class PutListNestResouceValidationTestCase(TestCase):
 
         resp = self.client.put('/api/v1/notes/', data=data, content_type='application/json')
         self.assertEqual(resp.status_code, 400)
-        self.assertEqual(json.loads(resp.content), {
+        self.assertEqual(json.loads(resp.content.decode('utf-8')), {
             'notes': {
                 'content': ['This field is required.']
             },
