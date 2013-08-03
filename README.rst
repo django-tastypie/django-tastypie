@@ -14,7 +14,7 @@ Requirements
 Core
 ----
 
-* Python 2.6+
+* Python 2.6+ or Python 3.3+
 * Django 1.5+
 * dateutil (http://labix.org/python-dateutil) >= 2.1
 

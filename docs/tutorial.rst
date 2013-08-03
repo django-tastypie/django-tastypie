@@ -59,7 +59,7 @@ your project or ``PYTHONPATH``.
 
   1. Download the dependencies:
 
-    * Python 2.6+
+    * Python 2.6+ or Python 3.3+
     * Django 1.5+
     * ``python-mimeparse`` 0.1.4+ (http://pypi.python.org/pypi/python-mimeparse)
     * ``dateutil`` (http://labix.org/python-dateutil)
