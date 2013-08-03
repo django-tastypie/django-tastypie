@@ -15,6 +15,7 @@ interfaces.
    tools
    testing
    compatibility_notes
+   python3
 
    resources
    bundles
