@@ -7,7 +7,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.serializers import json
 from django.utils import simplejson
 from django.utils import six
-from django.utils.encoding import force_text
+from django.utils.encoding import force_text, smart_bytes
 
 from tastypie.bundle import Bundle
 from tastypie.exceptions import BadRequest, UnsupportedFormat
@@ -467,6 +467,9 @@ class Serializer(object):
         """
         if biplist is None:
             raise ImproperlyConfigured("Usage of the plist aspects requires biplist.")
+
+        if isinstance(content, six.text_type):
+            content = smart_bytes(content)
 
         return biplist.readPlistFromString(content)
 
