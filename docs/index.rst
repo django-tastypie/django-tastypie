@@ -6,7 +6,7 @@ yet powerful and highly customizable, abstraction for creating REST-style
 interfaces.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    tutorial
    interacting
@@ -35,6 +35,9 @@ interfaces.
    debugging
    who_uses
    contributing
+
+.. toctree::
+   :maxdepth: 2
    release_notes/index
 
 
@@ -158,19 +161,3 @@ Tastypie is maintained with all tests passing at all times. If you find a
 failure, please `report it`_ along with the versions of the installed software.
 
 .. _`report it`: https://github.com/toastdriven/django-tastypie/issues
-
-
-Commercial Support
-==================
-
-If you're using Tastypie in a commercial environment, paid support is available
-from `Toast Driven`_. Services offered include:
-
-* Advice/help with setup
-* Implementation in your project
-* Bugfixes in Tastypie itself
-* Features in Tastypie itself
-
-If you're interested, please contact Daniel Lindsley (daniel@toastdriven.com).
-
-.. _`Toast Driven`: http://toastdriven.com/
