@@ -6,15 +6,15 @@ python:
   - "3.3"
 
 env:
-  - TOXENV=py26-1.5
-  - TOXENV=py27-1.5
-  - TOXENV=py33-1.5
-  - TOXENV=docs
-  - TOXENV=py27-dev,py33-dev
+  - DJANGO_VERSION=1.5
+  - DJANGO_VERSION=dev
 
 matrix:
   allow_failures:
-    - env: TOXENV=py27-dev,py33-dev
+    - env: DJANGO_VERSION=dev
+  exclude:
+    - env: DJANGO_VERSION=dev
+      python: "2.6"
 
 # command to install dependencies
 install:
@@ -22,4 +22,4 @@ install:
 
 # command to run tests
 script:
-    - tox
+    - tox -e py${TRAVIS_PYTHON_VERSION/./}-${DJANGO_VERSION},docs
