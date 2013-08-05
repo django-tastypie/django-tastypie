@@ -1,6 +1,7 @@
 import base64
 import os
 import time
+import unittest
 import warnings
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
@@ -13,6 +14,7 @@ from tastypie.models import ApiKey, create_api_key
 
 # Be tricky.
 from tastypie.authentication import python_digest, oauth2, oauth_provider
+
 if python_digest is None:
     warnings.warn("Running tests without python_digest! Bad news!")
 if oauth2 is None:
@@ -288,7 +290,7 @@ class SessionAuthenticationTestCase(TestCase):
         request.user = User.objects.get(username='johndoe')
         self.assertEqual(auth.get_identifier(request), 'johndoe')
 
-
+@unittest.skipIf(python_digest is None, "python-digest is not installed")
 class DigestAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
 
@@ -379,95 +381,95 @@ class DigestAuthenticationTestCase(TestCase):
         self.assertTrue(auth_request, True)
 
 
-if oauth_provider is not None:
-    class OAuthAuthenticationTestCase(TestCase):
-        fixtures = ['note_testdata.json']
+@unittest.skipIf(not oauth2 or not oauth_provider, "oauth provider not installed")
+class OAuthAuthenticationTestCase(TestCase):
+    fixtures = ['note_testdata.json']
 
-        def setUp(self):
-            super(OAuthAuthenticationTestCase, self).setUp()
+    def setUp(self):
+        super(OAuthAuthenticationTestCase, self).setUp()
 
-            self.request = HttpRequest()
-            self.request.META['SERVER_NAME'] = 'testsuite'
-            self.request.META['SERVER_PORT'] = '8080'
-            self.request.REQUEST = self.request.GET = {}
-            self.request.method = "GET"
+        self.request = HttpRequest()
+        self.request.META['SERVER_NAME'] = 'testsuite'
+        self.request.META['SERVER_PORT'] = '8080'
+        self.request.REQUEST = self.request.GET = {}
+        self.request.method = "GET"
 
-            from oauth_provider.models import Consumer, Token, Resource
-            self.user = User.objects.create_user('daniel', 'test@example.com', 'password')
-            self.user_inactive = User.objects.get(username='bobdoe')
-            self.resource, _ = Resource.objects.get_or_create(url='test', defaults={
-                'name': 'Test Resource'
-            })
-            self.consumer, _ = Consumer.objects.get_or_create(key='123', defaults={
-                'name': 'Test',
-                'description': 'Testing...'
-            })
-            self.token, _ = Token.objects.get_or_create(key='foo', token_type=Token.ACCESS, defaults={
-                'consumer': self.consumer,
-                'resource': self.resource,
-                'secret': '',
-                'user': self.user,
-            })
-            self.token_inactive, _ = Token.objects.get_or_create(key='bar', token_type=Token.ACCESS, defaults={
-                'consumer': self.consumer,
-                'resource': self.resource,
-                'secret': '',
-                'user': self.user_inactive,
-            })
+        from oauth_provider.models import Consumer, Token, Resource
+        self.user = User.objects.create_user('daniel', 'test@example.com', 'password')
+        self.user_inactive = User.objects.get(username='bobdoe')
+        self.resource, _ = Resource.objects.get_or_create(url='test', defaults={
+            'name': 'Test Resource'
+        })
+        self.consumer, _ = Consumer.objects.get_or_create(key='123', defaults={
+            'name': 'Test',
+            'description': 'Testing...'
+        })
+        self.token, _ = Token.objects.get_or_create(key='foo', token_type=Token.ACCESS, defaults={
+            'consumer': self.consumer,
+            'resource': self.resource,
+            'secret': '',
+            'user': self.user,
+        })
+        self.token_inactive, _ = Token.objects.get_or_create(key='bar', token_type=Token.ACCESS, defaults={
+            'consumer': self.consumer,
+            'resource': self.resource,
+            'secret': '',
+            'user': self.user_inactive,
+        })
 
-        def test_is_authenticated(self):
-            auth = OAuthAuthentication()
+    def test_is_authenticated(self):
+        auth = OAuthAuthentication()
 
-            # Invalid request.
-            resp = auth.is_authenticated(self.request)
-            self.assertEqual(resp.status_code, 401)
+        # Invalid request.
+        resp = auth.is_authenticated(self.request)
+        self.assertEqual(resp.status_code, 401)
 
-            # No username/api_key details should fail.
-            self.request.REQUEST = self.request.GET = {
-                'oauth_consumer_key': '123',
-                'oauth_nonce': 'abc',
-                'oauth_signature': '&',
-                'oauth_signature_method': 'PLAINTEXT',
-                'oauth_timestamp': str(int(time.time())),
-                'oauth_token': 'foo',
-            }
-            self.request.META['Authorization'] = 'OAuth ' + ','.join([key+'='+value for key, value in self.request.REQUEST.items()])
-            resp = auth.is_authenticated(self.request)
-            self.assertEqual(resp, True)
-            self.assertEqual(self.request.user.pk, self.user.pk)
+        # No username/api_key details should fail.
+        self.request.REQUEST = self.request.GET = {
+            'oauth_consumer_key': '123',
+            'oauth_nonce': 'abc',
+            'oauth_signature': '&',
+            'oauth_signature_method': 'PLAINTEXT',
+            'oauth_timestamp': str(int(time.time())),
+            'oauth_token': 'foo',
+        }
+        self.request.META['Authorization'] = 'OAuth ' + ','.join([key+'='+value for key, value in self.request.REQUEST.items()])
+        resp = auth.is_authenticated(self.request)
+        self.assertEqual(resp, True)
+        self.assertEqual(self.request.user.pk, self.user.pk)
 
-        def test_check_active_true(self):
-            auth = OAuthAuthentication()
+    def test_check_active_true(self):
+        auth = OAuthAuthentication()
 
-            # No username/api_key details should fail.
-            self.request.REQUEST = self.request.GET = {
-                'oauth_consumer_key': '123',
-                'oauth_nonce': 'abc',
-                'oauth_signature': '&',
-                'oauth_signature_method': 'PLAINTEXT',
-                'oauth_timestamp': str(int(time.time())),
-                'oauth_token': 'bar',
-            }
-            self.request.META['Authorization'] = 'OAuth ' + ','.join([key+'='+value for key, value in self.request.REQUEST.items()])
-            resp = auth.is_authenticated(self.request)
-            self.assertFalse(resp)
+        # No username/api_key details should fail.
+        self.request.REQUEST = self.request.GET = {
+            'oauth_consumer_key': '123',
+            'oauth_nonce': 'abc',
+            'oauth_signature': '&',
+            'oauth_signature_method': 'PLAINTEXT',
+            'oauth_timestamp': str(int(time.time())),
+            'oauth_token': 'bar',
+        }
+        self.request.META['Authorization'] = 'OAuth ' + ','.join([key+'='+value for key, value in self.request.REQUEST.items()])
+        resp = auth.is_authenticated(self.request)
+        self.assertFalse(resp)
 
-        def test_check_active_false(self):
-            auth = OAuthAuthentication(require_active=False)
+    def test_check_active_false(self):
+        auth = OAuthAuthentication(require_active=False)
 
-            # No username/api_key details should fail.
-            self.request.REQUEST = self.request.GET = {
-                'oauth_consumer_key': '123',
-                'oauth_nonce': 'abc',
-                'oauth_signature': '&',
-                'oauth_signature_method': 'PLAINTEXT',
-                'oauth_timestamp': str(int(time.time())),
-                'oauth_token': 'bar',
-            }
-            self.request.META['Authorization'] = 'OAuth ' + ','.join([key+'='+value for key, value in self.request.REQUEST.items()])
-            resp = auth.is_authenticated(self.request)
-            self.assertTrue(resp)
-            self.assertEqual(self.request.user.pk, self.user_inactive.pk)
+        # No username/api_key details should fail.
+        self.request.REQUEST = self.request.GET = {
+            'oauth_consumer_key': '123',
+            'oauth_nonce': 'abc',
+            'oauth_signature': '&',
+            'oauth_signature_method': 'PLAINTEXT',
+            'oauth_timestamp': str(int(time.time())),
+            'oauth_token': 'bar',
+        }
+        self.request.META['Authorization'] = 'OAuth ' + ','.join([key+'='+value for key, value in self.request.REQUEST.items()])
+        resp = auth.is_authenticated(self.request)
+        self.assertTrue(resp)
+        self.assertEqual(self.request.user.pk, self.user_inactive.pk)
 
 
 class MultiAuthenticationTestCase(TestCase):
