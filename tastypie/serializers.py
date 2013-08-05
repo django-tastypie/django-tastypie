@@ -4,8 +4,7 @@ import re
 import django
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.core.serializers import json
-from django.utils import simplejson
+from django.core.serializers import json  # FIXME: disambiguate name from JSON module
 from django.utils import six
 from django.utils.encoding import force_text, smart_bytes
 
@@ -31,6 +30,11 @@ try:
     import biplist
 except ImportError:
     biplist = None
+
+try:
+    import simplejson
+except ImportError:
+    import json as simplejson
 
 
 XML_ENCODING = re.compile('<\?xml.*?\?>', re.IGNORECASE)
@@ -146,7 +150,7 @@ class Serializer(object):
         if self.datetime_formatting == 'iso-8601-strict':
             # Remove microseconds to strictly adhere to iso-8601
             data = data - datetime.timedelta(microseconds = data.microsecond)
-            
+
         return data.isoformat()
 
     def format_date(self, data):
