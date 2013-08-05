@@ -1,5 +1,5 @@
 from testcases import TestServerTestCase
-from django.utils import simplejson as json
+import json
 
 try:
     from http.client import HTTPConnection

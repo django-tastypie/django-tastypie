@@ -2,7 +2,7 @@ import django
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
-from django.utils import simplejson as json
+import json
 from django.core.urlresolvers import reverse
 from core.models import Note, MediaBit
 from core.tests.resources import HttpRequest

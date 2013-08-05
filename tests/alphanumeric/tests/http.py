@@ -1,4 +1,4 @@
-from django.utils import simplejson as json
+import json
 from django.utils import six
 from testcases import TestServerTestCase
 
