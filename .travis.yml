@@ -10,11 +10,11 @@ env:
   - TOXENV=py27-1.5
   - TOXENV=py33-1.5
   - TOXENV=docs
-  - TOXENV=py26-dev,py27-dev,py33-dev
+  - TOXENV=py27-dev,py33-dev
 
 matrix:
   allow_failures:
-    - env: TOXENV=py26-dev,py27-dev
+    - env: TOXENV=py27-dev,py33-dev
 
 # command to install dependencies
 install:
