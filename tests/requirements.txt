@@ -2,7 +2,7 @@ django-oauth-plus
 oauth2
 lxml
 defusedxml
-python3-digest
+python3-digest>=1.8b4
 biplist
 pyyaml
 python-mimeparse>=0.1.4
