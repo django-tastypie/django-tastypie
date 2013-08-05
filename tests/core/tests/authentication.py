@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.http import HttpRequest
 from django.test import TestCase
+from django.test.testcases import skipIf
 from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, SessionAuthentication, DigestAuthentication, OAuthAuthentication, MultiAuthentication
 from tastypie.http import HttpUnauthorized
 from tastypie.models import ApiKey, create_api_key
@@ -290,7 +291,7 @@ class SessionAuthenticationTestCase(TestCase):
         request.user = User.objects.get(username='johndoe')
         self.assertEqual(auth.get_identifier(request), 'johndoe')
 
-@unittest.skipIf(python_digest is None, "python-digest is not installed")
+@skipIf(python_digest is None, "python-digest is not installed")
 class DigestAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
 
@@ -381,7 +382,7 @@ class DigestAuthenticationTestCase(TestCase):
         self.assertTrue(auth_request, True)
 
 
-@unittest.skipIf(not oauth2 or not oauth_provider, "oauth provider not installed")
+@skipIf(not oauth2 or not oauth_provider, "oauth provider not installed")
 class OAuthAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
 
