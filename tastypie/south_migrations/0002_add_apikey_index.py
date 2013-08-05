@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 from south.db import db
 from south.v2 import SchemaMigration
 from tastypie.compat import AUTH_USER_MODEL
