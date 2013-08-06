@@ -1,6 +1,7 @@
 """
 The various HTTP responses for use in returning proper HTTP codes.
 """
+from __future__ import unicode_literals
 from django.http import HttpResponse
 
 
@@ -60,6 +61,10 @@ class HttpConflict(HttpResponse):
 
 class HttpGone(HttpResponse):
     status_code = 410
+
+
+class HttpUnprocessableEntity(HttpResponse):
+    status_code = 422
 
 
 class HttpTooManyRequests(HttpResponse):

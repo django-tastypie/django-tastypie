@@ -1,22 +1,19 @@
 from django.http import HttpRequest
 from django.test import TestCase
-try:
-    import json
-except ImportError: # < Python 2.6
-    from django.utils import simplejson as json
+import json
 
 
 class ViewsTestCase(TestCase):
     def test_gets(self):
         resp = self.client.get('/api/v1/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        deserialized = json.loads(resp.content)
+        deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 2)
         self.assertEqual(deserialized['geonotes'], {'list_endpoint': '/api/v1/geonotes/', 'schema': '/api/v1/geonotes/schema/'})
 
         resp = self.client.get('/api/v1/geonotes/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        deserialized = json.loads(resp.content)
+        deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 2)
         self.assertEqual(deserialized['meta']['limit'], 20)
         self.assertEqual(len(deserialized['objects']), 3)
@@ -24,13 +21,13 @@ class ViewsTestCase(TestCase):
 
         resp = self.client.get('/api/v1/geonotes/1/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        deserialized = json.loads(resp.content)
+        deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 12)
         self.assertEqual(deserialized['title'], u'Points inside Golden Gate Park note')
 
         resp = self.client.get('/api/v1/geonotes/set/2;1/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        deserialized = json.loads(resp.content)
+        deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 1)
         self.assertEqual(len(deserialized['objects']), 2)
         self.assertEqual([obj['title'] for obj in deserialized['objects']], [u'Golden Gate Park', u'Points inside Golden Gate Park note'])
@@ -47,7 +44,7 @@ class ViewsTestCase(TestCase):
         # make sure posted object exists
         resp = self.client.get('/api/v1/geonotes/4/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        obj = json.loads(resp.content)
+        obj = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(obj['content'], 'A new post.')
         self.assertEqual(obj['is_active'], True)
         self.assertEqual(obj['user'], '/api/v1/users/1/')
@@ -63,7 +60,7 @@ class ViewsTestCase(TestCase):
         # make sure posted object exists
         resp = self.client.get('/api/v1/geonotes/1/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
-        obj = json.loads(resp.content)
+        obj = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(obj['content'], 'Another new post.')
         self.assertEqual(obj['is_active'], True)
         self.assertEqual(obj['user'], '/api/v1/users/1/')
@@ -77,29 +74,29 @@ class ViewsTestCase(TestCase):
 
         resp = self.client.post('/api/v1/geonotes/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 400)
-        self.assertEqual(resp.content, '{"error": "Could not find the provided object via resource URI \'/api/v1/users/9001/\'."}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Could not find the provided object via resource URI \'/api/v1/users/9001/\'."}')
 
     def test_options(self):
         resp = self.client.options('/api/v1/geonotes/')
         self.assertEqual(resp.status_code, 200)
         allows = 'GET,POST,PUT,DELETE,PATCH'
         self.assertEqual(resp['Allow'], allows)
-        self.assertEqual(resp.content, allows)
+        self.assertEqual(resp.content.decode('utf-8'), allows)
 
         resp = self.client.options('/api/v1/geonotes/1/')
         self.assertEqual(resp.status_code, 200)
         allows = 'GET,POST,PUT,DELETE,PATCH'
         self.assertEqual(resp['Allow'], allows)
-        self.assertEqual(resp.content, allows)
+        self.assertEqual(resp.content.decode('utf-8'), allows)
 
         resp = self.client.options('/api/v1/geonotes/schema/')
         self.assertEqual(resp.status_code, 200)
         allows = 'GET'
         self.assertEqual(resp['Allow'], allows)
-        self.assertEqual(resp.content, allows)
+        self.assertEqual(resp.content.decode('utf-8'), allows)
 
         resp = self.client.options('/api/v1/geonotes/set/2;1/')
         self.assertEqual(resp.status_code, 200)
         allows = 'GET'
         self.assertEqual(resp['Allow'], allows)
-        self.assertEqual(resp.content, allows)
+        self.assertEqual(resp.content.decode('utf-8'), allows)

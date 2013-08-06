@@ -1,9 +1,17 @@
+from __future__ import unicode_literals
 import time
-from urlparse import urlparse
+
 from django.conf import settings
 from django.test import TestCase
 from django.test.client import FakePayload, Client
+from django.utils.encoding import force_text
+
 from tastypie.serializers import Serializer
+
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 
 
 class TestApiClient(object):
@@ -244,7 +252,7 @@ class ResourceTestCase(TestCase):
         Auth.
         """
         import base64
-        return 'Basic %s' % base64.b64encode(':'.join([username, password]))
+        return 'Basic %s' % base64.b64encode(':'.join([username, password]).encode('utf-8')).decode('utf-8')
 
     def create_apikey(self, username, api_key):
         """
@@ -261,7 +269,7 @@ class ResourceTestCase(TestCase):
         from tastypie.authentication import hmac, sha1, uuid, python_digest
 
         new_uuid = uuid.uuid4()
-        opaque = hmac.new(str(new_uuid), digestmod=sha1).hexdigest()
+        opaque = hmac.new(str(new_uuid).encode('utf-8'), digestmod=sha1).hexdigest().decode('utf-8')
         return python_digest.build_authorization_request(
             username,
             method.upper(),
@@ -381,6 +389,12 @@ class ResourceTestCase(TestCase):
         """
         return self.assertEqual(resp.status_code, 410)
 
+    def assertHttpUnprocessableEntity(self, resp):
+        """
+        Ensures the response is returning a HTTP 422.
+        """
+        return self.assertEqual(resp.status_code, 422)
+
     def assertHttpTooManyRequests(self, resp):
         """
         Ensures the response is returning a HTTP 429.
@@ -442,7 +456,7 @@ class ResourceTestCase(TestCase):
         """
         self.assertHttpOK(resp)
         self.assertTrue(resp['Content-Type'].startswith('application/json'))
-        self.assertValidJSON(resp.content)
+        self.assertValidJSON(force_text(resp.content))
 
     def assertValidXMLResponse(self, resp):
         """
@@ -455,7 +469,7 @@ class ResourceTestCase(TestCase):
         """
         self.assertHttpOK(resp)
         self.assertTrue(resp['Content-Type'].startswith('application/xml'))
-        self.assertValidXML(resp.content)
+        self.assertValidXML(force_text(resp.content))
 
     def assertValidYAMLResponse(self, resp):
         """
@@ -468,7 +482,7 @@ class ResourceTestCase(TestCase):
         """
         self.assertHttpOK(resp)
         self.assertTrue(resp['Content-Type'].startswith('text/yaml'))
-        self.assertValidYAML(resp.content)
+        self.assertValidYAML(force_text(resp.content))
 
     def assertValidPlistResponse(self, resp):
         """
@@ -481,7 +495,7 @@ class ResourceTestCase(TestCase):
         """
         self.assertHttpOK(resp)
         self.assertTrue(resp['Content-Type'].startswith('application/x-plist'))
-        self.assertValidPlist(resp.content)
+        self.assertValidPlist(force_text(resp.content))
 
     def deserialize(self, resp):
         """

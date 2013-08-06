@@ -1,14 +1,15 @@
 # See COPYING file in this directory.
 # Some code originally from django-boundaryservice
-
+from __future__ import unicode_literals
 from urllib import unquote
 
 from django.contrib.gis.db.models import GeometryField
-try:
-    import json as simplejson
-except ImportError: # < Python 2.6
-    from django.utils import simplejson
 from django.contrib.gis.geos import GEOSGeometry
+
+try:
+    import simplejson
+except ImportError:
+    import json as simplejson
 
 from tastypie.fields import ApiField, CharField
 from tastypie import resources
@@ -28,7 +29,7 @@ class GeometryApiField(ApiField):
             return value
         return simplejson.dumps(value)
 
-    def dehydrate(self, obj):
+    def dehydrate(self, obj, for_list=False):
         return self.convert(super(GeometryApiField, self).dehydrate(obj))
 
     def convert(self, value):

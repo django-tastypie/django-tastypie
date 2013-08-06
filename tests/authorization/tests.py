@@ -3,10 +3,12 @@ from django.contrib.sites.models import Site
 from tastypie.test import ResourceTestCase
 from .models import AuthorProfile, Article
 from .api.resources import PerUserAuthorization
+
 try:
     import simplejson as json
 except ImportError:
     import json
+
 import mock
 
 class PerUserAuthorizationTestCase(ResourceTestCase):
@@ -153,7 +155,7 @@ class PerUserAuthorizationTestCase(ResourceTestCase):
     def test_put_list(self):
         resp = self.api_client.get('/api/v1/article/', format='json', authentication=self.author_auth_2)
         self.assertHttpOK(resp)
-        the_data = json.loads(resp.content)
+        the_data = json.loads(resp.content.decode('utf-8'))
 
         # Tweak the data.
         the_data['objects'][0]['title'] = 'This is edited.'

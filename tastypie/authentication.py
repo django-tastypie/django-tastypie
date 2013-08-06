@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 import base64
 import hmac
 import time
@@ -115,7 +116,7 @@ class BasicAuthentication(Authentication):
             (auth_type, data) = request.META['HTTP_AUTHORIZATION'].split()
             if auth_type.lower() != 'basic':
                 return self._unauthorized()
-            user_pass = base64.b64decode(data)
+            user_pass = base64.b64decode(data).decode('utf-8')
         except:
             return self._unauthorized()
 
@@ -310,8 +311,14 @@ class DigestAuthentication(Authentication):
     def _unauthorized(self):
         response = HttpUnauthorized()
         new_uuid = uuid.uuid4()
-        opaque = hmac.new(str(new_uuid), digestmod=sha1).hexdigest()
-        response['WWW-Authenticate'] = python_digest.build_digest_challenge(time.time(), getattr(settings, 'SECRET_KEY', ''), self.realm, opaque, False)
+        opaque = hmac.new(str(new_uuid).encode('utf-8'), digestmod=sha1).hexdigest()
+        response['WWW-Authenticate'] = python_digest.build_digest_challenge(
+            timestamp=time.time(),
+            secret=getattr(settings, 'SECRET_KEY', ''),
+            realm=self.realm,
+            opaque=opaque,
+            stale=False
+        )
         return response
 
     def is_authenticated(self, request, **kwargs):
@@ -428,7 +435,7 @@ class OAuthAuthentication(Authentication):
 
             try:
                 self.validate_token(request, consumer, token)
-            except oauth2.Error, e:
+            except oauth2.Error as e:
                 return oauth_provider.utils.send_oauth_error(e)
 
             if consumer and token:

@@ -59,17 +59,12 @@ your project or ``PYTHONPATH``.
 
   1. Download the dependencies:
 
-    * Python 2.4+
-    * Django 1.0+ (tested on Django 1.1+)
-    * ``mimeparse`` 0.1.3+ (http://code.google.com/p/mimeparse/)
-
-      * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
-
+    * Python 2.6+ or Python 3.3+
+    * Django 1.5+
+    * ``python-mimeparse`` 0.1.4+ (http://pypi.python.org/pypi/python-mimeparse)
     * ``dateutil`` (http://labix.org/python-dateutil)
     * **OPTIONAL** - ``lxml`` (http://lxml.de/) if using the XML serializer
     * **OPTIONAL** - ``pyyaml`` (http://pyyaml.org/) if using the YAML serializer
-    * **OPTIONAL** - ``uuid`` (present in 2.5+, downloadable from
-      http://pypi.python.org/pypi/uuid/) if using the ``ApiKey`` authentication
 
   2. Either check out tastypie from GitHub_ or to pull a release off PyPI_.
      Doing ``sudo pip install django-tastypie`` or
@@ -77,14 +72,8 @@ your project or ``PYTHONPATH``.
   3. Either symlink the ``tastypie`` directory into your project or copy the
      directory in. What ever works best for you.
 
-.. note::
-
-    Once tastypie reaches version 1.0, it will become officially available on
-    PyPI_. Once that is the case, a ``sudo pip install tastypie`` or ``sudo
-    easy_install tastypie`` should be available.
-
 .. _GitHub: http://github.com/toastdriven/django-tastypie
-.. _PyPI: http://pypi.python.org/
+.. _PyPI: http://pypi.python.org/pypi/django-tastypie
 
 
 Configuration

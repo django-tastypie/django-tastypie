@@ -1,33 +1,43 @@
+from __future__ import unicode_literals
 import datetime
-from StringIO import StringIO
+import re
 import django
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.core.serializers import json
-try:
-    import json as simplejson
-except ImportError: # < Python 2.6
-    from django.utils import simplejson
-from django.utils.encoding import force_unicode
+from django.core.serializers import json  # FIXME: disambiguate name from JSON module
+from django.utils import six
+from django.utils.encoding import force_text, smart_bytes
+
 from tastypie.bundle import Bundle
 from tastypie.exceptions import BadRequest, UnsupportedFormat
 from tastypie.utils import format_datetime, format_date, format_time, make_naive
+
 try:
     import defusedxml.lxml as lxml
     from defusedxml.common import DefusedXmlException
     from defusedxml.lxml import parse as parse_xml
-    from lxml.etree import Element, tostring, LxmlError
+    from lxml.etree import Element, tostring, LxmlError, XMLParser
 except ImportError:
     lxml = None
+
 try:
     import yaml
     from django.core.serializers import pyyaml
 except ImportError:
     yaml = None
+
 try:
     import biplist
 except ImportError:
     biplist = None
+
+try:
+    import simplejson
+except ImportError:
+    import json as simplejson
+
+
+XML_ENCODING = re.compile('<\?xml.*?\?>', re.IGNORECASE)
 
 
 # Ugh & blah.
@@ -137,6 +147,9 @@ class Serializer(object):
         data = make_naive(data)
         if self.datetime_formatting == 'rfc-2822':
             return format_datetime(data)
+        if self.datetime_formatting == 'iso-8601-strict':
+            # Remove microseconds to strictly adhere to iso-8601
+            data = data - datetime.timedelta(microseconds = data.microsecond)
 
         return data.isoformat()
 
@@ -165,6 +178,9 @@ class Serializer(object):
         """
         if self.datetime_formatting == 'rfc-2822':
             return format_time(data)
+        if self.datetime_formatting == 'iso-8601-strict':
+            # Remove microseconds to strictly adhere to iso-8601
+            data = (datetime.datetime.combine(datetime.date(1,1,1),data) - datetime.timedelta(microseconds = data.microsecond)).time()
 
         return data.isoformat()
 
@@ -205,6 +221,9 @@ class Serializer(object):
         if desired_format is None:
             raise UnsupportedFormat("The format indicated '%s' had no available deserialization method. Please check your ``formats`` and ``content_types`` on your Serializer." % format)
 
+        if isinstance(content, six.binary_type):
+            content = force_text(content)
+
         deserialized = getattr(self, "from_%s" % desired_format)(content)
         return deserialized
 
@@ -219,9 +238,9 @@ class Serializer(object):
         if isinstance(data, (list, tuple)):
             return [self.to_simple(item, options) for item in data]
         if isinstance(data, dict):
-            return dict((key, self.to_simple(val, options)) for (key, val) in data.iteritems())
+            return dict((key, self.to_simple(val, options)) for (key, val) in data.items())
         elif isinstance(data, Bundle):
-            return dict((key, self.to_simple(val, options)) for (key, val) in data.data.iteritems())
+            return dict((key, self.to_simple(val, options)) for (key, val) in data.data.items())
         elif hasattr(data, 'dehydrated_type'):
             if getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == False:
                 if data.full:
@@ -243,12 +262,12 @@ class Serializer(object):
             return self.format_time(data)
         elif isinstance(data, bool):
             return data
-        elif type(data) in (long, int, float):
+        elif isinstance(data, (six.integer_types, float)):
             return data
         elif data is None:
             return None
         else:
-            return force_unicode(data)
+            return force_text(data)
 
     def to_etree(self, data, options=None, name=None, depth=0):
         """
@@ -264,18 +283,21 @@ class Serializer(object):
                 element = Element('objects')
             for item in data:
                 element.append(self.to_etree(item, options, depth=depth+1))
+                element[:] = sorted(element, key=lambda x: x.tag)
         elif isinstance(data, dict):
             if depth == 0:
                 element = Element(name or 'response')
             else:
                 element = Element(name or 'object')
                 element.set('type', 'hash')
-            for (key, value) in data.iteritems():
+            for (key, value) in data.items():
                 element.append(self.to_etree(value, options, name=key, depth=depth+1))
+                element[:] = sorted(element, key=lambda x: x.tag)
         elif isinstance(data, Bundle):
             element = Element(name or 'object')
             for field_name, field_object in data.data.items():
                 element.append(self.to_etree(field_object, options, name=field_name, depth=depth+1))
+                element[:] = sorted(element, key=lambda x: x.tag)
         elif hasattr(data, 'dehydrated_type'):
             if getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == False:
                 if data.full:
@@ -302,10 +324,10 @@ class Serializer(object):
                 element.set('type', get_type_string(simple_data))
 
             if data_type != 'null':
-                if isinstance(simple_data, unicode):
+                if isinstance(simple_data, six.text_type):
                     element.text = simple_data
                 else:
-                    element.text = force_unicode(simple_data)
+                    element.text = force_text(simple_data)
 
         return element
 
@@ -399,10 +421,16 @@ class Serializer(object):
             raise ImproperlyConfigured("Usage of the XML aspects requires lxml and defusedxml.")
 
         try:
-            parsed = parse_xml(StringIO(content), forbid_dtd=forbid_dtd,
-                               forbid_entities=forbid_entities)
+            # Stripping the encoding declaration. Because lxml.
+            # See http://lxml.de/parsing.html, "Python unicode strings".
+            content = XML_ENCODING.sub('', content)
+            parsed = parse_xml(
+                six.StringIO(content),
+                forbid_dtd=forbid_dtd,
+                forbid_entities=forbid_entities
+            )
         except (LxmlError, DefusedXmlException):
-            raise BadRequest
+            raise BadRequest()
 
         return self.from_etree(parsed.getroot())
 
@@ -444,6 +472,9 @@ class Serializer(object):
         if biplist is None:
             raise ImproperlyConfigured("Usage of the plist aspects requires biplist.")
 
+        if isinstance(content, six.text_type):
+            content = smart_bytes(content)
+
         return biplist.readPlistFromString(content)
 
     def to_html(self, data, options=None):
@@ -473,7 +504,7 @@ def get_type_string(data):
     """
     data_type = type(data)
 
-    if data_type in (int, long):
+    if data_type in six.integer_types:
         return 'integer'
     elif data_type == float:
         return 'float'
@@ -485,5 +516,5 @@ def get_type_string(data):
         return 'hash'
     elif data is None:
         return 'null'
-    elif isinstance(data, basestring):
+    elif isinstance(data, six.string_types):
         return 'string'

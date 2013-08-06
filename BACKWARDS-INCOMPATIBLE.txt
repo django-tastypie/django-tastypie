@@ -1,7 +1,7 @@
-Master (v0.9.14)
+Master (v0.9.16)
 ================
 
-None yet.
+[2012-12-11] abc0bef - Changed response code of PUT with always_return_data=True from 202 to 200
 
 
 v0.9.13

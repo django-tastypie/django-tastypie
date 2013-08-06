@@ -78,17 +78,17 @@ class SerializerTestCase(TestCase):
             # Confirm that the setting will override the default values:
             settings.TASTYPIE_DEFAULT_FORMATS = ('json', 'xml')
             s = Serializer()
-            self.assertItemsEqual(s.formats, ['json', 'xml'])
-            self.assertItemsEqual(s.supported_formats, ['application/json', 'application/xml'])
-            self.assertDictEqual(s.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
+            self.assertEqual(list(s.formats), ['json', 'xml'])
+            self.assertEqual(list(s.supported_formats), ['application/json', 'application/xml'])
+            self.assertEqual(s.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
 
             # Confirm that subclasses which set their own formats list won't be overriden:
             class JSONSerializer(Serializer):
                 formats = ['json']
 
             js = JSONSerializer()
-            self.assertItemsEqual(js.formats, ['json'])
-            self.assertItemsEqual(js.supported_formats, ['application/json'])
+            self.assertEqual(list(js.formats), ['json'])
+            self.assertEqual(list(js.supported_formats), ['application/json'])
 
         finally:
             if old_formats is None:
@@ -120,6 +120,9 @@ class SerializerTestCase(TestCase):
         serializer = Serializer(datetime_formatting='iso-8601')
         self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33')
 
+        serializer = Serializer(datetime_formatting='iso-8601-strict')
+        self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33, 10)), '2010-12-16T02:31:33')
+
         serializer = Serializer(datetime_formatting='rfc-2822')
         self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), u'Thu, 16 Dec 2010 02:31:33 -0600')
 
@@ -132,6 +135,10 @@ class SerializerTestCase(TestCase):
         settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601'
         serializer = Serializer()
         self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33')
+
+        settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601-strict'
+        serializer = Serializer()
+        self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33, 10)), '2010-12-16T02:31:33')
 
         settings.TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
         serializer = Serializer()
@@ -182,6 +189,9 @@ class SerializerTestCase(TestCase):
         serializer = Serializer(datetime_formatting='iso-8601')
         self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), '02:31:33')
 
+        serializer = Serializer(datetime_formatting='iso-8601-strict')
+        self.assertEqual(serializer.format_time(datetime.time(2, 31, 33, 10)), '02:31:33')
+
         serializer = Serializer(datetime_formatting='rfc-2822')
         self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), u'02:31:33 -0600')
 
@@ -194,6 +204,10 @@ class SerializerTestCase(TestCase):
         settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601'
         serializer = Serializer()
         self.assertEqual(serializer.format_time(datetime.time(2, 31, 33)), '02:31:33')
+
+        settings.TASTYPIE_DATETIME_FORMATTING = 'iso-8601-strict'
+        serializer = Serializer()
+        self.assertEqual(serializer.format_time(datetime.time(2, 31, 33, 10)), '02:31:33')
 
         settings.TASTYPIE_DATETIME_FORMATTING = 'rfc-2822'
         serializer = Serializer()
@@ -216,16 +230,18 @@ class SerializerTestCase(TestCase):
         # so we can make extra special sure it looks right.
         binary_xml = serializer.to_xml(sample_1)
         unicode_xml = binary_xml.decode('utf-8')
-        self.assertEqual(unicode_xml, u'<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><snowman>☃</snowman><age type="integer">27</age><name>Daniel</name><date_joined>2010-03-27</date_joined></response>')
+        self.assertEqual(unicode_xml, u'<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><age type="integer">27</age><date_joined>2010-03-27</date_joined><name>Daniel</name><snowman>☃</snowman></response>')
 
     def test_to_xml2(self):
         serializer = Serializer()
         sample_2 = self.get_sample2()
-        self.assertEqual(serializer.to_xml(sample_2), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><somelist type="list"><value>hello</value><value type="integer">1</value><value type="null"/></somelist><somehash type="hash"><pi type="float">3.14</pi><foo>bar</foo></somehash><false type="boolean">False</false><true type="boolean">True</true><somestring>hello</somestring></response>')
+        binary_xml = serializer.to_xml(sample_2)
+        unicode_xml = binary_xml.decode('utf-8')
+        self.assertEqual(unicode_xml, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><false type="boolean">False</false><somehash type="hash"><foo>bar</foo><pi type="float">3.14</pi></somehash><somelist type="list"><value>hello</value><value type="integer">1</value><value type="null"/></somelist><somestring>hello</somestring><true type="boolean">True</true></response>')
 
     def test_from_xml(self):
         serializer = Serializer()
-        data = '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><snowman>☃</snowman><age type="integer">27</age><name>Daniel</name><date_joined>2010-03-27</date_joined><rocksdahouse type="boolean">True</rocksdahouse></request>'
+        data = u'<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><snowman>☃</snowman><age type="integer">27</age><name>Daniel</name><date_joined>2010-03-27</date_joined><rocksdahouse type="boolean">True</rocksdahouse></request>'
         self.assertEqual(serializer.from_xml(data), {'rocksdahouse': True, 'age': 27, 'name': 'Daniel', 'date_joined': '2010-03-27', 'snowman': u'☃'})
 
     def test_from_xml2(self):
@@ -236,9 +252,6 @@ class SerializerTestCase(TestCase):
     def test_malformed_xml(self):
         serializer = Serializer()
         data = '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><somelist type="list"><valueNO CARRIER'
-        self.assertRaises(BadRequest, serializer.from_xml, data)
-
-        data = '<?xml version=\'1.0\' encoding=\'ascii\'?>\n<request><snowman>☃</snowman></request>'
         self.assertRaises(BadRequest, serializer.from_xml, data)
 
     def test_to_json(self):
@@ -263,7 +276,7 @@ class SerializerTestCase(TestCase):
         serialized = serializer.to_xml(sample_data)
         # "response" tags need to be changed to "request" to deserialize properly.
         # A string substitution works here.
-        serialized = serialized.replace('response', 'request')
+        serialized = serialized.decode('utf-8').replace('response', 'request')
         unserialized = serializer.from_xml(serialized)
         self.assertEqual(sample_data, unserialized)
 
@@ -329,7 +342,7 @@ class SerializerTestCase(TestCase):
         serializer = Serializer()
 
         sample_1 = self.get_sample1()
-        self.assertEqual(serializer.to_plist(sample_1), 'bplist00bybiplist1.0\x00\xd4\x01\x02\x03\x04\x05\x06\x07\x08WsnowmanSageTname[date_joineda&\x03\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1e&*/;>@M\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\t\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00X')
+        self.assertTrue(serializer.to_plist(sample_1).startswith(b'bplist00bybiplist1.0'))
 
     def test_from_plist(self):
         if not biplist:
@@ -337,12 +350,12 @@ class SerializerTestCase(TestCase):
 
         serializer = Serializer()
 
-        sample_1 = serializer.from_plist('bplist00bybiplist1.0\x00\xd4\x01\x02\x03\x04\x05\x06\x07\x08WsnowmanSageTname[date_joineda&\x03\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1e&*/;>@M\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\t\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00X')
+        sample_1 = serializer.from_plist(b'bplist00bybiplist1.0\x00\xd4\x01\x02\x03\x04\x05\x06\x07\x08WsnowmanSageTname[date_joineda&\x03\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1e&*/;>@M\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\t\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00X')
         self.assertEqual(len(sample_1), 4)
-        self.assertEqual(sample_1['name'], 'Daniel')
-        self.assertEqual(sample_1['age'], 27)
-        self.assertEqual(sample_1['date_joined'], u'2010-03-27')
-        self.assertEqual(sample_1['snowman'], u'☃')
+        self.assertEqual(sample_1[b'name'], 'Daniel')
+        self.assertEqual(sample_1[b'age'], 27)
+        self.assertEqual(sample_1[b'date_joined'], b'2010-03-27')
+        self.assertEqual(sample_1[b'snowman'], u'☃')
 
 class ResourceSerializationTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -357,12 +370,16 @@ class ResourceSerializationTestCase(TestCase):
 
     def test_to_xml_multirepr(self):
         serializer = Serializer()
-        self.assertEqual(serializer.to_xml(self.obj_list), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<objects><object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id type="integer">1</id><resource_uri></resource_uri></object><object><updated>2010-03-31T20:05:00</updated><created>2010-03-31T20:05:00</created><title>Another Post</title><is_active type="boolean">True</is_active><slug>another-post</slug><content>The dog ate my cat today. He looks seriously uncomfortable.</content><id type="integer">2</id><resource_uri></resource_uri></object><object><updated>2010-04-01T20:05:00</updated><created>2010-04-01T20:05:00</created><title>Recent Volcanic Activity.</title><is_active type="boolean">True</is_active><slug>recent-volcanic-activity</slug><content>My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.</content><id type="integer">4</id><resource_uri></resource_uri></object><object><updated>2010-04-02T10:05:00</updated><created>2010-04-02T10:05:00</created><title>Granny\'s Gone</title><is_active type="boolean">True</is_active><slug>grannys-gone</slug><content>Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!</content><id type="integer">6</id><resource_uri></resource_uri></object></objects>')
+        binary_xml = serializer.to_xml(self.obj_list)
+        unicode_xml = binary_xml.decode('utf-8')
+        self.assertEqual(unicode_xml, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<objects><object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><created>2010-03-30T20:05:00</created><id type="integer">1</id><is_active type="boolean">True</is_active><resource_uri></resource_uri><slug>first-post</slug><title>First Post!</title><updated>2010-03-30T20:05:00</updated></object><object><content>The dog ate my cat today. He looks seriously uncomfortable.</content><created>2010-03-31T20:05:00</created><id type="integer">2</id><is_active type="boolean">True</is_active><resource_uri></resource_uri><slug>another-post</slug><title>Another Post</title><updated>2010-03-31T20:05:00</updated></object><object><content>My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.</content><created>2010-04-01T20:05:00</created><id type="integer">4</id><is_active type="boolean">True</is_active><resource_uri></resource_uri><slug>recent-volcanic-activity</slug><title>Recent Volcanic Activity.</title><updated>2010-04-01T20:05:00</updated></object><object><content>Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!</content><created>2010-04-02T10:05:00</created><id type="integer">6</id><is_active type="boolean">True</is_active><resource_uri></resource_uri><slug>grannys-gone</slug><title>Granny\'s Gone</title><updated>2010-04-02T10:05:00</updated></object></objects>')
 
     def test_to_xml_single(self):
         serializer = Serializer()
         resource = self.obj_list[0]
-        self.assertEqual(serializer.to_xml(resource), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id type="integer">1</id><resource_uri></resource_uri></object>')
+        binary_xml = serializer.to_xml(resource)
+        unicode_xml = binary_xml.decode('utf-8')
+        self.assertEqual(unicode_xml, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><created>2010-03-30T20:05:00</created><id type="integer">1</id><is_active type="boolean">True</is_active><resource_uri></resource_uri><slug>first-post</slug><title>First Post!</title><updated>2010-03-30T20:05:00</updated></object>')
 
     def test_to_xml_nested(self):
         serializer = Serializer()
@@ -373,7 +390,9 @@ class ResourceSerializationTestCase(TestCase):
                 'object': resource,
             }
         }
-        self.assertEqual(serializer.to_xml(data), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><stuff type="hash"><foo>bar</foo><object><updated>2010-03-30T20:05:00</updated><created>2010-03-30T20:05:00</created><title>First Post!</title><is_active type="boolean">True</is_active><slug>first-post</slug><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><id type="integer">1</id><resource_uri></resource_uri></object></stuff></response>')
+        binary_xml = serializer.to_xml(data)
+        unicode_xml = binary_xml.decode('utf-8')
+        self.assertEqual(unicode_xml, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><stuff type="hash"><foo>bar</foo><object><content>This is my very first post using my shiny new API. Pretty sweet, huh?</content><created>2010-03-30T20:05:00</created><id type="integer">1</id><is_active type="boolean">True</is_active><resource_uri></resource_uri><slug>first-post</slug><title>First Post!</title><updated>2010-03-30T20:05:00</updated></object></stuff></response>')
 
     def test_to_json_multirepr(self):
         serializer = Serializer()

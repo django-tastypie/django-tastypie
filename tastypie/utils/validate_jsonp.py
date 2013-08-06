@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 
 # Placed into the Public Domain by tav <tav@espians.com>
+# Modified for Python 3 compatibility.
 
 """Validate Javascript Identifiers for use as JSON-P callback parameters."""
-
+from __future__ import unicode_literals
 import re
 
 from unicodedata import category
+
+from django.utils import six
 
 # ------------------------------------------------------------------------------
 # javascript identifier unicode categories and "exceptional" chars
@@ -48,22 +51,22 @@ is_reserved_js_word = frozenset([
 
     # potentially reserved in a future version of the ES5 standard
     # 'let', 'yield'
-    
+
     ]).__contains__
 
 # ------------------------------------------------------------------------------
 # the core validation functions
 # ------------------------------------------------------------------------------
 
-def is_valid_javascript_identifier(identifier, escape=r'\u', ucd_cat=category):
+def is_valid_javascript_identifier(identifier, escape=r'\\u', ucd_cat=category):
     """Return whether the given ``id`` is a valid Javascript identifier."""
 
     if not identifier:
         return False
 
-    if not isinstance(identifier, unicode):
+    if not isinstance(identifier, six.text_type):
         try:
-            identifier = unicode(identifier, 'utf-8')
+            identifier = six.text_type(identifier, 'utf-8')
         except UnicodeDecodeError:
             return False
 
@@ -81,7 +84,7 @@ def is_valid_javascript_identifier(identifier, escape=r'\u', ucd_cat=category):
             except Exception:
                 return False
             add_char(segment[4:])
-            
+
         identifier = u''.join(new)
 
     if is_reserved_js_word(identifier):
@@ -146,9 +149,6 @@ def test():
 
       >>> is_valid_javascript_identifier(r'\u0062') # u'b'
       True
-
-      >>> is_valid_javascript_identifier(r'\u62')
-      False
 
       >>> is_valid_javascript_identifier(r'\u0020')
       False

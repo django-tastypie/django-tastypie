@@ -15,6 +15,8 @@ from django.core.urlresolvers import reverse
 from django import forms
 from django.http import HttpRequest, QueryDict, Http404
 from django.test import TestCase
+from django.utils.encoding import force_text
+from django.utils import six
 
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
@@ -698,7 +700,7 @@ class ResourceTestCase(TestCase):
         try:
             basic.method_check(request)
             self.fail("Should have thrown an exception.")
-        except ImmediateHttpResponse, e:
+        except ImmediateHttpResponse as e:
             self.assertEqual(e.response['Allow'], '')
 
         # Not an allowed request.
@@ -707,7 +709,7 @@ class ResourceTestCase(TestCase):
         try:
             basic.method_check(request, allowed=['post'])
             self.fail("Should have thrown an exception.")
-        except ImmediateHttpResponse, e:
+        except ImmediateHttpResponse as e:
             self.assertEqual(e.response['Allow'], 'POST')
 
         # Allowed (single).
@@ -731,7 +733,7 @@ class ResourceTestCase(TestCase):
         try:
             basic.method_check(request, allowed=['get', 'put', 'delete', 'patch'])
             self.fail("Should have thrown an exception.")
-        except ImmediateHttpResponse, e:
+        except ImmediateHttpResponse as e:
             self.assertEqual(e.response['Allow'], 'GET,PUT,DELETE,PATCH')
 
         # Allowed (multiple).
@@ -757,13 +759,13 @@ class ResourceTestCase(TestCase):
         data = {'hello': 'world'}
         output = basic.create_response(request, data)
         self.assertEqual(output.status_code, 200)
-        self.assertEqual(output.content, '{"hello": "world"}')
+        self.assertEqual(force_text(output.content), '{"hello": "world"}')
 
         request.GET = {'format': 'xml'}
         data = {'objects': [{'hello': 'world', 'abc': 123}], 'meta': {'page': 1}}
         output = basic.create_response(request, data)
         self.assertEqual(output.status_code, 200)
-        self.assertEqual(output.content, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><objects type="list"><object type="hash"><abc type="integer">123</abc><hello>world</hello></object></objects><meta type="hash"><page type="integer">1</page></meta></response>')
+        self.assertEqual(force_text(output.content), '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><meta type="hash"><page type="integer">1</page></meta><objects type="list"><object type="hash"><abc type="integer">123</abc><hello>world</hello></object></objects></response>')
 
     def test_mangled(self):
         mangled = MangledBasicResource()
@@ -786,7 +788,7 @@ class ResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'GET'
 
-        basic_resource_list = json.loads(basic.get_list(request).content)['objects']
+        basic_resource_list = json.loads(force_text(basic.get_list(request).content))['objects']
         self.assertEquals(basic_resource_list[0]['name'], 'Daniel')
         self.assertEquals(basic_resource_list[0]['date_joined'], u'2010-03-30T09:00:00')
 
@@ -1242,9 +1244,21 @@ class CounterResource(ModelResource):
 
 
 class CounterAuthorization(Authorization):
+    def create_detail(self, object_list, bundle, *args, **kwargs):
+        bundle._create_auth_call_count = getattr(bundle, '_create_auth_call_count', 0) + 1
+        return True
+
     def update_detail(self, object_list, bundle, *args, **kwargs):
         bundle._update_auth_call_count = getattr(bundle, '_update_auth_call_count', 0) + 1
         return True
+
+
+class CounterCreateDetailResource(ModelResource):
+    count = fields.IntegerField('count', default=0, null=True)
+
+    class Meta:
+        queryset = Counter.objects.all()
+        authorization = CounterAuthorization()
 
 
 class CounterUpdateDetailResource(ModelResource):
@@ -1272,7 +1286,7 @@ class ModelResourceTestCase(TestCase):
         )
         self.note_1.subjects.add(self.subject_1)
         self.note_1.subjects.add(self.subject_2)
-        
+
         if django.VERSION >= (1, 4):
             self.body_attr = "body"
         else:
@@ -1757,7 +1771,7 @@ class ModelResourceTestCase(TestCase):
         }
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp['content-type'], 'application/xml; charset=utf-8')
-        self.assertEqual(resp.content, "<?xml version='1.0' encoding='utf-8'?>\n<response><error>Lookups are not allowed more than one level deep on the 'author' field.</error></response>")
+        self.assertEqual(resp.content.decode('utf-8'), "<?xml version='1.0' encoding='utf-8'?>\n<response><error>Lookups are not allowed more than one level deep on the 'author' field.</error></response>")
 
         request.GET = {
             'format': 'json',
@@ -1765,7 +1779,7 @@ class ModelResourceTestCase(TestCase):
         }
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp['content-type'], 'application/json')
-        self.assertEqual(resp.content, '{"error": "Lookups are not allowed more than one level deep on the \'author\' field."}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Lookups are not allowed more than one level deep on the \'author\' field."}')
 
         request.GET = {
             'format': 'json',
@@ -1773,7 +1787,7 @@ class ModelResourceTestCase(TestCase):
         }
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp['content-type'], 'application/json')
-        self.assertEqual(resp.content, '{"error": "Invalid limit \'<img%20src=\\"http://ycombinator.com/images/y18.gif\\">\' provided. Please provide a positive integer."}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid limit \'<img%20src=\\"http://ycombinator.com/images/y18.gif\\">\' provided. Please provide a positive integer."}')
 
         request.GET = {
             'format': 'json',
@@ -1781,7 +1795,7 @@ class ModelResourceTestCase(TestCase):
         }
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp['content-type'], 'application/json')
-        self.assertEqual(resp.content, '{"error": "Invalid limit \'<img%20src=\\"http://ycombinator.com/images/y18.gif\\">\' provided. Please provide a positive integer."}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid limit \'<img%20src=\\"http://ycombinator.com/images/y18.gif\\">\' provided. Please provide a positive integer."}')
 
         request.GET = {
             'format': 'json',
@@ -1789,7 +1803,7 @@ class ModelResourceTestCase(TestCase):
         }
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp['content-type'], 'application/json')
-        self.assertEqual(resp.content, '{"error": "Invalid offset \'<script>alert(\\"XSS\\")</script>\' provided. Please provide an integer."}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid offset \'<script>alert(\\"XSS\\")</script>\' provided. Please provide an integer."}')
 
     def test_apply_sorting(self):
         resource = NoteResource()
@@ -1885,7 +1899,7 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": 6, "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": 6, "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]}')
 
         # Test slicing.
         # First an invalid offset.
@@ -1893,7 +1907,7 @@ class ModelResourceTestCase(TestCase):
         try:
             resp = resource.get_list(request)
             self.fail()
-        except BadRequest, e:
+        except BadRequest as e:
             pass
 
         # Try again with ``wrap_view`` for sanity.
@@ -1905,7 +1919,7 @@ class ModelResourceTestCase(TestCase):
         try:
             resp = resource.get_list(request)
             self.fail()
-        except BadRequest, e:
+        except BadRequest as e:
             pass
 
         # Then an out of range limit.
@@ -1913,63 +1927,340 @@ class ModelResourceTestCase(TestCase):
         try:
             resp = resource.get_list(request)
             self.fail()
-        except BadRequest, e:
+        except BadRequest as e:
             pass
 
         # Valid slice.
         request.GET = {'format': 'json', 'offset': 0, 'limit': 2}
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"meta": {"limit": 2, "next": "/api/v1/notes/?format=json&limit=2&offset=2", "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}]}')
+        list_data = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(list_data['meta']['limit'], 2)
+        self.assertEqual(list_data['meta']['offset'], 0)
+        self.assertEqual(list_data['meta']['total_count'], 4)
+        self.assertEqual(list_data['meta']['previous'], None)
+        self.assertTrue('/api/v1/notes/?' in list_data['meta']['next'])
+        self.assertTrue('format=json' in list_data['meta']['next'])
+        self.assertTrue('limit=2' in list_data['meta']['next'])
+        self.assertTrue('offset=2' in list_data['meta']['next'])
+        self.assertEqual(list_data['objects'], [
+            {
+                "content": "This is my very first post using my shiny new API. Pretty sweet, huh?",
+                "created": "2010-03-30T20:05:00",
+                "id": 1,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/1/",
+                "slug": "first-post",
+                "title": "First Post!",
+                "updated": "2010-03-30T20:05:00"
+            },
+            {
+                "content": "The dog ate my cat today. He looks seriously uncomfortable.",
+                "created": "2010-03-31T20:05:00",
+                "id": 2,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/2/",
+                "slug": "another-post",
+                "title": "Another Post",
+                "updated": "2010-03-31T20:05:00"
+            }
+        ])
 
         # Valid, slightly overlapping slice.
         request.GET = {'format': 'json', 'offset': 1, 'limit': 2}
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"meta": {"limit": 2, "next": "/api/v1/notes/?format=json&limit=2&offset=3", "offset": 1, "previous": null, "total_count": 4}, "objects": [{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}]}')
+        list_data = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(list_data['meta']['limit'], 2)
+        self.assertEqual(list_data['meta']['offset'], 1)
+        self.assertEqual(list_data['meta']['total_count'], 4)
+        self.assertEqual(list_data['meta']['previous'], None)
+        self.assertTrue('/api/v1/notes/?' in list_data['meta']['next'])
+        self.assertTrue('format=json' in list_data['meta']['next'])
+        self.assertTrue('limit=2' in list_data['meta']['next'])
+        self.assertTrue('offset=3' in list_data['meta']['next'])
+        self.assertEqual(list_data['objects'], [
+            {
+                "content": "The dog ate my cat today. He looks seriously uncomfortable.",
+                "created": "2010-03-31T20:05:00",
+                "id": 2,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/2/",
+                "slug": "another-post",
+                "title": "Another Post",
+                "updated": "2010-03-31T20:05:00"
+            },
+            {
+                "content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.",
+                "created": "2010-04-01T20:05:00",
+                "id": 4,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/4/",
+                "slug": "recent-volcanic-activity",
+                "title": "Recent Volcanic Activity.",
+                "updated": "2010-04-01T20:05:00"
+            }
+        ])
 
         # Valid, non-overlapping slice.
         request.GET = {'format': 'json', 'offset': 3, 'limit': 2}
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"meta": {"limit": 2, "next": null, "offset": 3, "previous": "/api/v1/notes/?format=json&limit=2&offset=1", "total_count": 4}, "objects": [{"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": 6, "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]}')
+        list_data = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(list_data['meta']['limit'], 2)
+        self.assertEqual(list_data['meta']['offset'], 3)
+        self.assertEqual(list_data['meta']['total_count'], 4)
+        self.assertEqual(list_data['meta']['next'], None)
+        self.assertTrue('/api/v1/notes/?' in list_data['meta']['previous'])
+        self.assertTrue('format=json' in list_data['meta']['previous'])
+        self.assertTrue('limit=2' in list_data['meta']['previous'])
+        self.assertTrue('offset=1' in list_data['meta']['previous'])
+        self.assertEqual(list_data['objects'], [
+            {
+                "content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!",
+                "created": "2010-04-02T10:05:00",
+                "id": 6,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/6/",
+                "slug": "grannys-gone",
+                "title": "Granny\'s Gone",
+                "updated": "2010-04-02T10:05:00"
+            }
+        ])
 
         # Valid, but beyond the bounds slice.
         request.GET = {'format': 'json', 'offset': 100, 'limit': 2}
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"meta": {"limit": 2, "next": null, "offset": 100, "previous": "/api/v1/notes/?format=json&limit=2&offset=98", "total_count": 4}, "objects": []}')
+        list_data = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(list_data['meta']['limit'], 2)
+        self.assertEqual(list_data['meta']['offset'], 100)
+        self.assertEqual(list_data['meta']['total_count'], 4)
+        self.assertEqual(list_data['meta']['next'], None)
+        self.assertTrue('/api/v1/notes/?' in list_data['meta']['previous'])
+        self.assertTrue('format=json' in list_data['meta']['previous'])
+        self.assertTrue('limit=2' in list_data['meta']['previous'])
+        self.assertTrue('offset=98' in list_data['meta']['previous'])
+        self.assertEqual(list_data['objects'], [])
 
         # Valid slice, fetch all results.
         request.GET = {'format': 'json', 'offset': 0, 'limit': 0}
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"meta": {"limit": 1000, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": 6, "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]}')
+        list_data = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(list_data['meta']['limit'], 1000)
+        self.assertEqual(list_data['meta']['offset'], 0)
+        self.assertEqual(list_data['meta']['total_count'], 4)
+        self.assertEqual(list_data['meta']['previous'], None)
+        self.assertEqual(list_data['meta']['next'], None)
+        self.assertEqual(list_data['objects'], [
+            {
+                "content": "This is my very first post using my shiny new API. Pretty sweet, huh?",
+                "created": "2010-03-30T20:05:00",
+                "id": 1,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/1/",
+                "slug": "first-post",
+                "title": "First Post!",
+                "updated": "2010-03-30T20:05:00"
+            },
+            {
+                "content": "The dog ate my cat today. He looks seriously uncomfortable.",
+                "created": "2010-03-31T20:05:00",
+                "id": 2,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/2/",
+                "slug": "another-post",
+                "title": "Another Post",
+                "updated": "2010-03-31T20:05:00"
+            },
+            {
+                "content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.",
+                "created": "2010-04-01T20:05:00",
+                "id": 4,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/4/",
+                "slug": "recent-volcanic-activity",
+                "title": "Recent Volcanic Activity.",
+                "updated": "2010-04-01T20:05:00"
+            },
+            {
+                "content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!",
+                "created": "2010-04-02T10:05:00",
+                "id": 6,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/6/",
+                "slug": "grannys-gone",
+                "title": "Granny\'s Gone",
+                "updated": "2010-04-02T10:05:00"
+            }
+        ])
 
         # Valid sorting.
         request.GET = {'format': 'json', 'order_by': 'title'}
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": 6, "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}]}')
+        list_data = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(list_data['meta']['limit'], 20)
+        self.assertEqual(list_data['meta']['offset'], 0)
+        self.assertEqual(list_data['meta']['total_count'], 4)
+        self.assertEqual(list_data['meta']['previous'], None)
+        self.assertEqual(list_data['meta']['next'], None)
+        self.assertEqual(list_data['objects'], [
+            {
+                "content": "The dog ate my cat today. He looks seriously uncomfortable.",
+                "created": "2010-03-31T20:05:00",
+                "id": 2,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/2/",
+                "slug": "another-post",
+                "title": "Another Post",
+                "updated": "2010-03-31T20:05:00"
+            },
+            {
+                "content": "This is my very first post using my shiny new API. Pretty sweet, huh?",
+                "created": "2010-03-30T20:05:00",
+                "id": 1,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/1/",
+                "slug": "first-post",
+                "title": "First Post!",
+                "updated": "2010-03-30T20:05:00"
+            },
+            {
+                "content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!",
+                "created": "2010-04-02T10:05:00",
+                "id": 6,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/6/",
+                "slug": "grannys-gone",
+                "title": "Granny\'s Gone",
+                "updated": "2010-04-02T10:05:00"
+            },
+            {
+                "content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.",
+                "created": "2010-04-01T20:05:00",
+                "id": 4,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/4/",
+                "slug": "recent-volcanic-activity",
+                "title": "Recent Volcanic Activity.",
+                "updated": "2010-04-01T20:05:00"
+            }
+        ])
 
         request.GET = {'format': 'json', 'order_by': '-title'}
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": 6, "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}, {"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}]}')
+        list_data = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(list_data['meta']['limit'], 20)
+        self.assertEqual(list_data['meta']['offset'], 0)
+        self.assertEqual(list_data['meta']['total_count'], 4)
+        self.assertEqual(list_data['meta']['previous'], None)
+        self.assertEqual(list_data['meta']['next'], None)
+        self.assertEqual(list_data['objects'], [
+            {
+                "content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.",
+                "created": "2010-04-01T20:05:00",
+                "id": 4,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/4/",
+                "slug": "recent-volcanic-activity",
+                "title": "Recent Volcanic Activity.",
+                "updated": "2010-04-01T20:05:00"
+            },
+            {
+                "content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!",
+                "created": "2010-04-02T10:05:00",
+                "id": 6,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/6/",
+                "slug": "grannys-gone",
+                "title": "Granny\'s Gone",
+                "updated": "2010-04-02T10:05:00"
+            },
+            {
+                "content": "This is my very first post using my shiny new API. Pretty sweet, huh?",
+                "created": "2010-03-30T20:05:00",
+                "id": 1,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/1/",
+                "slug": "first-post",
+                "title": "First Post!",
+                "updated": "2010-03-30T20:05:00"
+            },
+            {
+                "content": "The dog ate my cat today. He looks seriously uncomfortable.",
+                "created": "2010-03-31T20:05:00",
+                "id": 2,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/2/",
+                "slug": "another-post",
+                "title": "Another Post",
+                "updated": "2010-03-31T20:05:00"
+            }
+        ])
 
         #invalid sorting
         request.GET = {'format': 'json', 'order_by': 'monkey'}
         resp = resource.wrap_view('get_list')(request)
         self.assertEqual(resp.status_code, 400)
-        res = json.loads(resp.content)
+        res = json.loads(resp.content.decode('utf-8'))
         self.assertTrue('error' in res.keys())
         self.assertTrue('monkey' in res['error']) #Error looks like "No matching \'monkey\' field for ordering on.
-        
+
         # Test to make sure we're not inadvertently caching the QuerySet.
         request.GET = {'format': 'json'}
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": 6, "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]}')
+        list_data = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(list_data['meta']['limit'], 20)
+        self.assertEqual(list_data['meta']['offset'], 0)
+        self.assertEqual(list_data['meta']['total_count'], 4)
+        self.assertEqual(list_data['meta']['previous'], None)
+        self.assertEqual(list_data['meta']['next'], None)
+        self.assertEqual(list_data['objects'], [
+            {
+                "content": "This is my very first post using my shiny new API. Pretty sweet, huh?",
+                "created": "2010-03-30T20:05:00",
+                "id": 1,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/1/",
+                "slug": "first-post",
+                "title": "First Post!",
+                "updated": "2010-03-30T20:05:00"
+            },
+            {
+                "content": "The dog ate my cat today. He looks seriously uncomfortable.",
+                "created": "2010-03-31T20:05:00",
+                "id": 2,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/2/",
+                "slug": "another-post",
+                "title": "Another Post",
+                "updated": "2010-03-31T20:05:00"
+            },
+            {
+                "content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.",
+                "created": "2010-04-01T20:05:00",
+                "id": 4,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/4/",
+                "slug": "recent-volcanic-activity",
+                "title": "Recent Volcanic Activity.",
+                "updated": "2010-04-01T20:05:00"
+            },
+            {
+                "content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!",
+                "created": "2010-04-02T10:05:00",
+                "id": 6,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/6/",
+                "slug": "grannys-gone",
+                "title": "Granny\'s Gone",
+                "updated": "2010-04-02T10:05:00"
+            }
+        ])
         new_note = Note.objects.create(
             title='Another fresh note.',
             slug='another-fresh-note',
@@ -1979,7 +2270,64 @@ class ModelResourceTestCase(TestCase):
         )
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 5}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": 6, "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}, {"content": "Whee!", "created": "2010-07-21T11:23:00", "id": 7, "is_active": true, "resource_uri": "/api/v1/notes/7/", "slug": "another-fresh-note", "title": "Another fresh note.", "updated": "%s"}]}' % make_naive(new_note.updated).isoformat())
+        list_data = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(list_data['meta']['limit'], 20)
+        self.assertEqual(list_data['meta']['offset'], 0)
+        self.assertEqual(list_data['meta']['total_count'], 5)
+        self.assertEqual(list_data['meta']['previous'], None)
+        self.assertEqual(list_data['meta']['next'], None)
+        self.assertEqual(list_data['objects'], [
+            {
+                "content": "This is my very first post using my shiny new API. Pretty sweet, huh?",
+                "created": "2010-03-30T20:05:00",
+                "id": 1,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/1/",
+                "slug": "first-post",
+                "title": "First Post!",
+                "updated": "2010-03-30T20:05:00"
+            },
+            {
+                "content": "The dog ate my cat today. He looks seriously uncomfortable.",
+                "created": "2010-03-31T20:05:00",
+                "id": 2,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/2/",
+                "slug": "another-post",
+                "title": "Another Post",
+                "updated": "2010-03-31T20:05:00"
+            },
+            {
+                "content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.",
+                "created": "2010-04-01T20:05:00",
+                "id": 4,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/4/",
+                "slug": "recent-volcanic-activity",
+                "title": "Recent Volcanic Activity.",
+                "updated": "2010-04-01T20:05:00"
+            },
+            {
+                "content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!",
+                "created": "2010-04-02T10:05:00",
+                "id": 6,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/6/",
+                "slug": "grannys-gone",
+                "title": "Granny\'s Gone",
+                "updated": "2010-04-02T10:05:00"
+            },
+            {
+                "content": "Whee!",
+                "created": "2010-07-21T11:23:00",
+                "id": 7,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/7/",
+                "slug": "another-fresh-note",
+                "title": "Another fresh note.",
+                "updated": make_naive(new_note.updated).isoformat()
+            }
+        ])
 
         # Regression - Ensure that the limit on the Resource gets used if
         # no other limit is requested.
@@ -1989,7 +2337,47 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"meta": {"limit": 3, "next": "/api/v1/notes/?offset=3&limit=3&format=json", "offset": 0, "previous": null, "total_count": 5}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}]}')
+        list_data = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(list_data['meta']['limit'], 3)
+        self.assertEqual(list_data['meta']['offset'], 0)
+        self.assertEqual(list_data['meta']['total_count'], 5)
+        self.assertEqual(list_data['meta']['previous'], None)
+        self.assertTrue('/api/v1/notes/?' in list_data['meta']['next'])
+        self.assertTrue('format=json' in list_data['meta']['next'])
+        self.assertTrue('limit=3' in list_data['meta']['next'])
+        self.assertTrue('offset=3' in list_data['meta']['next'])
+        self.assertEqual(list_data['objects'], [
+                {
+                    "content": "This is my very first post using my shiny new API. Pretty sweet, huh?",
+                    "created": "2010-03-30T20:05:00",
+                    "id": 1,
+                    "is_active": True,
+                    "resource_uri": "/api/v1/notes/1/",
+                    "slug": "first-post",
+                    "title": "First Post!",
+                    "updated": "2010-03-30T20:05:00"
+                },
+                {
+                    "content": "The dog ate my cat today. He looks seriously uncomfortable.",
+                    "created": "2010-03-31T20:05:00",
+                    "id": 2,
+                    "is_active": True,
+                    "resource_uri": "/api/v1/notes/2/",
+                    "slug": "another-post",
+                    "title": "Another Post",
+                    "updated": "2010-03-31T20:05:00"
+                },
+                {
+                    "content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.",
+                    "created": "2010-04-01T20:05:00",
+                    "id": 4,
+                    "is_active": True,
+                    "resource_uri": "/api/v1/notes/4/",
+                    "slug": "recent-volcanic-activity",
+                    "title": "Recent Volcanic Activity.",
+                    "updated": "2010-04-01T20:05:00"
+                }
+            ])
 
     def test_get_list_use_in(self):
         resource = UseInNoteResource()
@@ -1997,7 +2385,7 @@ class ModelResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         resp = resource.get_list(request)
         self.assertEqual(resp.status_code, 200)
-        resp = json.loads(resp.content)
+        resp = json.loads(resp.content.decode('utf-8'))
         for note in resp['objects']:
             self.assertNotIn('content', note)
 
@@ -2009,11 +2397,11 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.get_detail(request, pk=1)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
 
         resp = resource.get_detail(request, pk=2)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}')
 
         resp = resource.get_detail(request, pk=300)
         self.assertEqual(resp.status_code, 404)
@@ -2024,7 +2412,7 @@ class ModelResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         resp = resource.get_detail(request, pk=1)
         self.assertEqual(resp.status_code, 200)
-        resp = json.loads(resp.content)
+        resp = json.loads(resp.content.decode('utf-8'))
         self.assertNotIn('title', resp)
 
     def test_put_list(self):
@@ -2038,7 +2426,7 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.put_list(request)
         self.assertEqual(resp.status_code, 204)
-        self.assertEqual(resp.content, '')
+        self.assertEqual(resp.content.decode('utf-8'), '')
         self.assertEqual(Note.objects.count(), 3)
         self.assertEqual(Note.objects.filter(is_active=True).count(), 1)
         new_note = Note.objects.get(slug='cat-is-back-again')
@@ -2046,8 +2434,8 @@ class ModelResourceTestCase(TestCase):
 
         always_resource = AlwaysDataNoteResource()
         resp = always_resource.put_list(request)
-        self.assertEqual(resp.status_code, 202)
-        self.assertTrue(resp.content.startswith('{"objects": ['))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.content.decode('utf-8').startswith('{"objects": ['))
 
     def test_put_list_with_use_in(self):
         request = MockRequest()
@@ -2059,8 +2447,8 @@ class ModelResourceTestCase(TestCase):
 
         always_resource = AlwaysDataNoteResourceUseIn()
         resp = always_resource.put_list(request)
-        self.assertEqual(resp.status_code, 202)
-        content = json.loads(resp.content)
+        self.assertEqual(resp.status_code, 200)
+        content = json.loads(resp.content.decode('utf-8'))
         self.assertTrue(len(content['objects']) == 1)
         for note in content['objects']:
             self.assertIn('constant', note)
@@ -2090,8 +2478,8 @@ class ModelResourceTestCase(TestCase):
 
         always_resource = AlwaysDataNoteResource()
         resp = always_resource.put_detail(request, pk=10)
-        self.assertEqual(resp.status_code, 202)
-        data = json.loads(resp.content)
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content.decode('utf-8'))
         self.assertTrue("id" in data)
         self.assertEqual(data["id"], 10)
         self.assertTrue("content" in data)
@@ -2129,8 +2517,8 @@ class ModelResourceTestCase(TestCase):
 
         always_resource = AlwaysDataNoteResourceUseIn()
         resp = always_resource.put_detail(request, pk=new_note.pk)
-        self.assertEqual(resp.status_code, 202)
-        data = json.loads(resp.content)
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content.decode('utf-8'))
         self.assertTrue("id" in data)
         self.assertEqual(data["id"], new_note.pk)
         self.assertTrue("author" in data)
@@ -2148,8 +2536,8 @@ class ModelResourceTestCase(TestCase):
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, username="maraujop")
 
-        self.assertEqual(resp.status_code, 202)
-        data = json.loads(resp.content)
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(data['username'], "MARAUJOP")
 
         request = MockRequest()
@@ -2160,8 +2548,8 @@ class ModelResourceTestCase(TestCase):
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, date="2012-09-07")
 
-        self.assertEqual(resp.status_code, 202)
-        data = json.loads(resp.content)
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(data['date'], "2012-09-07T00:00:00")
 
         request = MockRequest()
@@ -2171,8 +2559,8 @@ class ModelResourceTestCase(TestCase):
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, message="HELLO")
 
-        self.assertEqual(resp.status_code, 202)
-        data = json.loads(resp.content)
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(data['message'], "hello")
 
     def test_post_list(self):
@@ -2192,7 +2580,7 @@ class ModelResourceTestCase(TestCase):
         always_resource = AlwaysDataNoteResource()
         resp = always_resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
-        data = json.loads(resp.content)
+        data = json.loads(resp.content.decode('utf-8'))
         self.assertTrue("id" in data)
         self.assertEqual(data["id"], 8)
         self.assertTrue("content" in data)
@@ -2245,7 +2633,7 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.patch_list(request)
         self.assertEqual(resp.status_code, 202)
-        self.assertEqual(resp.content, '')
+        self.assertEqual(resp.content.decode('utf-8'), '')
         self.assertEqual(Note.objects.count(), 6)
         self.assertEqual(Note.objects.filter(is_active=True).count(), 4)
         new_note = Note.objects.get(slug='cat-is-back-again')
@@ -2265,7 +2653,7 @@ class ModelResourceTestCase(TestCase):
 
         resp = always_resource.patch_list(request)
         self.assertEqual(resp.status_code, 202)
-        self.assertTrue(resp.content.startswith('{"objects": ['))
+        self.assertTrue(resp.content.decode('utf-8').startswith('{"objects": ['))
 
     def test_patch_list_return_data_use_in(self):
         always_resource = AlwaysDataNoteResourceUseIn()
@@ -2280,7 +2668,7 @@ class ModelResourceTestCase(TestCase):
         resp = always_resource.patch_list(request)
         self.assertEqual(resp.status_code, 202)
 
-        content = json.loads(resp.content)
+        content = json.loads(resp.content.decode('utf-8'))
 
         self.assertEqual(len(content['objects']), 2)
         for note in content['objects']:
@@ -2299,7 +2687,7 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.patch_list(request)
         self.assertEqual(resp.status_code, 202)
-        self.assertEqual(resp.content, '')
+        self.assertEqual(resp.content.decode('utf-8'), '')
         self.assertEqual(Note.objects.count(), 7)
         new_note = Note.objects.get(slug='invalid-uri')
         self.assertEqual(new_note.content, "This is an invalid resource_uri")
@@ -2318,7 +2706,7 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.patch_list(request)
         self.assertEqual(resp.status_code, 202)
-        self.assertEqual(resp.content, '')
+        self.assertEqual(resp.content.decode('utf-8'), '')
         self.assertEqual(Note.objects.filter(author=request.user, slug="cat-again-again").count(), 1)  # Validate that request.user was successfully passed in
 
     def test_patch_detail(self):
@@ -2352,7 +2740,7 @@ class ModelResourceTestCase(TestCase):
         request._raw_post_data = request._body = '{"content": "Wait, now the cat is back."}'
         resp = always_resource.patch_detail(request, pk=1)
         self.assertEqual(resp.status_code, 202)
-        data = json.loads(resp.content)
+        data = json.loads(resp.content.decode('utf-8'))
         self.assertTrue("id" in data)
         self.assertEqual(data["id"], 1)
         self.assertTrue("content" in data)
@@ -2392,7 +2780,7 @@ class ModelResourceTestCase(TestCase):
         request._raw_post_data = request._body = '{"content": "Wait, now the cat is back."}'
         resp = always_resource.patch_detail(request, pk=1)
         self.assertEqual(resp.status_code, 202)
-        data = json.loads(resp.content)
+        data = json.loads(resp.content.decode('utf-8'))
         self.assertTrue("id" in data)
         self.assertEqual(data["id"], 1)
         self.assertTrue("author" in data)
@@ -2411,7 +2799,7 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.dispatch_list(request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": 6, "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": 6, "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]}')
 
     def test_dispatch_detail(self):
         resource = NoteResource()
@@ -2421,7 +2809,7 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.dispatch_detail(request, pk=1)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
 
     def test_dispatch(self):
         resource = NoteResource()
@@ -2431,11 +2819,11 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.dispatch('list', request)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": 6, "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": 6, "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]}')
 
         resp = resource.dispatch('detail', request, pk=1)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
 
         # Check for an override.
         request.META = {
@@ -2445,7 +2833,7 @@ class ModelResourceTestCase(TestCase):
         request._raw_post_data = request._body = '{"title": "Super-duper override ACTIVATE!"}'
         resp = resource.dispatch('detail', request, pk=1)
         self.assertEqual(resp.status_code, 202)
-        self.assertEqual(resp.content, '')
+        self.assertEqual(resp.content.decode('utf-8'), '')
         self.assertEqual(Note.objects.get(pk=1).title, u'Super-duper override ACTIVATE!')
 
     def test_build_bundle(self):
@@ -2605,13 +2993,13 @@ class ModelResourceTestCase(TestCase):
         try:
             resp = resource.dispatch_detail(request, pk=1)
             self.fail()
-        except BadRequest, e:
+        except BadRequest as e:
             pass
 
         # Try again with ``wrap_view`` for sanity.
         resp = resource.wrap_view('dispatch_detail')(request, pk=1)
         self.assertEqual(resp.status_code, 400)
-        self.assertEqual(resp.content, '{"error": "JSONP callback name is invalid."}')
+        self.assertEqual(force_text(resp.content), '{"error": "JSONP callback name is invalid."}')
         self.assertEqual(resp['content-type'], 'application/json')
 
         # valid JSONP callback should work
@@ -2721,7 +3109,7 @@ class ModelResourceTestCase(TestCase):
             },
             "ordering": ["title", "slug", "resource_uri"],
         }
-        self.assertEqual(json.loads(resp.content), schema)
+        self.assertEqual(json.loads(resp.content.decode('utf-8')), schema)
 
         # Unpatch.
         resource.fields['created']._default = old_created
@@ -2735,19 +3123,19 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.get_multiple(request, pk_list='1')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}]}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}]}')
 
         resp = resource.get_multiple(request, pk_list='1;2')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}]}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}]}')
 
         resp = resource.get_multiple(request, pk_list='2;3')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"not_found": ["3"], "objects": [{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}]}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"not_found": ["3"], "objects": [{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}]}')
 
         resp = resource.get_multiple(request, pk_list='1;2;4;6')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": 6, "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}, {"content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.", "created": "2010-04-01T20:05:00", "id": 4, "is_active": true, "resource_uri": "/api/v1/notes/4/", "slug": "recent-volcanic-activity", "title": "Recent Volcanic Activity.", "updated": "2010-04-01T20:05:00"}, {"content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!", "created": "2010-04-02T10:05:00", "id": 6, "is_active": true, "resource_uri": "/api/v1/notes/6/", "slug": "grannys-gone", "title": "Granny\'s Gone", "updated": "2010-04-02T10:05:00"}]}')
 
     def test_get_multiple_use_in(self):
         resource = AlwaysDataNoteResourceUseIn()
@@ -2757,28 +3145,28 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.get_multiple(request, pk_list='1')
         self.assertEqual(resp.status_code, 200)
-        content = json.loads(resp.content)
+        content = json.loads(resp.content.decode('utf-8'))
         for note in content['objects']:
             self.assertIn('constant', note)
             self.assertNotIn('author', note)
 
         resp = resource.get_multiple(request, pk_list='1;2')
         self.assertEqual(resp.status_code, 200)
-        content = json.loads(resp.content)
+        content = json.loads(resp.content.decode('utf-8'))
         for note in content['objects']:
             self.assertIn('constant', note)
             self.assertNotIn('author', note)
 
         resp = resource.get_multiple(request, pk_list='2;3')
         self.assertEqual(resp.status_code, 200)
-        content = json.loads(resp.content)
+        content = json.loads(resp.content.decode('utf-8'))
         for note in content['objects']:
             self.assertIn('constant', note)
             self.assertNotIn('author', note)
 
         resp = resource.get_multiple(request, pk_list='1;2;4;6')
         self.assertEqual(resp.status_code, 200)
-        content = json.loads(resp.content)
+        content = json.loads(resp.content.decode('utf-8'))
         for note in content['objects']:
             self.assertIn('constant', note)
             self.assertNotIn('author', note)
@@ -2807,7 +3195,7 @@ class ModelResourceTestCase(TestCase):
         try:
             resp = resource.dispatch('list', request)
             self.fail()
-        except ImmediateHttpResponse, e:
+        except ImmediateHttpResponse as e:
             self.assertEqual(e.response.status_code, 429)
             self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
@@ -2815,7 +3203,7 @@ class ModelResourceTestCase(TestCase):
         try:
             resp = resource.dispatch('list', request)
             self.fail()
-        except ImmediateHttpResponse, e:
+        except ImmediateHttpResponse as e:
             self.assertEqual(e.response.status_code, 429)
             self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
@@ -2897,15 +3285,15 @@ class ModelResourceTestCase(TestCase):
 
     def test_obj_delete_list_filtered(self):
         self.assertEqual(Note.objects.all().count(), 6)
-        
+
         note_to_delete = Note.objects.filter(is_active=True)[0]
-        
+
         request = HttpRequest()
         request.method = 'DELETE'
         request.GET = {'slug':str(note_to_delete.slug)}
         NoteResource().delete_list(request=request)
         self.assertEqual(len(Note.objects.all()), 5)
-        
+
     def test_obj_create(self):
         self.assertEqual(Note.objects.all().count(), 6)
         note = NoteResource()
@@ -3004,6 +3392,18 @@ class ModelResourceTestCase(TestCase):
         note.obj_create(related_bundle)
         latest = NoteWithEditor.objects.get(slug='note-with-editor')
         self.assertEqual(latest.editor.username, u'zeus')
+
+    def test_obj_create_full_hydrate_on_create_authorization(self):
+        cr = CounterCreateDetailResource()
+        counter_bundle = cr.build_bundle(data={
+            "name": "About",
+            "slug": "about",
+        }, obj=Counter())
+        cr.obj_create(counter_bundle)
+
+        self.assertEquals(counter_bundle._create_auth_call_count, 1)
+        self.assertEquals(counter_bundle.obj.name, "About")
+        self.assertEquals(counter_bundle.obj.slug, "about")
 
     def test_obj_update(self):
         self.assertEqual(Note.objects.all().count(), 6)
@@ -3417,23 +3817,23 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(punr._pre_limits, 0)
         # Shouldn't hit the DB yet.
         self.assertEqual(punr._post_limits, 0)
-        self.assertEqual(len(json.loads(punr.get_list(request=empty_request).content)['objects']), 4)
+        self.assertEqual(len(json.loads(force_text(punr.get_list(request=empty_request).content))['objects']), 4)
 
         # Requests with an Anonymous user get no objects.
         anony_bundle = punr.build_bundle(request=anony_request)
         self.assertEqual(punr.authorized_read_list(punr.get_object_list(anony_request), anony_bundle).count(), 0)
-        self.assertEqual(len(json.loads(punr.get_list(request=anony_request).content)['objects']), 0)
+        self.assertEqual(len(json.loads(force_text(punr.get_list(request=anony_request).content))['objects']), 0)
 
         # Requests with an authenticated user get all objects for that user
         # that are active.
         authed_bundle = punr.build_bundle(request=authed_request)
         self.assertEqual(punr.authorized_read_list(punr.get_object_list(authed_request), authed_bundle).count(), 2)
-        self.assertEqual(len(json.loads(punr.get_list(request=authed_request).content)['objects']), 2)
+        self.assertEqual(len(json.loads(force_text(punr.get_list(request=authed_request).content))['objects']), 2)
 
         # Demonstrate that a different user gets different objects.
         authed_bundle_2 = punr.build_bundle(request=authed_request_2)
         self.assertEqual(punr.authorized_read_list(punr.get_object_list(authed_request_2), authed_bundle_2).count(), 2)
-        self.assertEqual(len(json.loads(punr.get_list(request=authed_request_2).content)['objects']), 2)
+        self.assertEqual(len(json.loads(force_text(punr.get_list(request=authed_request_2).content))['objects']), 2)
         self.assertEqual(list(punr.authorized_read_list(punr.get_object_list(authed_request), authed_bundle).values_list('id', flat=True)), [1, 2])
         self.assertEqual(list(punr.authorized_read_list(punr.get_object_list(authed_request_2), authed_bundle_2).values_list('id', flat=True)), [4, 6])
 
@@ -3453,13 +3853,13 @@ class ModelResourceTestCase(TestCase):
         # Since the objects weren't filtered, we hit everything.
         self.assertEqual(ponr._post_limits, 6)
 
-        self.assertEqual(len(json.loads(ponr.get_list(request=empty_request).content)['objects']), 2)
+        self.assertEqual(len(json.loads(force_text(ponr.get_list(request=empty_request).content))['objects']), 2)
         self.assertEqual(ponr._pre_limits, 0)
         # Since the objects weren't filtered, we again hit everything.
         self.assertEqual(ponr._post_limits, 6)
 
         empty_request.GET['is_active'] = True
-        self.assertEqual(len(json.loads(ponr.get_list(request=empty_request).content)['objects']), 2)
+        self.assertEqual(len(json.loads(force_text(ponr.get_list(request=empty_request).content))['objects']), 2)
         self.assertEqual(ponr._pre_limits, 0)
         # This time, the objects were filtered, so we should only iterate over
         # a (hopefully much smaller) subset.
@@ -3481,13 +3881,13 @@ class ModelResourceTestCase(TestCase):
         try:
             too_many = ponr.obj_get(bundle=base_bundle, is_active=True, pk__gte=1)
             self.fail()
-        except MultipleObjectsReturned, e:
+        except MultipleObjectsReturned as e:
             self.assertEqual(str(e), "More than 'Note' matched 'is_active=True, pk__gte=1'.")
 
         try:
             too_many = ponr.obj_get(bundle=base_bundle, pk=1000000)
             self.fail()
-        except Note.DoesNotExist, e:
+        except Note.DoesNotExist as e:
             self.assertEqual(str(e), "Couldn't find an instance of 'Note' which matched 'pk=1000000'.")
 
     def test_browser_cache(self):
@@ -3499,7 +3899,7 @@ class ModelResourceTestCase(TestCase):
         resp = resource.wrap_view('dispatch_detail')(request, pk=1)
         # resp = resource.get_detail(request, pk=1)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
         self.assertTrue(resp.has_header('Cache-Control'))
         self.assertEqual(resp._headers['cache-control'], ('Cache-Control', 'no-cache'))
 
@@ -3507,14 +3907,14 @@ class ModelResourceTestCase(TestCase):
         request.META = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         resp = resource.wrap_view('dispatch_detail')(request, pk=1)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
         self.assertTrue(resp.has_header('cache-control'))
         self.assertEqual(resp._headers['cache-control'], ('Cache-Control', 'no-cache'))
 
     def test_custom_paginator(self):
         mock_request = MockRequest()
         customs = CustomPageNoteResource().get_list(mock_request)
-        data = json.loads(customs.content)
+        data = json.loads(customs.content.decode('utf-8'))
         self.assertEqual(len(data), 3)
         self.assertEqual(len(data['objects']), 6)
         self.assertEqual(data['extra'], 'Some extra stuff here.')
@@ -3587,7 +3987,7 @@ class ModelResourceTestCase(TestCase):
         resource = AlternativeCollectionNameNoteResource()
         request = HttpRequest()
         response = resource.get_list(request)
-        response_data = json.loads(response.content)
+        response_data = json.loads(force_text(response.content))
         self.assertTrue('alt_objects' in response_data)
 
 
@@ -3617,17 +4017,17 @@ class BasicAuthResourceTestCase(TestCase):
         try:
             resp = resource.dispatch_list(request)
             self.fail()
-        except ImmediateHttpResponse, e:
+        except ImmediateHttpResponse as e:
             self.assertEqual(e.response.status_code, 401)
 
         # Try again with ``wrap_view`` for sanity.
         resp = resource.wrap_view('dispatch_list')(request)
-        self.assertEqual(e.response.status_code, 401)
+        self.assertEqual(resp.status_code, 401)
 
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass'.encode('utf-8')).decode('utf-8')
 
         resp = resource.dispatch_list(request)
         self.assertEqual(resp.status_code, 200)
@@ -3641,17 +4041,17 @@ class BasicAuthResourceTestCase(TestCase):
         try:
             resp = resource.dispatch_detail(request, pk=1)
             self.fail()
-        except ImmediateHttpResponse, e:
+        except ImmediateHttpResponse as e:
             self.assertEqual(e.response.status_code, 401)
 
         # Try again with ``wrap_view`` for sanity.
         resp = resource.wrap_view('dispatch_detail')(request, pk=1)
-        self.assertEqual(e.response.status_code, 401)
+        self.assertEqual(resp.status_code, 401)
 
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass'.encode('utf-8')).decode('utf-8')
 
         resp = resource.dispatch_list(request)
         self.assertEqual(resp.status_code, 200)
@@ -3711,7 +4111,7 @@ class BustedResourceTestCase(TestCase):
 
         resp = self.resource.wrap_view('get_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 500)
-        content = json.loads(resp.content)
+        content = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(content['error_message'], 'Something blew up.')
         self.assertTrue(len(content['traceback']) > 0)
         self.assertEqual(len(mail.outbox), 0)
@@ -3725,13 +4125,13 @@ class BustedResourceTestCase(TestCase):
 
             resp = self.resource.wrap_view('get_list')(self.request, pk=1)
             self.assertEqual(resp.status_code, 500)
-            self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+            self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
             self.assertEqual(len(SimpleHandler.logged), 1)
 
             # Ensure that 404s don't send email.
             resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
             self.assertEqual(resp.status_code, 404)
-            self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+            self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
             self.assertEqual(len(SimpleHandler.logged), 1)
 
             # Now with a custom message.
@@ -3739,7 +4139,7 @@ class BustedResourceTestCase(TestCase):
 
             resp = self.resource.wrap_view('get_list')(self.request, pk=1)
             self.assertEqual(resp.status_code, 500)
-            self.assertEqual(resp.content, '{"error_message": "Oops, you bwoke it."}')
+            self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Oops, you bwoke it."}')
             self.assertEqual(len(SimpleHandler.logged), 2)
             SimpleHandler.logged = []
         else:
@@ -3747,20 +4147,20 @@ class BustedResourceTestCase(TestCase):
 
             resp = self.resource.wrap_view('get_list')(self.request, pk=1)
             self.assertEqual(resp.status_code, 500)
-            self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+            self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
             self.assertEqual(len(mail.outbox), 1)
 
             # Ensure that 404s don't send email.
             resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
             self.assertEqual(resp.status_code, 404)
-            self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+            self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
             self.assertEqual(len(mail.outbox), 1)
 
             # Ensure that 404s (with broken link emails enabled) DO send email.
             settings.SEND_BROKEN_LINK_EMAILS = True
             resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
             self.assertEqual(resp.status_code, 404)
-            self.assertEqual(resp.content, '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+            self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
             self.assertEqual(len(mail.outbox), 2)
 
             # Now with a custom message.
@@ -3768,7 +4168,7 @@ class BustedResourceTestCase(TestCase):
 
             resp = self.resource.wrap_view('get_list')(self.request, pk=1)
             self.assertEqual(resp.status_code, 500)
-            self.assertEqual(resp.content, '{"error_message": "Oops, you bwoke it."}')
+            self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Oops, you bwoke it."}')
             self.assertEqual(len(mail.outbox), 3)
             mail.outbox = []
 
@@ -3776,3 +4176,20 @@ class BustedResourceTestCase(TestCase):
         self.request.method = 'POST'
         resp = self.resource.wrap_view('post_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 404)
+
+
+class ObjectlessResource(Resource):
+    test = fields.CharField(default='objectless_test')
+
+    class Meta:
+        resource_name = 'objectless'
+
+
+class ObjectlessResourceTestCase(TestCase):
+    def test_build_bundle(self):
+        resource = ObjectlessResource()
+
+        bundle = resource.build_bundle()
+
+        self.assertTrue(bundle is not None)
+

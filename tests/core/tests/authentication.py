@@ -1,11 +1,13 @@
 import base64
 import os
 import time
+import unittest
 import warnings
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.http import HttpRequest
 from django.test import TestCase
+from django.test.testcases import skipIf
 from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, SessionAuthentication, DigestAuthentication, OAuthAuthentication, MultiAuthentication
 from tastypie.http import HttpUnauthorized
 from tastypie.models import ApiKey, create_api_key
@@ -13,6 +15,7 @@ from tastypie.models import ApiKey, create_api_key
 
 # Be tricky.
 from tastypie.authentication import python_digest, oauth2, oauth_provider
+
 if python_digest is None:
     warnings.warn("Running tests without python_digest! Bad news!")
 if oauth2 is None:
@@ -83,32 +86,32 @@ class BasicAuthenticationTestCase(TestCase):
         self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
 
         # No password.
-        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('daniel')
+        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('daniel'.encode('utf-8')).decode('utf-8')
         self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
 
         # Wrong user/password.
-        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('daniel:pass')
+        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('daniel:pass'.encode('utf-8')).decode('utf-8')
         self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
 
         # Correct user/password.
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass'.encode('utf-8')).decode('utf-8')
         self.assertEqual(auth.is_authenticated(request), True)
 
         # Regression: Password with colon.
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass:word')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass:word')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass:word'.encode('utf-8')).decode('utf-8')
         self.assertEqual(auth.is_authenticated(request), True)
 
         # Capitalization shouldn't matter.
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass:word')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'bAsIc %s' % base64.b64encode('johndoe:pass:word')
+        request.META['HTTP_AUTHORIZATION'] = 'bAsIc %s' % base64.b64encode('johndoe:pass:word'.encode('utf-8')).decode('utf-8')
         self.assertEqual(auth.is_authenticated(request), True)
 
     def test_check_active_true(self):
@@ -118,7 +121,7 @@ class BasicAuthenticationTestCase(TestCase):
         bob_doe = User.objects.get(username='bobdoe')
         bob_doe.set_password('pass')
         bob_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('bobdoe:pass')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('bobdoe:pass'.encode('utf-8')).decode('utf-8')
         self.assertFalse(auth.is_authenticated(request))
 
     def test_check_active_false(self):
@@ -128,7 +131,7 @@ class BasicAuthenticationTestCase(TestCase):
         bob_doe = User.objects.get(username='bobdoe')
         bob_doe.set_password('pass')
         bob_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('bobdoe:pass')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('bobdoe:pass'.encode('utf-8')).decode('utf-8')
         self.assertTrue(auth.is_authenticated(request))
 
 
@@ -288,7 +291,7 @@ class SessionAuthenticationTestCase(TestCase):
         request.user = User.objects.get(username='johndoe')
         self.assertEqual(auth.get_identifier(request), 'johndoe')
 
-
+@skipIf(python_digest is None, "python-digest is not installed")
 class DigestAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
 
@@ -320,23 +323,23 @@ class DigestAuthenticationTestCase(TestCase):
         self.assertEqual(isinstance(auth_request, HttpUnauthorized), True)
 
         # No password.
-        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('daniel')
+        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('daniel'.encode('utf-8')).decode('utf-8')
         auth_request = auth.is_authenticated(request)
         self.assertEqual(isinstance(auth_request, HttpUnauthorized), True)
 
         # Wrong user/password.
-        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('daniel:pass')
+        request.META['HTTP_AUTHORIZATION'] = base64.b64encode('daniel:pass'.encode('utf-8')).decode('utf-8')
         auth_request = auth.is_authenticated(request)
         self.assertEqual(isinstance(auth_request, HttpUnauthorized), True)
 
         # Correct user/password.
         john_doe = User.objects.get(username='johndoe')
         request.META['HTTP_AUTHORIZATION'] = python_digest.build_authorization_request(
-            john_doe.username,
-            request.method,
-            '/', # uri
-            1,   # nonce_count
-            digest_challenge=auth_request['WWW-Authenticate'],
+            username=john_doe.username,
+            method=request.method,
+            uri='/',
+            nonce_count=1,
+            digest_challenge=python_digest.parse_digest_challenge(auth_request['WWW-Authenticate']),
             password=john_doe.api_key.key
         )
         auth_request = auth.is_authenticated(request)
@@ -350,11 +353,11 @@ class DigestAuthenticationTestCase(TestCase):
         create_api_key(User, instance=bob_doe, created=True)
         auth_request = auth.is_authenticated(request)
         request.META['HTTP_AUTHORIZATION'] = python_digest.build_authorization_request(
-            bob_doe.username,
-            request.method,
-            '/', # uri
-            1,   # nonce_count
-            digest_challenge=auth_request['WWW-Authenticate'],
+            username=bob_doe.username,
+            method=request.method,
+            uri='/',
+            nonce_count=1,
+            digest_challenge=python_digest.parse_digest_challenge(auth_request['WWW-Authenticate']),
             password=bob_doe.api_key.key
         )
         auth_request = auth.is_authenticated(request)
@@ -368,17 +371,18 @@ class DigestAuthenticationTestCase(TestCase):
         create_api_key(User, instance=bob_doe, created=True)
         auth_request = auth.is_authenticated(request)
         request.META['HTTP_AUTHORIZATION'] = python_digest.build_authorization_request(
-            bob_doe.username,
-            request.method,
-            '/', # uri
-            1,   # nonce_count
-            digest_challenge=auth_request['WWW-Authenticate'],
+            username=bob_doe.username,
+            method=request.method,
+            uri='/',
+            nonce_count=1,
+            digest_challenge=python_digest.parse_digest_challenge(auth_request['WWW-Authenticate']),
             password=bob_doe.api_key.key
         )
         auth_request = auth.is_authenticated(request)
         self.assertTrue(auth_request, True)
 
 
+@skipIf(not oauth2 or not oauth_provider, "oauth provider not installed")
 class OAuthAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
 
@@ -577,7 +581,7 @@ class MultiAuthenticationTestCase(TestCase):
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass'.encode('utf-8')).decode('utf-8')
         self.assertEqual(auth.is_authenticated(request), True)
 
 
