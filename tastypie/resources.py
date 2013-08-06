@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 from __future__ import with_statement
 from copy import deepcopy
+import inspect
 import logging
 import warnings
 
@@ -818,8 +819,12 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             # If it's not for use in this mode, skip
             field_use_in = getattr(field_object, 'use_in', 'all')
             if callable(field_use_in):
-                if not field_use_in(bundle):
-                    continue
+                if len(inspect.getargspec(field_use_in)[0]) < 2:
+                    if not field_use_in(bundle):
+                        continue
+                else:
+                    if not field_use_in(bundle, for_list):
+                        continue
             else:
                 if field_use_in not in use_in:
                     continue
