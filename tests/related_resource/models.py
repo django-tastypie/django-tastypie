@@ -123,3 +123,12 @@ class Job(models.Model):
 class Payment(models.Model):
     scheduled = models.DateTimeField()
     job = models.OneToOneField(Job, related_name="payment", null=True)
+
+
+class Order(models.Model):
+    name = models.CharField(max_length=200)
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, related_name="items")
+    product = models.CharField(max_length=200)

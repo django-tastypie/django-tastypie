@@ -8,9 +8,11 @@ from core.models import Note, MediaBit
 from core.tests.resources import HttpRequest
 from core.tests.mocks import MockRequest
 from tastypie import fields
-from related_resource.api.resources import FreshNoteResource, CategoryResource, PersonResource, JobResource
+from related_resource.api.resources import FreshNoteResource, CategoryResource, PersonResource, JobResource, \
+    OrderResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment
+from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, \
+    Bone, Product, Address, Job, Payment, Order, OrderItem
 from related_resource.models import Label
 from django.db.models.signals import pre_save
 from datetime import datetime, tzinfo, timedelta
@@ -634,3 +636,34 @@ class RelatedSaveCallsTest(TestCase):
         tag = Tag.objects.all()[0]
         taggable_tag = tag.taggabletags.all()[0]
         self.assertEqual(taggable_tag.extra, 1234)
+
+
+class ModelWithReverseItemsRelationshipTest(TestCase):
+
+    def test_reverse_items_relationship(self):
+        order_resource = OrderResource()
+
+        data = {
+            'name': 'order1',
+            'items': [
+                {
+                    'name': 'car',
+                },
+                {
+                    'name': 'yacht',
+                }
+            ]
+        }
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.path = reverse('api_dispatch_list',
+                               kwargs={'resource_name': order_resource._meta.resource_name,
+                                       'api_name': order_resource._meta.api_name})
+        request.set_body(json.dumps(data))
+        resp = order_resource.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(Order.objects.count(), 1)
+        self.assertEqual(OrderItem.objects.count(), 2)
+
