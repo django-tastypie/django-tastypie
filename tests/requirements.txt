@@ -5,4 +5,5 @@ pyyaml
 python-mimeparse>=0.1.4
 python-dateutil>=2.1
 mock
-pytz
+pytz==2013b
+
