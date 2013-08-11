@@ -133,26 +133,6 @@ like::
             return data
 
 
-    class CSVSerializer(Serializer):
-        def to_csv(self, data, options=None):
-            options = options or {}
-            data = self.to_simple(data, options)
-            raw_data = StringIO.StringIO()
-            # Untested, so this might not work exactly right.
-            for item in data:
-                writer = csv.DictWriter(raw_data, item.keys(), extrasaction='ignore')
-                writer.write(item)
-            return raw_data
-
-        def from_csv(self, content):
-            raw_data = StringIO.StringIO(content)
-            data = []
-            # Untested, so this might not work exactly right.
-            for item in csv.DictReader(raw_data):
-                data.append(item)
-            return data
-
-
 ``Serializer`` Methods
 ======================
 
