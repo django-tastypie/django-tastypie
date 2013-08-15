@@ -100,8 +100,8 @@ rejected.
 Usage with Resource
 ===================
 
-Using throttling with something like search, requires that you call `throttle_check` 
-and `log_throttled_access` explicitly. 
+Using throttling with something like search, requires that you call ``throttle_check`` 
+and ``log_throttled_access`` explicitly. 
 
 An example of this might be::
 
