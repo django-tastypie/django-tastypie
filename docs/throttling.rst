@@ -103,7 +103,7 @@ Usage with Resource
 Using throttling with something like search, requires that you call `throttle_check` 
 and `log_throttled_access` explicitly. 
 
-An example of this might be:
+An example of this might be::
 
     from tastypie.throttle import CacheThrottle
     
