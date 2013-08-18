@@ -181,6 +181,19 @@ class ApiKeyAuthentication(Authentication):
         ``HttpResponse`` if you need something custom.
         """
         from tastypie.compat import User
+        """
+        If using a custom User model with create_api_key signal, it is possible that 
+        this module was not loaded properly (because the custom user model was not
+        setup by then, see compat.py :ImproperlyConfigured exception for more details).
+        In that case, reloading the module will get the correct custom User module
+        (otherwise sometimes the User model is None)
+        """
+        if User is None:
+            import sys
+            del sys.modules["tastypie.compat"]
+            from tastypie.compat import User
+             
+        username_field = User.USERNAME_FIELD
 
         try:
             username, api_key = self.extract_credentials(request)
