@@ -24,9 +24,9 @@ class ViewsTestCase(TestCase):
         deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 2)
         self.assertEqual(deserialized['meta']['limit'], 20)
-        self.assertEqual(len(deserialized['objects']), 6)
+        self.assertEqual(len(deserialized['objects']), 7)
         self.assertEqual([obj['name'] for obj in deserialized['objects']],
-                         [u'Skateboardrampe', u'Bigwheel', u'Trampolin', u'Laufrad', u'Bigwheel', u'Trampolin'])
+                         [u'Skateboardrampe', u'Bigwheel', u'Trampolin', u'Laufrad', u'Bigwheel', u'Human Hamsterball', u'Ant Farm'])
 
         resp = self.client.get('/api/v1/products/11111/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
@@ -73,14 +73,31 @@ class ViewsTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 5)
-        self.assertEqual(deserialized['name'], u'Trampolin')
+        self.assertEqual(deserialized['name'], u'Human Hamsterball')
 
         resp = self.client.get('/api/v1/products/set/76123/01;WS65150/01-01/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 1)
         self.assertEqual(len(deserialized['objects']), 2)
-        self.assertEqual([obj['name'] for obj in deserialized['objects']], [u'Bigwheel', u'Trampolin'])
+        self.assertEqual([obj['name'] for obj in deserialized['objects']], [u'Bigwheel', u'Human Hamsterball'])
+
+        # And now dots
+        resp = self.client.get('/api/v1/products/WS77.86/', data={'format': 'json'})
+        self.assertEqual(resp.status_code, 200)
+        deserialized = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(len(deserialized), 5)
+        self.assertEqual(deserialized['name'], u'Ant Farm')
+        
+        #slashes, and more dots
+        resp = self.client.get('/api/v1/products/set/76123/01;WS77.86/', data={'format': 'json'})
+        self.assertEqual(resp.status_code, 200)
+        deserialized = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(len(deserialized), 1)
+        self.assertEqual(len(deserialized['objects']), 2)
+        self.assertEqual([obj['name'] for obj in deserialized['objects']], [u'Bigwheel', u'Ant Farm'])
+
+
 
     def test_posts(self):
         request = HttpRequest()
