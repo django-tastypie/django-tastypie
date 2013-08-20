@@ -22,11 +22,16 @@ class Api(object):
     this is done with version numbers (i.e. ``v1``, ``v2``, etc.) but can
     be named any string.
     """
+    #maintain dict of Api instances
+    __api_instances__ = weakref.WeakValueDictionary()
     def __init__(self, api_name="v1", serializer_class=Serializer):
         self.api_name = api_name
         self._registry = {}
         self._canonicals = {}
         self.serializer = serializer_class()
+        #add instance to dict mapped from api_name to api_instance
+        self.__class__.__api_instances__[api_name] = self
+
 
     def register(self, resource, canonical=True):
         """
@@ -162,6 +167,14 @@ class Api(object):
         See ``NamespacedApi._build_reverse_url`` for an example.
         """
         return reverse(name, args=args, kwargs=kwargs)
+        
+    @classmethod
+    def get_api_instances(cls):
+        """
+        Returns a dict of all Api instances mapped from api_name to instance.
+        """
+        return dict(cls.__api_instances__)
+
 
 
 class NamespacedApi(Api):
