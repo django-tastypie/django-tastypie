@@ -52,7 +52,7 @@ class HTTPTestCase(TestServerTestCase):
         expected = {
             'meta': {
                 'previous': None,
-                'total_count': 6,
+                'total_count': 7,
                 'offset': 0,
                 'limit': 20,
                 'next': None
@@ -96,13 +96,25 @@ class HTTPTestCase(TestServerTestCase):
                 {
                     'updated': '2010-05-04T20:05:00',
                     'resource_uri': '/api/v1/products/WS65150/01-01/',
-                    'name': 'Trampolin',
+                    'name': 'Human Hamsterball',
                     'artnr': 'WS65150/01-01',
+                    'created': '2010-05-04T20:05:00'
+                },
+                {
+                    'updated': '2010-05-04T20:05:00',
+                    'resource_uri': '/api/v1/products/WS77.86/',
+                    'name': 'Ant Farm',
+                    'artnr': 'WS77.86',
                     'created': '2010-05-04T20:05:00'
                 }
             ]
         }
-        self.assertEqual(json.loads(response.read().decode('utf-8')), expected)
+        self.maxDiff = None
+        resp = json.loads(response.read().decode('utf-8'))
+
+        #testing separately to help locate issues        
+        self.assertEqual(resp['meta'], expected['meta'])
+        self.assertEqual(resp['objects'], expected['objects'])
 
     def test_post_object(self):
         connection = self.get_connection()
