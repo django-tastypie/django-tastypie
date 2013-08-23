@@ -4,13 +4,13 @@ from copy import deepcopy
 import logging
 import warnings
 
+import django
 from django.conf import settings
 from django.conf.urls import patterns, url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, ValidationError
 from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404, get_script_prefix
 from django.core.signals import got_request_exception
 from django.db import transaction
-from django.db.models.constants import LOOKUP_SEP
 from django.db.models.sql.constants import QUERY_TERMS
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.utils.cache import patch_cache_control, patch_vary_headers
@@ -37,6 +37,12 @@ try:
 except ImportError:
     def csrf_exempt(func):
         return func
+
+# There was internal refactoring in django
+if django.VERSION[0] < 2 and django.VERSION[1] < 5:
+    from django.db.models.sql.constants import LOOKUP_SEP
+else:
+    from django.db.models.constants import LOOKUP_SEP
 
 
 
