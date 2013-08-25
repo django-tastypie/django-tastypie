@@ -219,7 +219,11 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 data = {"error": e.args[0] if getattr(e, 'args') else ''}
                 return self.error_response(request, data, response_class=http.HttpBadRequest)
             except ValidationError as e:
-                data = {"error": e.messages}
+                # if there is a message_dict, use that since it's more useful
+                if hasattr(e, 'message_dict'):
+                    data = {"error": e.message_dict}
+                else:
+                    data = {"error": e.messages}
                 return self.error_response(request, data, response_class=http.HttpBadRequest)
             except Exception as e:
                 if hasattr(e, 'response'):
