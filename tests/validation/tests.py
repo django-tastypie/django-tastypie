@@ -160,3 +160,32 @@ class PutListNestResouceValidationTestCase(TestCase):
                 'annotations': ['This field is required.']
             }
         })
+
+class ModelValidationErrorTestCase(TestCase):
+    """
+    Make sure that ValidationErrors raised elsewhere (eg, in Model.save()) are
+    handled the same way as errors under the validation Meta option.
+    """
+
+    urls = 'validation.api.urls'
+
+    def test_valid_data(self):
+        data = json.dumps({
+            'content': 'a' * 20,
+        })
+
+        resp = self.client.post('/api/v1/validatedmodels/', data=data, content_type='application/json')
+        self.assertEqual(resp.status_code, 201)
+
+    def test_invalid_data(self):
+        data = json.dumps({
+            'content': 'a' * 21,
+        })
+
+        resp = self.client.post('/api/v1/validatedmodels/', data=data, content_type='application/json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(json.loads(resp.content.decode('utf-8')), {
+            'error': {
+                'content': ['Ensure this value has at most 20 characters (it has 21).']
+            }
+        })

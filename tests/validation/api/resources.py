@@ -6,6 +6,7 @@ from tastypie.authorization import Authorization
 from basic.models import Note, AnnotatedNote, UserForm
 from django import forms
 from tastypie.validation import FormValidation
+from validation.models import ValidatedModel
 
 # NOTES:
 # model defaults don't matter since we are not rendering a form, if you want to use a default exclude the field.
@@ -51,3 +52,12 @@ class NoteResource(ModelResource):
             "created": ALL
             }
 
+class ValidatedModelResource(ModelResource):
+    """
+    This model is validated somewhere that's not under the validation Meta option.
+    """
+
+    class Meta:
+        resource_name = 'validatedmodels'
+        queryset = ValidatedModel.objects.all()
+        authorization = Authorization()
