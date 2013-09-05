@@ -533,7 +533,8 @@ The inner ``Meta`` class allows for class-level configuration of how the
 ------------------------
 
   Controls what list REST methods the ``Resource`` should respond to. Default
-  is ``['get', 'post', 'put', 'delete', 'patch']``.
+  is ``['get', 'post', 'put', 'delete', 'patch']``. Set it to an empty list
+  (i.e. `[]`) to disable all methods.
 
 
 .. _detail-allowed-methods:
@@ -542,7 +543,8 @@ The inner ``Meta`` class allows for class-level configuration of how the
 --------------------------
 
   Controls what detail REST methods the ``Resource`` should respond to. Default
-  is ``['get', 'post', 'put', 'delete', 'patch']``.
+  is ``['get', 'post', 'put', 'delete', 'patch']``. Set it to an empty list
+  (i.e. `[]`) to disable all methods.
 
 ``limit``
 ---------
