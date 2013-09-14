@@ -31,11 +31,11 @@ setup(
     },
     zip_safe=False,
     requires=[
-        # 'mimeparse',
+        'python_mimeparse(>=0.1.4)',
         'dateutil(>=1.5, !=2.0)',
     ],
     install_requires=[
-        # 'mimeparse',
+        'python-mimeparse >= 0.1.4',
         'python-dateutil >= 1.5, != 2.0',
     ],
     tests_require=['mock'],
