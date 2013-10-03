@@ -79,12 +79,9 @@ class CacheThrottle(BaseThrottle):
         """
         key = self.convert_identifier_to_key(identifier)
 
-        # Make sure something is there.
-        cache.add(key, [])
-
         # Weed out anything older than the timeframe.
         minimum_time = int(time.time()) - int(self.timeframe)
-        times_accessed = [access for access in cache.get(key) if access >= minimum_time]
+        times_accessed = [access for access in cache.get(key, []) if access >= minimum_time]
         cache.set(key, times_accessed, self.expiration)
 
         if len(times_accessed) >= int(self.throttle_at):
