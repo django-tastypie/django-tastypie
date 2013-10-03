@@ -90,6 +90,32 @@ Will return nicely reformatted data like::
         ]
     }
 
+django-permissionsx
+-------------------
+
+https://github.com/thinkingpotato/django-permissionsx
+
+This package allows using one set of rules both for Django class-based views and Tastypie authorization. For example:
+
+**articles/permissions.py**::
+
+    class StaffPermissions(Permissions):
+
+        permissions = P(profile__is_editor=True) | P(profile__is_administrator=True)
+
+**articles/views.py**::
+
+    class ArticleDeleteView(PermissionsViewMixin, DeleteView):
+
+        model = Article
+        success_url = reverse_lazy('article_list')
+        permissions = StaffPermissions
+        
+**articles/api.py**::
+
+    class StaffOnlyAuthorization(PermissionsAuthorization):
+
+        permissions = StaffPermissions
 
 Javascript
 ==========
