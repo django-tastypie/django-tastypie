@@ -30,11 +30,16 @@ class GenericFieldMixin(fields.ApiField):
 
         super(GenericFieldMixin, self).__init__(to, attribute, **kwargs)
 
+    def get_related_resource(self, related_instance):
+        if type(related_instance) not in self.to.keys():
+            raise TypeError('no resource for model %s' % type(
+                related_instance))
+
+        return super(GenericFieldMixin,
+                     self).get_related_resource(related_instance)
+
     @property
     def to_class(self):
-        if self._to_class and not issubclass(GenericResource,
-                                             self._to_class):
-            return self._to_class
         return partial(GenericResource, resources=self.to)
 
     def resource_from_uri(self, fk_resource, uri,
@@ -48,10 +53,6 @@ class GenericFieldMixin(fields.ApiField):
             raise ApiFieldError(
                 "Could not find the provided object via resource URI '%s'."
                 % uri)
-
-    def build_related_resource(self, *args, **kwargs):
-        return super(GenericFieldMixin,
-                     self).build_related_resource(*args, **kwargs)
 
 
 class GenericForeignKeyField(GenericFieldMixin, fields.ToOneField):
