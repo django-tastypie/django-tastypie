@@ -22,7 +22,7 @@ class GenericResource(ModelResource):
         self.resource_mapping = dict((r._meta.resource_name, r)
                                      for r in resources.values())
         self.resource_mapping_for_ct = dict((k.__name__.lower(), v)
-                                            for k, v in resources.iteritems())
+                                            for k, v in resources.items())
 
         self.model_mapping = dict((v._meta.resource_name, k)
                                   for k, v in resources.iteritems())
