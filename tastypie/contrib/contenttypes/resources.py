@@ -25,7 +25,7 @@ class GenericResource(ModelResource):
                                             for k, v in resources.items())
 
         self.model_mapping = dict((v._meta.resource_name, k)
-                                  for k, v in resources.iteritems())
+                                  for k, v in resources.items())
         return super(GenericResource, self).__init__(*args, **kwargs)
 
     def get_via_uri(self, uri, request=None):
