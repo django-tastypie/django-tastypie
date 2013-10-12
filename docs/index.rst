@@ -155,10 +155,13 @@ Then running the tests is as simple as::
 
   # From the same directory as above:
   $ ./env/bin/pip install -U -r tests/requirements.txt
-  $ cd tests
-  $ ./run_all_test.sh
+  $ ./env/bin/pip install tox
+  $ tox
 
-Tastypie is maintained with all tests passing at all times. If you find a
-failure, please `report it`_ along with the versions of the installed software.
+Tastypie is maintained with all tests passing at all times for released
+dependencies. (At times tests may fail with development versions of Django.
+These will be noted as allowed failures in the ``.travis.yml`` file.) If you
+find a failure, please `report it`_ along with the versions of the installed
+software.
 
 .. _`report it`: https://github.com/toastdriven/django-tastypie/issues
