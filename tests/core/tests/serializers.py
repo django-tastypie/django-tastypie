@@ -270,6 +270,11 @@ class SerializerTestCase(TestCase):
         self.assertEqual(sample_1['date_joined'], u'2010-03-27')
         self.assertEqual(sample_1['snowman'], u'☃')
 
+    def test_from_broken_json(self):
+        serializer = Serializer()
+        data = '{"foo": "bar",NO CARRIER'
+        self.assertRaises(BadRequest, serializer.from_json, data)
+
     def test_round_trip_xml(self):
         serializer = Serializer()
         sample_data = self.get_sample2()

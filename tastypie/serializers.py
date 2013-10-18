@@ -381,7 +381,10 @@ class Serializer(object):
         """
         Given some JSON data, returns a Python dictionary of the decoded data.
         """
-        return simplejson.loads(content)
+        try:
+            return simplejson.loads(content)
+        except ValueError:
+            raise BadRequest
 
     def to_jsonp(self, data, options=None):
         """
