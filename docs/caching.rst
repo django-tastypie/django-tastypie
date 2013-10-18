@@ -61,9 +61,29 @@ plug. Very useful for development.
 ~~~~~~~~~~~~~~~
 
 This option does basic object caching, attempting to find the object in the
-cache & writing the object to the cache. It uses Django's current
-``CACHE_BACKEND`` to store cached data. The constructor receive a `timeout`
-parameter to control per-resource the default timeout for the cache.
+cache & writing the object to the cache. By default, it uses the ``default``
+cache backend as configured in the ``CACHES`` setting. However, an optional
+`cache_name` parameter can be passed to the constructor to specify a
+different backend. For example, if ``CACHES`` looks like::
+
+  CACHES = {
+      'default': {
+          'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+          'TIMEOUT': 60
+      },
+      'resources': {
+          'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+          'TIMEOUT': 60
+      }
+  }
+
+you can configure your resource's `cache_name` property like so::
+
+  cache = SimpleCache(cache_name='resources', timeout=10)
+
+In this case, the cache used will be the one named, and the default `timeout`
+specified in ``CACHES['resources']`` will be overriden by the `timeout`
+parameter.
 
 
 Implementing Your Own Cache
