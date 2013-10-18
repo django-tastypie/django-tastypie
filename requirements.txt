@@ -3,7 +3,7 @@ python-dateutil>=2.1
 lxml
 defusedxml
 PyYAML
-python3-digest
+python3-digest>=1.8b4
 biplist
 
 # Because the official 0.1.4 release (that added Py3 support) HAS NO FILES.
