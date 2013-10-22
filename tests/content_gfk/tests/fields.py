@@ -2,10 +2,8 @@ from __future__ import with_statement
 
 from django.test import TestCase
 from tastypie.contrib.contenttypes.fields import GenericForeignKeyField
-from tastypie.bundle import Bundle
-from content_gfk.models import Note, Quote, Rating, Definition
-from content_gfk.api.resources import NoteResource, DefinitionResource, \
-    QuoteResource, RatingResource
+from content_gfk.models import Note, Quote
+from content_gfk.api.resources import NoteResource, QuoteResource
 
 
 class ContentTypeFieldTestCase(TestCase):
@@ -22,28 +20,6 @@ class ContentTypeFieldTestCase(TestCase):
         # Test that the resources you raise must be models
         with self.assertRaises(ValueError):
             GenericForeignKeyField({NoteResource: Note}, 'nofield')
-
-    def test_get_related_resource(self):
-        gfk_field = GenericForeignKeyField({
-            Note: NoteResource,
-            Quote: QuoteResource
-        }, 'nofield')
-
-        definition_1 = Definition.objects.create(
-            word='toast',
-            content="Cook or brown (food, esp. bread or cheese)"
-        )
-
-        # Test that you can not link to a model that does not have a resource
-        with self.assertRaises(TypeError):
-            gfk_field.get_related_resource(definition_1)
-
-        note_1 = Note.objects.create(
-            title='All aboard the rest train',
-            content='Sometimes it is just better to lorem ipsum'
-        )
-
-        self.assertTrue(isinstance(gfk_field.get_related_resource(note_1), NoteResource))
 
     def test_resource_from_uri(self):
         note_2 = Note.objects.create(
