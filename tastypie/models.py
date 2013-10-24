@@ -58,5 +58,5 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
         """
         A signal for hooking up automatic ``ApiKey`` creation.
         """
-        if kwargs.get('created') is True:
+        if kwargs.get('created'):
             ApiKey.objects.create(user=kwargs.get('instance'))

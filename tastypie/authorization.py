@@ -151,7 +151,7 @@ class DjangoAuthorization(Authorization):
     def read_list(self, object_list, bundle):
         klass = self.base_checks(bundle.request, object_list.model)
 
-        if klass is False:
+        if not klass:
             return []
 
         # GET-style methods are always allowed.
@@ -160,7 +160,7 @@ class DjangoAuthorization(Authorization):
     def read_detail(self, object_list, bundle):
         klass = self.base_checks(bundle.request, bundle.obj.__class__)
 
-        if klass is False:
+        if not klass:
             raise Unauthorized("You are not allowed to access that resource.")
 
         # GET-style methods are always allowed.
@@ -169,7 +169,7 @@ class DjangoAuthorization(Authorization):
     def create_list(self, object_list, bundle):
         klass = self.base_checks(bundle.request, object_list.model)
 
-        if klass is False:
+        if not klass:
             return []
 
         permission = '%s.add_%s' % (klass._meta.app_label, klass._meta.module_name)
@@ -182,7 +182,7 @@ class DjangoAuthorization(Authorization):
     def create_detail(self, object_list, bundle):
         klass = self.base_checks(bundle.request, bundle.obj.__class__)
 
-        if klass is False:
+        if not klass:
             raise Unauthorized("You are not allowed to access that resource.")
 
         permission = '%s.add_%s' % (klass._meta.app_label, klass._meta.module_name)
@@ -195,7 +195,7 @@ class DjangoAuthorization(Authorization):
     def update_list(self, object_list, bundle):
         klass = self.base_checks(bundle.request, object_list.model)
 
-        if klass is False:
+        if not klass:
             return []
 
         permission = '%s.change_%s' % (klass._meta.app_label, klass._meta.module_name)
@@ -208,7 +208,7 @@ class DjangoAuthorization(Authorization):
     def update_detail(self, object_list, bundle):
         klass = self.base_checks(bundle.request, bundle.obj.__class__)
 
-        if klass is False:
+        if not klass:
             raise Unauthorized("You are not allowed to access that resource.")
 
         permission = '%s.change_%s' % (klass._meta.app_label, klass._meta.module_name)
@@ -221,7 +221,7 @@ class DjangoAuthorization(Authorization):
     def delete_list(self, object_list, bundle):
         klass = self.base_checks(bundle.request, object_list.model)
 
-        if klass is False:
+        if not klass:
             return []
 
         permission = '%s.delete_%s' % (klass._meta.app_label, klass._meta.module_name)
@@ -234,7 +234,7 @@ class DjangoAuthorization(Authorization):
     def delete_detail(self, object_list, bundle):
         klass = self.base_checks(bundle.request, bundle.obj.__class__)
 
-        if klass is False:
+        if not klass:
             raise Unauthorized("You are not allowed to access that resource.")
 
         permission = '%s.delete_%s' % (klass._meta.app_label, klass._meta.module_name)

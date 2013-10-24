@@ -43,7 +43,7 @@ class Api(object):
 
         self._registry[resource_name] = resource
 
-        if canonical is True:
+        if canonical:
             if resource_name in self._canonicals:
                 warnings.warn("A new resource '%r' is replacing the existing canonical URL for '%s'." % (resource, resource_name), Warning, stacklevel=2)
 
@@ -175,7 +175,7 @@ class NamespacedApi(Api):
     def register(self, resource, canonical=True):
         super(NamespacedApi, self).register(resource, canonical=canonical)
 
-        if canonical is True:
+        if canonical:
             # Plop in the namespace here as well.
             resource._meta.urlconf_namespace = self.urlconf_namespace
 
