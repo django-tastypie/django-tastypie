@@ -263,7 +263,7 @@ A complex example::
 
             # Make sure we don't have to worry about "divide by zero" errors.
             if not bundle.obj.rating_set.count():
-                return rating
+                return total_score
 
             # We'll run over all the ``Rating`` objects & calculate an average.
             for rating in bundle.obj.rating_set.all():
@@ -624,7 +624,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   If you place any callables in this, they'll only be evaluated once (when
   the ``Meta`` class is instantiated). This especially affects things that
-  are date/time related. Please see the :ref:cookbook for a way around this.
+  are date/time related. Please see the :doc:`cookbook` for a way around this.
 
 ``fields``
 ----------
