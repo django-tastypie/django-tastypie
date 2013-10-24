@@ -348,7 +348,7 @@ class DigestAuthentication(Authentication):
         user = self.get_user(digest_response.username)
         api_key = self.get_key(user)
 
-        if not user or not api_key:
+        if not (user and api_key):
             return self._unauthorized()
 
         expected = python_digest.calculate_request_digest(
