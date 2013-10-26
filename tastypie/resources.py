@@ -39,7 +39,7 @@ except ImportError:
         return func
 
 # There was internal refactoring in django
-if django.VERSION[0] < 2 and django.VERSION[1] < 5:
+if django.VERSION < (1,5):
     from django.db.models.sql.constants import LOOKUP_SEP
 else:
     from django.db.models.constants import LOOKUP_SEP
