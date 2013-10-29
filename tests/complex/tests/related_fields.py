@@ -20,13 +20,14 @@ class RelatedResourceTestCase(TestCase):
 
         with self.assertNumQueries(2):
             resp = self.client.get("/api/v1/posts_optimized/1/")
-
         self._validate_post_detail_json(resp.content)
 
     def test_default_light_related_fields(self):
         # We expect 4 queries total:
-        # + 1 for the post and user FK
-        # + 3 for all the comments
+        # + 1 for the post
+        # + 1 for the user
+        # + 1 for the content type
+        # + 1 for the comments
 
         with self.assertNumQueries(4):
             resp = self.client.get("/api/v1/posts/1/")
