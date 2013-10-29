@@ -1,9 +1,9 @@
 from settings import *
 
 INSTALLED_APPS += [
-    'complex',
     'django.contrib.comments',
     'django.contrib.sites',
+    'complex',
 ]
 
 ROOT_URLCONF = 'complex.urls'
