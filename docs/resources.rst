@@ -694,9 +694,11 @@ class::
                 "title": ALL,
             }
 
-Valid filtering values are: Django ORM filters (e.g. ``startswith``,
-``exact``, ``lte``, etc. or the ``ALL`` or ``ALL_WITH_RELATIONS`` constants
+Valid filtering values are: `Django ORM filters`_ (e.g. ``startswith``,
+``exact``, ``lte``, etc.) or the ``ALL`` or ``ALL_WITH_RELATIONS`` constants
 defined in :mod:`tastypie.constants`.
+
+.. _Django ORM filters: https://docs.djangoproject.com/en/dev/ref/models/querysets/#field-lookups
 
 These filters will be extracted from URL query strings using the same
 double-underscore syntax as the Django ORM::
