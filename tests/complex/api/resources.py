@@ -26,16 +26,25 @@ class GroupResource(ModelResource):
 class UserResource(ModelResource):
     groups = ManyToManyField(GroupResource, 'groups', full=True)
     profile = OneToOneField(ProfileResource, 'profile', full=True)
-    
+
     class Meta:
         queryset = User.objects.all()
         resource_name = 'users'
 
 
 class PostResource(ModelResource):
-    user = ForeignKey(UserResource, 'user')
+    user = ForeignKey(UserResource, 'user', full=False)
     comments = OneToManyField(CommentResource, 'comments', full=False)
-    
+
     class Meta:
         queryset = Post.objects.all()
         resource_name = 'posts'
+
+
+class OptimizedPostResource(ModelResource):
+    user = ForeignKey(UserResource, 'user', full=False)
+    comments = OneToManyField(CommentResource, 'comments', full=False)
+
+    class Meta:
+        queryset = Post.objects.select_related('user').prefetch_related('comments')
+        resource_name = 'posts_optimized'

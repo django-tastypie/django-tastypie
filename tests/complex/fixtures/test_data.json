@@ -119,6 +119,42 @@
     },
     {
         "fields": {
+            "comment": "Insert insightful remark here",
+            "content_type": ["comments", "comment"],
+            "ip_address": "",
+            "is_public": true,
+            "is_removed": false,
+            "object_pk": "1",
+            "site": 1,
+            "submit_date": "2010-04-21 14:56:36",
+            "user": 1,
+            "user_email": "",
+            "user_name": "",
+            "user_url": ""
+        },
+        "model": "comments.comment",
+        "pk": 3
+    },
+    {
+        "fields": {
+            "comment": "This comment is intentionally left blank",
+            "content_type": ["comments", "comment"],
+            "ip_address": "",
+            "is_public": true,
+            "is_removed": false,
+            "object_pk": "1",
+            "site": 1,
+            "submit_date": "2010-04-21 14:56:36",
+            "user": 1,
+            "user_email": "",
+            "user_name": "",
+            "user_url": ""
+        },
+        "model": "comments.comment",
+        "pk": 4
+    },
+    {
+        "fields": {
             "date_joined": "2010-04-21 15:02:31",
             "email": "daniel@example.com",
             "first_name": "",
