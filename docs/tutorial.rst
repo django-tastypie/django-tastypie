@@ -63,7 +63,7 @@ your project or ``PYTHONPATH``.
     * Django 1.5+
     * ``python-mimeparse`` 0.1.4+ (http://pypi.python.org/pypi/python-mimeparse)
     * ``dateutil`` (http://labix.org/python-dateutil)
-    * **OPTIONAL** - ``lxml`` (http://lxml.de/) if using the XML serializer
+    * **OPTIONAL** - ``lxml`` (http://lxml.de/) and ``defusedxml``  (https://pypi.python.org/pypi/defusedxml) if using the XML serializer
     * **OPTIONAL** - ``pyyaml`` (http://pyyaml.org/) if using the YAML serializer
 
   2. Either check out tastypie from GitHub_ or to pull a release off PyPI_.
