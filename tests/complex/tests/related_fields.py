@@ -13,7 +13,7 @@ class RelatedResourceTestCase(TestCase):
         self.assertIn('/api/v1/comments/1/', data['comments'])
         self.assertEqual(data['user'], '/api/v1/users/1/')
 
-    def test_optimized_light_related_fields(self):
+    def test_detail_with_optimized_light_related_fields(self):
         # We expect 2 queries total due to select_related + prefetch_related
         # + 1 for the post and user FL
         # + 1 for all the comments
@@ -22,7 +22,7 @@ class RelatedResourceTestCase(TestCase):
             resp = self.client.get("/api/v1/posts_optimized/1/")
         self._validate_post_detail_json(resp.content)
 
-    def test_default_light_related_fields(self):
+    def test_detail_with_default_light_related_fields(self):
         # We expect 4 queries total:
         # + 1 for the post
         # + 1 for the user
@@ -33,3 +33,11 @@ class RelatedResourceTestCase(TestCase):
             resp = self.client.get("/api/v1/posts/1/")
 
         self._validate_post_detail_json(resp.content)
+
+    def test_list_with_default_light_related_fields(self):
+        with self.assertNumQueries(6):
+            resp = self.client.get("/api/v1/posts/")
+
+    def test_list_with_optimized_light_related_fields(self):
+        with self.assertNumQueries(3):
+            resp = self.client.get("/api/v1/posts_optimized/")
