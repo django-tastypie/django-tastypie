@@ -263,7 +263,7 @@ A complex example::
 
             # Make sure we don't have to worry about "divide by zero" errors.
             if not bundle.obj.rating_set.count():
-                return rating
+                return total_score
 
             # We'll run over all the ``Rating`` objects & calculate an average.
             for rating in bundle.obj.rating_set.all():
@@ -624,7 +624,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   If you place any callables in this, they'll only be evaluated once (when
   the ``Meta`` class is instantiated). This especially affects things that
-  are date/time related. Please see the :ref:cookbook for a way around this.
+  are date/time related. Please see the :doc:`cookbook` for a way around this.
 
 ``fields``
 ----------
@@ -712,7 +712,7 @@ Advanced Filtering
 
 If you need to filter things other than ORM resources or wish to apply
 additional constraints (e.g. text filtering using `django-haystack
-<http://haystacksearch.org>` rather than simple database queries) your
+<http://haystacksearch.org/>`_ rather than simple database queries) your
 :class:`~tastypie.resources.Resource` may define a custom
 :meth:`~tastypie.resource.Resource.build_filters` method which allows you to
 filter the queryset before processing a request::
@@ -1522,14 +1522,14 @@ For each object in ``objects``:
     considered "new" and is handled like a ``POST`` to the resource list.
 
   * If the dict has a ``resource_uri`` key and the ``resource_uri`` refers
-    to an existing resource then the item is a update; it's treated
+    to an existing resource then the item is an update; it's treated
     like a ``PATCH`` to the corresponding resource detail.
 
   * If the dict has a ``resource_uri`` but the resource *doesn't* exist,
     then this is considered to be a create-via-``PUT``.
 
-Each entry in ``deleted_objects`` referes to a resource URI of an existing
-resource to be deleted; each is handled like a ``DELETE`` to the relevent
+Each entry in ``deleted_objects`` refers to a resource URI of an existing
+resource to be deleted; each is handled like a ``DELETE`` to the relevant
 resource.
 
 In any case:
@@ -1631,7 +1631,7 @@ additional fields based on the associated model.
 
 .. method:: ModelResource.check_filtering(self, field_name, filter_type='exact', filter_bits=None)
 
-Given a field name, a optional filter type and an optional list of
+Given a field name, an optional filter type and an optional list of
 additional relations, determine if a field can be filtered on.
 
 If a filter does not meet the needed conditions, it should raise an
