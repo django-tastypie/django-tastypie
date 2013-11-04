@@ -235,39 +235,37 @@ class Serializer(object):
         This brings complex Python data structures down to native types of the
         serialization format(s).
         """
+        if type(data) in (six.integer_types, float, bool):
+            return data
+        if isinstance(data, dict):
+            return dict((key, self.to_simple(val, options)) for (key, val) in data.iteritems())
+        if isinstance(data, basestring):
+            return force_text(data)
         if isinstance(data, (list, tuple)):
             return [self.to_simple(item, options) for item in data]
-        if isinstance(data, dict):
-            return dict((key, self.to_simple(val, options)) for (key, val) in data.items())
-        elif isinstance(data, Bundle):
-            return dict((key, self.to_simple(val, options)) for (key, val) in data.data.items())
-        elif hasattr(data, 'dehydrated_type'):
-            if getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == False:
-                if data.full:
-                    return self.to_simple(data.fk_resource, options)
-                else:
-                    return self.to_simple(data.value, options)
-            elif getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == True:
-                if data.full:
-                    return [self.to_simple(bundle, options) for bundle in data.m2m_bundles]
-                else:
-                    return [self.to_simple(val, options) for val in data.value]
+        if isinstance(data, Bundle):
+            return dict((key, self.to_simple(val, options)) for (key, val) in data.data.iteritems())
+        value = getattr(data, 'dehydrated_type', None)
+        if value == 'related' and data.is_m2m is False:
+            if data.full:
+                return self.to_simple(data.fk_resource, options)
             else:
                 return self.to_simple(data.value, options)
-        elif isinstance(data, datetime.datetime):
+        elif value == 'related' and data.is_m2m is True:
+            if data.full:
+                return [self.to_simple(bundle, options) for bundle in data.m2m_bundles]
+            else:
+                return [self.to_simple(val, options) for val in data.value]
+        elif value is not None:
+            return self.to_simple(data.value, options)
+        if isinstance(data, datetime.datetime):
             return self.format_datetime(data)
-        elif isinstance(data, datetime.date):
+        if isinstance(data, datetime.date):
             return self.format_date(data)
-        elif isinstance(data, datetime.time):
+        if isinstance(data, datetime.time):
             return self.format_time(data)
-        elif isinstance(data, bool):
-            return data
-        elif isinstance(data, (six.integer_types, float)):
-            return data
-        elif data is None:
-            return None
-        else:
-            return force_text(data)
+        return None
+
 
     def to_etree(self, data, options=None, name=None, depth=0):
         """
