@@ -3,9 +3,9 @@ from StringIO import StringIO
 import django
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.core.serializers import json
-from django.utils import simplejson
 from django.utils.encoding import force_unicode
+from django.core.serializers import json as djangojson
+
 from tastypie.bundle import Bundle
 from tastypie.exceptions import UnsupportedFormat
 from tastypie.utils import format_datetime, format_date, format_time
@@ -24,6 +24,8 @@ try:
     import biplist
 except ImportError:
     biplist = None
+
+import json
 
 
 # Ugh & blah.
@@ -330,15 +332,18 @@ class Serializer(object):
         options = options or {}
         data = self.to_simple(data, options)
         if django.get_version() >= '1.5':
-            return json.json.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
+            return djangojson.json.dumps(data, cls=djangojson.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
         else:
-            return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)        
+            return json.dumps(data, cls=djangojson.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
 
     def from_json(self, content):
         """
         Given some JSON data, returns a Python dictionary of the decoded data.
         """
-        return simplejson.loads(content)
+        try:
+            return json.loads(content)
+        except ValueError:
+            raise BadRequest
 
     def to_jsonp(self, data, options=None):
         """
