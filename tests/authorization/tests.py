@@ -4,10 +4,7 @@ from tastypie.test import ResourceTestCase
 from .models import AuthorProfile, Article
 from .api.resources import PerUserAuthorization
 
-try:
-    import simplejson as json
-except ImportError:
-    import json
+import json
 
 import mock
 
