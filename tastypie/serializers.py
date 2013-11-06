@@ -369,10 +369,7 @@ class Serializer(object):
         options = options or {}
         data = self.to_simple(data, options)
 
-        if django.get_version() >= '1.5':
-            return djangojson.json.dumps(data, cls=djangojson.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
-        else:
-            return json.dumps(data, cls=djangojson.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
+        return djangojson.json.dumps(data, cls=djangojson.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
 
     def from_json(self, content):
         """
