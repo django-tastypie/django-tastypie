@@ -69,9 +69,19 @@ under a Creative Commons license.
 
 * http://i-am-cc.org/api/?format=json
 
+
 Dbpatterns
 ----------
 
 Dbpatterns is a service that allows you to create, share, explore database models on the web.
 
 * http://dbpatterns.com
+
+
+CourtListener
+-------------
+
+Read-only API providing 2.5M legal opinions and other judicial data via Solr/Sunburnt and Postgres (Django models).
+
+* Site: https://www.courtlistener.com
+* Code : https://bitbucket.org/mlissner/search-and-awareness-platform-courtlistener/src
