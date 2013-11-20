@@ -2,9 +2,9 @@ from __future__ import unicode_literals
 import datetime
 import re
 import django
+import json
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.core.serializers import json  # FIXME: disambiguate name from JSON module
 from django.utils import six
 from django.utils.encoding import force_text, smart_bytes
 
