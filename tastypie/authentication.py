@@ -145,7 +145,7 @@ class BasicAuthentication(Authentication):
 
         This implementation returns the user's basic auth username.
         """
-        return request.META.get('REMOTE_USER', 'nouser')
+        return request.META.get('REMOTE_USER', request.user.username)
 
 
 class ApiKeyAuthentication(Authentication):
