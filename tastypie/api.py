@@ -1,5 +1,8 @@
 import warnings
-from django.conf.urls.defaults import *
+try:
+    from django.conf.urls.defaults import patterns,url
+except:
+    from django.conf.urls import patterns,url
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
