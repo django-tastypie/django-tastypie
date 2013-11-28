@@ -1626,8 +1626,12 @@ class ModelResource(Resource):
             if not field_name in self.fields:
                 # It's not a field we know about. Move along citizen.
                 continue
+            if hasattr(QUERY_TERMS, 'keys'):
+               query_terms_keys = QUERY_TERMS.keys()
+            else:
+               query_terms_keys = QUERY_TERMS
 
-            if len(filter_bits) and filter_bits[-1] in QUERY_TERMS.keys():
+            if len(filter_bits) and filter_bits[-1] in query_terms_keys:
                 filter_type = filter_bits.pop()
 
             lookup_bits = self.check_filtering(field_name, filter_type, filter_bits)
