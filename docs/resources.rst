@@ -178,7 +178,7 @@ isn't there.
 Advanced Data Preparation
 =========================
 
-Not all data can be easily pull off an object/model attribute. And sometimes,
+Not all data can be easily pulled off an object/model attribute. And sometimes,
 you (or the client) may need to send data that doesn't neatly fit back into the
 data model on the server side. For this, Tastypie has the "dehydrate/hydrate"
 cycle.
