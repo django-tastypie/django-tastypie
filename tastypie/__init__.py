@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
 
 
-__author__ = 'Daniel Lindsley, Cody Soyland, Matt Croydon, Josh Bohde & Issac Kelly'
-__version__ = (0, 10, 0)
+__author__ = 'Daniel Lindsley & the Tastypie core team'
+__version__ = (0, 11, 0)
