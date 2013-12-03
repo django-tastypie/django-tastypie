@@ -1,5 +1,5 @@
 from testcases import TestServerTestCase
-from django.utils import simplejson as json
+import json
 from django.utils import six
 
 try:
