@@ -378,7 +378,7 @@ class DateTimeField(ApiField):
         value = super(DateTimeField, self).hydrate(bundle)
 
         if value and not hasattr(value, 'year'):
-            if isinstance(value, basestring):
+            if isinstance(value, six.string_types):
                 try:
                     # Try to rip a date/datetime out of it.
                     value = make_aware(parse(value))
