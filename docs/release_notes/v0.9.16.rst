@@ -19,7 +19,7 @@ Bugfixes
 --------
 
 * Added a ``None`` value for ``username_field`` in the compat module.
- (SHA: 569a72e)
+  (SHA: 569a72e)
 * Fixed a bug where ``obj_create`` would check authorization twice.
   (SHA: 9a404fa)
 * Fixed test case to no longer require a defined object class. (SHA: d8e250f)
