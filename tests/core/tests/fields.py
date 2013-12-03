@@ -582,6 +582,16 @@ class DateTimeFieldTestCase(TestCase):
         field_4.instance_name = 'datetime'
         self.assertEqual(field_4.hydrate(bundle_4), None)
 
+        bundle_5 = Bundle(data={'datetime': 'foo'})
+        field_5 = DateTimeField()
+        field_5.instance_name = 'datetime'
+        self.assertRaises(ApiFieldError, field_5.hydrate, bundle_5)
+
+        bundle_6 = Bundle(data={'datetime': ['a', 'list', 'used', 'to', 'crash']})
+        field_6 = DateTimeField()
+        field_6.instance_name = 'datetime'
+        self.assertRaises(ApiFieldError, field_6.hydrate, bundle_6)
+
 
 class UserResource(ModelResource):
     class Meta:
