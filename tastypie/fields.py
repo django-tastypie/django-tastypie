@@ -382,7 +382,7 @@ class DateTimeField(ApiField):
                 try:
                     # Try to rip a date/datetime out of it.
                     value = make_aware(parse(value))
-                except ValueError:
+                except (ValueError, TypeError):
                     raise ApiFieldError("Datetime provided to '%s' field doesn't appear to be a valid datetime string: '%s'" % (self.instance_name, value))
 
             else:
