@@ -4,9 +4,9 @@ import re
 import django
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.core.serializers import json  # FIXME: disambiguate name from JSON module
 from django.utils import six
 from django.utils.encoding import force_text, smart_bytes
+from django.core.serializers import json as djangojson
 
 from tastypie.bundle import Bundle
 from tastypie.exceptions import BadRequest, UnsupportedFormat
@@ -31,10 +31,7 @@ try:
 except ImportError:
     biplist = None
 
-try:
-    import simplejson
-except ImportError:
-    import json as simplejson
+import json
 
 
 XML_ENCODING = re.compile('<\?xml.*?\?>', re.IGNORECASE)
@@ -372,17 +369,14 @@ class Serializer(object):
         options = options or {}
         data = self.to_simple(data, options)
 
-        if django.get_version() >= '1.5':
-            return json.json.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
-        else:
-            return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
+        return djangojson.json.dumps(data, cls=djangojson.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
 
     def from_json(self, content):
         """
         Given some JSON data, returns a Python dictionary of the decoded data.
         """
         try:
-            return simplejson.loads(content)
+            return json.loads(content)
         except ValueError:
             raise BadRequest
 
