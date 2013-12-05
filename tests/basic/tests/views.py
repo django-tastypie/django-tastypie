@@ -38,7 +38,7 @@ class ViewsTestCase(TestCase):
     def test_posts(self):
         request = HttpRequest()
         post_data = '{"content": "A new post.", "is_active": true, "title": "New Title", "slug": "new-title", "user": "/api/v1/users/1/"}'
-        request._raw_post_data = post_data
+        request._body = post_data
 
         resp = self.client.post('/api/v1/notes/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
@@ -55,7 +55,7 @@ class ViewsTestCase(TestCase):
     def test_puts(self):
         request = HttpRequest()
         post_data = '{"content": "Another new post.", "is_active": true, "title": "Another New Title", "slug": "new-title", "user": "/api/v1/users/1/"}'
-        request._raw_post_data = post_data
+        request._body = post_data
 
         resp = self.client.put('/api/v1/notes/1/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 204)
@@ -73,7 +73,7 @@ class ViewsTestCase(TestCase):
         # back to the user.
         request = HttpRequest()
         post_data = '{"content": "More internet memes.", "is_active": true, "title": "IT\'S OVER 9000!", "slug": "its-over", "user": "/api/v1/users/9001/"}'
-        request._raw_post_data = post_data
+        request._body = post_data
 
         resp = self.client.post('/api/v1/notes/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 400)

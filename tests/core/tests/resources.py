@@ -168,7 +168,7 @@ class ConvertTestCase(TestCase):
         }
         # Make Django happy.
         request._read_started = False
-        request._raw_post_data = ''
+        request._body = ''
 
         modified = convert_post_to_put(request)
         self.assertEqual(modified.method, 'PUT')
@@ -189,7 +189,7 @@ class ConvertTestCase(TestCase):
         }
         # Make Django happy.
         request._read_started = False
-        request._raw_post_data = ''
+        request._body = ''
 
         modified = convert_post_to_patch(request)
         self.assertEqual(modified.method, 'PATCH')
@@ -1485,7 +1485,7 @@ class ModelResourceTestCase(TestCase):
         request.method = 'PUT'
 
         self.assertEqual(Note.objects.count(), 6)
-        request.raw_post_data = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}'
+        request.body = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}'
 
         resp = resource.put_list(request)
         self.assertEqual(resp.status_code, 204)
@@ -1506,7 +1506,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
+        request.body = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
 
         resp = resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 201)
@@ -1514,7 +1514,7 @@ class ModelResourceTestCase(TestCase):
         new_note = Note.objects.get(slug='cat-is-back')
         self.assertEqual(new_note.content, "The cat is back. The dog coughed him up out back.")
 
-        request.raw_post_data = '{"content": "The cat is gone again. I think it was the rabbits that ate him this time.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Gone", "updated": "2010-04-03 20:05:00"}'
+        request.body = '{"content": "The cat is gone again. I think it was the rabbits that ate him this time.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Gone", "updated": "2010-04-03 20:05:00"}'
 
         resp = resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 204)
@@ -1540,7 +1540,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
+        request.body = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
 
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
@@ -1600,7 +1600,7 @@ class ModelResourceTestCase(TestCase):
         request._read_started = False
 
         self.assertEqual(Note.objects.count(), 6)
-        request._raw_post_data = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}], "deleted_objects": ["/api/v1/notes/1/"]}'
+        request._body = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}], "deleted_objects": ["/api/v1/notes/1/"]}'
 
         resp = resource.patch_list(request)
         self.assertEqual(resp.status_code, 202)
@@ -1617,7 +1617,7 @@ class ModelResourceTestCase(TestCase):
         request.GET = {'format': 'json'}
         request.method = 'PATCH'
         request._read_started = False
-        request._raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00"}'
+        request._body = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00"}'
 
         resp = resource.patch_detail(request, pk=10)
         self.assertEqual(resp.status_code, 404)
@@ -1629,7 +1629,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(note.content, "The cat is back. The dog coughed him up out back.")
         self.assertEqual(note.created, datetime.datetime(2010, 4, 3, 20, 5))
 
-        request._raw_post_data = '{"content": "The cat is gone again. I think it was the rabbits that ate him this time."}'
+        request._body = '{"content": "The cat is gone again. I think it was the rabbits that ate him this time."}'
 
         resp = resource.patch_detail(request, pk=1)
         self.assertEqual(resp.status_code, 202)

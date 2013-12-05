@@ -21,7 +21,7 @@ class RelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.raw_post_data = '{"username": "foobar"}'
+        request.body = '{"username": "foobar"}'
         resp = resource.wrap_view('dispatch_detail')(request, pk=self.user.pk)
 
         self.assertEqual(resp.status_code, 405)
@@ -33,7 +33,7 @@ class RelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": null}'
+        request.body = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": null}'
 
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
@@ -42,7 +42,7 @@ class RelatedResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        request.raw_post_data = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": {"id": %s, "username": "foobar"}}' % self.user.id
+        request.body = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": {"id": %s, "username": "foobar"}}' % self.user.id
 
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
@@ -84,7 +84,7 @@ class CategoryResourceTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.raw_post_data = '{"parent": null, "name": "Son"}'
+        request.body = '{"parent": null, "name": "Son"}'
 
         # Before the PUT, there should be a parent.
         self.assertEqual(Category.objects.get(pk=self.child_cat_1.pk).parent.pk, self.parent_cat_1.pk)
@@ -144,7 +144,7 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        request.raw_post_data = '{"name": "school", "taggabletags": [ ]}'
+        request.body = '{"name": "school", "taggabletags": [ ]}'
 
         # Prior to the addition of ``blank=True``, this would
         # fail badly.
@@ -187,7 +187,7 @@ class OneToManySetupTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        request.raw_post_data = json.dumps(data)
+        request.body = json.dumps(data)
 
         resp = fnr.post_list(request)
         self.assertEqual(resp.status_code, 201)
