@@ -1,7 +1,6 @@
-import inspect
-
 from django.core.management.base import AppCommand
 import django.db.models as django_models
+from django.db.models import get_models
 
 
 class Command(AppCommand):
@@ -31,7 +30,8 @@ def describe_api(app, **options):
     all_models = []
     all_resources = []
     all_resources_names = []
-    for member_name, member in inspect.getmembers(models_module):
+
+    for member in get_models(models_module):
         if is_django_model(member):
             model = member
             fields_str = '\n'.join(yield_field_strings(model))
