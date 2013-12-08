@@ -20,7 +20,12 @@ RESOURCE_POSTFIX = 'Resource'
 
 def describe_api(app, **options):
     """
-    Returns a string for the given app.
+    Returns a string representing a barebone but functional api module for the given app.
+    The tastypie Resources described in this string have ForeignKey fields with resonable defaults and
+    some options taken directly from the models' fields.
+
+    Currently the returned resources only have the forward part of a ToOne relationship. It does not handle ToMany relationships
+    and the backward part of a relationship.
     """
     models_module = app
     all_models = []
@@ -78,7 +83,7 @@ def yield_field_options(field):
 IMPORTS_TEMPLATE = """# This is an auto-generated Django-tastypie api module.
 # You'll have to do the following manually to clean this up:
 #   * Manually add ToMany relationships fields between Resources (optional)
-#   * Manually add the back references of the current forward references
+#   * Manually add the back references of the current forward references (optional)
 #        (see http://django-tastypie.readthedocs.org/en/latest/fields.html#tastypie.fields.RelatedField.related_name)
 #
 # Feel free to rename the resources, but if you do so, chage it everywhere
