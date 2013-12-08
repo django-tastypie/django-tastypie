@@ -45,15 +45,6 @@ def describe_api(app, **options):
     return API_MODULE.format(all_models=', '.join(all_models), all_resources='\n'.join(all_resources), all_resources_names=', '.join(all_resources_names))
 
 
-def is_django_model(obj):
-    try:
-        if issubclass(obj, django_models.Model):
-            return True
-    except TypeError:
-        pass
-    return False
-
-
 def yield_field_strings(model):
     options = model._meta
     app_name = options.app_label
