@@ -31,16 +31,14 @@ def describe_api(app, **options):
     all_resources = []
     all_resources_names = []
 
-    for member in get_models(models_module):
-        if is_django_model(member):
-            model = member
-            fields_str = '\n'.join(yield_field_strings(model))
-            resource_str = build_resource_str(model, fields_str)
+    for model in get_models(models_module):
+        fields_str = '\n'.join(yield_field_strings(model))
+        resource_str = build_resource_str(model, fields_str)
 
-            model_name = model._meta.object_name
-            all_models.append(model_name)
-            all_resources.append(resource_str)
-            all_resources_names.append(model_name+RESOURCE_POSTFIX)
+        model_name = model._meta.object_name
+        all_models.append(model_name)
+        all_resources.append(resource_str)
+        all_resources_names.append(model_name+RESOURCE_POSTFIX)
 
     return API_MODULE.format(all_models=', '.join(all_models), all_resources='\n'.join(all_resources), all_resources_names=', '.join(all_resources_names))
 
@@ -64,7 +62,7 @@ def yield_field_options(field):
     options = {'null': field.null,
             'blank': field.blank,
             'related_name': field.related_query_name().join("''"),
-            'help_text': repr(field.help_text),
+            'help_text': bool(field.help_text) and repr(field.help_text) or '',
             }
     for key, val in options.items():
         if val:
