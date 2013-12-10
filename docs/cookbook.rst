@@ -361,8 +361,8 @@ By default, Tastypie outputs JSON with no indentation or newlines (equivalent to
 :py:func:`json.dumps` with *indent* set to ``None``). You can override this
 behavior in a custom serializer::
 
-    import json as pjson
-    from django.core.serializers import json
+    import json
+    from django.core.serializers.json import DjangoJSONEncoder
     from tastypie.serializers import Serializer
 
     class PrettyJSONSerializer(Serializer):
@@ -371,7 +371,7 @@ behavior in a custom serializer::
         def to_json(self, data, options=None):
             options = options or {}
             data = self.to_simple(data, options)
-            return pjson.dumps(data, cls=json.DjangoJSONEncoder,
+            return json.dumps(data, cls=DjangoJSONEncoder,
                     sort_keys=True, ensure_ascii=False, indent=self.json_indent)
 
 Determining format via URL
