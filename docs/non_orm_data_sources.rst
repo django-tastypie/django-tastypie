@@ -114,16 +114,16 @@ non-relational datastore looks like::
 
             return results
 
-        def obj_get_list(self, request=None, **kwargs):
+        def obj_get_list(self, bundle, **kwargs):
             # Filtering disabled for brevity...
-            return self.get_object_list(request)
+            return self.get_object_list(bundle.request)
 
-        def obj_get(self, request=None, **kwargs):
+        def obj_get(self, bundle, **kwargs):
             bucket = self._bucket()
             message = bucket.get(kwargs['pk'])
             return RiakObject(initial=message.get_data())
 
-        def obj_create(self, bundle, request=None, **kwargs):
+        def obj_create(self, bundle, **kwargs):
             bundle.obj = RiakObject(initial=kwargs)
             bundle = self.full_hydrate(bundle)
             bucket = self._bucket()
@@ -131,17 +131,17 @@ non-relational datastore looks like::
             new_message.store()
             return bundle
 
-        def obj_update(self, bundle, request=None, **kwargs):
-            return self.obj_create(bundle, request, **kwargs)
+        def obj_update(self, bundle, **kwargs):
+            return self.obj_create(bundle, **kwargs)
 
-        def obj_delete_list(self, request=None, **kwargs):
+        def obj_delete_list(self, bundle, **kwargs):
             bucket = self._bucket()
 
             for key in bucket.get_keys():
                 obj = bucket.get(key)
                 obj.delete()
 
-        def obj_delete(self, request=None, **kwargs):
+        def obj_delete(self, bundle, **kwargs):
             bucket = self._bucket()
             obj = bucket.get(kwargs['pk'])
             obj.delete()
