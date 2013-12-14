@@ -79,12 +79,11 @@ Contributors:
 * Matt DeBoard (mattdeboard) for a patch to optionally set ``abstract = True`` on the ApiKey model.
 * Paul Grau (graup) Addition of iso-8601-strict to available TASTYPIE_DATETIME_FORMATTING.
 * Eric Plumb (professorplumb) for fixing the nested resource example in the cookbook.
-* Willem Bult (willembult) for fixing a bug with updating updating foreign key resources during create.
+* Willem Bult (willembult) for fixing a bug with updating updating foreign key resources during create and a patch that allows filtering foreign resources by their resource URI.
 * Yuri Govorushchenko (metametadata) for enhancing documentation on how to convert list of resources into JSON within a django template.
 * Revolution Systems & The Python Software Foundation for funding a significant portion of the port to Python 3!
 * tunix for a patch related to Tastypie's timezone-aware dates.
 * Steven Davidson (damycra) for a documentation patch.
-
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
