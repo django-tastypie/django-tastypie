@@ -9,7 +9,6 @@ class Command(AppCommand):
     label = "application name"
 
     def handle_app(self, app, **options):
-        # raise NotImplementedError()
         return describe_api(app)
 
 
@@ -33,7 +32,9 @@ def describe_api(app, **options):
 
     for model in get_models(models_module):
         fields_str = '\n'.join(yield_field_strings(model))
-        resource_str = build_resource_str(model, fields_str)
+        filtering_fields = ('\n'+' '*20).join(yield_filtering_fields(model))
+        filtering_str = META_FILTERING_TEMPLATE.format(filtering_fields=filtering_fields)
+        resource_str = build_resource_str(model, fields=fields_str, filtering=filtering_str)
 
         model_name = model._meta.object_name
         all_models.append(model_name)
@@ -67,6 +68,20 @@ def yield_field_options(field):
     for key, val in options.items():
         if val:
             yield '='.join([key, str(val)])
+
+
+META_FILTERING_TEMPLATE = "filtering = {{{filtering_fields}}}\n"
+FIELD_FILTERING_TEMPLATE = "'{field}': {mode},"
+
+
+def yield_filtering_fields(model):
+    options = model._meta
+    for field in options.fields:
+        attribute_name = field.name
+        if isinstance(field, django_models.ForeignKey):
+            yield FIELD_FILTERING_TEMPLATE.format(field=attribute_name, mode='resources.ALL_WITH_RELATIONS')
+        else:
+            yield FIELD_FILTERING_TEMPLATE.format(field=attribute_name, mode='resources.ALL')
 
 
 IMPORTS_TEMPLATE = """# This is an auto-generated Django-tastypie api module.
@@ -109,13 +124,14 @@ RESOURCE_TEMPLATE = "class {model_name}"+RESOURCE_POSTFIX+"""(resources.ModelRes
 
     class Meta:
         queryset = {model_name}.objects.all()
+        {filtering}
 
 """
 FOOTER_TEMPLATE = 'ALL_RESOURCES = [{all_resources_names}]'
 API_MODULE = IMPORTS_TEMPLATE + '{all_resources}\n' + FOOTER_TEMPLATE
 
 
-def build_resource_str(model, fields='{fields}'):
+def build_resource_str(model, fields='{fields}', filtering=''):
     model_name = model._meta.object_name
     fields = fields.replace('\n', '\n'+' '*4)
-    return RESOURCE_TEMPLATE.format(model_name=model_name, fields=fields).replace('\n    \n\n', '\n'*1)
+    return RESOURCE_TEMPLATE.format(model_name=model_name, fields=fields, filtering=filtering).replace('\n    \n\n', '\n'*1)
