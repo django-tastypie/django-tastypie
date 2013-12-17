@@ -22,10 +22,9 @@ And your model resource::
     from django.contrib.auth.models import User
     from tastypie.resources import NamespacedModelResource
     from tastypie.authorization import Authorization
-    
-    class NamespacedUserResource(NamespacedModelResource):
-    	class Meta:
-	    resource_name = 'users'
-	    queryset = User.objects.all()
-	    authorization = Authorization()
 
+    class NamespacedUserResource(NamespacedModelResource):
+        class Meta:
+            resource_name = 'users'
+            queryset = User.objects.all()
+            authorization = Authorization()
