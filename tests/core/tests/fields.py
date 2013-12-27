@@ -308,6 +308,9 @@ class DecimalFieldTestCase(TestCase):
         field_2 = DecimalField(default='18.5')
         self.assertEqual(field_2.dehydrate(bundle), Decimal('18.5'))
 
+        field_3 = DecimalField(default=21.5)
+        self.assertEqual(field_3.dehydrate(bundle), Decimal('21.5'))
+
     def test_hydrate(self):
         bundle = Bundle(data={
             'decimal-y': '18.50',
