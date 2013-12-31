@@ -137,7 +137,7 @@ look like::
             return bundle.obj.user == bundle.request.user
 
         def create_list(self, object_list, bundle):
-            # Assuming their auto-assigned to ``user``.
+            # Assuming they're auto-assigned to ``user``.
             return object_list
 
         def create_detail(self, object_list, bundle):
