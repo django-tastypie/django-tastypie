@@ -145,6 +145,32 @@ something like the following::
 The added URLconf matches before the standard URLconf included by default &
 matches on the username provided in the URL.
 
+Another alternative approach is to override the ``dispatch`` method::
+
+    # myapp/api/resources.py
+    class EntryResource(ModelResource):
+        user = fields.ForeignKey(UserResource, 'user')
+
+        class Meta:
+            queryset = Entry.objects.all()
+            resource_name = 'entry'
+
+        def dispatch(self, request_type, request, **kwargs):
+            username = kwargs.pop('username')
+            kwargs['user'] = get_object_or_404(User, username=username)
+            return super(EntryResource, self).dispatch(request_type, request, **kwargs)
+
+    # urls.py
+    from django.conf.urls.defaults import *
+    from myapp.api import EntryResource
+
+    entry_resource = EntryResource()
+
+    urlpatterns = patterns('',
+        # The normal jazz here, then...
+        (r'^api/(?P<username>\w+)/', include(entry_resource.urls)),
+    )
+
 
 Nested Resources
 ----------------
@@ -172,32 +198,6 @@ handle the children::
 
             child_resource = ChildResource()
             return child_resource.get_detail(request, parent_id=obj.pk)
-
-Another alternative approach is to override the ``dispatch`` method::
-
-    # myapp/api/resources.py
-    class EntryResource(ModelResource):
-        user = fields.ForeignKey(UserResource, 'user')
-
-        class Meta:
-            queryset = Entry.objects.all()
-            resource_name = 'entry'
-
-        def dispatch(self, request_type, request, **kwargs):
-            username = kwargs.pop('username')
-            kwargs['user'] = get_object_or_404(User, username=username)
-            return super(EntryResource, self).dispatch(request_type, request, **kwargs)
-
-    # urls.py
-    from django.conf.urls.defaults import *
-    from myapp.api import EntryResource
-
-    entry_resource = EntryResource()
-
-    urlpatterns = patterns('',
-        # The normal jazz here, then...
-        (r'^api/(?P<username>\w+)/', include(entry_resource.urls)),
-    )
 
 
 Adding Search Functionality
