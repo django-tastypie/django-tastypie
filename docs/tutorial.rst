@@ -28,7 +28,7 @@ Here is ``myapp/models.py``::
     from tastypie.utils.timezone import now
     from django.contrib.auth.models import User
     from django.db import models
-    from django.template.defaultfilters import slugify
+    from django.utils.text import slugify
 
 
     class Entry(models.Model):
