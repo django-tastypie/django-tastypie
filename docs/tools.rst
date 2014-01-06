@@ -113,7 +113,7 @@ and Tastypie authorization. For example:
 
 **articles/api.py**::
 
-    class StaffOnlyAuthorization(PermissionsAuthorization):
+    class StaffOnlyAuthorization(TastypieAuthorization):
         permissions = StaffPermissions
 
 
