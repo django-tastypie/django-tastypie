@@ -114,7 +114,7 @@ and Tastypie authorization. For example:
 **articles/api.py**::
 
     class StaffOnlyAuthorization(TastypieAuthorization):
-        permissions = StaffPermissions
+        permissions_class = StaffPermissions
 
 
 django-superbulk
