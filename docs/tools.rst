@@ -68,6 +68,23 @@ http://drest.rtfd.org/
 drest is another small Python library. It focuses on extensibility & can also
 work with many different API, with an emphasis on Tastypie.
 
+httpie
+------
+
+https://github.com/jkbr/httpie
+
+HTTPie is a command line HTTP client written in Python. Its goal is to make 
+command-line interaction with web services as human-friendly as possible and 
+allows much conciser statements compared with curl.
+
+For example for POSTing a JSON object you simply call:
+
+    $ http localhost:8000/api/v1/entry/ title="Foo" body="Bar" user="/api/v1/user/1/"
+
+Now compare this with curl:
+
+    $ curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"title": "Foo", "body": "Bar", "user": "/api/v1/user/1/"}' http://localhost:8000/api/v1/entry/
+
 
 json.tool
 ---------
