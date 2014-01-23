@@ -1,7 +1,10 @@
 # See COPYING file in this directory.
 # Some code originally from django-boundaryservice
 from __future__ import unicode_literals
-from urllib import unquote
+try:
+    from urllib.parse import unquote
+except ImportError:
+    from urllib import unquote
 
 from django.contrib.gis.db.models import GeometryField
 from django.contrib.gis.geos import GEOSGeometry
