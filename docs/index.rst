@@ -106,7 +106,7 @@ Optional
 * python_digest (https://bitbucket.org/akoha/python-digest/)
 * lxml (http://lxml.de/) and defusedxml (https://bitbucket.org/tiran/defusedxml) if using the XML serializer
 * pyyaml (http://pyyaml.org/) if using the YAML serializer
-* biplist (http://explorapp.com/biplist/) if using the binary plist serializer
+* biplist (https://pypi.python.org/pypi/biplist) if using the binary plist serializer
 
 .. _Pip: http://pip.openplans.org/
 
