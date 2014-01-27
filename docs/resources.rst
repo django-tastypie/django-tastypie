@@ -1102,10 +1102,24 @@ simply override this method.
 
 .. method:: Resource.full_dehydrate(self, bundle, for_list=False)
 
-Given a bundle with an object instance, extract the information from it to
-populate the resource.
+Populate the bundle's :attr:`data` attribute.
 
-The for_list flag is used to control which fields are excluded by the ``use_in`` attribute.
+The ``bundle`` parameter will have the data that needs dehydrating in its
+:attr:`obj` attribute.
+
+The ``for_list`` parameter indicates the style of response being prepared:
+    - ``True`` indicates a list of items. Note that :meth:`full_dehydrate` will
+      be called once for each object requested.
+    - ``False`` indicates a response showing the details for an item
+
+This method is responsible for invoking the the :meth:`dehydrate` method of
+all the fields in the resource. Additionally, it calls
+:meth:`Resource.dehydrate`.
+
+Must return a :class:`Bundle` with the desired dehydrated :attr:`data`
+(usually a :class:`dict`). Typically one should modify the bundle passed in
+and return it, but you may also return a completely new bundle.
+
 
 ``dehydrate``
 -------------
