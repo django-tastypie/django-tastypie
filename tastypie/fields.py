@@ -602,6 +602,13 @@ class RelatedField(ApiField):
 
         unique_keys = dict((k, v) for k, v in data.items() if k == 'pk' or (hasattr(fk_resource, k) and getattr(fk_resource, k).unique))
 
+        if unique_keys and set(unique_keys.keys()) == set(data.keys()):
+            try:
+                obj = fk_resource.obj_get(bundle=fk_bundle, **unique_keys)
+                return self.resource_from_pk(fk_resource, obj, request, related_obj, related_name)
+            except ObjectDoesNotExist:
+                pass
+
         # If we have no unique keys, we shouldn't go look for some resource that
         # happens to match other kwargs. In the case of a create, it might be the
         # completely wrong resource.
