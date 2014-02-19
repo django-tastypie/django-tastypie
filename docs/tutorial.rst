@@ -4,7 +4,7 @@
 Getting Started with Tastypie
 =============================
 
-Tastypie is a reusable app (that is, it relies only on it's own code and
+Tastypie is a reusable app (that is, it relies only on its own code and
 focuses on providing just a REST-style API) and is suitable for providing an
 API to any application without having to modify the sources of that app.
 
@@ -108,7 +108,7 @@ though they can live anywhere in your application::
 
 This class, by virtue of being a :class:`~tastypie.resources.ModelResource`
 subclass, will introspect all non-relational fields on the ``Entry`` model and
-create it's own :mod:`ApiFields <tastypie.fields>` that map to those fields,
+create its own :mod:`ApiFields <tastypie.fields>` that map to those fields,
 much like the way Django's ``ModelForm`` class introspects.
 
 .. note::
