@@ -181,12 +181,14 @@ class Serializer(object):
 
         return data.isoformat()
 
-    def serialize(self, bundle, format='application/json', options={}):
+    def serialize(self, bundle, format='application/json', options=None):
         """
         Given some data and a format, calls the correct method to serialize
         the data and returns the result.
         """
         desired_format = None
+        if options is None:
+            options = {}
 
         for short_format, long_format in self.content_types.items():
             if format == long_format:
