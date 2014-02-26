@@ -737,7 +737,8 @@ class ToOneField(RelatedField):
         if value is None:
             return value
 
-        return self.build_related_resource(value, request=bundle.request)
+        return self.build_related_resource(value, request=bundle.request, related_obj=bundle.obj, related_name=self.related_name)
+
 
 class ForeignKey(ToOneField):
     """
