@@ -182,7 +182,7 @@ us from doing POST/PUT/DELETE. Let's enable those::
         class Meta:
             queryset = Entry.objects.all()
             resource_name = 'entry'
-            authorization= Authorization()
+            authorization = Authorization()
 
 .. warning::
 
