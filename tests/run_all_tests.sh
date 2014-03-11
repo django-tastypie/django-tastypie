@@ -18,14 +18,16 @@ fi
 
 
 if [ $# -eq 0 ]; then
-    TYPES=$ALL
+    PYTESTPATHS=$ALL
 elif [ $1 == '-h' ]; then
     echo "Valid arguments are: $ALL"
 else
-    TYPES=$@
+    PYTESTPATHS=$@
 fi
 
-for type in $TYPES; do
+for pytestpath in $PYTESTPATHS; do
+    IFS='.' read -r type type_remainder <<< "$pytestpath"
+    
     echo "** $type **"
     module_name=$type
 
@@ -34,7 +36,12 @@ for type in $TYPES; do
     elif [ $type == 'gis' ]; then
         createdb -T template_postgis tastypie.db
     fi
+    
+    test_name=$module_name
+    if [ -n "$type_remainder" ]; then
+        test_name=$test_name.$type_remainder
+    fi
 
-    ./manage_$type.py test $module_name
+    ./manage_$type.py test $test_name
     echo; echo
 done
