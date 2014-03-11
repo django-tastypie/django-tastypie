@@ -38,7 +38,7 @@ setup(
         'python-mimeparse >= 0.1.4',
         'python-dateutil >= 1.5, != 2.0',
     ],
-    tests_require=['mock'],
+    tests_require=['mock', 'PyYAMP', 'lxml', 'defusedxml'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
