@@ -962,7 +962,11 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         if self._meta.filtering:
             data['filtering'] = self._meta.filtering
 
-        pk_field_name = self._meta.queryset.model._meta.pk.name
+        #Skip assigning pk_field_name for non-model resources
+        try:
+            pk_field_name = self._meta.queryset.model._meta.pk.name
+        except AttributeError:
+            pk_field_name = None
 
         for field_name, field_object in self.fields.items():
             data['fields'][field_name] = {
