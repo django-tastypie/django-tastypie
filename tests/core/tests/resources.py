@@ -30,7 +30,7 @@ from tastypie.throttle import CacheThrottle
 from tastypie.utils import aware_datetime, make_naive
 from tastypie.validation import FormValidation
 from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord, Counter
-from core.tests.mocks import MockRequest
+from core.tests.mocks import dict_to_querydict, MockRequest
 from core.utils import SimpleHandler
 
 
@@ -2391,6 +2391,107 @@ class ModelResourceTestCase(TestCase):
                 }
             ])
 
+    def test_get_list_clientside_fields(self):
+        resource = VeryCustomNoteResource()
+        request = HttpRequest()
+        # 'id and 'slug' are not present on VeryCustomNoteResource and will be ignored
+        request.GET = dict_to_querydict({'format': 'json', 'fields': ['id', 'title', 'slug', 'resource_uri']})
+
+        resp = resource.get_list(request)
+        
+        self.assertEqual(resp.status_code, 200)
+        
+        list_data = json.loads(resp.content.decode('utf-8'))
+        
+        self.assertEqual(list_data['objects'], [
+            {
+                "resource_uri": "/api/v1/notes/1/",
+                "title": "First Post!"
+            },
+            {
+                "resource_uri": "/api/v1/notes/2/",
+                "title": "Another Post"
+            },
+            {
+                "resource_uri": "/api/v1/notes/3/",
+                "title": "Hello World!"
+            },
+            {
+                "resource_uri": "/api/v1/notes/4/",
+                "title": "Recent Volcanic Activity."
+            },
+            {
+                "resource_uri": "/api/v1/notes/5/",
+                "title": "My favorite new show"
+            },
+            {
+                "resource_uri": "/api/v1/notes/6/",
+                "title": "Granny's Gone"
+            },
+        ])
+
+    def test_get_list_clientside_excludes(self):
+        resource = VeryCustomNoteResource()
+        request = HttpRequest()
+        # 'foo' will be ignored
+        request.GET = dict_to_querydict({'format': 'json', 'excludes': ['title', 'foo']})
+
+        resp = resource.get_list(request)
+        self.assertEqual(resp.status_code, 200)
+        
+        list_data = json.loads(resp.content.decode('utf-8'))
+        self.maxDiff=None
+        self.assertEqual(list_data['objects'], [
+            {
+                "author": "johndoe",
+                "constant": 20,
+                "content": "This is my very first post using my shiny new API. Pretty sweet, huh?",
+                "created": "2010-03-30T20:05:00",
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/1/"
+            },
+            {
+                "author": "johndoe",
+                "constant": 20,
+                "content": "The dog ate my cat today. He looks seriously uncomfortable.",
+                "created": "2010-03-31T20:05:00",
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/2/"
+            },
+            {
+                "author": "janedoe",
+                "constant": 20,
+                "content": "On second though, not sure if I'm ready to share this with the world.",
+                "created": "2010-03-30T20:05:00",
+                "is_active": False,
+                "resource_uri": "/api/v1/notes/3/"
+            },
+            {
+                "author": "janedoe",
+                "constant": 20,
+                "content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.",
+                "created": "2010-04-01T20:05:00",
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/4/"
+            },
+            {
+                "author": "johndoe",
+                "constant": 20,
+                "content": "I found an awesome new show on TV. It's about vampires and pancakes and the strong love between them that the wagon is trying to break up.",
+                "created": "2010-03-30T20:05:00",
+                "is_active": False,
+                "resource_uri": "/api/v1/notes/5/"
+            },
+            {
+                "author": "janedoe",
+                "constant": 20,
+                "content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!",
+                "created": "2010-04-02T10:05:00",
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/6/"
+            }
+        ])
+
     def test_get_list_use_in(self):
         resource = UseInNoteResource()
         request = HttpRequest()
@@ -2414,6 +2515,40 @@ class ModelResourceTestCase(TestCase):
         resp = resource.get_detail(request, pk=2)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content.decode('utf-8'), '{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}')
+
+        resp = resource.get_detail(request, pk=300)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_get_detail_clientside_fields(self):
+        resource = VeryCustomNoteResource()
+        request = HttpRequest()
+        # 'id and 'slug' are not present on VeryCustomNoteResource and will be ignored
+        request.GET = dict_to_querydict({'format': 'json', 'fields': ['id', 'title', 'slug', 'resource_uri']})
+
+        resp = resource.get_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content.decode('utf-8'), '{"resource_uri": "/api/v1/notes/1/", "title": "First Post!"}')
+
+        resp = resource.get_detail(request, pk=2)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content.decode('utf-8'), '{"resource_uri": "/api/v1/notes/2/", "title": "Another Post"}')
+
+        resp = resource.get_detail(request, pk=300)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_get_detail_clientside_excludes(self):
+        resource = VeryCustomNoteResource()
+        request = HttpRequest()
+        # 'foo' will be ignored
+        request.GET = dict_to_querydict({'format': 'json', 'excludes': ['title', 'foo']})
+
+        resp = resource.get_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content.decode('utf-8'), '{"author": "johndoe", "constant": 20, "content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "is_active": true, "resource_uri": "/api/v1/notes/1/"}')
+
+        resp = resource.get_detail(request, pk=2)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content.decode('utf-8'), '{"author": "johndoe", "constant": 20, "content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "is_active": true, "resource_uri": "/api/v1/notes/2/"}')
 
         resp = resource.get_detail(request, pk=300)
         self.assertEqual(resp.status_code, 404)
