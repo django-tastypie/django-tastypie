@@ -574,7 +574,7 @@ class RelatedField(ApiField):
         Given a URI is provided, the related resource is attempted to be
         loaded based on the identifiers in the URI.
         """
-        err_msg = "Could not find the provided object via resource URI '%s'." % uri
+        err_msg = "Could not find the provided %s object via resource URI '%s'." % (fk_resource._meta.resource_name, uri,)
         
         if not uri:
             raise ApiFieldError(err_msg)

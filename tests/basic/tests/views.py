@@ -89,7 +89,7 @@ class ViewsTestCase(TestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(json.loads(resp.content.decode('utf-8')),
             {
-                "error": "Could not find the provided object via resource URI \'/api/v1/users/9001/\'."
+                "error": "Could not find the provided users object via resource URI \'/api/v1/users/9001/\'."
             }
         )
 
