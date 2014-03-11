@@ -168,19 +168,29 @@ class ApiField(object):
                     return bundle.related_obj
             if self.blank:
                 return None
-            elif self.attribute and getattr(bundle.obj, self.attribute, None):
-                return getattr(bundle.obj, self.attribute)
-            elif self.instance_name and hasattr(bundle.obj, self.instance_name):
-                return getattr(bundle.obj, self.instance_name)
-            elif self.has_default():
+            if self.attribute:
+                try:
+                    val = getattr(bundle.obj, self.attribute, None)
+
+                    if val is not None:
+                        return val
+                except ObjectDoesNotExist:
+                    pass
+            if self.instance_name:
+                try:
+                    if hasattr(bundle.obj, self.instance_name):
+                        return getattr(bundle.obj, self.instance_name)
+                except ObjectDoesNotExist:
+                    pass
+            if self.has_default():
                 if callable(self._default):
                     return self._default()
 
                 return self._default
-            elif self.null:
+            if self.null:
                 return None
-            else:
-                raise ApiFieldError("The '%s' field has no data and doesn't allow a default or null value." % self.instance_name)
+
+            raise ApiFieldError("The '%s' field has no data and doesn't allow a default or null value." % self.instance_name)
 
         return bundle.data[self.instance_name]
 
