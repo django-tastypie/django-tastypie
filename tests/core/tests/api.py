@@ -1,3 +1,5 @@
+import json
+
 from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.test import TestCase
@@ -131,6 +133,29 @@ class ApiTestCase(TestCase):
         resp = api.top_level(request)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content.decode('utf-8'), '{"notes": {"list_endpoint": "/api/v1/notes/", "schema": "/api/v1/notes/schema/"}, "users": {"list_endpoint": "/api/v1/users/", "schema": "/api/v1/users/schema/"}}')
+
+    def test_top_level_include_schema_content(self):
+        api = Api()
+        
+        note_resource = NoteResource()
+        user_resource = UserResource()
+        
+        api.register(note_resource)
+        api.register(user_resource)
+        
+        request = HttpRequest()
+        request.GET = {'full_schema': 'true'}
+
+        resp = api.top_level(request)
+        self.assertEqual(resp.status_code, 200)
+        
+        content = json.loads(resp.content.decode('utf-8'))
+        
+        self.assertEqual(content['notes']['list_endpoint'], '/api/v1/notes/')
+        self.assertEqual(content['notes']['schema'], note_resource.build_schema())
+        
+        self.assertEqual(content['users']['list_endpoint'], '/api/v1/users/')
+        self.assertEqual(content['users']['schema'], user_resource.build_schema())
 
     def test_top_level_jsonp(self):
         api = Api()
