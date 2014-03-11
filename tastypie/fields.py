@@ -569,7 +569,7 @@ class RelatedField(ApiField):
             )
             return related_resource.full_dehydrate(bundle)
 
-    def resource_from_uri(self, fk_resource, uri, request=None, related_obj=None, related_name=None):
+    def resource_from_uri(self, fk_resource, uri, request=None, related_obj=None, related_name=None, related_bundle=None):
         """
         Given a URI is provided, the related resource is attempted to be
         loaded based on the identifiers in the URI.
@@ -584,7 +584,7 @@ class RelatedField(ApiField):
         except ObjectDoesNotExist:
             raise ApiFieldError("Could not find the provided object via resource URI '%s'." % uri)
 
-    def resource_from_data(self, fk_resource, data, request=None, related_obj=None, related_name=None):
+    def resource_from_data(self, fk_resource, data, request=None, related_obj=None, related_name=None, related_bundle=None):
         """
         Given a dictionary-like structure is provided, a fresh related
         resource is created using that data.
@@ -599,6 +599,7 @@ class RelatedField(ApiField):
         if related_obj:
             fk_bundle.related_obj = related_obj
             fk_bundle.related_name = related_name
+            fk_bundle.related_bundle = related_bundle
 
         unique_keys = dict((k, v) for k, v in data.items() if k == 'pk' or (hasattr(fk_resource, k) and getattr(fk_resource, k).unique))
 
@@ -625,7 +626,7 @@ class RelatedField(ApiField):
         fk_resource.is_valid(fk_bundle)
         return fk_bundle
 
-    def resource_from_pk(self, fk_resource, obj, request=None, related_obj=None, related_name=None):
+    def resource_from_pk(self, fk_resource, obj, request=None, related_obj=None, related_name=None, related_bundle=None):
         """
         Given an object with a ``pk`` attribute, the related resource
         is attempted to be loaded via that PK.
@@ -636,7 +637,7 @@ class RelatedField(ApiField):
         )
         return fk_resource.full_dehydrate(bundle)
 
-    def build_related_resource(self, value, request=None, related_obj=None, related_name=None):
+    def build_related_resource(self, value, request=None, related_obj=None, related_name=None, related_bundle=None):
         """
         Returns a bundle of data built by the related resource, usually via
         ``hydrate`` with the data provided.
@@ -647,6 +648,7 @@ class RelatedField(ApiField):
         self.fk_resource = self.to_class()
         kwargs = {
             'request': request,
+            'related_bundle': related_bundle,
             'related_obj': related_obj,
             'related_name': related_name,
         }
@@ -733,11 +735,12 @@ class ToOneField(RelatedField):
 
     def hydrate(self, bundle):
         value = super(ToOneField, self).hydrate(bundle)
-
-        if value is None:
-            return value
-
-        return self.build_related_resource(value, request=bundle.request)
+        
+        if value is not None:
+            if value == bundle.related_obj and bundle.related_bundle:
+                return bundle.related_bundle
+            return self.build_related_resource(value, request=bundle.request)
+        return value
 
 class ForeignKey(ToOneField):
     """
@@ -851,6 +854,7 @@ class ToManyField(RelatedField):
 
             if self.related_name:
                 kwargs['related_obj'] = bundle.obj
+                kwargs['related_bundle'] = bundle
                 kwargs['related_name'] = self.related_name
 
             m2m_hydrated.append(self.build_related_resource(value, **kwargs))
