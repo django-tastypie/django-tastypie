@@ -27,14 +27,14 @@ fi
 
 for type in $TYPES; do
     echo "** $type **"
+    module_name=$type
 
     if [ $type == 'related' ]; then
-        django-admin.py test ${type}_resource --settings=settings_$type
-        continue
+        module_name=${module_name}_resource
     elif [ $type == 'gis' ]; then
         createdb -T template_postgis tastypie.db
     fi
 
-    django-admin.py test $type --settings=settings_$type
+    ./manage_$type.py test $module_name
     echo; echo
 done
