@@ -53,5 +53,7 @@ LOGGING = {
     },
 }
 
+TASTYPIE_FULL_DEBUG = False
+
 # to make sure timezones are handled correctly in Django>=1.4
 USE_TZ = True

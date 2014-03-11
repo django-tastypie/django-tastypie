@@ -1,6 +1,9 @@
-from testcases import TestServerTestCase
 import json
+
+from django.test.utils import override_settings
 from django.utils import six
+
+from testcases import TestServerTestCase
 
 try:
     from http.client import HTTPConnection
@@ -14,7 +17,7 @@ def header_name(name):
     else:
         return name.lower()
 
-
+@override_settings(DEBUG=True)
 class HTTPTestCase(TestServerTestCase):
     def setUp(self):
         self.start_test_server(address='localhost', port=8001)
