@@ -962,6 +962,8 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         if self._meta.filtering:
             data['filtering'] = self._meta.filtering
 
+        pk_field_name = self._meta.queryset.model._meta.pk.name
+
         for field_name, field_object in self.fields.items():
             data['fields'][field_name] = {
                 'default': field_object.default,
@@ -971,6 +973,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 'readonly': field_object.readonly,
                 'help_text': field_object.help_text,
                 'unique': field_object.unique,
+                'primary_key': True if field_name == pk_field_name else False,
             }
             if field_object.dehydrated_type == 'related':
                 if getattr(field_object, 'is_m2m', False):
