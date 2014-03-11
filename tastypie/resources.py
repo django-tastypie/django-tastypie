@@ -1377,7 +1377,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         deserialized = self.alter_deserialized_list_data(request, deserialized)
 
         if not self._meta.collection_name in deserialized:
-            raise BadRequest("Invalid data sent.")
+            raise BadRequest("Invalid data sent: missing '%s'" % self._meta.collection_name)
 
         basic_bundle = self.build_bundle(request=request)
         self.obj_delete_list_for_update(bundle=basic_bundle, **self.remove_api_resource_names(kwargs))
