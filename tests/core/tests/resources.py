@@ -32,7 +32,7 @@ from tastypie.utils import aware_datetime, make_naive
 from tastypie.validation import FormValidation
 from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord, Counter
 from core.tests.mocks import MockRequest
-from core.utils import SimpleHandler
+from core.utils import adjust_schema, SimpleHandler
 
 
 class CustomSerializer(Serializer):
@@ -560,16 +560,10 @@ class ResourceTestCase(TestCase):
         bundles_seen = []
         self.assertRaises(NotImplementedError, basic.rollback, bundles_seen)
 
-    def adjust_schema(self, schema_dict):
-        for field, field_info in schema_dict['fields'].items():
-            if isinstance(field_info['default'], fields.NOT_PROVIDED):
-                schema_dict['fields'][field]['default'] = 'No default provided.'
-
-        return schema_dict
-
     def test_build_schema(self):
+        self.maxDiff = None
         basic = BasicResource()
-        schema = self.adjust_schema(basic.build_schema())
+        schema = adjust_schema(basic.build_schema())
         self.assertEqual(schema, {
             'allowed_detail_http_methods': ['get', 'post', 'put', 'delete', 'patch'],
             'allowed_list_http_methods': ['get', 'post', 'put', 'delete', 'patch'],
@@ -622,7 +616,7 @@ class ResourceTestCase(TestCase):
         basic = BasicResource()
         basic._meta.ordering = ['date_joined', 'name']
         basic._meta.filtering = {'date_joined': ['gt', 'gte'], 'name': ALL}
-        schema = self.adjust_schema(basic.build_schema())
+        schema = adjust_schema(basic.build_schema())
         self.assertEqual(schema, {
             'filtering': {
                 'name': 1,
@@ -1631,18 +1625,9 @@ class ModelResourceTestCase(TestCase):
         request.META = {'HTTP_ACCEPT': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'}
         self.assertEqual(resource.determine_format(request), 'application/xml')
 
-    def adjust_schema(self, schema_dict):
-        for field, field_info in schema_dict['fields'].items():
-            if isinstance(field_info['default'], fields.NOT_PROVIDED):
-                schema_dict['fields'][field]['default'] = 'No default provided.'
-            if isinstance(field_info['default'], (datetime.datetime, datetime.date)):
-                schema_dict['fields'][field]['default'] = 'The current date.'
-
-        return schema_dict
-
     def test_build_schema(self):
         related = RelatedNoteResource()
-        schema = self.adjust_schema(related.build_schema())
+        schema = adjust_schema(related.build_schema())
         self.assertEqual(schema, {
             'filtering': {
                 'subjects': 2,
