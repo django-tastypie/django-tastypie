@@ -8,7 +8,7 @@ from django.db.models.signals import pre_save
 from django.test.testcases import TestCase
 
 from tastypie import fields
-from tastypie.exceptions import NotFound
+from tastypie.exceptions import ApiFieldError, NotFound
 
 from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
@@ -83,6 +83,39 @@ class RelatedResourceTest(TestCaseWithFixture):
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(User.objects.get(id=self.user.id).username, 'foobar')
+
+    def test_ok_not_null_field_included(self):
+        """
+        Posting a new detail with no related objects
+        should require one query to save the object
+        """
+        company = Company.objects.create()
+        
+        resource = api.canonical_resource_for('product')
+
+        request = MockRequest()
+        body = json.dumps({
+            'producer': {'pk':company.pk},
+        })
+        request.set_body(body)
+
+        resp = resource.post_list(request)
+        
+        self.assertEqual(resp.status_code, 201)
+
+    def test_apifielderror_missing_not_null_field(self):
+        """
+        Posting a new detail with no related objects
+        should require one query to save the object
+        """
+        resource = api.canonical_resource_for('product')
+
+        request = MockRequest()
+        body = json.dumps({})
+        request.set_body(body)
+        
+        with self.assertRaises(ApiFieldError):
+            resp = resource.post_list(request)
 
 
 class CategoryResourceTest(TestCaseWithFixture):
