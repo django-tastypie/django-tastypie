@@ -206,6 +206,13 @@ class ApiKeyAuthenticationTestCase(TestCase):
         request.META['HTTP_AUTHORIZATION'] = 'aPiKeY johndoe:%s' % john_doe.api_key.key
         self.assertEqual(auth.is_authenticated(request), True)
 
+        # No api_key.
+        john_doe = User.objects.get(username='johndoe')
+        api_key = john_doe.api_key
+        api_key.delete()
+        request.META['HTTP_AUTHORIZATION'] = 'ApiKey johndoe:%s' % api_key.key
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+
     def test_check_active_true(self):
         auth = ApiKeyAuthentication()
         request = HttpRequest()
