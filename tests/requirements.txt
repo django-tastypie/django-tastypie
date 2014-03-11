@@ -1,3 +1,7 @@
 -r ../requirements.txt
+biplist
+defusedxml
+lxml
 mock
 pytz==2013b
+PyYAML
