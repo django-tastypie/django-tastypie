@@ -6,7 +6,6 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': DATABASE_NAME,
-        'TEST_NAME': TEST_DATABASE_NAME,
     }
 }
 

@@ -10,7 +10,7 @@ MEDIA_ROOT = os.path.normpath(os.path.join(BASE_PATH, 'media'))
 
 DATABASE_ENGINE = 'sqlite3'
 DATABASE_NAME = 'tastypie.db'
-TEST_DATABASE_NAME = 'tastypie-test.db'
+TEST_DATABASE_NAME = ''
 
 # for forwards compatibility
 DATABASES = {
@@ -32,6 +32,16 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 CACHE_BACKEND = 'locmem://'
 SECRET_KEY = 'verysecret'
+
+# weaker password hashing shoulod allow for faster tests
+PASSWORD_HASHERS = (
+    'django.contrib.auth.hashers.CryptPasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.BCryptPasswordHasher',
+    'django.contrib.auth.hashers.SHA1PasswordHasher',
+    'django.contrib.auth.hashers.MD5PasswordHasher',
+)
 
 # to make sure timezones are handled correctly in Django>=1.4
 USE_TZ = True

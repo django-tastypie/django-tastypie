@@ -1,9 +1,3 @@
-lxml
-defusedxml
-biplist
-pyyaml
-python-mimeparse>=0.1.4
-python-dateutil>=2.1
+-r ../requirements.txt
 mock
 pytz==2013b
-
