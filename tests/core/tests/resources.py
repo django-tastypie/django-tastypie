@@ -3036,7 +3036,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "string",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "created": {
                     "blank": False,
@@ -3045,7 +3046,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "datetime",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "id": {
                     "blank": True,
@@ -3054,7 +3056,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "integer",
-                    "unique": True
+                    "unique": True,
+                    "primary_key": True
                 },
                 "is_active": {
                     "blank": True,
@@ -3063,7 +3066,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "boolean",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "resource_uri": {
                     "blank": False,
@@ -3072,7 +3076,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": True,
                     "type": "string",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "slug": {
                     "blank": False,
@@ -3081,7 +3086,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "string",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "title": {
                     "blank": False,
@@ -3090,7 +3096,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "string",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "updated": {
                     "blank": False,
@@ -3099,7 +3106,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "datetime",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 }
             },
             "filtering": {
