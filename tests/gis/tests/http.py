@@ -1,4 +1,3 @@
-from testcases import TestServerTestCase
 import json
 
 try:
@@ -10,6 +9,12 @@ try:
     from urllib.parse import quote
 except ImportError:
     from urllib import quote
+
+from testcases import TestServerTestCase
+
+from .utils import skipIfSpatialite
+
+golden_gate_park_query = quote("""{"type": "MultiPolygon", "coordinates": [[[[-122.511067, 37.771276], [-122.510037, 37.766391], [-122.510037, 37.763813], [-122.456822, 37.765848], [-122.452960, 37.766459], [-122.454848, 37.773990], [-122.475362, 37.773040], [-122.511067, 37.771276]]]]}""")
 
 
 class HTTPTestCase(TestServerTestCase):
@@ -74,9 +79,15 @@ class HTTPTestCase(TestServerTestCase):
         connection = self.get_connection()
         post_data = '{"content": "A new post.", "is_active": true, "title": "New Title", "slug": "new-title", "user": "/api/v1/users/1/"}'
         connection.request('POST', '/api/v1/geonotes/', body=post_data, headers={'Accept': 'application/json', 'Content-type': 'application/json'})
+        
         response = connection.getresponse()
+        
         self.assertEqual(response.status, 201)
-        self.assertEqual(dict(response.getheaders())['location'], 'http://localhost:8001/api/v1/geonotes/4/')
+        
+        headers = dict(response.getheaders())
+        
+        location = headers.get('location', headers.get('Location'))
+        self.assertEqual(location, 'http://localhost:8001/api/v1/geonotes/4/')
 
         # make sure posted object exists
         connection.request('GET', '/api/v1/geonotes/4/', headers={'Accept': 'application/json'})
@@ -101,9 +112,14 @@ class HTTPTestCase(TestServerTestCase):
         }"""
         connection.request('POST', '/api/v1/geonotes/', body=post_data, headers={'Accept': 'application/json', 'Content-type': 'application/json'})
         response = connection.getresponse()
+        
         self.assertEqual(response.status, 201)
-        self.assertEqual(dict(response.getheaders())['location'], 'http://localhost:8001/api/v1/geonotes/4/')
-
+        
+        headers = dict(response.getheaders())
+        
+        location = headers.get('location', headers.get('Location'))
+        self.assertEqual(location, 'http://localhost:8001/api/v1/geonotes/4/')
+        
         # make sure posted object exists
         connection.request('GET', '/api/v1/geonotes/4/', headers={'Accept': 'application/json'})
         response = connection.getresponse()
@@ -124,8 +140,13 @@ class HTTPTestCase(TestServerTestCase):
         post_data = """<object><created>2010-03-30T20:05:00</created><polys type="null"/><is_active type="boolean">True</is_active><title>Points inside Golden Gate Park note 2</title><lines type="null"/><slug>points-inside-golden-gate-park-note-2</slug><content>A new post.</content><points type="hash"><type>MultiPoint</type><coordinates type="list"><objects><value type="float">-122.475233</value><value type="float">37.768617</value></objects><objects><value type="float">-122.470416</value><value type="float">37.767382</value></objects></coordinates></points><user>/api/v1/users/1/</user></object>"""
         connection.request('POST', '/api/v1/geonotes/', body=post_data, headers={'Accept': 'application/xml', 'Content-type': 'application/xml'})
         response = connection.getresponse()
+        
         self.assertEqual(response.status, 201)
-        self.assertEqual(dict(response.getheaders())['location'], 'http://localhost:8001/api/v1/geonotes/4/')
+        
+        headers = dict(response.getheaders())
+        
+        location = headers.get('location', headers.get('Location'))
+        self.assertEqual(location, 'http://localhost:8001/api/v1/geonotes/4/')
 
         # make sure posted object exists
         connection.request('GET', '/api/v1/geonotes/4/', headers={'Accept': 'application/json'})
@@ -153,12 +174,11 @@ class HTTPTestCase(TestServerTestCase):
         
         self.assertIn('<points type="hash"><coordinates type="list"><objects><value type="float">-122.475233</value><value type="float">37.768617</value></objects><objects><value type="float">-122.470416</value><value type="float">37.767382</value></objects></coordinates><type>MultiPoint</type></points>', data)
 
-    def test_filter_within(self):
-        golden_gate_park_json = """{"type": "MultiPolygon", "coordinates": [[[[-122.511067, 37.771276], [-122.510037, 37.766391], [-122.510037, 37.763813], [-122.456822, 37.765848], [-122.452960, 37.766459], [-122.454848, 37.773990], [-122.475362, 37.773040], [-122.511067, 37.771276]]]]}"""
+    def test_filter_within_on_points(self):
 
         # Get points
         connection = self.get_connection()
-        connection.request('GET', '/api/v1/geonotes/?points__within=%s' % quote(golden_gate_park_json), headers={'Accept': 'application/json'})
+        connection.request('GET', '/api/v1/geonotes/?points__within=%s' % golden_gate_park_query, headers={'Accept': 'application/json'})
         response = connection.getresponse()
         connection.close()
         self.assertEqual(response.status, 200)
@@ -172,9 +192,12 @@ class HTTPTestCase(TestServerTestCase):
         self.assertAlmostEqual(data['objects'][0]['points']['coordinates'][1][0], -122.470416, places=5)
         self.assertAlmostEqual(data['objects'][0]['points']['coordinates'][1][1], 37.767381, places=5)
 
+    @skipIfSpatialite
+    def test_filter_within_on_lines(self):
+
         # Get lines
         connection = self.get_connection()
-        connection.request('GET', '/api/v1/geonotes/?lines__within=%s' % quote(golden_gate_park_json), headers={'Accept': 'application/json'})
+        connection.request('GET', '/api/v1/geonotes/?lines__within=%s' % golden_gate_park_query, headers={'Accept': 'application/json'})
         response = connection.getresponse()
         connection.close()
         self.assertEqual(response.status, 200)
@@ -188,6 +211,7 @@ class HTTPTestCase(TestServerTestCase):
         self.assertAlmostEqual(data['objects'][0]['lines']['coordinates'][0][1][0], -122.499995, places=5)
         self.assertAlmostEqual(data['objects'][0]['lines']['coordinates'][0][1][1], 37.768223, places=5)
 
+    @skipIfSpatialite
     def test_filter_contains(self):
         points_inside_golden_gate_park = """{"coordinates": [[-122.475233, 37.768616999999999], [-122.470416, 37.767381999999998]], "type": "MultiPoint"}"""
 

@@ -1,9 +1,11 @@
-from django.http import HttpRequest
-from django.test import TestCase
 import json
 
+from django.http import HttpRequest
 
-class ViewsTestCase(TestCase):
+from testcases import TestCaseWithFixture
+
+
+class ViewsTestCase(TestCaseWithFixture):
     def test_gets(self):
         resp = self.client.get('/api/v1/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)

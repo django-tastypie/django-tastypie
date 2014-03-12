@@ -39,6 +39,11 @@ addons:
     packages:
     - python-sphinx
     - python3-sphinx
+    - binutils
+    - libproj-dev
+    - gdal-bin
+    - spatialite-bin
+    - libspatialite-dev
 
 cache:
   directories:
