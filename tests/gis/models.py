@@ -1,8 +1,18 @@
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
+from django.db.backends.signals import connection_created
 
 from tastypie.utils import now
 
+#def setup_spatialite(sender, connection, *args, **kwargs):
+#    if 'spatialite' in connection.__class__.__module__:
+#        
+#        import ipdb
+#        ipdb.set_trace()
+#        cur.cursor.execute("SELECT InitSpatialMetaData();")
+#    
+
+#connection_created.connect(setup_spatialite)
 
 class GeoNote(models.Model):
     user = models.ForeignKey(User, related_name='notes')

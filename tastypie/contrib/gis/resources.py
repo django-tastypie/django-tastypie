@@ -1,6 +1,9 @@
 # See COPYING file in this directory.
 # Some code originally from django-boundaryservice
 from __future__ import unicode_literals
+
+import json
+
 try:
     from urllib.parse import unquote
 except ImportError:
@@ -8,8 +11,6 @@ except ImportError:
 
 from django.contrib.gis.db.models import GeometryField
 from django.contrib.gis.geos import GEOSGeometry
-
-import json
 
 from tastypie.fields import ApiField, CharField
 from tastypie import resources

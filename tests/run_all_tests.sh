@@ -35,6 +35,7 @@ for pytestpath in $PYTESTPATHS; do
         module_name=${module_name}_resource
     elif [ $type == 'gis' ]; then
         createdb -T template_postgis tastypie.db
+        spatialite tastypie-spatialite.db "SELECT InitSpatialMetaData();"
     fi
     
     test_name=$module_name
