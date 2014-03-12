@@ -17,6 +17,9 @@ matrix:
     - env: DJANGO_VERSION=dev
       python: "2.6"
 
+before_install:
+    - sudo apt-get install python-sphinx python3-sphinx
+
 # command to install dependencies
 install:
     - pip install tox
