@@ -635,7 +635,7 @@ class RelatedSaveCallsTest(TestCase):
         taggable_tag = tag.taggabletags.all()[0]
         self.assertEqual(taggable_tag.extra, 1234)
 
-    def test_no_save_m2m_unchanged_exisitng_data_persists(self):
+    def test_no_save_m2m_unchanged_exisiting_data_persists(self):
         """
         Data should persist when posting an updated detail object with
         unchanged reverse realated objects.

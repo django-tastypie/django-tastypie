@@ -84,7 +84,7 @@
     {
         "fields": {
             "comment": "Nice post", 
-            "content_type": 6, 
+            "content_type": ["complex", "post"], 
             "ip_address": "", 
             "is_public": true, 
             "is_removed": false, 
@@ -102,7 +102,7 @@
     {
         "fields": {
             "comment": "Even better than the last!", 
-            "content_type": 6, 
+            "content_type": ["complex", "post"], 
             "ip_address": "", 
             "is_public": true, 
             "is_removed": false, 
