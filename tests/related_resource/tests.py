@@ -19,7 +19,6 @@ from related_resource.api.urls import api
 from related_resource.models import Category, Label, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment
 
 class M2MResourcesTestCase(TestCase):
-
     def test_same_object_added(self):
         """
         From Issue #1035
@@ -36,7 +35,7 @@ class M2MResourcesTestCase(TestCase):
             'moderators': [ur.get_resource_uri(user)],
         }))
         self.assertEqual(resp.status_code, 201, resp.content)
-        data = json.loads(resp.content)
+        data = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(data['moderators']), 1)
         self.assertEqual(len(data['members']), 1)
 
