@@ -1,10 +1,14 @@
 from django.contrib.auth.models import User
+
 from tastypie import fields
 from tastypie.resources import ModelResource
 from tastypie.authorization import Authorization
+
 from core.models import Note, MediaBit
+
 from related_resource.models import Category, Tag, ExtraData, Taggable,\
-    TaggableTag, Person, Company, Product, Address, Dog, DogHouse, Bone, Job, Payment
+    TaggableTag, Person, Company, Product, Address, Dog, Forum, DogHouse, Bone, Job, Payment
+
 from tests.related_resource.models import Label, Post
 
 
@@ -197,4 +201,14 @@ class JobResource(ModelResource):
         resource_name = 'job'
         authorization = Authorization()
         allowed_methods = ('get','put','post')
+
+class ForumResource(ModelResource):
+    moderators = fields.ManyToManyField(UserResource, 'moderators', full=True)
+    members    = fields.ManyToManyField(UserResource, 'members', full=True)
+
+    class Meta:
+        resource_name = 'forum'
+        queryset = Forum.objects.all()
+        authorization = Authorization()
+        always_return_data = True
 

@@ -1,19 +1,44 @@
+from datetime import datetime, tzinfo, timedelta
+import json
+
 import django
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.test import TestCase
-import json
 from django.core.urlresolvers import reverse
+from django.db.models.signals import pre_save
+from django.test import TestCase
+
+from tastypie import fields
+
 from core.models import Note, MediaBit
 from core.tests.resources import HttpRequest
 from core.tests.mocks import MockRequest
-from tastypie import fields
-from related_resource.api.resources import FreshNoteResource, CategoryResource, PersonResource, JobResource
+
+from related_resource.api.resources import CategoryResource, ForumResource, FreshNoteResource, JobResource, PersonResource, UserResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment
-from related_resource.models import Label
-from django.db.models.signals import pre_save
-from datetime import datetime, tzinfo, timedelta
+from related_resource.models import Category, Label, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment
+
+class M2MResourcesTestCase(TestCase):
+
+    def test_same_object_added(self):
+        """
+        From Issue #1035
+        """
+        
+        user=User.objects.create(username='gjcourt')
+        
+        ur=UserResource()
+        fr=ForumResource()
+        
+        resp = self.client.post(fr.get_resource_uri(), content_type='application/json', data=json.dumps({
+            'name': 'Test Forum',
+            'members': [ur.get_resource_uri(user)],
+            'moderators': [ur.get_resource_uri(user)],
+        }))
+        self.assertEqual(resp.status_code, 201, resp.content)
+        data = json.loads(resp.content)
+        self.assertEqual(len(data['moderators']), 1)
+        self.assertEqual(len(data['members']), 1)
 
 
 class RelatedResourceTest(TestCase):

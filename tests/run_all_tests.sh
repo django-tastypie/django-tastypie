@@ -43,6 +43,6 @@ for pytestpath in $PYTESTPATHS; do
         test_name=$test_name.$type_remainder
     fi
 
-    ./manage_$type.py test $test_name
+    ./manage_$type.py test $test_name --traceback
     echo; echo
 done

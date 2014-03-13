@@ -24,6 +24,7 @@ class ApiTestCase(TestCase):
     urls = 'core.tests.api_urls'
 
     def test_register(self):
+        # NOTE: these have all been registered in core.tests.api_urls
         api = Api()
         self.assertEqual(len(api._registry), 0)
 
