@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 from django.conf import settings
 from django.contrib import admin
+# Sorry to test
 
 
 if 'django.contrib.auth' in settings.INSTALLED_APPS:
