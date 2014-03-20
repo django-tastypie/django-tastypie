@@ -95,7 +95,6 @@ As an example, we'll walk through what a GET request to a list endpoint (say
   * the requested HTTP method is in ``allowed_methods`` (``method_check``),
   * the class has a method that can handle the request (``get_list``),
   * the user is authenticated (``is_authenticated``),
-  * the user is authorized (``is_authorized``),
   * & the user has not exceeded their throttle (``throttle_check``).
 
   At this point, ``dispatch`` actually calls the requested method (``get_list``).
@@ -951,16 +950,6 @@ HTTP methods to check against. Usually, this looks like::
     # A useful check when creating a new endpoint that only handles
     # GET.
     self.method_check(request, ['get'])
-
-``is_authorized``
------------------
-
-.. method:: Resource.is_authorized(self, request, object=None)
-
-Handles checking of permissions to see if the user has authorization
-to GET, POST, PUT, or DELETE this resource.  If ``object`` is provided,
-the authorization backend can apply additional row-level permissions
-checking.
 
 ``is_authenticated``
 --------------------
