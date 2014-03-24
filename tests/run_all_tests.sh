@@ -35,6 +35,6 @@ for type in $TYPES; do
         createdb -T template_postgis tastypie.db
     fi
 
-    django-admin.py test $type --settings=settings_$type
+    django-admin.py test $type --settings=settings_$type --traceback
     echo; echo
 done

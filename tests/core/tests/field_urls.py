@@ -5,7 +5,7 @@ except ImportError: # Django < 1.4
 from tastypie import fields
 from tastypie.resources import ModelResource
 from core.models import Note, Subject
-from core.tests.api import Api, UserResource
+from core.tests.test_api import Api, UserResource
 
 
 class SubjectResource(ModelResource):
