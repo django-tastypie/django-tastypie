@@ -4,8 +4,8 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 import json
 from django.core.urlresolvers import reverse
+from django.http import HttpRequest
 from core.models import Note, MediaBit
-from core.tests.resources import HttpRequest
 from core.tests.mocks import MockRequest
 from tastypie import fields
 from related_resource.api.resources import FreshNoteResource, CategoryResource, PersonResource, JobResource

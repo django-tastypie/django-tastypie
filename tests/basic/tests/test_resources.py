@@ -23,7 +23,7 @@ class NoPathLazyUserResource(ModelResource):
 
 
 class LazyUserResource(ModelResource):
-    notes = ToManyField('basic.tests.resources.NoteResource', 'notes')
+    notes = ToManyField('basic.tests.test_resources.NoteResource', 'notes')
 
     class Meta:
         queryset = User.objects.all()
@@ -65,7 +65,7 @@ class NoteModelResourceTestCase(TestCase):
 
         self.assertEqual(ilur.notes.to, 'basic.api.resources.FooResource')
         self.assertEqual(nplur.notes.to, 'FooResource')
-        self.assertEqual(lur.notes.to, 'basic.tests.resources.NoteResource')
+        self.assertEqual(lur.notes.to, 'basic.tests.test_resources.NoteResource')
 
         try:
             ilur.notes.to_class()
