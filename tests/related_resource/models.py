@@ -124,3 +124,29 @@ class Post(models.Model):
     name = models.CharField(max_length=200)
     label = models.ManyToManyField(Label, null=True)
 
+class ContactGroup(models.Model):
+    name     = models.CharField(max_length=75, blank=True,
+                 help_text="Contact first name.")
+    
+    class Meta:
+        ordering = ['id']
+    
+    def __unicode__(self):
+        return u'%s' % self.name
+
+class Contact(models.Model):
+    name = models.CharField(max_length=255)
+    groups = models.ManyToManyField(
+        ContactGroup,
+        related_name='members',
+        null=True,
+        blank=True,
+        help_text="The Contact Groups this Contact belongs to."
+    )
+    
+    class Meta:
+        ordering = ['id']
+    
+    def __unicode__(self):
+        return u'%s' % self.name
+

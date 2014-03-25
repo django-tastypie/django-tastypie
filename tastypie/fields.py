@@ -578,7 +578,8 @@ class RelatedField(ApiField):
             obj = fk_resource.get_via_uri(uri, request=request)
             bundle = fk_resource.build_bundle(
                 obj=obj,
-                request=request
+                request=request,
+                via_uri=True
             )
             return fk_resource.full_dehydrate(bundle)
         except ObjectDoesNotExist:

@@ -17,7 +17,10 @@ from core.tests.resources import HttpRequest
 
 from related_resource.api.resources import CategoryResource, ForumResource, FreshNoteResource, JobResource, NoteResource, PersonResource, UserResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Label, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment
+from related_resource.models import Category, Contact, ContactGroup, Label, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment
+
+
+old_saving_algorithm = django.VERSION[1] < 6
 
 
 class M2MResourcesTestCase(TestCase):
@@ -576,7 +579,6 @@ class RelatedSaveCallsTest(TestCase):
         with self.assertNumQueries(1):
             resp = resource.post_list(request)
 
-
     def test_two_queries_for_post_list(self):
         """
         Posting a new detail with one related object, referenced via its
@@ -638,7 +640,11 @@ class RelatedSaveCallsTest(TestCase):
 
         request.set_body(json.dumps(body_dict))
 
-        resp = resource.wrap_view('dispatch_list')(request)
+        num_queries = 5 if old_saving_algorithm else 4
+
+        with self.assertNumQueries(num_queries):
+            resp = resource.wrap_view('dispatch_list')(request)
+        
         self.assertEqual(resp.status_code, 201)
 
         #'extra' should have been set
@@ -650,11 +656,16 @@ class RelatedSaveCallsTest(TestCase):
 
         request.set_body(json.dumps(body_dict))
 
-        request.path = reverse('api_dispatch_detail', kwargs={'pk': tag.pk,
-                                                              'resource_name': resource._meta.resource_name,
-                                                              'api_name': resource._meta.api_name})
+        request.path = reverse('api_dispatch_detail', kwargs={
+            'pk': tag.pk,
+            'resource_name': resource._meta.resource_name,
+            'api_name': resource._meta.api_name
+        })
 
-        resource.put_detail(request)
+        num_queries = 7 if old_saving_algorithm else 5
+
+        with self.assertNumQueries(num_queries):
+            resource.put_detail(request)
 
         #'extra' should have changed
         tag = Tag.objects.all()[0]
@@ -664,7 +675,7 @@ class RelatedSaveCallsTest(TestCase):
     def test_no_save_m2m_unchanged_existing_data_persists(self):
         """
         Data should persist when posting an updated detail object with
-        unchanged reverse realated objects.
+        unchanged reverse related objects.
         """
 
         person = Person.objects.create(name='Ryan')
@@ -690,7 +701,10 @@ class RelatedSaveCallsTest(TestCase):
         
         request.set_body(json.dumps(body_dict))
         
-        resp = resource.wrap_view('dispatch_detail')(request, pk=dog.pk)
+        num_queries = 19 if old_saving_algorithm else 14
+
+        with self.assertNumQueries(num_queries):
+            resp = resource.wrap_view('dispatch_detail')(request, pk=dog.pk)
         
         self.assertEqual(resp.status_code, 204)
 
@@ -702,6 +716,62 @@ class RelatedSaveCallsTest(TestCase):
         
         self.assertEqual(dog_bones[0], bone1)
         self.assertEqual(dog_bones[1], bone2)
+    
+    def test_no_save_m2m_related(self):
+        """
+        When saving an object with a M2M field, don't save that related object's related objects.
+        """
+        cg1 = ContactGroup.objects.create(name='The Inebriati')
+        cg2 = ContactGroup.objects.create(name='The Stone Cutters')
+        
+        c1 = Contact.objects.create(name='foo')
+        c2 = Contact.objects.create(name='bar')
+        c2.groups.add(cg1, cg2)
+        c3 = Contact.objects.create(name='baz')
+        c3.groups.add(cg1)
+        
+        self.assertEqual(list(c1.groups.all()), [])
+        self.assertEqual(list(c2.groups.all()), [cg1, cg2])
+        self.assertEqual(list(c3.groups.all()), [cg1])
+        
+        data = {
+            'name': c1.name,
+            'groups': [reverse('api_dispatch_detail', kwargs={'api_name': 'v1', 'resource_name': 'contactgroup', 'pk': cg1.pk})],
+        }
+        
+        resource = api.canonical_resource_for('contact')
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request._load_post_and_files = lambda *args, **kwargs: None
+        request.set_body(json.dumps(data))
+        
+        num_queries = 9 if old_saving_algorithm else 8
+
+        with self.assertNumQueries(num_queries):
+            response = resource.wrap_view('dispatch_detail')(request, pk=c1.pk)
+        
+        self.assertEqual(response.status_code, 204, response.content)
+        
+        new_contacts = Contact.objects.all()
+        new_c1 = new_contacts[0]
+        new_c2 = new_contacts[1]
+        new_c3 = new_contacts[2]
+        
+        self.assertEqual(new_c1.name, c1.name)
+        
+        self.assertEqual(new_c1.id, c1.id)
+        self.assertEqual(list(new_c1.groups.all()), [cg1])
+        self.assertEqual(new_c2.id, c2.id)
+        self.assertEqual(list(new_c2.groups.all()), [cg1, cg2])
+        self.assertEqual(new_c3.id, c3.id)
+        self.assertEqual(list(new_c3.groups.all()), [cg1])
+        
+        new_cg1 = ContactGroup.objects.get(id=cg1.id)
+        new_cg2 = ContactGroup.objects.get(id=cg2.id)
+        
+        self.assertEqual(list(new_cg1.members.all()), [new_c1, new_c2, new_c3])
+        self.assertEqual(list(new_cg2.members.all()), [new_c2])
 
 
 class CorrectUriRelationsTestCase(TestCase):

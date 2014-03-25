@@ -49,7 +49,32 @@ PASSWORD_HASHERS = (
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(process)d %(thread)d %(name)s:%(lineno)s %(funcName)s() %(message)s'
+        },
+        'verbose_sql': {
+            'format': '%(levelname)s %(asctime)s %(process)d %(thread)d %(name)s:%(lineno)s %(funcName)s() %(sql)s\n%(params)s\n%(duration)ss'
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'console_sql': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose_sql',
+        },
+    },
     'loggers': {
+        'django.db.backends': {
+            'handlers': ['console_sql'],
+            'level': 'INFO',# Change to DEBUG to see queries that get executed
+            'propagate': False,
+        },
         'py.warnings': {
             'level': 'ERROR',# change to WARNING to show DeprecationWarnings, etc.
         },

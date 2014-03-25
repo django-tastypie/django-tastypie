@@ -5,13 +5,12 @@ except ImportError: # Django < 1.4
 
 from tastypie.api import Api
 
-from related_resource.api.resources import NoteResource, UserResource, \
-        CategoryResource, TagResource, TaggableTagResource, TaggableResource, \
-        ExtraDataResource, FreshNoteResource, FreshMediaBitResource, \
-        ForumResource, CompanyResource, ProductResource, AddressResource, \
-        PersonResource, DogResource, DogHouseResource, BoneResource
-
-from tests.related_resource.api.resources import LabelResource, PostResource
+from related_resource.api.resources import AddressResource, BoneResource, \
+    CategoryResource, CompanyResource, ContactResource, ContactGroupResource, \
+    DogResource, DogHouseResource, ExtraDataResource, FreshNoteResource, \
+    FreshMediaBitResource, ForumResource, LabelResource, NoteResource, PersonResource, \
+    PostResource, ProductResource, TagResource, TaggableResource, \
+    TaggableTagResource, UserResource
 
 api = Api(api_name='v1')
 api.register(NoteResource(), canonical=True)
@@ -33,5 +32,7 @@ api.register(DogHouseResource(), canonical=True)
 api.register(BoneResource(), canonical=True)
 api.register(PostResource(), canonical=True)
 api.register(LabelResource(), canonical=True)
+api.register(ContactResource(), canonical=True)
+api.register(ContactGroupResource(), canonical=True)
 
 urlpatterns = api.urls
