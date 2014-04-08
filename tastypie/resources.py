@@ -2091,8 +2091,6 @@ class BaseModelResource(Resource):
         """
         lookup_kwargs = {}
         bundle.obj = self.get_object_list(bundle.request).model()
-        # Override data values, we rely on uri identifiers
-        bundle.data.update(kwargs)
         # We're going to manually hydrate, as opposed to calling
         # ``full_hydrate``, to ensure we don't try to flesh out related
         # resources & keep things speedy.
