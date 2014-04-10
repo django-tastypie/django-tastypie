@@ -1540,7 +1540,7 @@ In any case:
   * ``PATCH`` is all or nothing. If a single sub-operation fails, the
     entire request will fail and all resources will be rolled back.
 
-  * For ``PATCH`` to work, you **must** have ``put`` in your
+  * For ``PATCH`` to work, you **must** have ``patch`` in your
     :ref:`detail-allowed-methods` setting.
 
   * To delete objects via ``deleted_objects`` in a ``PATCH`` request you
