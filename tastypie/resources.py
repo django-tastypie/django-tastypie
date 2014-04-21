@@ -272,8 +272,9 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             log.error('Internal Server Error: %s' % request.path, exc_info=True,
                       extra={'status_code': response_code, 'request': request})
 
-        # Send the signal so other apps are aware of the exception.
-        got_request_exception.send(self.__class__, request=request)
+            # Send the signal so other apps are aware of the exception.
+            # Do not send 404 exceptions unless asked to.
+            got_request_exception.send(self.__class__, request=request)
 
         # Prep the data going out.
         data = {
