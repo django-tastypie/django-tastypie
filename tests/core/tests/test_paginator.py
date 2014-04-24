@@ -4,7 +4,7 @@ from django.test import TestCase
 from tastypie.exceptions import BadRequest
 from tastypie.paginator import Paginator
 from core.models import Note
-from core.tests.resources import NoteResource
+from core.tests.test_resources import NoteResource
 from django.db import reset_queries
 from django.http import QueryDict
 

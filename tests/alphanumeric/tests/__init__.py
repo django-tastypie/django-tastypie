@@ -1,2 +1,5 @@
-from alphanumeric.tests.views import *
-from alphanumeric.tests.http import *
+from django.conf import settings
+
+if 'DiscoverRunner' not in settings.TEST_RUNNER:
+    from alphanumeric.tests.test_views import *
+    from alphanumeric.tests.test_http import *
