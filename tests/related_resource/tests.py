@@ -86,6 +86,19 @@ class CategoryResourceTest(TestCase):
         self.assertEqual(data['parent'], '/v1/category/2/')
         self.assertEqual(data['name'], 'Daughter')
 
+    def test_filter_on_relation(self):
+        resource = api.canonical_resource_for('category')
+        request = MockRequest()
+        request.GET = {'format': 'json', 'parent': '/v1/category/2/'}
+        request.method = 'GET'
+        resp = resource.wrap_view('dispatch_list')(request)
+
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        self.assertEqual(data['meta']['total_count'], 1)
+        self.assertEqual(data['objects'][0]['parent'], '/v1/category/2/')
+        self.assertEqual(data['objects'][0]['name'], 'Daughter')
+
     def test_put_null(self):
         resource = api.canonical_resource_for('category')
         request = MockRequest()

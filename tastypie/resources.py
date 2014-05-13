@@ -780,6 +780,22 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         except NoReverseMatch:
             return ''
 
+    def get_resource_uri_bits(self, uri):
+        """
+        This pulls apart the salient bits of the URI
+        """
+        prefix = get_script_prefix()
+        chomped_uri = uri
+
+        if prefix and chomped_uri.startswith(prefix):
+            chomped_uri = chomped_uri[len(prefix)-1:]
+
+        try:
+            view, args, kwargs = resolve(chomped_uri)
+            return kwargs
+        except Resolver404:
+            raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
+
     def get_via_uri(self, uri, request=None):
         """
         This pulls apart the salient bits of the URI and populates the
@@ -790,17 +806,8 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         If you need custom behavior based on other portions of the URI,
         simply override this method.
         """
-        prefix = get_script_prefix()
-        chomped_uri = uri
-
-        if prefix and chomped_uri.startswith(prefix):
-            chomped_uri = chomped_uri[len(prefix)-1:]
-
-        try:
-            view, args, kwargs = resolve(chomped_uri)
-        except Resolver404:
-            raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
-
+        kwargs = self.get_resource_uri_bits(uri)
+        
         bundle = self.build_bundle(request=request)
         return self.obj_get(bundle=bundle, **self.remove_api_resource_names(kwargs))
 
@@ -1945,6 +1952,17 @@ class BaseModelResource(Resource):
 
             lookup_bits = self.check_filtering(field_name, filter_type, filter_bits)
             value = self.filter_value_to_python(value, field_name, filters, filter_expr, filter_type)
+
+            # Test if the value is a resource URI and the field is a related field
+            is_related = getattr(self.fields[field_name], 'is_related', False)
+            if is_related and isinstance(value, basestring) and filter_type == 'exact' and value.startswith('/'):
+                # We got a potential URI match against a foreign key. Strip it
+                try:
+                    kwargs = self.get_resource_uri_bits(value)
+                    if 'pk' in kwargs:
+                        value = kwargs['pk']
+                except NotFound:
+                    pass 
 
             db_field_name = LOOKUP_SEP.join(lookup_bits)
             qs_filter = "%s%s%s" % (db_field_name, LOOKUP_SEP, filter_type)

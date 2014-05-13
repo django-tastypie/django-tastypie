@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from tastypie import fields
+from tastypie.constants import ALL_WITH_RELATIONS
 from tastypie.resources import ModelResource
 from tastypie.authorization import Authorization
 from core.models import Note, MediaBit
@@ -32,6 +33,7 @@ class CategoryResource(ModelResource):
         resource_name = 'category'
         queryset = Category.objects.all()
         authorization = Authorization()
+        filtering = {'parent': ALL_WITH_RELATIONS}
 
 
 class TagResource(ModelResource):
