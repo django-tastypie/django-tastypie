@@ -1302,6 +1302,18 @@ class ModelResourceTestCase(TestCase):
         self.assertTrue(obj_get_list_mock.called, msg="Test invalid: obj_get_list should have been dispatched")
         self.assertTrue(send_signal_mock.called, msg="got_request_exception was not called after an error")
 
+    def test_escaping(self):
+        request = HttpRequest()
+        request.method = 'GET'
+        request.GET = {
+            'limit': '<script>alert(1)</script>',
+        }
+        resource = NoteResource()
+        res = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(res.status_code, 400)
+        err_data = json.loads(res.content)
+        self.assertTrue('&lt;script&gt;alert(1)&lt;/script&gt;' in err_data['error'])
+
     def test_init(self):
         # Very minimal & stock.
         resource_1 = NoteResource()
@@ -1787,7 +1799,7 @@ class ModelResourceTestCase(TestCase):
         }
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp['content-type'], 'application/json')
-        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid limit \'<img%20src=\\"http://ycombinator.com/images/y18.gif\\">\' provided. Please provide a positive integer."}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid limit \'&lt;img%20src=\\"http://ycombinator.com/images/y18.gif\\"&gt;\' provided. Please provide a positive integer."}')
 
         request.GET = {
             'format': 'json',
@@ -1795,7 +1807,7 @@ class ModelResourceTestCase(TestCase):
         }
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp['content-type'], 'application/json')
-        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid limit \'<img%20src=\\"http://ycombinator.com/images/y18.gif\\">\' provided. Please provide a positive integer."}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid limit \'&lt;img%20src=\\"http://ycombinator.com/images/y18.gif\\"&gt;\' provided. Please provide a positive integer."}')
 
         request.GET = {
             'format': 'json',
@@ -1803,7 +1815,7 @@ class ModelResourceTestCase(TestCase):
         }
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp['content-type'], 'application/json')
-        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid offset \'<script>alert(\\"XSS\\")</script>\' provided. Please provide an integer."}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid offset \'&lt;script&gt;alert(\\"XSS\\")&lt;/script&gt;\' provided. Please provide an integer."}')
 
     def test_apply_sorting(self):
         resource = NoteResource()
@@ -4072,6 +4084,9 @@ class BustedResource(BasicResource):
     def post_list(self, request, **kwargs):
         raise Http404("Not here either")
 
+    def post_detail(self, request, **kwargs):
+        raise YouFail("<script>alert(1)</script>")
+
 
 class BustedResourceTestCase(TestCase):
     def setUp(self):
@@ -4176,6 +4191,20 @@ class BustedResourceTestCase(TestCase):
         self.request.method = 'POST'
         resp = self.resource.wrap_view('post_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 404)
+
+    def test_escaping(self):
+        settings.DEBUG = True
+        settings.TASTYPIE_FULL_DEBUG = False
+
+        request = HttpRequest()
+        request.method = 'POST'
+        request.POST = {
+            'whatever': 'stuff',
+        }
+        res = self.resource.wrap_view('dispatch_detail')(request, pk=1)
+        self.assertEqual(res.status_code, 500)
+        err_data = json.loads(res.content)
+        self.assertTrue('&lt;script&gt;alert(1)&lt;/script&gt;' in err_data['error_message'])
 
 
 class ObjectlessResource(Resource):
