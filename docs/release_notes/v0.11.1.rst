@@ -31,7 +31,7 @@ where possible.
    to prevent this kind of attack in the future. Thanks to Micah Hausler for
    the report!
 
-   Fixed in SHA: 6da76c6
+   Fixed in SHA: ae515bd
 
 Should you find a security issue in Tastypie, please report it to
 tastypie-security@googlegroups.com. Please **DO NOT** open GitHub issues or
