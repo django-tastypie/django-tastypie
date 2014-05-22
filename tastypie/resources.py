@@ -803,10 +803,17 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             found_at = chomped_uri.index(self._meta.resource_name)
             chomped_uri = chomped_uri[found_at:]
         except ValueError:
-            raise NotFound("An incorrect URL was provided '%s' for this resource." % uri)
+            raise NotFound("An incorrect URL was provided '%s' for the '%s' resource." % (uri, self.__class__.__name__))
 
         try:
-            view, args, kwargs = resolve(chomped_uri, urlconf=self.urls)
+            for url_resolver in getattr(self, 'urls', []):
+                result = url_resolver.resolve(chomped_uri)
+
+                if result is not None:
+                    view, args, kwargs = result
+                    break
+            else:
+                raise Resolver404("URI not found in 'self.urls'.")
         except Resolver404:
             raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
 

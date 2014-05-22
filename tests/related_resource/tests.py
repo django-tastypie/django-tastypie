@@ -681,5 +681,5 @@ class CorrectUriRelationsTestCase(TestCase):
         with self.assertRaises(NotFound) as cm:
             nr.post_list(request)
 
-        self.assertEqual(str(cm.exception), "An incorrect URL was provided '/v1/notes/2/' for this resource.")
+        self.assertEqual(str(cm.exception), "An incorrect URL was provided '/v1/notes/2/' for the 'UserResource' resource.")
         self.assertEqual(Note.objects.count(), 2)
