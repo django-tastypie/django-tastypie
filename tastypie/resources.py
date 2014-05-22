@@ -796,8 +796,24 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         if prefix and chomped_uri.startswith(prefix):
             chomped_uri = chomped_uri[len(prefix)-1:]
 
+        # We mangle the path a bit further & run URL resolution against *only*
+        # the current class. This ought to prevent bad URLs from resolving to
+        # incorrect data.
         try:
-            view, args, kwargs = resolve(chomped_uri)
+            found_at = chomped_uri.index(self._meta.resource_name)
+            chomped_uri = chomped_uri[found_at:]
+        except ValueError:
+            raise NotFound("An incorrect URL was provided '%s' for the '%s' resource." % (uri, self.__class__.__name__))
+
+        try:
+            for url_resolver in getattr(self, 'urls', []):
+                result = url_resolver.resolve(chomped_uri)
+
+                if result is not None:
+                    view, args, kwargs = result
+                    break
+            else:
+                raise Resolver404("URI not found in 'self.urls'.")
         except Resolver404:
             raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
 
