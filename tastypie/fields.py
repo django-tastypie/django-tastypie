@@ -708,7 +708,9 @@ class ToOneField(RelatedField):
     def dehydrate(self, bundle, for_list=True):
         foreign_obj = None
 
-        if isinstance(self.attribute, six.string_types):
+        if self.related_name:
+            foreign_obj = getattr(bundle.obj, self.related_name).get()
+        elif isinstance(self.attribute, six.string_types):
             attrs = self.attribute.split('__')
             foreign_obj = bundle.obj
 
