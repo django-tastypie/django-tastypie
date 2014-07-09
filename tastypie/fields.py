@@ -20,6 +20,15 @@ DATE_REGEX = re.compile('^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2}).*?$')
 DATETIME_REGEX = re.compile('^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})(T|\s+)(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2}).*?$')
 
 
+def safe_getattr(*args):
+    try:
+        return getattr(*args)
+    except ObjectDoesNotExist:
+        if len(args) == 3:
+            return args[2]
+        else:
+            raise AttributeError()
+
 # All the ApiField variants.
 
 class ApiField(object):
@@ -163,7 +172,7 @@ class ApiField(object):
                     return bundle.related_obj
             if self.blank:
                 return None
-            elif self.attribute and getattr(bundle.obj, self.attribute, None):
+            elif self.attribute and safe_getattr(bundle.obj, self.attribute, None):
                 return getattr(bundle.obj, self.attribute)
             elif self.instance_name and hasattr(bundle.obj, self.instance_name):
                 return getattr(bundle.obj, self.instance_name)
