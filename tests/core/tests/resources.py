@@ -1302,6 +1302,18 @@ class ModelResourceTestCase(TestCase):
         self.assertTrue(obj_get_list_mock.called, msg="Test invalid: obj_get_list should have been dispatched")
         self.assertTrue(send_signal_mock.called, msg="got_request_exception was not called after an error")
 
+    def test_escaping(self):
+        request = HttpRequest()
+        request.method = 'GET'
+        request.GET = {
+            'limit': '<script>alert(1)</script>',
+        }
+        resource = NoteResource()
+        res = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(res.status_code, 400)
+        err_data = json.loads(res.content.decode('utf-8'))
+        self.assertTrue('&lt;script&gt;alert(1)&lt;/script&gt;' in err_data['error'])
+
     def test_init(self):
         # Very minimal & stock.
         resource_1 = NoteResource()
@@ -1787,7 +1799,7 @@ class ModelResourceTestCase(TestCase):
         }
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp['content-type'], 'application/json')
-        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid limit \'<img%20src=\\"http://ycombinator.com/images/y18.gif\\">\' provided. Please provide a positive integer."}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid limit \'&lt;img%20src=\\"http://ycombinator.com/images/y18.gif\\"&gt;\' provided. Please provide a positive integer."}')
 
         request.GET = {
             'format': 'json',
@@ -1795,7 +1807,7 @@ class ModelResourceTestCase(TestCase):
         }
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp['content-type'], 'application/json')
-        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid limit \'<img%20src=\\"http://ycombinator.com/images/y18.gif\\">\' provided. Please provide a positive integer."}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid limit \'&lt;img%20src=\\"http://ycombinator.com/images/y18.gif\\"&gt;\' provided. Please provide a positive integer."}')
 
         request.GET = {
             'format': 'json',
@@ -1803,7 +1815,7 @@ class ModelResourceTestCase(TestCase):
         }
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp['content-type'], 'application/json')
-        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid offset \'<script>alert(\\"XSS\\")</script>\' provided. Please provide an integer."}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid offset \'&lt;script&gt;alert(\\"XSS\\")&lt;/script&gt;\' provided. Please provide an integer."}')
 
     def test_apply_sorting(self):
         resource = NoteResource()
@@ -2649,7 +2661,7 @@ class ModelResourceTestCase(TestCase):
         request._read_started = False
 
         self.assertEqual(Note.objects.count(), 6)
-        request._raw_post_data = request._body = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}, {"resource_uri": "/api/v1/notes/2/", "content": "This is note 2."}], "deleted_objects": ["/api/v1/notes/1/"]}'
+        request._raw_post_data = request._body = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}, {"resource_uri": "/api/v1/alwaysdatanote/2/", "content": "This is note 2."}], "deleted_objects": ["/api/v1/alwaysdatanote/1/"]}'
 
         resp = always_resource.patch_list(request)
         self.assertEqual(resp.status_code, 202)
@@ -2663,7 +2675,7 @@ class ModelResourceTestCase(TestCase):
         request._read_started = False
 
         self.assertEqual(Note.objects.count(), 6)
-        request._raw_post_data = request._body = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}, {"resource_uri": "/api/v1/notes/2/", "content": "This is note 2."}], "deleted_objects": ["/api/v1/notes/1/"]}'
+        request._raw_post_data = request._body = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}, {"resource_uri": "/api/v1/alwaysdatanote/2/", "content": "This is note 2."}], "deleted_objects": ["/api/v1/alwaysdatanote/1/"]}'
 
         resp = always_resource.patch_list(request)
         self.assertEqual(resp.status_code, 202)
@@ -3318,7 +3330,7 @@ class ModelResourceTestCase(TestCase):
             'slug': "yet-another-new-post",
             'content': "WHEEEEEE!",
             'is_active': True,
-            'author': '/api/v1/users/1/',
+            'author': '/api/v1/user/1/',
             'subjects': ['/api/v1/subjects/2/'],
         })
         note.obj_create(related_bundle)
@@ -3339,7 +3351,7 @@ class ModelResourceTestCase(TestCase):
             'slug': "yet-another-another-new-post",
             'content': "WHEEEEEE!",
             'is_active': True,
-            'author': '/api/v1/users/1/',
+            'author': '/api/v1/user/1/',
             'subjects': [{
                 'name': 'helloworld',
                 'url': 'http://example.com',
@@ -3429,7 +3441,7 @@ class ModelResourceTestCase(TestCase):
             'slug': "yet-another-new-post",
             'content': "WHEEEEEE!",
             'is_active': True,
-            'author': '/api/v1/users/2/',
+            'author': '/api/v1/user/2/',
             'subjects': ['/api/v1/subjects/2/', '/api/v1/subjects/1/'],
         })
         note.obj_update(related_bundle, pk=1)
@@ -3451,7 +3463,7 @@ class ModelResourceTestCase(TestCase):
             'slug': "yet-another-another-new-post",
             'content': "WHEEEEEE!",
             'is_active': True,
-            'author': '/api/v1/users/1/',
+            'author': '/api/v1/user/1/',
             'subjects': [{
                 'name': 'helloworld',
                 'url': 'http://example.com',
@@ -3492,7 +3504,7 @@ class ModelResourceTestCase(TestCase):
         # Now try a lookup that should fail.
         note = NoteResource()
         note_bundle = note.build_bundle(data={
-            "author": "/api/v1/users/1/",
+            "author": "/api/v1/user/1/",
             "title": "Something something Post!",
             "slug": "something-something-post",
             "content": "Stock post content.",
@@ -3755,7 +3767,7 @@ class ModelResourceTestCase(TestCase):
     def test_nullable_tomany_full_hydrate(self):
         nrrnr = NullableRelatedNoteResource()
         bundle_1 = Bundle(data={
-            'author': '/api/v1/users/1/',
+            'author': '/api/v1/user/1/',
             'subjects': [],
         })
 
@@ -3763,24 +3775,24 @@ class ModelResourceTestCase(TestCase):
         hydrated = nrrnr.full_hydrate(bundle_1)
         hydrated = nrrnr.hydrate_m2m(hydrated)
 
-        self.assertEqual(hydrated.data['author'], '/api/v1/users/1/')
+        self.assertEqual(hydrated.data['author'], '/api/v1/user/1/')
         self.assertEqual(hydrated.data['subjects'], [])
 
         # Regression: not specifying the tomany field should still work if
         # it is nullable.
         bundle_2 = Bundle(data={
-            'author': '/api/v1/users/1/',
+            'author': '/api/v1/user/1/',
         })
 
         hydrated2 = nrrnr.full_hydrate(bundle_2)
         hydrated2 = nrrnr.hydrate_m2m(hydrated2)
 
-        self.assertEqual(hydrated2.data['author'], '/api/v1/users/1/')
+        self.assertEqual(hydrated2.data['author'], '/api/v1/user/1/')
         self.assertEqual(hydrated2.data['subjects'], [])
 
         # Regression pt. II - Make sure saving the objects works.
         bundle_3 = Bundle(data={
-            'author': '/api/v1/users/1/',
+            'author': '/api/v1/user/1/',
         })
         hydrated3 = nrrnr.obj_create(bundle_2)
         self.assertEqual(hydrated2.obj.author.username, u'johndoe')
@@ -4072,6 +4084,9 @@ class BustedResource(BasicResource):
     def post_list(self, request, **kwargs):
         raise Http404("Not here either")
 
+    def post_detail(self, request, **kwargs):
+        raise YouFail("<script>alert(1)</script>")
+
 
 class BustedResourceTestCase(TestCase):
     def setUp(self):
@@ -4176,6 +4191,20 @@ class BustedResourceTestCase(TestCase):
         self.request.method = 'POST'
         resp = self.resource.wrap_view('post_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 404)
+
+    def test_escaping(self):
+        settings.DEBUG = True
+        settings.TASTYPIE_FULL_DEBUG = False
+
+        request = HttpRequest()
+        request.method = 'POST'
+        request.POST = {
+            'whatever': 'stuff',
+        }
+        res = self.resource.wrap_view('dispatch_detail')(request, pk=1)
+        self.assertEqual(res.status_code, 500)
+        err_data = json.loads(res.content.decode('utf-8'))
+        self.assertTrue('&lt;script&gt;alert(1)&lt;/script&gt;' in err_data['error_message'])
 
 
 class ObjectlessResource(Resource):
