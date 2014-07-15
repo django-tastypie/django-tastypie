@@ -21,7 +21,7 @@ A plugin (actually two different ones that closely mirror each other) that
 nicely reformats JSON data in the browser.
 
 Postman - Rest Client
---------------------
+---------------------
 * Chrome - https://chrome.google.com/webstore/detail/fdmmgilgnpjigdojojpjoooidkmcomcm
 
 A feature rich Chrome extension with JSON and XML support
