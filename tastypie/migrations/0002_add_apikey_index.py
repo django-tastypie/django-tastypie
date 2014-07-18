@@ -3,8 +3,13 @@ from __future__ import unicode_literals
 import datetime
 from south.db import db
 from south.v2 import SchemaMigration
+from south.modelsinspector import get_model_meta
 from django.db import models
-from tastypie.compat import AUTH_USER_MODEL
+from tastypie.compat import AUTH_USER_MODEL, User
+
+
+AUTH_USER_META = get_model_meta(User)
+AUTH_USER_META.update({'object_name': AUTH_USER_MODEL.split('.')[-1]})
 
 
 class Migration(SchemaMigration):
@@ -34,7 +39,7 @@ class Migration(SchemaMigration):
             'name': ('django.db.models.fields.CharField', [], {'max_length': '50'})
         },
         AUTH_USER_MODEL: {
-            'Meta': {'object_name': AUTH_USER_MODEL.split('.')[-1]},
+            'Meta': AUTH_USER_META,
             'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
