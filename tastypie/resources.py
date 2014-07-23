@@ -2441,13 +2441,19 @@ class ModelResource(six.with_metaclass(ModelDeclarativeMetaclass, BaseModelResou
     pass
 
 
-class NamespacedModelResource(ModelResource):
+class NamespacedModelMixin(object):
     """
-    A ModelResource subclass that respects Django namespaces.
+    A ModelResource mixin that respects Django namespaces.
     """
     def _build_reverse_url(self, name, args=None, kwargs=None):
         namespaced = "%s:%s" % (self._meta.urlconf_namespace, name)
         return reverse(namespaced, args=args, kwargs=kwargs)
+
+
+class NamespacedModelResource(NamespacedModelMixin, ModelResource):
+    """
+    A ModelResource subclass that respects Django namespaces.
+    """
 
 
 # Based off of ``piston.utils.coerce_put_post``. Similarly BSD-licensed.
