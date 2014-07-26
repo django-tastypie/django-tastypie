@@ -718,7 +718,11 @@ class ToOneField(RelatedField):
         foreign_obj = None
         error_to_raise = None
 
-        if isinstance(self.attribute, six.string_types):
+        if callable(self.attribute):
+            previous_obj = bundle.obj
+            foreign_obj = self.attribute(bundle)
+
+        elif isinstance(self.attribute, six.string_types):
             attrs = self.attribute.split('__')
             foreign_obj = bundle.obj
 
@@ -728,11 +732,7 @@ class ToOneField(RelatedField):
                     foreign_obj = getattr(foreign_obj, attr, None)
                 except ObjectDoesNotExist:
                     foreign_obj = None
-        
-        elif callable(self.attribute):
-            previous_obj = bundle.obj
-            foreign_obj = self.attribute(bundle)
-            
+
         if not foreign_obj:
             if not self.null:
                 if callable(self.attribute):
@@ -803,7 +803,10 @@ class ToManyField(RelatedField):
         previous_obj = bundle.obj
         attr = self.attribute
 
-        if isinstance(self.attribute, six.string_types):
+        if callable(self.attribute):
+            the_m2ms = self.attribute(bundle)
+
+        elif isinstance(self.attribute, six.string_types):
             attrs = self.attribute.split('__')
             the_m2ms = bundle.obj
 
@@ -816,9 +819,6 @@ class ToManyField(RelatedField):
 
                 if not the_m2ms:
                     break
-
-        elif callable(self.attribute):
-            the_m2ms = self.attribute(bundle)
 
         if not the_m2ms:
             if not self.null:
