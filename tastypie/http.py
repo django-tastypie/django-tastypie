@@ -43,6 +43,10 @@ class HttpUnauthorized(HttpResponse):
     status_code = 401
 
 
+class HttpPaymentRequired(HttpResponse):
+    status_code = 402
+
+
 class HttpForbidden(HttpResponse):
     status_code = 403
 
@@ -77,4 +81,3 @@ class HttpApplicationError(HttpResponse):
 
 class HttpNotImplemented(HttpResponse):
     status_code = 501
-
