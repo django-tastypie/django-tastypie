@@ -10,6 +10,7 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, 
 from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404, get_script_prefix
 from django.core.signals import got_request_exception
 from django.db import transaction
+from django.db import models
 from django.db.models.constants import LOOKUP_SEP
 from django.db.models.sql.constants import QUERY_TERMS
 from django.http import HttpResponse, HttpResponseNotFound, Http404
@@ -1749,6 +1750,23 @@ class BaseModelResource(Resource):
     Given that it is aware of Django's ORM, it also handles the CRUD data
     operations of the resource.
     """
+    field_mapping = [
+        (models.DateField, fields.DateTimeField,),
+        (models.BooleanField, fields.BooleanField,),
+        (models.NullBooleanField, fields.BooleanField,),
+        (models.FloatField, fields.FloatField,),
+        (models.DecimalField, fields.DecimalField,),
+        (models.IntegerField, fields.IntegerField,),
+        (models.AutoField, fields.IntegerField,),
+        (models.FileField, fields.FileField,),
+        (models.TimeField, fields.TimeField,),
+        # TODO: Perhaps enable these via introspection. The reason they're not enabled
+        #       by default is the very different ``__init__`` they have over
+        #       the other fields.
+        #(models.ForeignKey, ForeignKey,),
+        #(models.ManyToManyField, ManyToManyField,),
+    ]
+    
     @classmethod
     def should_skip_field(cls, field):
         """
@@ -1768,29 +1786,11 @@ class BaseModelResource(Resource):
         Django type.
         """
         result = default
-        internal_type = f.get_internal_type()
-
-        if internal_type in ('DateField', 'DateTimeField'):
-            result = fields.DateTimeField
-        elif internal_type in ('BooleanField', 'NullBooleanField'):
-            result = fields.BooleanField
-        elif internal_type in ('FloatField',):
-            result = fields.FloatField
-        elif internal_type in ('DecimalField',):
-            result = fields.DecimalField
-        elif internal_type in ('IntegerField', 'PositiveIntegerField', 'PositiveSmallIntegerField', 'SmallIntegerField', 'AutoField'):
-            result = fields.IntegerField
-        elif internal_type in ('FileField', 'ImageField'):
-            result = fields.FileField
-        elif internal_type == 'TimeField':
-            result = fields.TimeField
-        # TODO: Perhaps enable these via introspection. The reason they're not enabled
-        #       by default is the very different ``__init__`` they have over
-        #       the other fields.
-        # elif internal_type == 'ForeignKey':
-        #     result = ForeignKey
-        # elif internal_type == 'ManyToManyField':
-        #     result = ManyToManyField
+        
+        for django_field, tastypie_field in cls.field_mapping:
+            if issubclass(f.__class__, django_field):
+                result = tastypie_field
+                break
 
         return result
 
