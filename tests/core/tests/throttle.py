@@ -40,8 +40,7 @@ class NoThrottleTestCase(TestCase):
 
 class CacheThrottleTestCase(TestCase):
     def tearDown(self):
-        cache.delete('daniel_accesses')
-        cache.delete('cody_accesses')
+        cache.clear()
 
     def test_throttling(self):
         throttle_1 = CacheThrottle(throttle_at=2, timeframe=5, expiration=2)
@@ -61,11 +60,11 @@ class CacheThrottleTestCase(TestCase):
         self.assertEqual(len(cache.get('cody_accesses')), 1)
 
         # THROTTLE'D!
-        self.assertEqual(throttle_1.should_be_throttled('daniel'), True)
+        self.assertEqual(throttle_1.should_be_throttled('daniel'), 5)
         self.assertEqual(len(cache.get('daniel_accesses')), 2)
         self.assertEqual(throttle_1.accessed('daniel'), None)
 
-        self.assertEqual(throttle_1.should_be_throttled('daniel'), True)
+        self.assertEqual(throttle_1.should_be_throttled('daniel'), 5)
         self.assertEqual(len(cache.get('daniel_accesses')), 3)
         self.assertEqual(throttle_1.accessed('daniel'), None)
 
@@ -84,8 +83,7 @@ class CacheThrottleTestCase(TestCase):
 
 class CacheDBThrottleTestCase(TestCase):
     def tearDown(self):
-        cache.delete('daniel_accesses')
-        cache.delete('cody_accesses')
+        cache.clear()
 
     def test_throttling(self):
         throttle_1 = CacheDBThrottle(throttle_at=2, timeframe=5, expiration=2)
@@ -113,19 +111,19 @@ class CacheDBThrottleTestCase(TestCase):
 
         # THROTTLE'D!
         self.assertEqual(throttle_1.accessed('daniel'), None)
-        self.assertEqual(throttle_1.should_be_throttled('daniel'), True)
+        self.assertEqual(throttle_1.should_be_throttled('daniel'), 5)
         self.assertEqual(len(cache.get('daniel_accesses')), 3)
         self.assertEqual(ApiAccess.objects.count(), 5)
         self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 3)
 
         self.assertEqual(throttle_1.accessed('daniel'), None)
-        self.assertEqual(throttle_1.should_be_throttled('daniel'), True)
+        self.assertEqual(throttle_1.should_be_throttled('daniel'), 5)
         self.assertEqual(len(cache.get('daniel_accesses')), 4)
         self.assertEqual(ApiAccess.objects.count(), 6)
         self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 4)
 
         # Should be no interplay.
-        self.assertEqual(throttle_1.should_be_throttled('cody'), True)
+        self.assertEqual(throttle_1.should_be_throttled('cody'), 5)
         self.assertEqual(throttle_1.accessed('cody'), None)
         self.assertEqual(ApiAccess.objects.count(), 7)
         self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 4)

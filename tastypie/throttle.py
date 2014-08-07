@@ -47,8 +47,10 @@ class BaseThrottle(object):
 
     def should_be_throttled(self, identifier, **kwargs):
         """
-        Returns whether or not the user has exceeded their throttle limit.
-
+        Returns whether or not the user has exceeded their throttle limit. If
+        throttled, can return either True, and int specifying the number of
+        seconds to wait, or a datetime object specifying when to retry the request.
+        
         Always returns ``False``, as this implementation does not actually
         throttle the user.
         """
@@ -69,7 +71,9 @@ class CacheThrottle(BaseThrottle):
     """
     def should_be_throttled(self, identifier, **kwargs):
         """
-        Returns whether or not the user has exceeded their throttle limit.
+        Returns whether or not the user has exceeded their throttle limit. If
+        throttled, can return either True, and int specifying the number of
+        seconds to wait, or a datetime object specifying when to retry the request.
 
         Maintains a list of timestamps when the user accessed the api within
         the cache.
@@ -80,13 +84,17 @@ class CacheThrottle(BaseThrottle):
         key = self.convert_identifier_to_key(identifier)
 
         # Weed out anything older than the timeframe.
-        minimum_time = int(time.time()) - int(self.timeframe)
+        now = int(time.time())
+        timeframe = int(self.timeframe)
+        throttle_at = int(self.throttle_at)
+        
+        minimum_time = now - timeframe
         times_accessed = [access for access in cache.get(key, []) if access >= minimum_time]
         cache.set(key, times_accessed, self.expiration)
 
-        if len(times_accessed) >= int(self.throttle_at):
+        if len(times_accessed) >= throttle_at:
             # Throttle them.
-            return True
+            return timeframe - (now - times_accessed[-throttle_at])
 
         # Let them through.
         return False

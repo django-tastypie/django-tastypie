@@ -1,8 +1,11 @@
 from __future__ import unicode_literals
 from __future__ import with_statement
 from copy import deepcopy
+from datetime import datetime
 import logging
+from time import mktime
 import warnings
+from wsgiref.handlers import format_date_time
 
 from django.conf import settings
 from django.conf.urls import patterns, url
@@ -557,9 +560,19 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         identifier = self._meta.authentication.get_identifier(request)
 
         # Check to see if they should be throttled.
-        if self._meta.throttle.should_be_throttled(identifier):
+        throttle = self._meta.throttle.should_be_throttled(identifier)
+        
+        if throttle:
             # Throttle limit exceeded.
-            raise ImmediateHttpResponse(response=http.HttpTooManyRequests())
+            
+            response = http.HttpTooManyRequests()
+            
+            if isinstance(throttle, int) and not isinstance(throttle, bool):
+                response['Retry-After'] = throttle
+            elif isinstance(throttle, datetime):
+                response['Retry-After'] = format_date_time(mktime(throttle.timetuple()))
+            
+            raise ImmediateHttpResponse(response=response)
 
     def log_throttled_access(self, request):
         """

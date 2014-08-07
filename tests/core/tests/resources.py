@@ -16,7 +16,7 @@ from django import forms
 from django.http import HttpRequest, QueryDict, Http404
 from django.test import TestCase
 from django.utils.encoding import force_text
-from django.utils import six
+from django.utils import six, timezone
 
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
@@ -1291,6 +1291,9 @@ class ModelResourceTestCase(TestCase):
             self.body_attr = "body"
         else:
             self.body_attr = "raw_post_data"
+
+    def tearDown(self):
+        cache.clear()
 
     @patch('django.core.signals.got_request_exception.send')
     @patch('tastypie.resources.ModelResource.obj_get_list', side_effect=IOError)
@@ -3183,12 +3186,25 @@ class ModelResourceTestCase(TestCase):
             self.assertIn('constant', note)
             self.assertNotIn('author', note)
 
-    def test_check_throttling(self):
+    def test_check_bool_throttling(self):
         # Stow.
         old_debug = settings.DEBUG
         settings.DEBUG = False
 
         resource = ThrottledNoteResource()
+        _orginal_throttle = resource._meta.throttle
+        class BoolThrottle(resource._meta.throttle.__class__):
+            def should_be_throttled(self, *args, **kwargs):
+                ret = super(BoolThrottle, self).should_be_throttled(*args, **kwargs)
+                if ret:
+                    return True
+                return False
+        resource._meta.throttle = BoolThrottle(
+            throttle_at=resource._meta.throttle.throttle_at,
+            timeframe=resource._meta.throttle.timeframe,
+            expiration=resource._meta.throttle.expiration
+        )
+        
         request = HttpRequest()
         request.GET = {'format': 'json'}
         request.method = 'GET'
@@ -3209,6 +3225,7 @@ class ModelResourceTestCase(TestCase):
             self.fail()
         except ImmediateHttpResponse as e:
             self.assertEqual(e.response.status_code, 429)
+            self.assertNotIn('Retry-After', e.response)
             self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
         # Throttled.
@@ -3217,15 +3234,131 @@ class ModelResourceTestCase(TestCase):
             self.fail()
         except ImmediateHttpResponse as e:
             self.assertEqual(e.response.status_code, 429)
+            self.assertNotIn('Retry-After', e.response)
             self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
         # Check the ``wrap_view``.
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp.status_code, 429)
+        self.assertNotIn('Retry-After', resp)
         self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
         # Restore.
         settings.DEBUG = old_debug
+        resource._meta.throttle = _orginal_throttle
+
+    def test_check_int_throttling(self):
+        # Stow.
+        old_debug = settings.DEBUG
+        settings.DEBUG = False
+
+        resource = ThrottledNoteResource()
+        _orginal_throttle = resource._meta.throttle
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+
+        # Not throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 1)
+
+        # Not throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Throttled.
+        try:
+            resp = resource.dispatch('list', request)
+            self.fail()
+        except ImmediateHttpResponse as e:
+            self.assertEqual(e.response.status_code, 429)
+            self.assertEqual(e.response['Retry-After'], '5')
+            self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Throttled.
+        try:
+            resp = resource.dispatch('list', request)
+            self.fail()
+        except ImmediateHttpResponse as e:
+            self.assertEqual(e.response.status_code, 429)
+            self.assertEqual(e.response['Retry-After'], '5')
+            self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Check the ``wrap_view``.
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp['Retry-After'], '5')
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Restore.
+        settings.DEBUG = old_debug
+        resource._meta.throttle = _orginal_throttle
+
+    def test_check_datetime_throttling(self):
+        # Stow.
+        old_debug = settings.DEBUG
+        settings.DEBUG = False
+
+        retry_after = datetime.datetime(year=2014, month=8, day=8, hour=8, minute=55, tzinfo=timezone.utc)
+        retry_after_str = 'Fri, 08 Aug 2014 14:55:00 GMT'
+        
+        resource = ThrottledNoteResource()
+        _orginal_throttle = resource._meta.throttle
+        class DatetimeThrottle(resource._meta.throttle.__class__):
+            def should_be_throttled(self, *args, **kwargs):
+                ret = super(DatetimeThrottle, self).should_be_throttled(*args, **kwargs)
+                if ret:
+                    return retry_after
+                return False
+        resource._meta.throttle = DatetimeThrottle(
+            throttle_at=resource._meta.throttle.throttle_at,
+            timeframe=resource._meta.throttle.timeframe,
+            expiration=resource._meta.throttle.expiration
+        )
+        
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+
+        # Not throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 1)
+
+        # Not throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Throttled.
+        try:
+            resp = resource.dispatch('list', request)
+            self.fail()
+        except ImmediateHttpResponse as e:
+            self.assertEqual(e.response.status_code, 429)
+            self.assertEqual(e.response['Retry-After'], retry_after_str)
+            self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Throttled.
+        try:
+            resp = resource.dispatch('list', request)
+            self.fail()
+        except ImmediateHttpResponse as e:
+            self.assertEqual(e.response.status_code, 429)
+            self.assertEqual(e.response['Retry-After'], retry_after_str)
+            self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Check the ``wrap_view``.
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp['Retry-After'], retry_after_str)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Restore.
+        settings.DEBUG = old_debug
+        resource._meta.throttle = _orginal_throttle
 
     def test_generate_cache_key(self):
         resource = NoteResource()
