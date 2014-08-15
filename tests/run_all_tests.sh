@@ -15,7 +15,10 @@ else
   ALL="core customuser basic alphanumeric slashless namespaced related validation gis content_gfk authorization"
 fi
 
-
+test_module='.tests'
+if [ $major -lt '2' -a $minor -lt '6' ]; then
+  test_module=''
+fi
 
 if [ $# -eq 0 ]; then
     PYTESTPATHS=$ALL
@@ -43,6 +46,6 @@ for pytestpath in $PYTESTPATHS; do
         test_name=$test_name.$type_remainder
     fi
 
-    ./manage_$type.py test $test_name --traceback
+    ./manage_$type.py test $test_name$test_module --traceback
     echo; echo
 done

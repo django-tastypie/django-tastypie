@@ -14,7 +14,7 @@ class CustomUserTestCase(TestCase):
         ApiKey.objects.all().delete()
 
     def test_is_authenticated_get_params(self):
-        from django.contrib.auth.tests import CustomUser
+        from django.contrib.auth.tests.custom_user import CustomUser
         CustomUser.objects = CustomUser.custom_objects
         auth = ApiKeyAuthentication()
         request = HttpRequest()
