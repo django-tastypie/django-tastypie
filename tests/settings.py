@@ -1,4 +1,7 @@
-import os
+import os, sys
+
+from os.path import abspath, dirname, join
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 ADMINS = (
     ('test@example.com', 'Mr. Test'),
