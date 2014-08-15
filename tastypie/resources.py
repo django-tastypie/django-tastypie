@@ -1023,10 +1023,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
         This is based off the current api_name/resource_name/args/kwargs.
         """
-        smooshed = []
-
-        for key, value in kwargs.items():
-            smooshed.append("%s=%s" % (key, value))
+        smooshed = ["%s=%s" % (key, value) for key, value in kwargs.items()]
 
         # Use a list plus a ``.join()`` because it's faster than concatenation.
         return "%s:%s:%s:%s" % (self._meta.api_name, self._meta.resource_name, ':'.join(args), ':'.join(sorted(smooshed)))
@@ -1292,11 +1289,10 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         to_be_serialized = paginator.page()
 
         # Dehydrate the bundles in preparation for serialization.
-        bundles = []
-
-        for obj in to_be_serialized[self._meta.collection_name]:
-            bundle = self.build_bundle(obj=obj, request=request)
-            bundles.append(self.full_dehydrate(bundle, for_list=True))
+        bundles = [
+            self.full_dehydrate(self.build_bundle(obj=obj, request=request), for_list=True)
+            for obj in to_be_serialized[self._meta.collection_name]
+        ]
 
         to_be_serialized[self._meta.collection_name] = bundles
         to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
