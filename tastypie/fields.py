@@ -73,7 +73,6 @@ class ApiField(object):
         self.null = null
         self.blank = blank
         self.readonly = readonly
-        self.value = None # REMOVEME
         self.unique = unique
         self.use_in = 'all'
 
@@ -509,8 +508,9 @@ class RelatedField(ApiField):
         """
         Instaniates the related resource.
         """
-        if related_instance in self._rel_resources:
-            return self._rel_resources[related_instance]
+        related_class = type(related_instance)
+        if related_class in self._rel_resources:
+            return self._rel_resources[related_class]
         
         related_resource = self.to_class()
 
@@ -519,7 +519,7 @@ class RelatedField(ApiField):
             if self._resource and not self._resource._meta.api_name is None:
                 related_resource._meta.api_name = self._resource._meta.api_name
 
-        self._rel_resources[related_instance] = related_resource
+        self._rel_resources[related_class] = related_resource
         
         return related_resource
 
