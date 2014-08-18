@@ -1,17 +1,19 @@
 import datetime
 from dateutil.tz import *
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.http import HttpRequest
+
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.fields import *
 from tastypie.resources import ModelResource
+from tastypie.utils import aware_datetime, aware_date
+
 from core.models import Note, Subject, MediaBit
 from core.tests.mocks import MockRequest
-
-from tastypie.utils import aware_datetime, aware_date
 
 
 class ApiFieldTestCase(TestCase):

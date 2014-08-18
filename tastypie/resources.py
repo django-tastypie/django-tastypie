@@ -849,10 +849,15 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         """
         use_in = ['all', 'list' if for_list else 'detail']
 
+        data = bundle.data
+
+        api_name = self._meta.api_name
+        resource_name = self._meta.resource_name
+
         # Dehydrate each field.
         for field_name, field_object in self.fields.items():
             # If it's not for use in this mode, skip
-            field_use_in = getattr(field_object, 'use_in', 'all')
+            field_use_in = field_object.use_in
             if callable(field_use_in):
                 if not field_use_in(bundle):
                     continue
@@ -861,17 +866,17 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                     continue
 
             # A touch leaky but it makes URI resolution work.
-            if getattr(field_object, 'dehydrated_type', None) == 'related':
-                field_object.api_name = self._meta.api_name
-                field_object.resource_name = self._meta.resource_name
+            if field_object.dehydrated_type == 'related':
+                field_object.api_name = api_name
+                field_object.resource_name = resource_name
 
-            bundle.data[field_name] = field_object.dehydrate(bundle, for_list=for_list)
+            data[field_name] = field_object.dehydrate(bundle, for_list=for_list)
 
             # Check for an optional method to do further dehydration.
             method = getattr(self, "dehydrate_%s" % field_name, None)
 
             if method:
-                bundle.data[field_name] = method(bundle)
+                data[field_name] = method(bundle)
 
         bundle = self.dehydrate(bundle)
         return bundle
@@ -918,9 +923,9 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 if value is not None or field_object.null:
                     # We need to avoid populating M2M data here as that will
                     # cause things to blow up.
-                    if not getattr(field_object, 'is_related', False):
+                    if not field_object.is_related:
                         setattr(bundle.obj, field_object.attribute, value)
-                    elif not getattr(field_object, 'is_m2m', False):
+                    elif not field_object.is_m2m:
                         if value is not None:
                             # NOTE: A bug fix in Django (ticket #18153) fixes incorrect behavior
                             # which Tastypie was relying on.  To fix this, we store value.obj to
@@ -956,7 +961,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             raise HydrationError("You must call 'full_hydrate' before attempting to run 'hydrate_m2m' on %r." % self)
 
         for field_name, field_object in self.fields.items():
-            if not getattr(field_object, 'is_m2m', False):
+            if not field_object.is_m2m:
                 continue
 
             if field_object.attribute:
@@ -967,7 +972,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 bundle.data[field_name] = field_object.hydrate_m2m(bundle)
 
         for field_name, field_object in self.fields.items():
-            if not getattr(field_object, 'is_m2m', False):
+            if not field_object.is_m2m:
                 continue
 
             method = getattr(self, "hydrate_%s" % field_name, None)
@@ -1016,7 +1021,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 'primary_key': True if field_name == pk_field_name else False,
             }
             if field_object.dehydrated_type == 'related':
-                if getattr(field_object, 'is_m2m', False):
+                if field_object.is_m2m:
                     related_type = 'to_many'
                 else:
                     related_type = 'to_one'
@@ -2156,7 +2161,7 @@ class BaseModelResource(Resource):
             field_object = self.fields[identifier]
 
             # Skip readonly or related fields.
-            if field_object.readonly is True or getattr(field_object, 'is_related', False):
+            if field_object.readonly is True or field_object.is_related:
                 continue
 
             # Check for an optional method to do further hydration.
@@ -2298,10 +2303,10 @@ class BaseModelResource(Resource):
         M2M data is handled by the ``ModelResource.save_m2m`` method.
         """
         for field_name, field_object in self.fields.items():
-            if not getattr(field_object, 'is_related', False):
+            if not field_object.is_related:
                 continue
 
-            if getattr(field_object, 'is_m2m', False):
+            if field_object.is_m2m:
                 continue
 
             if not field_object.attribute:
@@ -2367,7 +2372,7 @@ class BaseModelResource(Resource):
         relation and recreate the related data as needed.
         """
         for field_name, field_object in self.fields.items():
-            if not getattr(field_object, 'is_m2m', False):
+            if not field_object.is_m2m:
                 continue
 
             if not field_object.attribute:

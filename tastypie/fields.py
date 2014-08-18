@@ -1,16 +1,17 @@
 from __future__ import unicode_literals
 import datetime
 from dateutil.parser import parse
-from decimal import Decimal
 import decimal
-import re
+from decimal import Decimal
 try:
     import importlib
 except ImportError:
     from django.utils import importlib
+
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.utils import datetime_safe
 from django.utils import six
+
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.utils import dict_strip_unicode_keys, make_aware
@@ -21,14 +22,12 @@ class NOT_PROVIDED:
         return 'No default provided.'
 
 
-DATE_REGEX = re.compile('^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2}).*?$')
-DATETIME_REGEX = re.compile('^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})(T|\s+)(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2}).*?$')
-
-
 # All the ApiField variants.
 
 class ApiField(object):
     """The base implementation of a field used by the resources."""
+    is_m2m = False
+    is_related = False
     dehydrated_type = 'string'
     help_text = ''
 
@@ -74,6 +73,8 @@ class ApiField(object):
         self.instance_name = None
         self._resource = None
         self.attribute = attribute
+        # Check for `__` in the field for looking through the relation.
+        self._attrs = attribute.split('__') if attribute is not None and isinstance(attribute, six.string_types) else []
         self._default = default
         self.null = null
         self.blank = blank
@@ -111,11 +112,9 @@ class ApiField(object):
         resource.
         """
         if self.attribute is not None:
-            # Check for `__` in the field for looking through the relation.
-            attrs = self.attribute.split('__')
             current_object = bundle.obj
 
-            for attr in attrs:
+            for attr in self._attrs:
                 previous_object = current_object
                 current_object = getattr(current_object, attr, None)
 
@@ -160,7 +159,7 @@ class ApiField(object):
         if self.readonly:
             return None
         if not self.instance_name in bundle.data:
-            if getattr(self, 'is_related', False) and not getattr(self, 'is_m2m', False):
+            if self.is_related and not self.is_m2m:
                 # We've got an FK (or alike field) & a possible parent object.
                 # Check for it.
                 if bundle.related_obj and bundle.related_name in (self.attribute, self.instance_name):
@@ -333,12 +332,11 @@ class DateField(ApiField):
             return None
 
         if isinstance(value, six.string_types):
-            match = DATE_REGEX.search(value)
+            try:
+                year, month, day = value[:10].split('-')
 
-            if match:
-                data = match.groupdict()
-                return datetime_safe.date(int(data['year']), int(data['month']), int(data['day']))
-            else:
+                return datetime_safe.date(int(year), int(month), int(day))
+            except ValueError:
                 raise ApiFieldError("Date provided to '%s' field doesn't appear to be a valid date string: '%s'" % (self.instance_name, value))
 
         return value
@@ -371,12 +369,12 @@ class DateTimeField(ApiField):
             return None
 
         if isinstance(value, six.string_types):
-            match = DATETIME_REGEX.search(value)
+            try:
+                year, month, day = value[:10].split('-')
+                hour, minute, second = value[10:18].split(':')
 
-            if match:
-                data = match.groupdict()
-                return make_aware(datetime_safe.datetime(int(data['year']), int(data['month']), int(data['day']), int(data['hour']), int(data['minute']), int(data['second'])))
-            else:
+                return make_aware(datetime_safe.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second)))
+            except ValueError:
                 raise ApiFieldError("Datetime provided to '%s' field doesn't appear to be a valid datetime string: '%s'" % (self.instance_name, value))
 
         return value
@@ -475,33 +473,20 @@ class RelatedField(ApiField):
         bundle and returns ``True`` or ``False``.Depends on ``full``
         being ``True``. Defaults to ``True``.
         """
-        self.instance_name = None
-        self._resource = None
-        self.to = to
-        self.attribute = attribute
+        super(RelatedField, self).__init__(attribute=attribute, default=default, null=null, blank=blank, readonly=readonly, unique=unique, help_text=help_text, use_in=use_in)
         self.related_name = related_name
-        self._default = default
-        self.null = null
-        self.blank = blank
-        self.readonly = readonly
-        self.full = full
-        self.api_name = None
-        self.resource_name = None
-        self.unique = unique
+        self.to = to
         self._to_class = None
         self._rel_resources = {}
-        self.use_in = 'all'
+        self.full = full
         self.full_list = full_list
         self.full_detail = full_detail
 
-        if use_in in ['all', 'detail', 'list'] or callable(use_in):
-            self.use_in = use_in
+        self.api_name = None
+        self.resource_name = None
 
         if self.to == 'self':
             self.self_referential = True
-
-        if help_text:
-            self.help_text = help_text
 
     def contribute_to_class(self, cls, name):
         super(RelatedField, self).contribute_to_class(cls, name)
@@ -519,7 +504,7 @@ class RelatedField(ApiField):
         related_class = type(related_instance)
         if related_class in self._rel_resources:
             return self._rel_resources[related_class]
-        
+
         related_resource = self.to_class()
 
         # Fix the ``api_name`` if it's not present.
@@ -528,7 +513,7 @@ class RelatedField(ApiField):
                 related_resource._meta.api_name = self._resource._meta.api_name
 
         self._rel_resources[related_class] = related_resource
-        
+
         return related_resource
 
     @property
@@ -586,10 +571,10 @@ class RelatedField(ApiField):
         loaded based on the identifiers in the URI.
         """
         err_msg = "Could not find the provided %s object via resource URI '%s'." % (fk_resource._meta.resource_name, uri,)
-        
+
         if not uri:
             raise ApiFieldError(err_msg)
-        
+
         try:
             obj = fk_resource.get_via_uri(uri, request=request)
             bundle = fk_resource.build_bundle(
@@ -727,12 +712,10 @@ class ToOneField(RelatedField):
         if callable(self.attribute):
             previous_obj = bundle.obj
             foreign_obj = self.attribute(bundle)
-
         elif isinstance(self.attribute, six.string_types):
-            attrs = self.attribute.split('__')
             foreign_obj = bundle.obj
 
-            for attr in attrs:
+            for attr in self._attrs:
                 previous_obj = foreign_obj
                 try:
                     foreign_obj = getattr(foreign_obj, attr, None)
@@ -745,8 +728,8 @@ class ToOneField(RelatedField):
                     raise ApiFieldError("The related resource for resource %s could not be found." % (previous_obj))
                 else:
                     raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
-            
-            return None        
+
+            return None
 
         fk_resource = self.get_related_resource(foreign_obj)
         fk_bundle = Bundle(obj=foreign_obj, request=bundle.request)
@@ -810,12 +793,10 @@ class ToManyField(RelatedField):
 
         if callable(self.attribute):
             the_m2ms = self.attribute(bundle)
-
         elif isinstance(self.attribute, six.string_types):
-            attrs = self.attribute.split('__')
             the_m2ms = bundle.obj
 
-            for attr in attrs:
+            for attr in self._attrs:
                 previous_obj = the_m2ms
                 try:
                     the_m2ms = getattr(the_m2ms, attr, None)
@@ -831,14 +812,16 @@ class ToManyField(RelatedField):
 
             return []
 
-        m2m_dehydrated = []
-
         # TODO: Also model-specific and leaky. Relies on there being a
         #       ``Manager`` there.
-        for m2m in the_m2ms.all():
-            m2m_resource = self.get_related_resource(m2m)
-            m2m_bundle = Bundle(obj=m2m, request=bundle.request)
-            m2m_dehydrated.append(self.dehydrate_related(m2m_bundle, m2m_resource, for_list=for_list))
+        m2m_dehydrated = [
+            self.dehydrate_related(
+                Bundle(obj=m2m, request=bundle.request),
+                self.get_related_resource(m2m),
+                for_list=for_list
+            )
+            for m2m in the_m2ms.all()
+        ]
 
         return m2m_dehydrated
 
@@ -852,28 +835,23 @@ class ToManyField(RelatedField):
         if bundle.data.get(self.instance_name) is None:
             if self.blank:
                 return []
-            elif self.null:
+            if self.null:
                 return []
-            else:
-                raise ApiFieldError("The '%s' field has no data and doesn't allow a null value." % self.instance_name)
+            raise ApiFieldError("The '%s' field has no data and doesn't allow a null value." % self.instance_name)
 
-        m2m_hydrated = []
+        kwargs = {
+            'request': bundle.request,
+        }
 
-        for value in bundle.data.get(self.instance_name):
-            if value is None:
-                continue
+        if self.related_name:
+            kwargs['related_obj'] = bundle.obj
+            kwargs['related_name'] = self.related_name
 
-            kwargs = {
-                'request': bundle.request,
-            }
-
-            if self.related_name:
-                kwargs['related_obj'] = bundle.obj
-                kwargs['related_name'] = self.related_name
-
-            m2m_hydrated.append(self.build_related_resource(value, **kwargs))
-
-        return m2m_hydrated
+        return [
+            self.build_related_resource(value, **kwargs)
+            for value in bundle.data.get(self.instance_name)
+            if value is not None
+        ]
 
 
 class ManyToManyField(ToManyField):
