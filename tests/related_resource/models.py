@@ -1,5 +1,5 @@
+from django.contrib.auth.models import User
 from django.db import models
-
 
 # A self-referrential model to test regressions.
 class Category(models.Model):
@@ -78,7 +78,6 @@ class Product(models.Model):
     def __unicode__(self):
         return u"%s" % (self.name)
 
-
 class Person(models.Model):
     name = models.CharField(max_length=32)
     company = models.ForeignKey(Company, related_name="employees", null=True)
@@ -86,13 +85,11 @@ class Person(models.Model):
     def __unicode__(self):
         return u"%s" % (self.name)
 
-
 class DogHouse(models.Model):
     color = models.CharField(max_length=32)
 
     def __unicode__(self):
         return u"%s" % (self.color)
-
 
 class Dog(models.Model):
     name = models.CharField(max_length=32)
@@ -103,19 +100,18 @@ class Dog(models.Model):
         return u"%s" % (self.name)
 
 class Bone(models.Model):
-    dog = models.ForeignKey(Dog, related_name='bones')
+    dog = models.ForeignKey(Dog, related_name='bones', null=True)
     color = models.CharField(max_length=32)
 
     def __unicode__(self):
         return u"%s" % (self.color)
 
+class Forum(models.Model):
+    moderators = models.ManyToManyField(User, related_name='forums_moderated')
+    members = models.ManyToManyField(User, related_name='forums_member')
+
 class Label(models.Model):
     name = models.CharField(max_length=32)
-
-class Post(models.Model):
-    name = models.CharField(max_length=200)
-    label = models.ManyToManyField(Label, null=True)
-
 
 class Job(models.Model):
     name = models.CharField(max_length=200)
@@ -123,3 +119,8 @@ class Job(models.Model):
 class Payment(models.Model):
     scheduled = models.DateTimeField()
     job = models.OneToOneField(Job, related_name="payment", null=True)
+
+class Post(models.Model):
+    name = models.CharField(max_length=200)
+    label = models.ManyToManyField(Label, null=True)
+

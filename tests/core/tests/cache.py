@@ -1,6 +1,9 @@
+import mock
 import time
+
 from django.core.cache import cache
 from django.test import TestCase
+
 from tastypie.cache import NoCache, SimpleCache
 
 
@@ -46,14 +49,15 @@ class SimpleCacheTestCase(TestCase):
 
     def test_set(self):
         simple_cache = SimpleCache(timeout=1)
-        simple_cache.set('foo', 'bar', timeout=10)
-        simple_cache.set('moof', 'baz')
+        
+        with mock.patch.object(simple_cache, 'cache', mock.Mock(wraps=simple_cache.cache)) as mocked_cache:
+            simple_cache.set('foo', 'bar', timeout=10)
+            simple_cache.set('moof', 'baz')
 
         # Use the underlying cache system to verify.
         self.assertEqual(cache.get('foo'), 'bar')
         self.assertEqual(cache.get('moof'), 'baz')
 
-        # Check expiration.
-        time.sleep(2)
-        self.assertEqual(cache.get('moof'), None)
-        self.assertEqual(cache.get('foo'), 'bar')
+        # make sure cache was called with correct timeouts.
+        self.assertEqual(mocked_cache.set.call_args_list[0][0][2], 10)
+        self.assertEqual(mocked_cache.set.call_args_list[1][0][2], 1)

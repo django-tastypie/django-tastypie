@@ -11,6 +11,10 @@ from django.conf import settings
 
 from tastypie.utils import now
 
+try:
+    import PIL
+except:
+    PIL = None
 
 class Post(models.Model):
     user = models.ForeignKey(User, related_name='notes')
@@ -47,33 +51,16 @@ class Profile(models.Model):
     datetime_joined = models.DateTimeField()
     document = models.FileField(upload_to='documents')
     file_path = models.FilePathField(path=settings.MEDIA_ROOT)
-    avatar = models.ImageField(upload_to='avatars')
     ip = models.IPAddressField()
     rocks_da_house = models.NullBooleanField()
     name_slug = models.SlugField()
     bio = models.TextField()
     homepage = models.URLField()
+    if PIL:
+        avatar = models.ImageField(upload_to='avatars')
+    else:
+        avatar = models.FileField(upload_to='avatars')
 
     def __unicode__(self):
         return "%s's profile" % self.user
 
-
-def setup_test_data(app, created_models, verbosity, interactive, **kwargs):
-    """
-    This signal does two things:
-        - Look in apps's fixtures directory for a test_data.json and load it
-        - Set the correct content type for comments (only posts)
-
-    This will go away when we drop support for Django < 1.2, as natural keys
-    will solve this problem better.
-    """
-    dirname = os.path.dirname(app.__file__)
-    fixture = os.path.join(dirname, 'fixtures', 'test_data.json')
-    call_command('loaddata', fixture, verbosity=1)
-
-    content_type = ContentType.objects.get_for_model(Post)
-    for comment in Comment.objects.all():
-        comment.content_type = content_type
-        comment.save()
-
-signals.post_syncdb.connect(setup_test_data)

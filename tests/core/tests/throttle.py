@@ -1,3 +1,4 @@
+import mock
 import time
 
 from django.core.cache import cache
@@ -73,9 +74,12 @@ class CacheThrottleTestCase(TestCase):
         self.assertEqual(throttle_1.accessed('cody'), None)
 
         # Test the timeframe.
-        time.sleep(3)
-        self.assertEqual(throttle_1.should_be_throttled('daniel'), False)
-        self.assertEqual(len(cache.get('daniel_accesses')), 0)
+        ret_time = time.time() + throttle_1.timeframe + 1
+        
+        with mock.patch('tastypie.throttle.time') as mocked_time:
+            mocked_time.time.return_value = ret_time
+            self.assertEqual(throttle_1.should_be_throttled('daniel'), False)
+            self.assertEqual(len(cache.get('daniel_accesses')), 0)
 
 
 class CacheDBThrottleTestCase(TestCase):
@@ -127,8 +131,11 @@ class CacheDBThrottleTestCase(TestCase):
         self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 4)
 
         # Test the timeframe.
-        time.sleep(3)
-        self.assertEqual(throttle_1.should_be_throttled('daniel'), False)
+        ret_time = time.time() + throttle_1.timeframe + 1
+        
+        with mock.patch('tastypie.throttle.time') as mocked_time:
+            mocked_time.time.return_value = ret_time
+            self.assertEqual(throttle_1.should_be_throttled('daniel'), False)
         self.assertEqual(len(cache.get('daniel_accesses')), 0)
         self.assertEqual(ApiAccess.objects.count(), 7)
         self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 4)

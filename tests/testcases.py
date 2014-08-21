@@ -2,9 +2,10 @@ import socket
 import threading
 
 from django.core.handlers.wsgi import WSGIHandler
-from django.core.servers import basehttp
-from django.test.testcases import TransactionTestCase
 from django.core.management import call_command
+from django.core.servers import basehttp
+from django.db import connections
+from django.test.testcases import TransactionTestCase
 
 class StoppableWSGIServer(basehttp.WSGIServer):
     """WSGIServer with short timeout, so that server thread can stop this server."""
@@ -49,8 +50,22 @@ class TestServerThread(threading.Thread):
 
         # Must do database stuff in this new thread if database in memory.
         from django.conf import settings
-        if settings.DATABASE_ENGINE == 'sqlite3' \
-            and (not settings.TEST_DATABASE_NAME or settings.TEST_DATABASE_NAME == ':memory:'):
+        
+        db = settings.DATABASES['default']
+        
+        ENGINE = db['ENGINE']
+        TEST_NAME = db.get('TEST_NAME')
+        
+        if ('sqlite3' in ENGINE or 'spatialite' in ENGINE) \
+            and (not TEST_NAME or TEST_NAME == ':memory:'):
+            if 'spatialite' in ENGINE:
+                cursor = connections['default'].cursor()
+                
+                cursor.execute('SELECT InitSpatialMetaData()')
+                row = cursor.fetchone()
+            
+            call_command('syncdb', interactive=False, verbosity=0)
+            
             # Import the fixture data into the test database.
             if hasattr(self, 'fixtures'):
                 # We have to use this slightly awkward syntax due to the fact

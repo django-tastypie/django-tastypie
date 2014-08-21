@@ -27,7 +27,13 @@ class AnnotatedNote(models.Model):
     annotations = models.TextField()
 
     def __unicode__(self):
-        return u"Annotated %s" % self.note.title
+        title = None
+        try:
+            title = self.note.title
+        except Note.DoesNotExist:
+            pass
+        
+        return u"Annotated %s" % title
 
 
 class SlugBasedNote(models.Model):

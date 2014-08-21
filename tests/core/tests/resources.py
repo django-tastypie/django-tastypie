@@ -1311,7 +1311,7 @@ class ModelResourceTestCase(TestCase):
         resource = NoteResource()
         res = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(res.status_code, 400)
-        err_data = json.loads(res.content)
+        err_data = json.loads(res.content.decode('utf-8'))
         self.assertTrue('&lt;script&gt;alert(1)&lt;/script&gt;' in err_data['error'])
 
     def test_init(self):
@@ -4203,7 +4203,7 @@ class BustedResourceTestCase(TestCase):
         }
         res = self.resource.wrap_view('dispatch_detail')(request, pk=1)
         self.assertEqual(res.status_code, 500)
-        err_data = json.loads(res.content)
+        err_data = json.loads(res.content.decode('utf-8'))
         self.assertTrue('&lt;script&gt;alert(1)&lt;/script&gt;' in err_data['error_message'])
 
 

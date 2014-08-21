@@ -8,17 +8,38 @@ from django.core.urlresolvers import reverse
 from django.db.models.signals import pre_save
 from django.test import TestCase
 
-from tastypie.exceptions import NotFound
 from tastypie import fields
+from tastypie.exceptions import NotFound
 
 from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
 from core.tests.resources import HttpRequest
 
-from related_resource.api.resources import FreshNoteResource, CategoryResource, PersonResource, JobResource, NoteResource
+from related_resource.api.resources import CategoryResource, ForumResource, FreshNoteResource, JobResource, NoteResource, PersonResource, UserResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment
-from related_resource.models import Label
+from related_resource.models import Category, Label, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment
+
+
+class M2MResourcesTestCase(TestCase):
+    def test_same_object_added(self):
+        """
+        From Issue #1035
+        """
+        
+        user=User.objects.create(username='gjcourt')
+        
+        ur=UserResource()
+        fr=ForumResource()
+        
+        resp = self.client.post(fr.get_resource_uri(), content_type='application/json', data=json.dumps({
+            'name': 'Test Forum',
+            'members': [ur.get_resource_uri(user)],
+            'moderators': [ur.get_resource_uri(user)],
+        }))
+        self.assertEqual(resp.status_code, 201, resp.content)
+        data = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(len(data['moderators']), 1)
+        self.assertEqual(len(data['members']), 1)
 
 
 class RelatedResourceTest(TestCase):
@@ -639,6 +660,48 @@ class RelatedSaveCallsTest(TestCase):
         tag = Tag.objects.all()[0]
         taggable_tag = tag.taggabletags.all()[0]
         self.assertEqual(taggable_tag.extra, 1234)
+
+    def test_no_save_m2m_unchanged_existing_data_persists(self):
+        """
+        Data should persist when posting an updated detail object with
+        unchanged reverse realated objects.
+        """
+
+        person = Person.objects.create(name='Ryan')
+        dog = Dog.objects.create(name='Wilfred', owner=person)
+        bone1 = Bone.objects.create(color='White', dog=dog)
+        bone2 = Bone.objects.create(color='Grey', dog=dog)
+        
+        self.assertEqual(dog.bones.count(), 2)
+        
+        resource = api.canonical_resource_for('dog')
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request._load_post_and_files = lambda *args, **kwargs: None
+        body_dict = {
+            'id': dog.id,
+            'name': 'Wilfred',
+            'bones': [
+                {'id': bone1.id, 'color':  bone1.color},
+                {'id': bone2.id, 'color':  bone2.color}
+            ]
+        }
+        
+        request.set_body(json.dumps(body_dict))
+        
+        resp = resource.wrap_view('dispatch_detail')(request, pk=dog.pk)
+        
+        self.assertEqual(resp.status_code, 204)
+
+        dog = Dog.objects.all()[0]
+        
+        dog_bones = dog.bones.all()
+        
+        self.assertEqual(len(dog_bones), 2)
+        
+        self.assertEqual(dog_bones[0], bone1)
+        self.assertEqual(dog_bones[1], bone2)
 
 
 class CorrectUriRelationsTestCase(TestCase):
