@@ -2352,14 +2352,19 @@ class BaseModelResource(Resource):
             if not related_mngr:
                 continue
 
+            cleared = False
             if hasattr(related_mngr, 'clear'):
                 # FIXME: Dupe the original bundle, copy in the new object &
                 #        check the perms on that (using the related resource)?
 
                 # Clear it out, just to be safe.
                 related_mngr.clear()
+                cleared = True
 
             related_objs = []
+            
+            related_field = field_object.to_class.base_fields.get(field_object.related_name)
+            related_to_one = isinstance(related_field, fields.ToOneField)
 
             for related_bundle in bundle.data[field_name]:
                 related_resource = field_object.get_related_resource(bundle.obj)
@@ -2368,10 +2373,6 @@ class BaseModelResource(Resource):
                 # haven't already saved it.
                 obj_id = self.create_identifier(related_bundle.obj)
 
-                if obj_id in bundle.objects_saved:
-                    # It's already been saved. We're done here.
-                    continue
-
                 # Only build & save if there's data, not just a URI.
                 updated_related_bundle = related_resource.build_bundle(
                     obj=related_bundle.obj,
@@ -2379,13 +2380,19 @@ class BaseModelResource(Resource):
                     request=bundle.request,
                     objects_saved=bundle.objects_saved
                 )
-
-                #Only save related models if they're newly added.
-                if updated_related_bundle.obj._state.adding:
+                
+                # Only save related models if they're newly added, or if
+                # they've just been cleared.
+                if cleared or updated_related_bundle.obj._state.adding:
                     related_resource.save(updated_related_bundle)
                 related_objs.append(updated_related_bundle.obj)
-
-            related_mngr.add(*related_objs)
+            
+            # In addition to models.ManyToManyField, ToManyField
+            # is used for models.ForeignKey reverse relations, in which case calling
+            # add() saves each related obj a 2nd time.
+            # If we can verify that this is a one-to-many relation, skip re-adding it.
+            if not related_to_one:
+                related_mngr.add(*related_objs)
 
     def detail_uri_kwargs(self, bundle_or_obj):
         """
