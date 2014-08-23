@@ -596,7 +596,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
 ``ordering``
 ------------
 
-  Specifies the what fields the ``Resource`` should should allow ordering on.
+  Specifies the what fields the ``Resource`` should allow ordering on.
   Default is ``[]``.
 
   Values should be the fieldnames as strings. When provided to the ``Resource``
