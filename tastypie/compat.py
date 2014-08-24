@@ -1,11 +1,8 @@
 from __future__ import unicode_literals
-from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 import django
 
-__all__ = ['User', 'AUTH_USER_MODEL']
-
-AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
+__all__ = ['User']
 
 # Django 1.5+ compatibility
 if django.VERSION >= (1, 5):
