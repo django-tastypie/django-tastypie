@@ -1,6 +1,5 @@
 from settings import *
 INSTALLED_APPS.append('django.contrib.sessions')
-INSTALLED_APPS.append('core')
 INSTALLED_APPS.append('profilingtests')
 
 try:
@@ -9,7 +8,7 @@ try:
 except ImportError:
     pass
 
-ROOT_URLCONF = 'profilingtests.tests.api_urls'
+ROOT_URLCONF = 'profilingtests.urls'
 MEDIA_URL = 'http://localhost:8080/media/'
 
 LOGGING = {
@@ -29,4 +28,3 @@ LOGGING = {
         },
     }
 }
-
