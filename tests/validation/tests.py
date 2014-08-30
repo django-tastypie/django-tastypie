@@ -109,20 +109,20 @@ class PutListNestResouceValidationTestCase(TestCaseWithFixture):
     def test_valid_data(self):
         data = json.dumps({'objects' : [
             {
-                'pk' : 1,
+                'id' : 1,
                 'title' : 'Test Title',
                 'slug' : 'test-title',
                 'content' : 'This is the content',
                 'annotated' : {'annotations' : 'This is another annotations'},
-                'user' : {'pk' : 1}
+                'user' : {'id' : 1}
             },
             {
-                'pk' : 2,
+                'id' : 2,
                 'title' : 'Test Title',
                 'slug' : 'test-title',
                 'content' : 'This is the content',
                 'annotated' : {'annotations' : 'This is the third annotations'},
-                'user' : {'pk' : 1}
+                'user' : {'id' : 1}
             }
 
         ]})
@@ -137,17 +137,17 @@ class PutListNestResouceValidationTestCase(TestCaseWithFixture):
     def test_invalid_data(self):
         data = json.dumps({'objects' : [
             {
-                'pk' : 1,
+                'id' : 1,
                 'title' : 'Test Title',
                 'slug' : 'test-title',
                 'annotated' : {'annotations' : None},
-                'user' : {'pk' : 1}
+                'user' : {'id' : 1}
             },
             {
-                'pk' : 2,
+                'id' : 2,
                 'title' : 'Test Title',
                 'annotated' : {'annotations' : None},
-                'user' : {'pk' : 1}
+                'user' : {'id' : 1}
             }
         ]})
 
