@@ -21,6 +21,7 @@ setup(
         'tastypie.utils',
         'tastypie.management',
         'tastypie.management.commands',
+        'tastypie.south_migrations',
         'tastypie.migrations',
         'tastypie.contrib',
         'tastypie.contrib.gis',
