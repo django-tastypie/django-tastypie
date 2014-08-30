@@ -1,11 +1,12 @@
 import django
 from django.contrib.auth.models import User
 from django.http import HttpRequest
-from django.test import TestCase, Client
+from django.test import Client
 import json
+from testcases import TestCaseWithFixture
 
 
-class ViewsTestCase(TestCase):
+class ViewsTestCase(TestCaseWithFixture):
     def setUp(self):
         if django.VERSION >= (1, 4):
             self.body_attr = "body"

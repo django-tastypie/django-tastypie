@@ -1,12 +1,13 @@
 from django.conf import settings
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.http import HttpRequest
-from django.test import TestCase
 import json
 
 from basic.models import Note
+from testcases import TestCaseWithFixture
 
-class FilteringErrorsTestCase(TestCase):
+
+class FilteringErrorsTestCase(TestCaseWithFixture):
     urls = 'validation.api.urls'
 
     def test_valid_date(self):
@@ -26,7 +27,7 @@ class FilteringErrorsTestCase(TestCase):
         })
         self.assertEqual(resp.status_code, 400)
 
-class PostNestResouceValidationTestCase(TestCase):
+class PostNestResouceValidationTestCase(TestCaseWithFixture):
     urls = 'validation.api.urls'
 
     def test_valid_data(self):
@@ -64,7 +65,7 @@ class PostNestResouceValidationTestCase(TestCase):
         })
 
 
-class PutDetailNestResouceValidationTestCase(TestCase):
+class PutDetailNestResouceValidationTestCase(TestCaseWithFixture):
     urls = 'validation.api.urls'
 
     def test_valid_data(self):
@@ -102,7 +103,7 @@ class PutDetailNestResouceValidationTestCase(TestCase):
         })
 
 
-class PutListNestResouceValidationTestCase(TestCase):
+class PutListNestResouceValidationTestCase(TestCaseWithFixture):
     urls = 'validation.api.urls'
 
     def test_valid_data(self):

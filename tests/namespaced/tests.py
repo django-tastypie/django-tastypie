@@ -1,11 +1,11 @@
 from django.conf import settings
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.http import HttpRequest
-from django.test import TestCase
 import json
+from testcases import TestCaseWithFixture
 
 
-class NamespacedViewsTestCase(TestCase):
+class NamespacedViewsTestCase(TestCaseWithFixture):
     urls = 'namespaced.api.urls'
 
     def test_urls(self):

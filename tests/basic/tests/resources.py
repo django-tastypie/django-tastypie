@@ -1,11 +1,11 @@
 from django.contrib.auth.models import User
 from django.http import HttpRequest
-from django.test import TestCase
 from tastypie.bundle import Bundle
 from tastypie.fields import ToOneField, ToManyField
 from tastypie.resources import ModelResource
 from basic.api.resources import SlugBasedNoteResource
 from basic.models import Note, AnnotatedNote, SlugBasedNote
+from testcases import TestCaseWithFixture
 
 
 class InvalidLazyUserResource(ModelResource):
@@ -47,7 +47,7 @@ class NoteWithAnnotationsResource(ModelResource):
         queryset = Note.objects.all()
 
 
-class NoteModelResourceTestCase(TestCase):
+class NoteModelResourceTestCase(TestCaseWithFixture):
     def test_init(self):
         resource_1 = NoteResource()
         self.assertEqual(len(resource_1.fields), 8)
@@ -88,7 +88,7 @@ class NoteModelResourceTestCase(TestCase):
         self.assertEqual(related._meta.api_name, 'foo')
 
 
-class AnnotatedNoteModelResourceTestCase(TestCase):
+class AnnotatedNoteModelResourceTestCase(TestCaseWithFixture):
     def test_one_to_one_regression(self):
         # Make sure bits don't completely blow up if the related model
         # is gone.
@@ -99,7 +99,7 @@ class AnnotatedNoteModelResourceTestCase(TestCase):
         dehydrated = resource_1.full_dehydrate(n1_bundle)
 
 
-class DetailURIKwargsResourceTestCase(TestCase):
+class DetailURIKwargsResourceTestCase(TestCaseWithFixture):
     def test_correct_detail_uri_model(self):
         n1 = Note.objects.get(pk=1)
 
@@ -135,7 +135,7 @@ class DetailURIKwargsResourceTestCase(TestCase):
         })
 
 
-class SlugBasedResourceTestCase(TestCase):
+class SlugBasedResourceTestCase(TestCaseWithFixture):
     def setUp(self):
         super(SlugBasedResourceTestCase, self).setUp()
         self.n1 = SlugBasedNote.objects.get(pk='first-post')
