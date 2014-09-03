@@ -32,7 +32,7 @@ def describe_api(app, **options):
 
     for model in get_models(models_module):
         fields_str = '\n'.join(yield_field_strings(model))
-        filtering_fields = ('\n'+' '*20).join(yield_filtering_fields(model))
+        filtering_fields = ('\n'+' '*21).join(yield_filtering_fields(model))
         filtering_str = META_FILTERING_TEMPLATE.format(filtering_fields=filtering_fields)
         resource_str = build_resource_str(model, fields=fields_str, filtering=filtering_str)
 
@@ -125,7 +125,6 @@ RESOURCE_TEMPLATE = "class {model_name}"+RESOURCE_POSTFIX+"""(resources.ModelRes
     class Meta:
         queryset = {model_name}.objects.all()
         {filtering}
-
 """
 FOOTER_TEMPLATE = 'ALL_RESOURCES = [{all_resources_names}]'
 API_MODULE = IMPORTS_TEMPLATE + '{all_resources}\n' + FOOTER_TEMPLATE
