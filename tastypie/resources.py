@@ -847,8 +847,6 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         Given a bundle with an object instance, extract the information from it
         to populate the resource.
         """
-        use_in = ['all', 'list' if for_list else 'detail']
-
         data = bundle.data
 
         api_name = self._meta.api_name
@@ -862,7 +860,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 if not field_use_in(bundle):
                     continue
             else:
-                if field_use_in not in use_in:
+                if field_use_in not in ['all', 'list' if for_list else 'detail']:
                     continue
 
             # A touch leaky but it makes URI resolution work.

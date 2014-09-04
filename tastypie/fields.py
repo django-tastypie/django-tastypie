@@ -479,8 +479,8 @@ class RelatedField(ApiField):
         self._to_class = None
         self._rel_resources = {}
         self.full = full
-        self.full_list = full_list
-        self.full_detail = full_detail
+        self.full_list = full_list if callable(full_list) else lambda bundle: full_list
+        self.full_detail = full_detail if callable(full_detail) else lambda bundle: full_detail
 
         self.api_name = None
         self.resource_name = None
@@ -678,10 +678,10 @@ class RelatedField(ApiField):
         if self.full:
             is_details_view = not for_list
             if is_details_view:
-                if (not callable(self.full_detail) and self.full_detail) or (callable(self.full_detail) and self.full_detail(bundle)):
+                if self.full_detail(bundle):
                     should_dehydrate_full_resource = True
             else:
-                if (not callable(self.full_list) and self.full_list) or (callable(self.full_list) and self.full_list(bundle)):
+                if self.full_list(bundle):
                     should_dehydrate_full_resource = True
 
         return should_dehydrate_full_resource
