@@ -175,7 +175,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
     data sources, such as search results, files, other data, etc.
     """
     def __init__(self, api_name=None):
-        self.fields = deepcopy(self.base_fields)
+        self.fields = self.base_fields #deepcopy(self.base_fields)
 
         if not api_name is None:
             self._meta.api_name = api_name
