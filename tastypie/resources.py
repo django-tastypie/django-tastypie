@@ -806,7 +806,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         # the current class. This ought to prevent bad URLs from resolving to
         # incorrect data.
         try:
-            found_at = chomped_uri.index(self._meta.resource_name)
+            found_at = chomped_uri.rfind(self._meta.resource_name)
             chomped_uri = chomped_uri[found_at:]
         except ValueError:
             raise NotFound("An incorrect URL was provided '%s' for the '%s' resource." % (uri, self.__class__.__name__))
