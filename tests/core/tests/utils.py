@@ -7,6 +7,7 @@ from django.test import TestCase
 from tastypie.exceptions import BadRequest
 from tastypie.serializers import Serializer
 from tastypie.utils.mime import determine_format, build_content_type
+from tastypie.utils.urls import trailing_slash
 from tastypie.utils.timezone import now
 
 try:
@@ -14,6 +15,14 @@ try:
     TZ_AVAILABLE = True
 except ImportError:
     TZ_AVAILABLE = False
+
+
+class TrailingSlashTestCase(TestCase):
+    def test(self):
+        self.assertEqual(trailing_slash, '/')
+    
+    def test_callable(self):
+        self.assertEqual(trailing_slash(), '/')
 
 
 class MimeTestCase(TestCase):

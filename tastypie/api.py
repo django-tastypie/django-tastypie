@@ -99,7 +99,7 @@ class Api(object):
         ``Resources`` beneath it.
         """
         pattern_list = [
-            url(r"^(?P<api_name>%s)%s$" % (self.api_name, trailing_slash()), self.wrap_view('top_level'), name="api_%s_top_level" % self.api_name),
+            url(r"^(?P<api_name>%s)%s$" % (self.api_name, trailing_slash), self.wrap_view('top_level'), name="api_%s_top_level" % self.api_name),
         ]
 
         for name in sorted(self._registry.keys()):

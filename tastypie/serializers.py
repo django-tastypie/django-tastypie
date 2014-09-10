@@ -147,6 +147,12 @@ class Serializer(object):
             except KeyError:
                 raise ImproperlyConfigured("Content type for specified type '%s' not found. Please provide it at either the class level or via the arguments." % format)
 
+        # Reverse the list, because mimeparse is weird like that. See also
+        # https://github.com/toastdriven/django-tastypie/issues#issue/12 for
+        # more information.
+        self.supported_formats_reversed = list(self.supported_formats)
+        self.supported_formats_reversed.reverse()
+
         self._from_methods = {}
         self._to_methods = {}
 
