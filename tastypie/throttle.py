@@ -36,14 +36,14 @@ class BaseThrottle(object):
         Takes an identifier (like a username or IP address) and converts it
         into a key usable by the cache system.
         """
-        bits = []
+        bits = [
+            char
+            for char in identifier
+            if char.isalnum() or char in '_.-'
+        ]
+        bits.append('_accesses')
 
-        for char in identifier:
-            if char.isalnum() or char in ['_', '.', '-']:
-                bits.append(char)
-
-        safe_string = ''.join(bits)
-        return "%s_accesses" % safe_string
+        return ''.join(bits)
 
     def should_be_throttled(self, identifier, **kwargs):
         """
