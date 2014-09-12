@@ -7,9 +7,7 @@ from tastypie.authorization import Authorization
 from core.models import Note, MediaBit
 
 from related_resource.models import Category, Tag, ExtraData, Taggable,\
-    TaggableTag, Person, Company, Product, Address, Dog, Forum, DogHouse, Bone, Job, Payment
-
-from tests.related_resource.models import Label, Post
+    TaggableTag, Person, Company, Product, Address, Dog, Forum, DogHouse, Bone, Job, Payment, Label, Post
 
 
 class UserResource(ModelResource):

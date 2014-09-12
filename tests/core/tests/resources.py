@@ -3758,7 +3758,7 @@ class ModelResourceTestCase(TestCase):
             # ``None`` to a required FK.
             hydrated1 = nmbr.full_hydrate(bundle_1)
             self.fail()
-        except Note.DoesNotExist:
+        except (Note.DoesNotExist, ValueError):
             pass
 
         # So we introduced ``blank=True``.
