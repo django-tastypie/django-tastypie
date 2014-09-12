@@ -399,7 +399,7 @@ class Resource(object):
             deserialized = request.POST.copy()
             deserialized.update(request.FILES)
         else:
-            deserialized = self._meta.serializer.deserialize(request.raw_post_data, format=format)
+            deserialized = self._meta.serializer.deserialize(request.body, format=format)
 
         return deserialized
 
