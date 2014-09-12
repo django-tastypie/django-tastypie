@@ -10,7 +10,7 @@ except ImportError:
 
 setup(
     name='django-tastypie',
-    version='0.11.2-dev',
+    version='0.12.0',
     description='A flexible & capable API layer for Django.',
     author='Daniel Lindsley',
     author_email='daniel@toastdriven.com',
