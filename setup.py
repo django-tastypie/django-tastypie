@@ -9,11 +9,11 @@ except ImportError:
 
 setup(
     name='django-tastypie',
-    version='0.9.12-wave',
+    version='0.9.12-wave2',
     description='A flexible & capable API layer for Django.',
     author='Daniel Lindsley',
     author_email='daniel@toastdriven.com',
-    url='http://github.com/toastdriven/django-tastypie/',
+    url='https://github.com/waveaccounting/django-tastypie',
     long_description=open('README.rst', 'r').read(),
     packages=[
         'tastypie',
