@@ -1,0 +1,39 @@
+v0.12.0
+=======
+
+:date: 2014-09-11
+
+This release adds official support for both Django 1.7, as well as
+several bugfixes.
+
+.. warning::
+
+  If you were previously relying on importing the ``User`` model from
+  ``tastypie.compat``, this import will no longer work correctly. This was
+  removed due to the way app-loading works in Django 1.7 & no great solution
+  for dodging this issue exists.
+
+  If you were using either of::
+
+    from tastypie.compat import User
+    from tastypie.compat import username_field
+
+  Please update your code as follows::
+
+    from tastypie.compat import get_user_model
+    from tastypie.compat import get_username_field
+
+
+Bugfixes
+--------
+
+* Drastic reworking of the test suite. (SHA: 95f57f7)
+* Fixed Travis to run Python 3.4 tests. (SHA: 7af528c)
+* Fixed a bug where URLs would be incorrectly handled if the ``api_name`` &
+  ``resource_name`` were the same. (SHA: fd55aa3)
+* Fixed a test requirement for PyYAML. (SHA: b4f6531)
+* Added support for Django 1.7. (SHA: 7881bb6)
+* Documentation updates:
+
+    * Fixed header in ``tools.rst``. (SHA: f8af772)
+    * Fixed header in ``resources.rst``. (SHA: 9508cbf)
