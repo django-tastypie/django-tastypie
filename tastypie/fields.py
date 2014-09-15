@@ -127,7 +127,7 @@ class ApiField(object):
                         # accesses will fail miserably.
                         break
                     else:
-                        raise ApiFieldError("The object '%r' has an empty attribute '%s' and doesn't allow a default or null value." % (previous_object, attr))
+                        raise ApiFieldError(u"The object '%r' has an empty attribute '%s' and doesn't allow a default or null value." % (previous_object, attr))
 
             if callable(current_object):
                 current_object = current_object()
@@ -723,7 +723,7 @@ class ToOneField(RelatedField):
 
         if not foreign_obj:
             if not self.null:
-                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
+                raise ApiFieldError(u"The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
 
             return None
 
@@ -780,7 +780,7 @@ class ToManyField(RelatedField):
     def dehydrate(self, bundle, for_list=True):
         if not bundle.obj or not bundle.obj.pk:
             if not self.null:
-                raise ApiFieldError("The model '%r' does not have a primary key and can not be used in a ToMany context." % bundle.obj)
+                raise ApiFieldError(u"The model '%r' does not have a primary key and can not be used in a ToMany context." % bundle.obj)
 
             return []
 
@@ -807,7 +807,7 @@ class ToManyField(RelatedField):
 
         if not the_m2ms:
             if not self.null:
-                raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
+                raise ApiFieldError(u"The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
 
             return []
 
