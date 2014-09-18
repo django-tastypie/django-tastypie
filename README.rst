@@ -34,7 +34,9 @@ Optional
 What's It Look Like?
 ====================
 
-A basic example looks like::
+A basic example looks like:
+
+.. code:: python
 
     # myapp/api.py
     # ============
