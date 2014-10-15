@@ -89,6 +89,7 @@ Contributors:
 * Sean Hayes (SeanHayes) for test suite and CI enhancements, various patches
 * Michael Thornhill (mthornhill) for strict dict checking bugfix
 * Fedor Baart (siggyf) for an update on the serializer
+* Alexey Kotlyarov (koterpillar) - fixing DateField/DateTimeField.
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
