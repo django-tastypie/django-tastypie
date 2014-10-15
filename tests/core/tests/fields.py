@@ -538,6 +538,10 @@ class DateFieldTestCase(TestCase):
         field_5.instance_name = 'date'
         self.assertEqual(field_5.hydrate(bundle_5), None)
 
+    def test_model_resource_correct_association(self):
+        api_field = ModelResource.api_field_from_django_field(models.DateField())
+        self.assertEqual(api_field, DateField)
+
 
 class DateTimeFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -603,6 +607,10 @@ class DateTimeFieldTestCase(TestCase):
         field_6 = DateTimeField()
         field_6.instance_name = 'datetime'
         self.assertRaises(ApiFieldError, field_6.hydrate, bundle_6)
+
+    def test_model_resource_correct_association(self):
+        api_field = ModelResource.api_field_from_django_field(models.DateTimeField())
+        self.assertEqual(api_field, DateTimeField)
 
 
 class UserResource(ModelResource):
