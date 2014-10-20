@@ -1641,15 +1641,35 @@ class ModelResourceTestCase(TestCase):
         note_1 = resource.get_via_uri('/notes/api/v1/notes/1/')
         self.assertEqual(note_1.pk, 1)
 
+    def test__get_via_uri__identifier_contains_resource_name(self):
+        class CustomNoteResource(NoteResource):
+            class Meta(NoteResource.Meta):
+                detail_uri_name = 'slug'
+        resource = CustomNoteResource(api_name='v1')
+        note_1 = Note.objects.first()
+        note_1.slug = 'notes1-notes'
+        note_1.save()
+        note_1_new = resource.get_via_uri('/notes/api/v1/notes/%s/' % note_1.slug)
+        self.assertEqual(note_1_new.pk, note_1.pk)
+
+    def test__get_via_uri__identifier_same_as_resource_name(self):
+        class CustomNoteResource(NoteResource):
+            class Meta(NoteResource.Meta):
+                detail_uri_name = 'slug'
+        resource = CustomNoteResource(api_name='v1')
+        note_1 = Note.objects.first()
+        note_1.slug = 'notes'
+        note_1.save()
+        note_1_new = resource.get_via_uri('/notes/api/v1/notes/%s/' % note_1.slug)
+        self.assertEqual(note_1_new.pk, note_1.pk)
+
     def test__get_via_uri__uri_has_special_chars(self):
         resource = NoteResource(api_name='v1')
-        # Should work even if app name is the same as resource
         note_1 = resource.get_via_uri('/~krichy/api/v1/notes/1/')
         self.assertEqual(note_1.pk, 1)
 
     def test__get_via_uri__uri_has_encoded_special_chars(self):
         resource = NoteResource(api_name='v1')
-        # Should work even if app name is the same as resource
         note_1 = resource.get_via_uri('/%7ekrichy/api/v1/notes/1/')
         self.assertEqual(note_1.pk, 1)
 
@@ -1675,7 +1695,7 @@ class ModelResourceTestCase(TestCase):
 
     def test__get_via_uri__list_uri(self):
         resource = NoteResource(api_name='v1')
-        with self.assertRaises(MultipleObjectsReturned):
+        with self.assertRaises(NotFound):
             resource.get_via_uri('/api/v1/notes/')
 
     def test__get_via_uri__with_request(self):
