@@ -2343,7 +2343,10 @@ class BaseModelResource(Resource):
             related_mngr = None
 
             if isinstance(field_object.attribute, six.string_types):
-                related_mngr = getattr(bundle.obj, field_object.attribute)
+                # recurse with getattr through all double-underscore relations (if any)
+                related_mngr = bundle.obj
+                for related_mngr_attr in field_object.attribute.split('__'):
+                    related_mngr = getattr(related_mngr, related_mngr_attr)
             elif callable(field_object.attribute):
                 related_mngr = field_object.attribute(bundle)
 
