@@ -2229,7 +2229,7 @@ class BaseModelResource(Resource):
                 bundle.obj.delete()
 
     def create_identifier(self, obj):
-        return u"%s.%s.%s" % (obj._meta.app_label, obj._meta.module_name, obj.pk)
+        return u"%s.%s.%s" % (obj._meta.app_label, obj._meta.model_name, obj.pk)
 
     def save(self, bundle, skip_errors=False):
         self.is_valid(bundle)
