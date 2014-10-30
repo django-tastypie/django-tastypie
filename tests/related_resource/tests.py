@@ -5,6 +5,7 @@ import django
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db.models.signals import pre_save
+from django.test.testcases import TestCase
 
 from tastypie import fields
 from tastypie.exceptions import NotFound
@@ -743,7 +744,7 @@ class CorrectUriRelationsTestCase(TestCaseWithFixture):
         self.assertEqual(Note.objects.count(), 2)
 
 
-class TestPutOnRelatedResource(TestCaseWithFixture):
+class TestPutOnRelatedResource(TestCase):
     def test_m2m_put_prefetch(self):
         resource = api.canonical_resource_for('forum')
         request = MockRequest()
@@ -775,8 +776,11 @@ class TestPutOnRelatedResource(TestCaseWithFixture):
                                                               'api_name': resource._meta.api_name})
 
         response = resource.put_detail(request)
-
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content.decode('utf-8'))
+
+        # Check that the query does what it's supposed to and only the return value is wrong
+        self.assertEqual(User.objects.count(), 3)
+
         self.assertEqual(len(data['members']), 2)
         self.assertEqual(len(data['moderators']), 1)
