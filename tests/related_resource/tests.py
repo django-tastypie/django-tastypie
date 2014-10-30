@@ -15,7 +15,7 @@ from core.tests.resources import HttpRequest
 
 from related_resource.api.resources import CategoryResource, ForumResource, FreshNoteResource, JobResource, NoteResource, PersonResource, UserResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Label, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment
+from related_resource.models import Category, Label, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment, Forum
 from testcases import TestCaseWithFixture
 
 
@@ -741,3 +741,37 @@ class CorrectUriRelationsTestCase(TestCaseWithFixture):
 
         self.assertEqual(str(cm.exception), "An incorrect URL was provided '/v1/notes/2/' for the 'UserResource' resource.")
         self.assertEqual(Note.objects.count(), 2)
+
+
+class TestPutOnRelatedResource(TestCaseWithFixture):
+    def test_m2m_put_non_existing(self):
+        resource = api.canonical_resource_for('forum')
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        forum = Forum.objects.create()
+        user_data_1 = {
+            'username': 'valid but unique',
+            'email': 'valid.unique@exmaple.com',
+            'password': 'junk',
+            }
+        user_data_2 = {
+            'username': 'valid and very unique',
+            'email': 'valid.very.unique@exmaple.com',
+            'password': 'junk',
+            }
+
+        forum_data = {'members': [user_data_1, user_data_2, ],
+                      'moderators': [user_data_2, ]}
+        request.set_body(json.dumps(forum_data))
+
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': forum.pk,
+                                                              'resource_name': resource._meta.resource_name,
+                                                              'api_name': resource._meta.api_name})
+
+        response = resource.put_detail(request)
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(data['members']), 2)
+        self.assertEqual(len(data['moderators']), 1)
