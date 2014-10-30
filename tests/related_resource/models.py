@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.db import models
 
+
 # A self-referrential model to test regressions.
 class Category(models.Model):
     parent = models.ForeignKey('self', null=True)
@@ -20,14 +21,14 @@ class TaggableTag(models.Model):
     tag = models.ForeignKey(
             'Tag',
             related_name='taggabletags',
-            null=True, blank=True, # needed at creation time
+            null=True, blank=True,  # needed at creation time
         )
     taggable = models.ForeignKey(
             'Taggable',
             related_name='taggabletags',
-            null=True, blank=True, # needed at creation time
+            null=True, blank=True,  # needed at creation time
     )
-    extra = models.IntegerField(default=0) #extra data about the relationship
+    extra = models.IntegerField(default=0)  # extra data about the relationship
 
 
 # Tags to Taggable model through explicit M2M table
@@ -78,6 +79,7 @@ class Product(models.Model):
     def __unicode__(self):
         return u"%s" % (self.name)
 
+
 class Person(models.Model):
     name = models.CharField(max_length=32)
     company = models.ForeignKey(Company, related_name="employees", null=True)
@@ -85,11 +87,13 @@ class Person(models.Model):
     def __unicode__(self):
         return u"%s" % (self.name)
 
+
 class DogHouse(models.Model):
     color = models.CharField(max_length=32)
 
     def __unicode__(self):
         return u"%s" % (self.color)
+
 
 class Dog(models.Model):
     name = models.CharField(max_length=32)
@@ -99,6 +103,7 @@ class Dog(models.Model):
     def __unicode__(self):
         return u"%s" % (self.name)
 
+
 class Bone(models.Model):
     dog = models.ForeignKey(Dog, related_name='bones', null=True)
     color = models.CharField(max_length=32)
@@ -106,19 +111,24 @@ class Bone(models.Model):
     def __unicode__(self):
         return u"%s" % (self.color)
 
+
 class Forum(models.Model):
     moderators = models.ManyToManyField(User, related_name='forums_moderated')
     members = models.ManyToManyField(User, related_name='forums_member')
 
+
 class Label(models.Model):
     name = models.CharField(max_length=32)
+
 
 class Job(models.Model):
     name = models.CharField(max_length=200)
 
+
 class Payment(models.Model):
     scheduled = models.DateTimeField()
     job = models.OneToOneField(Job, related_name="payment", null=True)
+
 
 class Post(models.Model):
     name = models.CharField(max_length=200)

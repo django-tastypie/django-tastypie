@@ -1,8 +1,7 @@
-from datetime import datetime, tzinfo, timedelta
+from datetime import datetime
 import json
 
 import django
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db.models.signals import pre_save
@@ -143,7 +142,6 @@ class ExplicitM2MResourceRegressionTest(TestCaseWithFixture):
         # Give each tag some extra data (the lookup of this data is what makes the test fail)
         self.extradata_1 = ExtraData.objects.create(tag=self.tag_1, name='additional')
 
-
     def test_correct_setup(self):
         request = MockRequest()
         request.GET = {'format': 'json'}
@@ -172,7 +170,6 @@ class ExplicitM2MResourceRegressionTest(TestCaseWithFixture):
 
         # and check whether the extradata is present
         self.assertEqual(data['extradata']['name'], u'additional')
-
 
     def test_post_new_tag(self):
         resource = api.canonical_resource_for('tag')
@@ -235,11 +232,12 @@ class OneToManySetupTestCase(TestCaseWithFixture):
 class FullCategoryResource(CategoryResource):
     parent = fields.ToOneField('self', 'parent', null=True, full=True)
 
+
 class RelationshipOppositeFromModelTestCase(TestCaseWithFixture):
-    '''
+    """
         On the model, the Job relationship is defined on the Payment.
         On the resource, the PaymentResource is defined on the JobResource as well
-    '''
+    """
     def setUp(self):
         super(RelationshipOppositeFromModelTestCase, self).setUp()
 
@@ -278,13 +276,12 @@ class RelationshipOppositeFromModelTestCase(TestCaseWithFixture):
         self.assertEqual(new_job, new_payment.job)
 
 
-
 class RelatedPatchTestCase(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
 
     def setUp(self):
         super(RelatedPatchTestCase, self).setUp()
-        #this test doesn't use MockRequest, so the body attribute is different.
+        # this test doesn't use MockRequest, so the body attribute is different.
         if django.VERSION >= (1, 4):
             self.body_attr = "_body"
         else:
@@ -540,7 +537,7 @@ class NestedRelatedResourceTest(TestCaseWithFixture):
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
 
-        #Change just a nested resource via PUT
+        # Change just a nested resource via PUT
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
@@ -575,7 +572,6 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
 
         with self.assertNumQueries(1):
             resp = resource.post_list(request)
-
 
     def test_two_queries_for_post_list(self):
         """
@@ -619,8 +615,7 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
 
         request.set_body(body)
 
-        resource.post_list(request) #_save_fails_test will explode if Label is saved
-
+        resource.post_list(request)  #_save_fails_test will explode if Label is saved
 
     def test_save_m2m_changed(self):
         """
@@ -641,7 +636,7 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp.status_code, 201)
 
-        #'extra' should have been set
+        # 'extra' should have been set
         tag = Tag.objects.all()[0]
         taggable_tag = tag.taggabletags.all()[0]
         self.assertEqual(taggable_tag.extra, 7)
@@ -656,7 +651,7 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
 
         resource.put_detail(request)
 
-        #'extra' should have changed
+        # 'extra' should have changed
         tag = Tag.objects.all()[0]
         taggable_tag = tag.taggabletags.all()[0]
         self.assertEqual(taggable_tag.extra, 1234)
@@ -717,7 +712,7 @@ class CorrectUriRelationsTestCase(TestCaseWithFixture):
 
         # For this test, we need a ``User`` with the same PK as a ``Note``.
         note_1 = Note.objects.latest('created')
-        user_2 = User.objects.create(
+        User.objects.create(
             id=note_1.pk,
             username='valid',
             email='valid@exmaple.com',

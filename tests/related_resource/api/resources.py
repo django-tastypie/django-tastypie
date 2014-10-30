@@ -167,6 +167,7 @@ class DogResource(ModelResource):
         resource_name = 'dog'
         authorization = Authorization()
 
+
 class LabelResource(ModelResource):
     class Meta:
         resource_name = 'label'
@@ -182,6 +183,7 @@ class PostResource(ModelResource):
         resource_name = 'post'
         authorization = Authorization()
 
+
 class PaymentResource(ModelResource):
     job = fields.ToOneField('related_resource.api.resources.JobResource', 'job')
 
@@ -189,7 +191,8 @@ class PaymentResource(ModelResource):
         queryset = Payment.objects.all()
         resource_name = 'payment'
         authorization = Authorization()
-        allowed_methods = ('get','put','post')
+        allowed_methods = ('get', 'put', 'post')
+
 
 class JobResource(ModelResource):
     payment = fields.ToOneField(PaymentResource, 'payment', related_name='job')
@@ -198,11 +201,12 @@ class JobResource(ModelResource):
         queryset = Job.objects.all()
         resource_name = 'job'
         authorization = Authorization()
-        allowed_methods = ('get','put','post')
+        allowed_methods = ('get', 'put', 'post')
+
 
 class ForumResource(ModelResource):
     moderators = fields.ManyToManyField(UserResource, 'moderators', full=True)
-    members    = fields.ManyToManyField(UserResource, 'members', full=True)
+    members = fields.ManyToManyField(UserResource, 'members', full=True)
 
     class Meta:
         resource_name = 'forum'
