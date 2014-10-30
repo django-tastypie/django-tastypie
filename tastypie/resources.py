@@ -1430,6 +1430,9 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             if not self._meta.always_return_data:
                 return http.HttpNoContent()
             else:
+                # Invalidate prefetched_objects_cache for bundled object
+                # because we might have changed a prefetched field
+                updated_bundle.obj._prefetched_objects_cache = {}
                 updated_bundle = self.full_dehydrate(updated_bundle)
                 updated_bundle = self.alter_detail_data_to_serialize(request, updated_bundle)
                 return self.create_response(request, updated_bundle)
