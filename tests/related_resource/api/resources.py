@@ -210,7 +210,7 @@ class ForumResource(ModelResource):
 
     class Meta:
         resource_name = 'forum'
-        queryset = Forum.objects.all()
+        queryset = Forum.objects.prefetch_related('moderators', 'members')
         authorization = Authorization()
         always_return_data = True
 
