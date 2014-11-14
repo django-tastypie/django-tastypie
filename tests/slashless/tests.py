@@ -1,11 +1,11 @@
 from django.conf import settings
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.http import HttpRequest
-from django.test import TestCase
 import json
+from testcases import TestCaseWithFixture
 
 
-class ViewsWithoutSlashesTestCase(TestCase):
+class ViewsWithoutSlashesTestCase(TestCaseWithFixture):
     urls = 'slashless.api.urls'
 
     def setUp(self):

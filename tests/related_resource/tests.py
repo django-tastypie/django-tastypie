@@ -6,22 +6,43 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db.models.signals import pre_save
-from django.test import TestCase
 
-from tastypie.exceptions import NotFound
 from tastypie import fields
+from tastypie.exceptions import NotFound
 
 from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
 from core.tests.resources import HttpRequest
 
-from related_resource.api.resources import FreshNoteResource, CategoryResource, PersonResource, JobResource, NoteResource
+from related_resource.api.resources import CategoryResource, ForumResource, FreshNoteResource, JobResource, NoteResource, PersonResource, UserResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment
-from related_resource.models import Label
+from related_resource.models import Category, Label, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment
+from testcases import TestCaseWithFixture
 
 
-class RelatedResourceTest(TestCase):
+class M2MResourcesTestCase(TestCaseWithFixture):
+    def test_same_object_added(self):
+        """
+        From Issue #1035
+        """
+        
+        user=User.objects.create(username='gjcourt')
+        
+        ur=UserResource()
+        fr=ForumResource()
+        
+        resp = self.client.post(fr.get_resource_uri(), content_type='application/json', data=json.dumps({
+            'name': 'Test Forum',
+            'members': [ur.get_resource_uri(user)],
+            'moderators': [ur.get_resource_uri(user)],
+        }))
+        self.assertEqual(resp.status_code, 201, resp.content)
+        data = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(len(data['moderators']), 1)
+        self.assertEqual(len(data['members']), 1)
+
+
+class RelatedResourceTest(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
 
     def setUp(self):
@@ -61,7 +82,7 @@ class RelatedResourceTest(TestCase):
         self.assertEqual(User.objects.get(id=self.user.id).username, 'foobar')
 
 
-class CategoryResourceTest(TestCase):
+class CategoryResourceTest(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
 
     def setUp(self):
@@ -108,7 +129,7 @@ class CategoryResourceTest(TestCase):
         self.assertEqual(Category.objects.get(pk=self.child_cat_1.pk).parent, None)
 
 
-class ExplicitM2MResourceRegressionTest(TestCase):
+class ExplicitM2MResourceRegressionTest(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
 
     def setUp(self):
@@ -176,7 +197,7 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         self.assertEqual(deserialized['name'], 'school')
 
 
-class OneToManySetupTestCase(TestCase):
+class OneToManySetupTestCase(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
 
     def test_one_to_many(self):
@@ -214,7 +235,7 @@ class OneToManySetupTestCase(TestCase):
 class FullCategoryResource(CategoryResource):
     parent = fields.ToOneField('self', 'parent', null=True, full=True)
 
-class RelationshipOppositeFromModelTestCase(TestCase):
+class RelationshipOppositeFromModelTestCase(TestCaseWithFixture):
     '''
         On the model, the Job relationship is defined on the Payment.
         On the resource, the PaymentResource is defined on the JobResource as well
@@ -258,7 +279,7 @@ class RelationshipOppositeFromModelTestCase(TestCase):
 
 
 
-class RelatedPatchTestCase(TestCase):
+class RelatedPatchTestCase(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
 
     def setUp(self):
@@ -292,7 +313,7 @@ class RelatedPatchTestCase(TestCase):
         self.assertEqual(cat2.name, 'Kid')
 
 
-class NestedRelatedResourceTest(TestCase):
+class NestedRelatedResourceTest(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
 
     def test_one_to_one(self):
@@ -535,7 +556,7 @@ class NestedRelatedResourceTest(TestCase):
         self.assertEqual(bone.color, 'gray')
 
 
-class RelatedSaveCallsTest(TestCase):
+class RelatedSaveCallsTest(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
 
     def test_one_query_for_post_list(self):
@@ -640,8 +661,50 @@ class RelatedSaveCallsTest(TestCase):
         taggable_tag = tag.taggabletags.all()[0]
         self.assertEqual(taggable_tag.extra, 1234)
 
+    def test_no_save_m2m_unchanged_existing_data_persists(self):
+        """
+        Data should persist when posting an updated detail object with
+        unchanged reverse realated objects.
+        """
 
-class CorrectUriRelationsTestCase(TestCase):
+        person = Person.objects.create(name='Ryan')
+        dog = Dog.objects.create(name='Wilfred', owner=person)
+        bone1 = Bone.objects.create(color='White', dog=dog)
+        bone2 = Bone.objects.create(color='Grey', dog=dog)
+        
+        self.assertEqual(dog.bones.count(), 2)
+        
+        resource = api.canonical_resource_for('dog')
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request._load_post_and_files = lambda *args, **kwargs: None
+        body_dict = {
+            'id': dog.id,
+            'name': 'Wilfred',
+            'bones': [
+                {'id': bone1.id, 'color':  bone1.color},
+                {'id': bone2.id, 'color':  bone2.color}
+            ]
+        }
+        
+        request.set_body(json.dumps(body_dict))
+        
+        resp = resource.wrap_view('dispatch_detail')(request, pk=dog.pk)
+        
+        self.assertEqual(resp.status_code, 204)
+
+        dog = Dog.objects.all()[0]
+        
+        dog_bones = dog.bones.all()
+        
+        self.assertEqual(len(dog_bones), 2)
+        
+        self.assertEqual(dog_bones[0], bone1)
+        self.assertEqual(dog_bones[1], bone2)
+
+
+class CorrectUriRelationsTestCase(TestCaseWithFixture):
     """
     Validate that incorrect URI (with PKs that line up to valid data) are not
     accepted.

@@ -1,12 +1,13 @@
 from django.conf import settings
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.http import HttpRequest
-from django.test import TestCase
 import json
 
 from basic.models import Note
+from testcases import TestCaseWithFixture
 
-class FilteringErrorsTestCase(TestCase):
+
+class FilteringErrorsTestCase(TestCaseWithFixture):
     urls = 'validation.api.urls'
 
     def test_valid_date(self):
@@ -26,7 +27,7 @@ class FilteringErrorsTestCase(TestCase):
         })
         self.assertEqual(resp.status_code, 400)
 
-class PostNestResouceValidationTestCase(TestCase):
+class PostNestResouceValidationTestCase(TestCaseWithFixture):
     urls = 'validation.api.urls'
 
     def test_valid_data(self):
@@ -64,7 +65,7 @@ class PostNestResouceValidationTestCase(TestCase):
         })
 
 
-class PutDetailNestResouceValidationTestCase(TestCase):
+class PutDetailNestResouceValidationTestCase(TestCaseWithFixture):
     urls = 'validation.api.urls'
 
     def test_valid_data(self):
@@ -102,26 +103,26 @@ class PutDetailNestResouceValidationTestCase(TestCase):
         })
 
 
-class PutListNestResouceValidationTestCase(TestCase):
+class PutListNestResouceValidationTestCase(TestCaseWithFixture):
     urls = 'validation.api.urls'
 
     def test_valid_data(self):
         data = json.dumps({'objects' : [
             {
-                'pk' : 1,
+                'id' : 1,
                 'title' : 'Test Title',
                 'slug' : 'test-title',
                 'content' : 'This is the content',
                 'annotated' : {'annotations' : 'This is another annotations'},
-                'user' : {'pk' : 1}
+                'user' : {'id' : 1}
             },
             {
-                'pk' : 2,
+                'id' : 2,
                 'title' : 'Test Title',
                 'slug' : 'test-title',
                 'content' : 'This is the content',
                 'annotated' : {'annotations' : 'This is the third annotations'},
-                'user' : {'pk' : 1}
+                'user' : {'id' : 1}
             }
 
         ]})
@@ -136,17 +137,17 @@ class PutListNestResouceValidationTestCase(TestCase):
     def test_invalid_data(self):
         data = json.dumps({'objects' : [
             {
-                'pk' : 1,
+                'id' : 1,
                 'title' : 'Test Title',
                 'slug' : 'test-title',
                 'annotated' : {'annotations' : None},
-                'user' : {'pk' : 1}
+                'user' : {'id' : 1}
             },
             {
-                'pk' : 2,
+                'id' : 2,
                 'title' : 'Test Title',
                 'annotated' : {'annotations' : None},
-                'user' : {'pk' : 1}
+                'user' : {'id' : 1}
             }
         ]})
 

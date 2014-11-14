@@ -15,26 +15,37 @@ else
   ALL="core customuser basic alphanumeric slashless namespaced related validation gis content_gfk authorization"
 fi
 
-
+test_module='.tests'
+if [ $major -lt '2' -a $minor -lt '6' ]; then
+  test_module=''
+fi
 
 if [ $# -eq 0 ]; then
-    TYPES=$ALL
+    PYTESTPATHS=$ALL
 elif [ $1 == '-h' ]; then
     echo "Valid arguments are: $ALL"
 else
-    TYPES=$@
+    PYTESTPATHS=$@
 fi
 
-for type in $TYPES; do
+for pytestpath in $PYTESTPATHS; do
+    IFS='.' read -r type type_remainder <<< "$pytestpath"
+    
     echo "** $type **"
+    module_name=$type
 
     if [ $type == 'related' ]; then
-        django-admin.py test ${type}_resource --settings=settings_$type
-        continue
+        module_name=${module_name}_resource
     elif [ $type == 'gis' ]; then
         createdb -T template_postgis tastypie.db
+        spatialite tastypie-spatialite.db "SELECT InitSpatialMetaData();"
+    fi
+    
+    test_name=$module_name
+    if [ -n "$type_remainder" ]; then
+        test_name=$test_name.$type_remainder
     fi
 
-    django-admin.py test $type --settings=settings_$type
+    ./manage_$type.py test $test_name$test_module --traceback
     echo; echo
 done

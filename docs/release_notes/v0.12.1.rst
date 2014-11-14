@@ -1,0 +1,7 @@
+v0.12.1
+=======
+
+:date: 2014-10-22
+
+This release is a small bugfix release, specifically to remove accidentally
+added files in the Wheel release.

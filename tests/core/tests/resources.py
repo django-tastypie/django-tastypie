@@ -1311,7 +1311,7 @@ class ModelResourceTestCase(TestCase):
         resource = NoteResource()
         res = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(res.status_code, 400)
-        err_data = json.loads(res.content)
+        err_data = json.loads(res.content.decode('utf-8'))
         self.assertTrue('&lt;script&gt;alert(1)&lt;/script&gt;' in err_data['error'])
 
     def test_init(self):
@@ -1516,6 +1516,9 @@ class ModelResourceTestCase(TestCase):
     def test_get_via_uri(self):
         resource = NoteResource(api_name='v1')
         note_1 = resource.get_via_uri('/api/v1/notes/1/')
+        self.assertEqual(note_1.pk, 1)
+        # Should work even if app name is the same as resource
+        note_1 = resource.get_via_uri('/notes/api/v1/notes/1/')
         self.assertEqual(note_1.pk, 1)
 
         try:
@@ -3755,7 +3758,7 @@ class ModelResourceTestCase(TestCase):
             # ``None`` to a required FK.
             hydrated1 = nmbr.full_hydrate(bundle_1)
             self.fail()
-        except Note.DoesNotExist:
+        except (Note.DoesNotExist, ValueError):
             pass
 
         # So we introduced ``blank=True``.
@@ -4203,7 +4206,7 @@ class BustedResourceTestCase(TestCase):
         }
         res = self.resource.wrap_view('dispatch_detail')(request, pk=1)
         self.assertEqual(res.status_code, 500)
-        err_data = json.loads(res.content)
+        err_data = json.loads(res.content.decode('utf-8'))
         self.assertTrue('&lt;script&gt;alert(1)&lt;/script&gt;' in err_data['error_message'])
 
 
@@ -4221,4 +4224,3 @@ class ObjectlessResourceTestCase(TestCase):
         bundle = resource.build_bundle()
 
         self.assertTrue(bundle is not None)
-

@@ -1,5 +1,8 @@
 import json
+
+from django.test.utils import override_settings
 from django.utils import six
+
 from testcases import TestServerTestCase
 
 try:
@@ -14,7 +17,7 @@ def header_name(name):
     else:
         return name.lower()
 
-
+@override_settings(DEBUG=True)
 class HTTPTestCase(TestServerTestCase):
     def setUp(self):
         self.start_test_server(address='localhost', port=8001)
@@ -31,7 +34,7 @@ class HTTPTestCase(TestServerTestCase):
         response = connection.getresponse()
         connection.close()
         data = response.read().decode('utf-8')
-        self.assertEqual(response.status, 200)
+        self.assertEqual(response.status, 200, data)
         self.assertEqual(data, '{"products": {"list_endpoint": "/api/v1/products/", "schema": "/api/v1/products/schema/"}}')
 
     def test_get_apis_xml(self):
@@ -40,7 +43,7 @@ class HTTPTestCase(TestServerTestCase):
         response = connection.getresponse()
         connection.close()
         data = response.read().decode('utf-8')
-        self.assertEqual(response.status, 200)
+        self.assertEqual(response.status, 200, data)
         self.assertEqual(data, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><products type="hash"><list_endpoint>/api/v1/products/</list_endpoint><schema>/api/v1/products/schema/</schema></products></response>')
 
     def test_get_list(self):
@@ -48,7 +51,8 @@ class HTTPTestCase(TestServerTestCase):
         connection.request('GET', '/api/v1/products/', headers={'Accept': 'application/json'})
         response = connection.getresponse()
         connection.close()
-        self.assertEqual(response.status, 200)
+        data = response.read().decode('utf-8')
+        self.assertEqual(response.status, 200, data)
         expected = {
             'meta': {
                 'previous': None,
@@ -110,9 +114,9 @@ class HTTPTestCase(TestServerTestCase):
             ]
         }
         self.maxDiff = None
-        resp = json.loads(response.read().decode('utf-8'))
+        resp = json.loads(data)
 
-        #testing separately to help locate issues        
+        #testing separately to help locate issues
         self.assertEqual(resp['meta'], expected['meta'])
         self.assertEqual(resp['objects'], expected['objects'])
 
@@ -121,7 +125,8 @@ class HTTPTestCase(TestServerTestCase):
         post_data = '{"artnr": "A76124/03", "name": "Bigwheel XXL"}'
         connection.request('POST', '/api/v1/products/', body=post_data, headers={'Accept': 'application/json', 'Content-type': 'application/json'})
         response = connection.getresponse()
-        self.assertEqual(response.status, 201)
+        data = response.read().decode('utf-8')
+        self.assertEqual(response.status, 201, data)
         self.assertEqual(dict(response.getheaders())[header_name('Location')], 'http://localhost:8001/api/v1/products/A76124/03/')
 
         # make sure posted object exists
@@ -129,9 +134,9 @@ class HTTPTestCase(TestServerTestCase):
         response = connection.getresponse()
         connection.close()
 
-        self.assertEqual(response.status, 200)
-
         data = response.read().decode('utf-8')
+        self.assertEqual(response.status, 200, data)
+
         obj = json.loads(data)
 
         self.assertEqual(obj['name'], 'Bigwheel XXL')

@@ -1,12 +1,18 @@
+import mock
+import json
+
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from tastypie.test import ResourceTestCase
 from .models import AuthorProfile, Article
 from .api.resources import PerUserAuthorization
 
-import json
 
-import mock
+# If `./run_all_tests.sh authorization` is run, ret_false might never get called
+# and some tests will fail, but if `./run_all_tests.sh authorization.tests` is
+# run they'll pass.
+def ret_false(*args):
+    return False
 
 class PerUserAuthorizationTestCase(ResourceTestCase):
     def setUp(self):
@@ -115,7 +121,7 @@ class PerUserAuthorizationTestCase(ResourceTestCase):
         self.assertKeys(second_article, ['added_on', 'authors', 'content', 'id', 'resource_uri', 'slug', 'title'])
         self.assertEqual(second_article['id'], self.article_2.pk)
 
-    @mock.patch.object(PerUserAuthorization, "read_detail", lambda *args: False)
+    @mock.patch.object(PerUserAuthorization, "read_detail", ret_false)
     def test_get_unauthorized_detail(self):
         resp = self.api_client.get(self.article_uri_1, format='json', authentication=self.author_auth_1)
         self.assertHttpUnauthorized(resp)
@@ -140,7 +146,7 @@ class PerUserAuthorizationTestCase(ResourceTestCase):
         # Verify a new one has been added.
         self.assertEqual(Article.objects.count(), 5)
 
-    @mock.patch.object(PerUserAuthorization, "create_detail", lambda *args: False)
+    @mock.patch.object(PerUserAuthorization, "create_detail", ret_false)
     def test_post_unauthorized_detail(self):
         resp = self.api_client.post('/api/v1/article/', format='json', data={
             'title': 'Yet Another Story',
@@ -202,7 +208,7 @@ class PerUserAuthorizationTestCase(ResourceTestCase):
         self.assertEqual(Article.objects.get(pk=self.article_2.pk).title, 'Editorial: Why stuff is great')
         self.assertEqual(Article.objects.get(pk=self.article_2.pk).content, 'Because you can buy buy buy & fill the gaping voids in your life.')
 
-    @mock.patch.object(PerUserAuthorization, "update_detail", lambda *args: False)
+    @mock.patch.object(PerUserAuthorization, "update_detail", ret_false)
     def test_put_unauthorized_detail(self):
         resp = self.api_client.put(self.article_uri_1, format='json', data={
             'title': 'Revised Story',
@@ -235,7 +241,7 @@ class PerUserAuthorizationTestCase(ResourceTestCase):
         self.assertHttpUnauthorized(self.api_client.delete(self.article_uri_1, format='json', authentication=self.author_auth_3))
         self.assertEqual(Article.objects.count(), 3)
 
-    @mock.patch.object(PerUserAuthorization, "delete_detail", lambda *args: False)
+    @mock.patch.object(PerUserAuthorization, "delete_detail", ret_false)
     def test_delete_unauthorized_detail(self):
         self.assertEqual(Article.objects.count(), 3)
         self.assertHttpUnauthorized(self.api_client.delete(self.article_uri_1, format='json', authentication=self.author_auth_1))
