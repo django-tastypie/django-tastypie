@@ -45,7 +45,7 @@ The default ``Serializer`` supports the following formats:
 * plist (see http://explorapp.com/biplist/)
 
 Not everyone wants to install or support all the serialization options. If you
-would list to customize the list of supported formats for your entire site
+would like to customize the list of supported formats for your entire site
 the :ref:`TASTYPIE_DEFAULT_FORMATS setting <settings.TASTYPIE_DEFAULT_FORMATS>`
 allows you to set the default format list site-wide.
 
