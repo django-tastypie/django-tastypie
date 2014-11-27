@@ -889,7 +889,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             # Check for an optional method to do further hydration.
             method = getattr(self, "hydrate_%s" % field_name, None)
 
-            if method:
+            if method and not getattr(field_object, 'is_m2m', False):
                 bundle = method(bundle)
 
             if field_object.attribute:
