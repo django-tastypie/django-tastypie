@@ -127,7 +127,7 @@ class ApiField(object):
                         # accesses will fail miserably.
                         break
                     else:
-                        raise ApiFieldError("The object '%r' has an empty attribute '%s' and doesn't allow a default or null value." % (previous_object, attr))
+                        raise ApiFieldError(b"The object '%r' has an empty attribute '%s' and doesn't allow a default or null value." % (previous_object, str(attr)))
 
             if callable(current_object):
                 current_object = current_object()
