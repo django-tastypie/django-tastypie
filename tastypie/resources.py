@@ -544,7 +544,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         if isinstance(auth_result, HttpResponse):
             raise ImmediateHttpResponse(response=auth_result)
 
-        if not auth_result is True:
+        if not auth_result:
             raise ImmediateHttpResponse(response=http.HttpUnauthorized())
 
     def throttle_check(self, request):
@@ -593,7 +593,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         """
         try:
             auth_result = self._meta.authorization.read_detail(object_list, bundle)
-            if not auth_result is True:
+            if not auth_result:
                 raise Unauthorized()
         except Unauthorized as e:
             self.unauthorized_result(e)
@@ -619,7 +619,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         """
         try:
             auth_result = self._meta.authorization.create_detail(object_list, bundle)
-            if not auth_result is True:
+            if not auth_result:
                 raise Unauthorized()
         except Unauthorized as e:
             self.unauthorized_result(e)
@@ -645,7 +645,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         """
         try:
             auth_result = self._meta.authorization.update_detail(object_list, bundle)
-            if not auth_result is True:
+            if not auth_result:
                 raise Unauthorized()
         except Unauthorized as e:
             self.unauthorized_result(e)
@@ -883,7 +883,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         bundle = self.hydrate(bundle)
 
         for field_name, field_object in self.fields.items():
-            if field_object.readonly is True:
+            if field_object.readonly:
                 continue
 
             # Check for an optional method to do further hydration.
@@ -1828,12 +1828,12 @@ class BaseModelResource(Resource):
                 'help_text': f.help_text,
             }
 
-            if f.null is True:
+            if f.null:
                 kwargs['null'] = True
 
             kwargs['unique'] = f.unique
 
-            if not f.null and f.blank is True:
+            if not f.null and f.blank:
                 kwargs['default'] = ''
                 kwargs['blank'] = True
 
@@ -2126,7 +2126,7 @@ class BaseModelResource(Resource):
             field_object = self.fields[identifier]
 
             # Skip readonly or related fields.
-            if field_object.readonly is True or getattr(field_object, 'is_related', False):
+            if field_object.readonly or getattr(field_object, 'is_related', False):
                 continue
 
             # Check for an optional method to do further hydration.

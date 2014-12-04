@@ -186,7 +186,7 @@ class ApiKeyAuthentication(Authentication):
         except ValueError:
             return self._unauthorized()
 
-        if not username or not api_key:
+        if not (username and api_key):
             return self._unauthorized()
 
         username_field = get_username_field()
@@ -351,7 +351,7 @@ class DigestAuthentication(Authentication):
         user = self.get_user(digest_response.username)
         api_key = self.get_key(user)
 
-        if user is False or api_key is False:
+        if not (user and api_key):
             return self._unauthorized()
 
         expected = python_digest.calculate_request_digest(
