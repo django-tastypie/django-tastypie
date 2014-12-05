@@ -68,7 +68,6 @@ class FormValidation(Validation):
         If the form is valid, an empty list (all valid) will be returned. If
         not, a list of errors will be returned.
         """
-
         form = self.form_class(**self.form_args(bundle))
 
         if form.is_valid():

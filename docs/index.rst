@@ -36,6 +36,8 @@ interfaces.
    who_uses
    contributing
 
+   reference/index
+
 .. toctree::
    :maxdepth: 2
 
@@ -121,12 +123,12 @@ common reasons for tastypie.
 * You need an API that is RESTful and uses HTTP well.
 * You want to support deep relations.
 * You DON'T want to have to write your own serializer to make the output right.
-* You want an API framework that has little magic, very flexible and maps well to
-  the problem domain.
+* You want an API framework that has little magic, very flexible and maps well
+  to the problem domain.
 * You want/need XML serialization that is treated equally to JSON (and YAML is
   there too).
-* You want to support my perceived NIH syndrome, which is less about NIH and more
-  about trying to help out friends/coworkers.
+* You want to support my perceived NIH syndrome, which is less about NIH and
+  more about trying to help out friends/coworkers.
 
 
 Reference Material
