@@ -1,8 +1,7 @@
-.. _ref-fields:
+.. _apifield-reference:
 
-===============
-Resource Fields
-===============
+ApiField reference
+******************
 
 When designing an API, an important component is defining the representation
 of the data you're presenting. Like Django models, you can control the
@@ -10,42 +9,26 @@ representation of a ``Resource`` using fields. There are a variety of fields
 for various types of data.
 
 
-Quick Start
-===========
-
-For the impatient::
-
-  from tastypie import fields, utils
-  from tastypie.resources import Resource
-  from myapp.api.resources import ProfileResource, NoteResource
 
 
-  class PersonResource(Resource):
-      name = fields.CharField(attribute='name')
-      age = fields.IntegerField(attribute='years_old', null=True)
-      created = fields.DateTimeField(readonly=True,
-                                     help_text='When the person was created',
-                                     default=utils.now)
-      is_active = fields.BooleanField(default=True)
-      profile = fields.ToOneField(ProfileResource, 'profile')
-      notes = fields.ToManyField(NoteResource, 'notes', full=True)
+Standard Fields
+===============
 
-
-Standard Data Fields
-====================
-
-All standard data fields have a common base class ``ApiField`` which handles
-the basic implementation details.
+All standard fields have a common base class ``ApiField`` which handles the
+basic implementation details.
 
 .. note::
 
   You should not use the ``ApiField`` class directly. Please use one of the
   subclasses that is more correct for your data.
 
+
+
 Common Field Options
 --------------------
 
 All ``ApiField`` objects accept the following options.
+
 
 ``attribute``
 ~~~~~~~~~~~~~
@@ -58,6 +41,7 @@ attribute will be accessed during the ``dehydrate`` or or written during the
 
 Defaults to ``None``, meaning data will be manually accessed.
 
+
 ``default``
 ~~~~~~~~~~~
 
@@ -68,6 +52,7 @@ data on the field.
 
 Defaults to ``tastypie.fields.NOT_PROVIDED``.
 
+
 ``null``
 ~~~~~~~~
 
@@ -75,6 +60,7 @@ Defaults to ``tastypie.fields.NOT_PROVIDED``.
 
 Indicates whether or not a ``None`` is allowable data on the field. Defaults to
 ``False``.
+
 
 ``blank``
 ~~~~~~~~~
@@ -87,6 +73,7 @@ Indicates whether or not data may be omitted on the field. Defaults to
 This is useful for allowing the user to omit data that you can populate based
 on the request, such as the ``user`` or ``site`` to associate a record with.
 
+
 ``readonly``
 ~~~~~~~~~~~~
 
@@ -95,12 +82,14 @@ on the request, such as the ``user`` or ``site`` to associate a record with.
 Indicates whether the field is used during the ``hydrate`` or not. Defaults to
 ``False``.
 
+
 ``unique``
 ~~~~~~~~~~
 
 .. attribute:: ApiField.unique
 
 Indicates whether the field is a unique identifier for the object.
+
 
 ``help_text``
 ~~~~~~~~~~~~~
@@ -109,6 +98,7 @@ Indicates whether the field is a unique identifier for the object.
 
 A human-readable description of the field exposed at the schema level.
 Defaults to the per-Field definition.
+
 
 ``use_in``
 ~~~~~~~~~~
@@ -119,74 +109,95 @@ Optionally omit this field in list or detail views.  It can be either 'all',
 'list', or 'detail' or a callable which accepts a bundle and returns a boolean
 value.
 
+
+
+
+
+
 Field Types
 -----------
 
+``ApiField`` is never used directly, it has several subclasses that are used
+instead:
+
 .. module:: tastypie.fields
 
+
 ``BooleanField``
-----------------
+~~~~~~~~~~~~~~~~
 
 A boolean field.
 
 Covers both ``models.BooleanField`` and ``models.NullBooleanField``.
 
+
 ``CharField``
--------------
+~~~~~~~~~~~~~
 
 A text field of arbitrary length.
 
 Covers both ``models.CharField`` and ``models.TextField``.
 
+
 ``DateField``
--------------
+~~~~~~~~~~~~~
 
 A date field.
 
+
 ``DateTimeField``
------------------
+~~~~~~~~~~~~~~~~~
 
 A datetime field.
 
+
 ``DecimalField``
-----------------
+~~~~~~~~~~~~~~~~
 
 A decimal field.
 
+
 ``DictField``
--------------
+~~~~~~~~~~~~~
 
 A dictionary field.
 
+
 ``FileField``
--------------
+~~~~~~~~~~~~~
 
 A file-related field.
 
 Covers both ``models.FileField`` and ``models.ImageField``.
 
+
 ``FloatField``
---------------
+~~~~~~~~~~~~~~
 
 A floating point field.
 
+
 ``IntegerField``
-----------------
+~~~~~~~~~~~~~~~~
 
 An integer field.
 
 Covers ``models.IntegerField``, ``models.PositiveIntegerField``,
 ``models.PositiveSmallIntegerField`` and ``models.SmallIntegerField``.
 
+
 ``ListField``
--------------
+~~~~~~~~~~~~~
 
 A list field.
 
+
 ``TimeField``
--------------
+~~~~~~~~~~~~~
 
 A time field.
+
+
 
 
 Relationship Fields
@@ -206,11 +217,13 @@ fields provided by ``tastypie``, these fields don't handle arbitrary objects
 very well. The subclasses use Django's ORM layer to make things go, though
 there is no ORM-specific code at this level.
 
-Common Field Options
---------------------
+
+Common Relationship Field Options
+---------------------------------
 
 In addition to the common attributes for all `ApiField`, relationship fields
 accept the following.
+
 
 ``to``
 ~~~~~~
@@ -219,6 +232,7 @@ accept the following.
 
 The ``to`` argument should point to a ``Resource`` class, NOT to a ``Model``.
 Required.
+
 
 ``full``
 ~~~~~~~~
@@ -231,6 +245,7 @@ that resource. If ``True``, the result of the sub-resource's ``dehydrate`` will
 be included in full. You can further control post-``dehydrate`` behaviour when
 requesting a resource or a list of resources by setting ``full_list`` and
 ``full_detail``.
+
 
 ``full_list``
 ~~~~~~~~~~~~~
@@ -245,6 +260,7 @@ if accessing a list of resources.  If ``True`` and ``full`` is also ``True``,
 the result of thesub-resource's ``dehydrate`` will be included in full. Default
 is ``True``
 
+
 ``full_detail``
 ~~~~~~~~~~~~~~~
 
@@ -257,6 +273,7 @@ the related ``Resource`` will appear as a URL to the endpoint of that resource
 if accessing a specific resources. If ``True`` and ``full`` is also ``True``,
 the result of thesub-resource's ``dehydrate`` will be included in full. Default
 is ``True``
+
 
 ``related_name``
 ~~~~~~~~~~~~~~~~
@@ -280,6 +297,7 @@ Example::
             queryset = Entry.objects.all()
             resource_name = 'entry'
 
+
     class AuthorResource(ModelResource):
         entry = fields.ToOneField(EntryResource, 'entry')
 
@@ -288,8 +306,11 @@ Example::
             resource_name = 'author'
 
 
-Field Types
------------
+
+
+Relationship Field Types
+------------------------
+
 
 ``ToOneField``
 ~~~~~~~~~~~~~~
@@ -298,15 +319,18 @@ Provides access to related data via foreign key.
 
 This subclass requires Django's ORM layer to work properly.
 
+
 ``OneToOneField``
 ~~~~~~~~~~~~~~~~~
 
 An alias to ``ToOneField`` for those who prefer to mirror ``django.db.models``.
 
+
 ``ForeignKey``
 ~~~~~~~~~~~~~~
 
 An alias to ``ToOneField`` for those who prefer to mirror ``django.db.models``.
+
 
 ``ToManyField``
 ~~~~~~~~~~~~~~~
@@ -327,10 +351,12 @@ Note that the ``hydrate`` portions of this field are quite different than
 any other field. ``hydrate_m2m`` actually handles the data and relations.
 This is due to the way Django implements M2M relationships.
 
+
 ``ManyToManyField``
 ~~~~~~~~~~~~~~~~~~~
 
 An alias to ``ToManyField`` for those who prefer to mirror ``django.db.models``.
+
 
 ``OneToManyField``
 ~~~~~~~~~~~~~~~~~~

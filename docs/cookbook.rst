@@ -42,7 +42,7 @@ response which is not obtained from a field or method on your model. You can
 easily extend the :meth:`~tastypie.resources.Resource.dehydrate` method to
 provide additional values::
 
-    class MyModelResource(Resource):
+    class MyModelResource(ModelResource):
         class Meta:
             qs = MyModel.objects.all()
 
@@ -139,7 +139,9 @@ something like the following::
 
         def prepend_urls(self):
             return [
-                url(r"^(?P<resource_name>%s)/(?P<username>[\w\d_.-]+)/$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
+                url(r"^(?P<resource_name>%s)/(?P<username>[\w\d_.-]+)/$" %
+                    self._meta.resource_name, self.wrap_view('dispatch_detail'),
+                    name="api_dispatch_detail"),
             ]
 
 The added URLconf matches before the standard URLconf included by default &
@@ -184,13 +186,14 @@ handle the children::
 
         def prepend_urls(self):
             return [
-                url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/children%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_children'), name="api_get_children"),
+                url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/children%s$" %
+                    (self._meta.resource_name, trailing_slash()),
+                    self.wrap_view('get_children'), name="api_get_children"),
             ]
 
         def get_children(self, request, **kwargs):
             try:
-                bundle = self.build_bundle(data={'pk': kwargs['pk']}, request=request)
-                obj = self.cached_obj_get(bundle=bundle, **self.remove_api_resource_names(kwargs))
+                obj = self.cached_obj_get(request=request, **self.remove_api_resource_names(kwargs))
             except ObjectDoesNotExist:
                 return HttpGone()
             except MultipleObjectsReturned:
@@ -224,7 +227,9 @@ at ``/api/v1/notes/search/``::
 
         def prepend_urls(self):
             return [
-                url(r"^(?P<resource_name>%s)/search%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_search'), name="api_get_search"),
+                url(r"^(?P<resource_name>%s)/search%s$" %
+                    (self._meta.resource_name, trailing_slash()),
+                    self.wrap_view('get_search'), name="api_get_search"),
             ]
 
         def get_search(self, request, **kwargs):
@@ -287,6 +292,7 @@ resulting code will look something like::
         def apply_authorization_limits(self, request, object_list):
             return object_list.filter(user=request.user)
 
+
 camelCase JSON Serialization
 ----------------------------
 
@@ -307,7 +313,8 @@ values in camelCase instead::
         }
 
         def to_json(self, data, options=None):
-            # Changes underscore_separated names to camelCase names to go from python convention to javacsript convention
+            # Changes underscore_separated names to camelCase names to go from
+            # Python convention to JavaScript convention
             data = self.to_simple(data, options)
 
             def underscoreToCamel(match):
@@ -331,7 +338,8 @@ values in camelCase instead::
             return json.dumps(camelized_data, sort_keys=True)
 
         def from_json(self, content):
-            # Changes camelCase names to underscore_separated names to go from javascript convention to python convention
+            # Changes camelCase names to underscore_separated names to go from
+            # JavaScript convention to Python convention
             data = json.loads(content)
 
             def camelToUnderscore(match):
@@ -354,6 +362,7 @@ values in camelCase instead::
 
             return underscored_data
 
+
 Pretty-printed JSON Serialization
 ---------------------------------
 
@@ -373,6 +382,7 @@ behavior in a custom serializer::
             data = self.to_simple(data, options)
             return json.dumps(data, cls=DjangoJSONEncoder,
                     sort_keys=True, ensure_ascii=False, indent=self.json_indent)
+
 
 Determining format via URL
 --------------------------
@@ -397,10 +407,18 @@ of syntax additional to the default URL scheme::
             the response format as a file extension, e.g. /api/v1/users.json
             """
             return [
-                url(r"^(?P<resource_name>%s)\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('dispatch_list'), name="api_dispatch_list"),
-                url(r"^(?P<resource_name>%s)/schema\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('get_schema'), name="api_get_schema"),
-                url(r"^(?P<resource_name>%s)/set/(?P<pk_list>\w[\w/;-]*)\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('get_multiple'), name="api_get_multiple"),
-                url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
+                url(r"^(?P<resource_name>%s)\.(?P<format>\w+)$" %
+                    self._meta.resource_name, self.wrap_view('dispatch_list'),
+                    name="api_dispatch_list"),
+                url(r"^(?P<resource_name>%s)/schema\.(?P<format>\w+)$" %
+                    self._meta.resource_name, self.wrap_view('get_schema'),
+                    name="api_get_schema"),
+                url(r"^(?P<resource_name>%s)/set/(?P<pk_list>\w[\w/;-]*)\.(?P<format>\w+)$" %
+                    self._meta.resource_name, self.wrap_view('get_multiple'),
+                    name="api_get_multiple"),
+                url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)\.(?P<format>\w+)$" %
+                    self._meta.resource_name, self.wrap_view('dispatch_detail'),
+                    name="api_dispatch_detail"),
             ]
 
         def determine_format(self, request):
@@ -420,6 +438,7 @@ of syntax additional to the default URL scheme::
                 wrapped_view = super(UserResource, self).wrap_view(view)
                 return wrapped_view(request, *args, **kwargs)
             return wrapper
+
 
 Adding to the Django Admin
 --------------------------

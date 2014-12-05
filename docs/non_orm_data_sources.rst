@@ -104,7 +104,8 @@ non-relational datastore looks like::
 
         def get_object_list(self, request):
             query = self._client().add('messages')
-            query.map("function(v) { var data = JSON.parse(v.values[0].data); return [[v.key, data]]; }")
+            query.map("function(v) { var data = JSON.parse(v.values[0].data); "
+                      "return [[v.key, data]]; }")
             results = []
 
             for result in query.run():
