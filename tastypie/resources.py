@@ -2207,7 +2207,7 @@ class BaseModelResource(Resource):
         self.authorized_delete_detail(self.get_object_list(bundle.request), bundle)
         bundle.obj.delete()
 
-    @transaction.commit_on_success()
+    @transaction.atomic()
     def patch_list(self, request, **kwargs):
         """
         An ORM-specific implementation of ``patch_list``.
