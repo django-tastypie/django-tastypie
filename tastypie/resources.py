@@ -826,16 +826,36 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
     # Data preparation.
 
+    def determine_fields(self, bundle):
+        '''
+            Returns the fields that needs to be deserialized.
+            This is useful if we want client to control what fields they are
+            interested in. This a simple implementation of partial response.
+        '''
+        filters = bundle.request.GET.copy()
+
+        # Grab the fields requested by client.
+        required_fields = filters.get("fields", "")
+
+        # All fields that we have registered for this resource.
+        resource_fields = self.fields.keys()
+        if not required_fields:
+            return resource_fields
+
+        # Rerturn the intersection of fields requested and all the resource_fields.
+        return set(required_fields.split(",")) & set(resource_fields)
+
     def full_dehydrate(self, bundle, for_list=False):
         """
         Given a bundle with an object instance, extract the information from it
         to populate the resource.
         """
-        use_in = ['all', 'list' if for_list else 'detail']
-
         # Dehydrate each field.
-        for field_name, field_object in self.fields.items():
+        fields = self.determine_fields(bundle)
+        use_in = ['all', 'list' if for_list else 'detail']
+        for field_name in fields:
             # If it's not for use in this mode, skip
+            field_object = self.fields.get(field_name)
             field_use_in = getattr(field_object, 'use_in', 'all')
             if callable(field_use_in):
                 if not field_use_in(bundle):
@@ -843,7 +863,6 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             else:
                 if field_use_in not in use_in:
                     continue
-
             # A touch leaky but it makes URI resolution work.
             if getattr(field_object, 'dehydrated_type', None) == 'related':
                 field_object.api_name = self._meta.api_name

@@ -331,6 +331,19 @@ you require more granular control, both ``list_allowed_methods`` and
 ``detail_allowed_methods`` options are supported.
 
 
+Allowing Clients To Specify The Data They Need (Partial Response)
+=================================================================
+
+There are often cases where APIs are being consumed by multiple clients, and
+all are intrested in small subset of the data that the API actually returns.
+To get the specific fields from API response, clients can pass in the fields
+patameter specifying the fields they are intrested in during GET API calls.
+
+Continuing with the same ``UserResource``, if you call 
+``/api/v1/user/?fields=username,id`` you will get back the list of objects
+containing only the mentioned fields.
+
+
 Beyond The Basics
 =================
 

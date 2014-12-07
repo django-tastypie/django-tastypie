@@ -73,6 +73,14 @@ class HTTPTestCase(TestServerTestCase):
         self.assertEqual(response.status, 200)
         self.assertEqual(response.read().decode('utf-8'), '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 2}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00", "user": "/api/v1/users/1/"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00", "user": "/api/v1/users/1/"}]}')
 
+    def test_get_list_with_fields(self):
+        connection = self.get_connection()
+        connection.request('GET', '/api/v1/notes/?fields=is_active,id,title', headers={'Accept': 'application/json'})
+        response = connection.getresponse()
+        connection.close()
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.read().decode('utf-8'), '{"meta": {"limit": 20, "next": null, "offset": 0, "previous": null, "total_count": 2}, "objects": [{"id": 1, "is_active": true, "title": "First Post!"}, {"id": 2, "is_active": true, "title": "Another Post"}]}')
+
     def test_post_object(self):
         connection = self.get_connection()
         post_data = '{"content": "A new post.", "is_active": true, "title": "New Title", "slug": "new-title", "user": "/api/v1/users/1/"}'
