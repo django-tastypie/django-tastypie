@@ -1,5 +1,6 @@
 from datetime import datetime, tzinfo, timedelta
 import json
+from mock import patch
 
 import django
 from django.conf import settings
@@ -702,6 +703,20 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
         
         self.assertEqual(dog_bones[0], bone1)
         self.assertEqual(dog_bones[1], bone2)
+
+    def test_calls_m2m_custom_hydrate_once(self):
+        """
+        Asserts that custom hydrate methods for m2m
+        fields are only called once during hydrate cycle.
+        """
+        resource = api.canonical_resource_for('taggable')
+        bundle = resource.build_bundle(data={})
+
+        with patch('related_resource.api.resources.TaggableResource.hydrate_taggabletags') as htt:
+            htt.return_value = bundle
+            resource.obj_create(bundle)
+
+            htt.assert_called_once_with(bundle)
 
 
 class CorrectUriRelationsTestCase(TestCaseWithFixture):

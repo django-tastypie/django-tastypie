@@ -61,6 +61,9 @@ class TaggableResource(ModelResource):
         queryset = Taggable.objects.all()
         authorization = Authorization()
 
+    def hydrate_taggabletags(self, bundle):
+        return bundle
+
 
 class TaggableTagResource(ModelResource):
     tag = fields.ToOneField(
