@@ -1896,21 +1896,24 @@ class BaseModelResource(Resource):
 
         return [self.fields[field_name].attribute]
 
+    def basic_filter_value_to_python(self, value):
+        # Simple values
+        if value in ['true', 'True', True]:
+            return True
+        elif value in ['false', 'False', False]:
+            return False
+        elif value in ('nil', 'none', 'None', None):
+            return None
+        else:
+            return value
+
     def filter_value_to_python(self, value, field_name, filters, filter_expr,
             filter_type):
         """
         Turn the string ``value`` into a python object.
         """
-        # Simple values
-        if value in ['true', 'True', True]:
-            value = True
-        elif value in ['false', 'False', False]:
-            value = False
-        elif value in ('nil', 'none', 'None', None):
-            value = None
-
         # Split on ',' if not empty string and either an in or range filter.
-        if filter_type in ('in', 'range') and len(value):
+        if filter_type in ('in', 'range') and value:
             if hasattr(filters, 'getlist'):
                 value = []
 
@@ -1918,6 +1921,11 @@ class BaseModelResource(Resource):
                     value.extend(part.split(','))
             else:
                 value = value.split(',')
+
+            value = [self.basic_filter_value_to_python(v) for v in value]
+
+        else:
+            value = self.basic_filter_value_to_python(value)
 
         return value
 
