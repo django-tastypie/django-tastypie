@@ -161,7 +161,7 @@ class ApiKeyAuthentication(Authentication):
 
     def extract_credentials(self, request):
         if request.META.get('HTTP_AUTHORIZATION') and request.META['HTTP_AUTHORIZATION'].lower().startswith('apikey '):
-            (auth_type, data) = request.META['HTTP_AUTHORIZATION'].split()
+            (auth_type, data) = request.META['HTTP_AUTHORIZATION'].split(' ', 1)
 
             if auth_type.lower() != 'apikey':
                 raise ValueError("Incorrect authorization header.")
