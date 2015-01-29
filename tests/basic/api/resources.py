@@ -4,7 +4,7 @@ from tastypie import fields
 from tastypie.resources import ModelResource
 from tastypie.authentication import SessionAuthentication
 from tastypie.authorization import Authorization
-from basic.models import Note, AnnotatedNote, SlugBasedNote
+from basic.models import Note, AnnotatedNote, SlugBasedNote, SignedNote
 
 
 class UserResource(ModelResource):
@@ -62,6 +62,14 @@ class SlugBasedNoteResource(ModelResource):
         resource_name = 'slugbased'
         detail_uri_name = 'slug'
         authorization = Authorization()
+
+
+class SignedNoteResource(ModelResource):
+    class Meta:
+        resource_name = 'signed_notes'
+        queryset = SignedNote.objects.all()
+        authorization = Authorization()
+        always_return_data = True
 
 
 class SessionUserResource(ModelResource):

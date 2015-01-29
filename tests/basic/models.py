@@ -46,6 +46,14 @@ class SlugBasedNote(models.Model):
         return u"SlugBased %s" % self.title
 
 
+class SignedNote(models.Model):
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    signed_by = models.CharField(max_length=255)
+    created = models.DateField(default=now)
+    updated = models.DateField(default=now)
+
+
 class UserForm(forms.ModelForm):
     class Meta:
         model = User
