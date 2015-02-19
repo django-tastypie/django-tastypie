@@ -1418,7 +1418,7 @@ with the provided the data to create the new collection.
 Return ``HttpNoContent`` (204 No Content) if
 ``Meta.always_return_data = False`` (default).
 
-Return ``HttpAccepted`` (202 Accepted) if
+Return ``HttpAccepted`` (200 OK) if
 ``Meta.always_return_data = True``.
 
 ``put_detail``
@@ -1440,8 +1440,8 @@ If an existing resource is modified and
 ``Meta.always_return_data = False`` (default), return ``HttpNoContent``
 (204 No Content).
 If an existing resource is modified and
-``Meta.always_return_data = True``, return ``HttpAccepted`` (202
-Accepted).
+``Meta.always_return_data = True``, return ``HttpAccepted`` (200
+OK).
 
 ``post_list``
 -------------
