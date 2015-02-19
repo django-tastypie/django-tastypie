@@ -346,7 +346,10 @@ class NestedRelatedResourceTest(TestCaseWithFixture):
         pk = Person.objects.all()[0].pk
         request = MockRequest()
         request.method = 'GET'
-        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
+        request.path = reverse('api_dispatch_detail',
+                               kwargs={'pk': pk,
+                                       'resource_name': pr._meta.resource_name,
+                                       'api_name': pr._meta.api_name})
         resp = pr.get_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 200)
 
@@ -362,7 +365,10 @@ class NestedRelatedResourceTest(TestCaseWithFixture):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
+        request.path = reverse('api_dispatch_detail', 
+                               kwargs={'pk': pk, 
+                                       'resource_name': pr._meta.resource_name, 
+                                       'api_name': pr._meta.api_name})
         request.set_body(resp.content.decode('utf-8'))
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)

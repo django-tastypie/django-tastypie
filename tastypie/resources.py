@@ -2295,34 +2295,36 @@ class BaseModelResource(Resource):
             if related_obj is None:
                 related_obj = bundle.related_objects_to_save.get(field_object.attribute, None)
 
-            # Because sometimes it's ``None`` & that's OK.
+            if field_object.related_name:
+                if not self.get_bundle_detail_data(bundle):
+                    bundle.obj.save()
+
+                setattr(related_obj, field_object.related_name, bundle.obj)
+
+            related_resource = field_object.get_related_resource(related_obj)
+
+            # Before we build the bundle & try saving it, let's make sure we
+            # haven't already saved it.
             if related_obj:
-                if field_object.related_name:
-                    if not self.get_bundle_detail_data(bundle):
-                        bundle.obj.save()
-
-                    setattr(related_obj, field_object.related_name, bundle.obj)
-
-                related_resource = field_object.get_related_resource(related_obj)
-
-                # Before we build the bundle & try saving it, let's make sure we
-                # haven't already saved it.
                 obj_id = self.create_identifier(related_obj)
 
                 if obj_id in bundle.objects_saved:
                     # It's already been saved. We're done here.
                     continue
 
-                if bundle.data.get(field_name) and hasattr(bundle.data[field_name], 'keys'):
-                    # Only build & save if there's data, not just a URI.
-                    related_bundle = related_resource.build_bundle(
-                        obj=related_obj,
-                        data=bundle.data.get(field_name),
-                        request=bundle.request,
-                        objects_saved=bundle.objects_saved
-                    )
-                    related_resource.save(related_bundle)
+            if bundle.data.get(field_name) and hasattr(bundle.data[field_name], 'keys'):
+                # Only build & save if there's data, not just a URI.
+                related_bundle = related_resource.build_bundle(
+                    obj=related_obj,
+                    data=bundle.data.get(field_name),
+                    request=bundle.request,
+                    objects_saved=bundle.objects_saved
+                )
+                related_resource.full_hydrate(related_bundle)
+                related_resource.save(related_bundle)
+                related_obj = related_bundle.obj
 
+            if related_obj:
                 setattr(bundle.obj, field_object.attribute, related_obj)
 
     def save_m2m(self, bundle):
