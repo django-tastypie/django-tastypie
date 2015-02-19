@@ -19,6 +19,8 @@ matrix:
   exclude:
     - env: DJANGO_VERSION=dev
       python: "2.6"
+    - env: DJANGO_VERSION=1.8
+      python: "2.6"
     - env: DJANGO_VERSION=1.7
       python: "2.6"
 
