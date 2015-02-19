@@ -2288,6 +2288,11 @@ class BaseModelResource(Resource):
             try:
                 related_obj = getattr(bundle.obj, field_object.attribute)
             except ObjectDoesNotExist:
+                # Django 1.8: unset related objects default to None, no error
+                related_obj = None
+
+            # We didn't get it, so maybe we created it but haven't saved it
+            if related_obj is None:
                 related_obj = bundle.related_objects_to_save.get(field_object.attribute, None)
 
             # Because sometimes it's ``None`` & that's OK.
