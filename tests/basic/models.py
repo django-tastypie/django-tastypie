@@ -49,3 +49,4 @@ class SlugBasedNote(models.Model):
 class UserForm(forms.ModelForm):
     class Meta:
         model = User
+        exclude = []
