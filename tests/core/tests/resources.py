@@ -1517,6 +1517,9 @@ class ModelResourceTestCase(TestCase):
         resource = NoteResource(api_name='v1')
         note_1 = resource.get_via_uri('/api/v1/notes/1/')
         self.assertEqual(note_1.pk, 1)
+        # Should work even if app name is the same as resource
+        note_1 = resource.get_via_uri('/notes/api/v1/notes/1/')
+        self.assertEqual(note_1.pk, 1)
 
         try:
             should_fail = resource.get_via_uri('http://example.com/')
@@ -3755,7 +3758,7 @@ class ModelResourceTestCase(TestCase):
             # ``None`` to a required FK.
             hydrated1 = nmbr.full_hydrate(bundle_1)
             self.fail()
-        except Note.DoesNotExist:
+        except (Note.DoesNotExist, ValueError):
             pass
 
         # So we introduced ``blank=True``.
@@ -4221,4 +4224,3 @@ class ObjectlessResourceTestCase(TestCase):
         bundle = resource.build_bundle()
 
         self.assertTrue(bundle is not None)
-

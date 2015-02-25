@@ -1,6 +1,5 @@
 from settings import *
 INSTALLED_APPS.append('customuser')
-INSTALLED_APPS.append('django.contrib.auth')
 
 ROOT_URLCONF = 'core.tests.api_urls'
 MEDIA_URL = 'http://localhost:8080/media/'
@@ -23,4 +22,4 @@ LOGGING = {
     }
 }
 
-AUTH_USER_MODEL = 'auth.CustomUser'
+AUTH_USER_MODEL = 'customuser.CustomUser'

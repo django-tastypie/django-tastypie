@@ -4,7 +4,7 @@ django-tastypie
 
 Creating delicious APIs for Django apps since 2010.
 
-Currently in beta (v0.11.2-dev) but being used actively in production on several
+Currently in beta (v0.12.0) but being used actively in production on several
 sites.
 
 
@@ -34,7 +34,9 @@ Optional
 What's It Look Like?
 ====================
 
-A basic example looks like::
+A basic example looks like:
+
+.. code:: python
 
     # myapp/api.py
     # ============

@@ -6,7 +6,6 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db.models.signals import pre_save
-from django.test import TestCase
 
 from tastypie import fields
 from tastypie.exceptions import NotFound
@@ -18,9 +17,10 @@ from core.tests.resources import HttpRequest
 from related_resource.api.resources import CategoryResource, ForumResource, FreshNoteResource, JobResource, NoteResource, PersonResource, UserResource
 from related_resource.api.urls import api
 from related_resource.models import Category, Label, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment
+from testcases import TestCaseWithFixture
 
 
-class M2MResourcesTestCase(TestCase):
+class M2MResourcesTestCase(TestCaseWithFixture):
     def test_same_object_added(self):
         """
         From Issue #1035
@@ -42,7 +42,7 @@ class M2MResourcesTestCase(TestCase):
         self.assertEqual(len(data['members']), 1)
 
 
-class RelatedResourceTest(TestCase):
+class RelatedResourceTest(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
 
     def setUp(self):
@@ -82,7 +82,7 @@ class RelatedResourceTest(TestCase):
         self.assertEqual(User.objects.get(id=self.user.id).username, 'foobar')
 
 
-class CategoryResourceTest(TestCase):
+class CategoryResourceTest(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
 
     def setUp(self):
@@ -129,7 +129,7 @@ class CategoryResourceTest(TestCase):
         self.assertEqual(Category.objects.get(pk=self.child_cat_1.pk).parent, None)
 
 
-class ExplicitM2MResourceRegressionTest(TestCase):
+class ExplicitM2MResourceRegressionTest(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
 
     def setUp(self):
@@ -197,7 +197,7 @@ class ExplicitM2MResourceRegressionTest(TestCase):
         self.assertEqual(deserialized['name'], 'school')
 
 
-class OneToManySetupTestCase(TestCase):
+class OneToManySetupTestCase(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
 
     def test_one_to_many(self):
@@ -235,7 +235,7 @@ class OneToManySetupTestCase(TestCase):
 class FullCategoryResource(CategoryResource):
     parent = fields.ToOneField('self', 'parent', null=True, full=True)
 
-class RelationshipOppositeFromModelTestCase(TestCase):
+class RelationshipOppositeFromModelTestCase(TestCaseWithFixture):
     '''
         On the model, the Job relationship is defined on the Payment.
         On the resource, the PaymentResource is defined on the JobResource as well
@@ -279,7 +279,7 @@ class RelationshipOppositeFromModelTestCase(TestCase):
 
 
 
-class RelatedPatchTestCase(TestCase):
+class RelatedPatchTestCase(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
 
     def setUp(self):
@@ -313,7 +313,7 @@ class RelatedPatchTestCase(TestCase):
         self.assertEqual(cat2.name, 'Kid')
 
 
-class NestedRelatedResourceTest(TestCase):
+class NestedRelatedResourceTest(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
 
     def test_one_to_one(self):
@@ -556,7 +556,7 @@ class NestedRelatedResourceTest(TestCase):
         self.assertEqual(bone.color, 'gray')
 
 
-class RelatedSaveCallsTest(TestCase):
+class RelatedSaveCallsTest(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
 
     def test_one_query_for_post_list(self):
@@ -704,7 +704,7 @@ class RelatedSaveCallsTest(TestCase):
         self.assertEqual(dog_bones[1], bone2)
 
 
-class CorrectUriRelationsTestCase(TestCase):
+class CorrectUriRelationsTestCase(TestCaseWithFixture):
     """
     Validate that incorrect URI (with PKs that line up to valid data) are not
     accepted.
