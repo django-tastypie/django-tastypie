@@ -30,9 +30,15 @@ class ApiAccess(models.Model):
 
 if 'django.contrib.auth' in settings.INSTALLED_APPS:
     import uuid
-    from tastypie.compat import AUTH_USER_MODEL
+    try:
+        from django.core.exceptions import AppRegistryNotReady
+        from tastypie.compat import AUTH_USER_MODEL as user_model_reference
+    except ImportError:  # No app registry ready functionality (probably Django < 1.7), import the actual model as it had been done previously
+        from tastypie.compat import AUTH_USER_MODEL as user_model_reference
+    except AppRegistryNotReady:  # Django 1.7+, the app is not ready yet, so instead use the string listed in settings as a model reference
+        user_model_reference = settings.AUTH_USER_MODEL
     class ApiKey(models.Model):
-        user = models.OneToOneField(AUTH_USER_MODEL, related_name='api_key')
+        user = models.OneToOneField(user_model_reference, related_name='api_key')
         key = models.CharField(max_length=128, blank=True, default='', db_index=True)
         created = models.DateTimeField(default=now)
 
