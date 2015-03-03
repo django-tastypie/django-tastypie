@@ -102,7 +102,7 @@ class Api(object):
             url(r"^(?P<api_name>%s)%s$" % (self.api_name, trailing_slash()), self.wrap_view('top_level'), name="api_%s_top_level" % self.api_name),
         ]
 
-        for name in sorted(self._registry.keys()):
+        for name in sorted(self._registry.keys(), reverse=True):
             self._registry[name].api_name = self.api_name
             pattern_list.append((r"^(?P<api_name>%s)/" % self.api_name, include(self._registry[name].urls)))
 
