@@ -743,7 +743,8 @@ class ToOneField(RelatedField):
         if value is None:
             return value
 
-        return self.build_related_resource(value, request=bundle.request)
+        return self.build_related_resource(value, request=bundle.request, related_obj=bundle.obj, related_name=self.related_name)
+
 
 class ForeignKey(ToOneField):
     """
@@ -811,7 +812,7 @@ class ToManyField(RelatedField):
         elif callable(self.attribute):
             the_m2ms = self.attribute(bundle)
 
-        if not the_m2ms:
+        if the_m2ms is None:
             if not self.null:
                 raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
 

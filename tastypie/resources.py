@@ -678,7 +678,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
         return auth_result
 
-    def build_bundle(self, obj=None, data=None, request=None, objects_saved=None):
+    def build_bundle(self, obj=None, data=None, request=None, objects_saved=None, related_obj=None, related_name=None):
         """
         Given either an object, a data dictionary or both, builds a ``Bundle``
         for use throughout the ``dehydrate/hydrate`` cycle.
@@ -694,7 +694,9 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             obj=obj,
             data=data,
             request=request,
-            objects_saved=objects_saved
+            objects_saved=objects_saved,
+            related_obj=related_obj,
+            related_name=related_name
         )
 
     def build_filters(self, filters=None):
@@ -2311,12 +2313,20 @@ class BaseModelResource(Resource):
                     continue
 
                 if bundle.data.get(field_name) and hasattr(bundle.data[field_name], 'keys'):
+                    bundle_related_obj = bundle.obj
+                    bundle_related_name = None
+
+                    if field_object.related_name:
+                        bundle_related_name = field_object.related_name
+
                     # Only build & save if there's data, not just a URI.
                     related_bundle = related_resource.build_bundle(
                         obj=related_obj,
                         data=bundle.data.get(field_name),
                         request=bundle.request,
-                        objects_saved=bundle.objects_saved
+                        objects_saved=bundle.objects_saved,
+                        related_obj=bundle_related_obj,
+                        related_name=bundle_related_name
                     )
                     related_resource.save(related_bundle)
 
@@ -2378,7 +2388,9 @@ class BaseModelResource(Resource):
                     obj=related_bundle.obj,
                     data=related_bundle.data,
                     request=bundle.request,
-                    objects_saved=bundle.objects_saved
+                    objects_saved=bundle.objects_saved,
+                    related_obj=related_bundle.related_obj,
+                    related_name=related_bundle.related_name
                 )
 
                 #Only save related models if they're newly added.
