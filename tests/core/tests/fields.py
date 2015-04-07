@@ -899,7 +899,8 @@ class ToOneFieldTestCase(TestCase):
 
     def test_traversed_attribute_dehydrate(self):
         user = User.objects.get(pk=1)
-        mediabit = MediaBit(note=Note(author=user))
+        note = Note.objects.create(author=user)
+        mediabit = MediaBit(note=note)
         bundle = Bundle(obj=mediabit)
 
         field_1 = ToOneField(UserResource, 'note__author')

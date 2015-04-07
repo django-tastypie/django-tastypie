@@ -945,7 +945,7 @@ class UserResource(ModelResource):
     class Meta:
         queryset = User.objects.all()
         authorization = Authorization()
-
+        
     def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
         if bundle_or_obj is None:
             return '/api/v1/users/'
