@@ -85,7 +85,7 @@ Contributors:
 * tunix for a patch related to Tastypie's timezone-aware dates.
 * Steven Davidson (damycra) for a documentation patch.
 * Harish Srinivas for a minor bug fix that raises an exception if a given related resource is none.
-
+* Miguel Carranza (MiguelCarranza) for patching 'filter_value_to_python' to support __in filters in kwargs.
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
