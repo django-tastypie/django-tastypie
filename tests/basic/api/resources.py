@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.conf.urls import url
 from tastypie.cache import SimpleCache
 from tastypie import fields
 from tastypie.resources import ModelResource
@@ -6,7 +7,6 @@ from tastypie.authentication import SessionAuthentication
 from tastypie.authorization import Authorization
 from basic.models import Note, AnnotatedNote, SlugBasedNote
 
-from django.conf.urls.defaults import *
 from tastypie.utils import trailing_slash
 from tastypie.constants import ALL, ALL_WITH_RELATIONS
 
