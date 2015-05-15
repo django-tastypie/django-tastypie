@@ -31,6 +31,7 @@ from tastypie.throttle import BaseThrottle
 from tastypie.utils import is_valid_jsonp_callback_value, dict_strip_unicode_keys, trailing_slash
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.validation import Validation
+from tastypie.compat import get_module_name, atomic_decorator
 
 # If ``csrf_exempt`` isn't present, stub it.
 try:
@@ -1430,6 +1431,9 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             if not self._meta.always_return_data:
                 return http.HttpNoContent()
             else:
+                # Invalidate prefetched_objects_cache for bundled object
+                # because we might have changed a prefetched field
+                updated_bundle.obj._prefetched_objects_cache = {}
                 updated_bundle = self.full_dehydrate(updated_bundle)
                 updated_bundle = self.alter_detail_data_to_serialize(request, updated_bundle)
                 return self.create_response(request, updated_bundle)
@@ -2209,7 +2213,7 @@ class BaseModelResource(Resource):
         self.authorized_delete_detail(self.get_object_list(bundle.request), bundle)
         bundle.obj.delete()
 
-    @transaction.commit_on_success()
+    @atomic_decorator()
     def patch_list(self, request, **kwargs):
         """
         An ORM-specific implementation of ``patch_list``.
@@ -2231,7 +2235,7 @@ class BaseModelResource(Resource):
                 bundle.obj.delete()
 
     def create_identifier(self, obj):
-        return u"%s.%s.%s" % (obj._meta.app_label, obj._meta.module_name, obj.pk)
+        return u"%s.%s.%s" % (obj._meta.app_label, get_module_name(obj._meta), obj.pk)
 
     def save(self, bundle, skip_errors=False):
         self.is_valid(bundle)
@@ -2289,36 +2293,43 @@ class BaseModelResource(Resource):
             try:
                 related_obj = getattr(bundle.obj, field_object.attribute)
             except ObjectDoesNotExist:
+                # Django 1.8: unset related objects default to None, no error
+                related_obj = None
+
+            # We didn't get it, so maybe we created it but haven't saved it
+            if related_obj is None:
                 related_obj = bundle.related_objects_to_save.get(field_object.attribute, None)
 
-            # Because sometimes it's ``None`` & that's OK.
+            if field_object.related_name:
+                if not self.get_bundle_detail_data(bundle):
+                    bundle.obj.save()
+
+                setattr(related_obj, field_object.related_name, bundle.obj)
+
+            related_resource = field_object.get_related_resource(related_obj)
+
+            # Before we build the bundle & try saving it, let's make sure we
+            # haven't already saved it.
             if related_obj:
-                if field_object.related_name:
-                    if not self.get_bundle_detail_data(bundle):
-                        bundle.obj.save()
-
-                    setattr(related_obj, field_object.related_name, bundle.obj)
-
-                related_resource = field_object.get_related_resource(related_obj)
-
-                # Before we build the bundle & try saving it, let's make sure we
-                # haven't already saved it.
                 obj_id = self.create_identifier(related_obj)
 
                 if obj_id in bundle.objects_saved:
                     # It's already been saved. We're done here.
                     continue
 
-                if bundle.data.get(field_name) and hasattr(bundle.data[field_name], 'keys'):
-                    # Only build & save if there's data, not just a URI.
-                    related_bundle = related_resource.build_bundle(
-                        obj=related_obj,
-                        data=bundle.data.get(field_name),
-                        request=bundle.request,
-                        objects_saved=bundle.objects_saved
-                    )
-                    related_resource.save(related_bundle)
+            if bundle.data.get(field_name) and hasattr(bundle.data[field_name], 'keys'):
+                # Only build & save if there's data, not just a URI.
+                related_bundle = related_resource.build_bundle(
+                    obj=related_obj,
+                    data=bundle.data.get(field_name),
+                    request=bundle.request,
+                    objects_saved=bundle.objects_saved
+                )
+                related_resource.full_hydrate(related_bundle)
+                related_resource.save(related_bundle)
+                related_obj = related_bundle.obj
 
+            if related_obj:
                 setattr(bundle.obj, field_object.attribute, related_obj)
 
     def save_m2m(self, bundle):

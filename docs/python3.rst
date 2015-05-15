@@ -7,7 +7,7 @@ Python 3 Support
 As of Tastypie v0.10.0, it has been ported to support both Python 2 & Python 3
 within the same codebase. This builds on top of what `six`_ & `Django`_ provide.
 
-No changes are required for anyone running an existing Tastpie
+No changes are required for anyone running an existing Tastypie
 installation. The API is completely backward-compatible, so you should be able
 to run your existing software without modification.
 
