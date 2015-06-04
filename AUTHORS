@@ -85,6 +85,7 @@ Contributors:
 * tunix for a patch related to Tastypie's timezone-aware dates.
 * Steven Davidson (damycra) for a documentation patch.
 * Harish Srinivas for a minor bug fix that raises an exception if a given related resource is none.
+* Ashley Felton (ropable) fixing a RemovedInDjango19Warning deprecation notice.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
