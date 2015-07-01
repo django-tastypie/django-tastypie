@@ -3,7 +3,10 @@ import datetime
 from dateutil.parser import parse
 from decimal import Decimal
 import re
-from importlib import import_module
+try :
+    from django.utils import importlib
+except ImportError:
+    import importlib
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.utils import datetime_safe
 from django.utils import six
@@ -538,7 +541,7 @@ class RelatedField(ApiField):
             # Try to import.
             module_bits = self.to.split('.')
             module_path, class_name = '.'.join(module_bits[:-1]), module_bits[-1]
-            module = import_module(module_path)
+            module = importlib.import_module(module_path)
         else:
             # We've got a bare class name here, which won't work (No AppCache
             # to rely on). Try to throw a useful error.
