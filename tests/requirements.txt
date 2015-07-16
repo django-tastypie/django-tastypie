@@ -2,6 +2,6 @@
 biplist
 defusedxml
 lxml
-mock
+mock<1.1.0
 pytz==2013b
 PyYAML
