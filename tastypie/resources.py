@@ -2298,13 +2298,17 @@ class BaseModelResource(Resource):
             if related_obj is None:
                 related_obj = bundle.related_objects_to_save.get(field_object.attribute, None)
 
-            if field_object.related_name:
-                if not self.get_bundle_detail_data(bundle):
-                    bundle.obj.save()
+            # Even in Django 1.8 it's possible the related object doesnt exist
+            # by way of the explicit setting of
+            # `allow_unsaved_instance_assignment`, so lets keep this extra check
+            if related_obj:
+                if field_object.related_name:
+                    if not self.get_bundle_detail_data(bundle):
+                        bundle.obj.save()
 
-                setattr(related_obj, field_object.related_name, bundle.obj)
+                    setattr(related_obj, field_object.related_name, bundle.obj)
 
-            related_resource = field_object.get_related_resource(related_obj)
+                related_resource = field_object.get_related_resource(related_obj)
 
             # Before we build the bundle & try saving it, let's make sure we
             # haven't already saved it.
