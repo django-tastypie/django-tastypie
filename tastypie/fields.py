@@ -62,11 +62,11 @@ class ApiField(object):
         Defaults to the per-Field definition.
 
         Optionally accepts ``use_in``. This may be one of ``list``, ``detail``
-        ``all`` or a callable which accepts a ``bundle`` and returns
-        ``True`` or ``False``. Indicates wheather this field will be included
-        during dehydration of a list of objects or a single object. If ``use_in``
-        is a callable, and returns ``True``, the field will be included during
-        dehydration.
+        ``all`` or a callable which accepts a ``bundle`` and ``for_list`` flag
+        and returns ``True`` or ``False``. Indicates wheather this field will
+        be included during dehydration of a list of objects or a single object.
+        If ``use_in`` is a callable, and returns ``True``, the field will be
+        included during dehydration.
         Defaults to ``all``.
         """
         # Track what the index thinks this field is called.
@@ -453,11 +453,11 @@ class RelatedField(ApiField):
         Defaults to the per-Field definition.
 
         Optionally accepts ``use_in``. This may be one of ``list``, ``detail``
-        ``all`` or a callable which accepts a ``bundle`` and returns
-        ``True`` or ``False``. Indicates wheather this field will be included
-        during dehydration of a list of objects or a single object. If ``use_in``
-        is a callable, and returns ``True``, the field will be included during
-        dehydration.
+        ``all`` or a callable which accepts a ``bundle`` and ``for_list`` flag
+        and returns ``True`` or ``False``. Indicates wheather this field will
+        be included during dehydration of a list of objects or a single object.
+        If ``use_in`` is a callable, and returns ``True``, the field will be
+        included during dehydration.
         Defaults to ``all``.
 
         Optionally accepts a ``full_list``, which indicated whether or not

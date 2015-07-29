@@ -111,8 +111,8 @@ Defaults to the per-Field definition.
 .. attribute:: ApiField.use_in
 
 Optionally omit this field in list or detail views.  It can be either 'all',
-'list', or 'detail' or a callable which accepts a bundle and returns a boolean
-value.
+'list', or 'detail' or a callable which accepts a bundle and a ``for_list``
+flag and returns a boolean value.
 
 Field Types
 -----------
