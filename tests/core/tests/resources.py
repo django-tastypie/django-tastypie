@@ -2565,7 +2565,7 @@ class ModelResourceTestCase(TestCase):
 
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.content.decode('utf-8'))
-        self.assertEqual(data['date'], "2012-09-07T00:00:00")
+        self.assertEqual(data['date'], "2012-09-07")
 
         request = MockRequest()
         request.GET = {'format': 'json'}
