@@ -4,9 +4,9 @@ from dateutil.parser import parse
 from decimal import Decimal
 import re
 try :
-    from django.utils import importlib
-except ImportError:
     import importlib
+except ImportError:
+    from django.utils import importlib
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.utils import datetime_safe
 from django.utils import six
