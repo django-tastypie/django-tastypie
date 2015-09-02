@@ -155,33 +155,53 @@ class ApiField(object):
     def hydrate(self, bundle):
         """
         Takes data stored in the bundle for the field and returns it. Used for
-        taking simple data and building a instance object.
+        building an object instance.
         """
         if self.readonly:
             return None
+
+        value = None
+
         if not self.instance_name in bundle.data:
-            if getattr(self, 'is_related', False) and not getattr(self, 'is_m2m', False):
-                # We've got an FK (or alike field) & a possible parent object.
-                # Check for it.
-                if bundle.related_obj and bundle.related_name in (self.attribute, self.instance_name):
+            if self.is_related_field() and not self.is_m2m_field():
+
+                if self.has_related_object(bundle):
                     return bundle.related_obj
-            if self.blank:
-                return None
-            elif self.attribute and getattr(bundle.obj, self.attribute, None):
-                return getattr(bundle.obj, self.attribute)
-            elif self.instance_name and hasattr(bundle.obj, self.instance_name):
-                return getattr(bundle.obj, self.instance_name)
+
+            if self.is_attribute_set(bundle):
+                value = getattr(bundle.obj, self.attribute)
+            elif self.instance_name_is_object_attr(bundle):
+                value = getattr(bundle.obj, self.instance_name)
             elif self.has_default():
                 if callable(self._default):
-                    return self._default()
+                    value = self._default()
+                else:
+                    value = self._default
+        else:
+            value = bundle.data[self.instance_name]
 
-                return self._default
-            elif self.null:
-                return None
-            else:
-                raise ApiFieldError("The '%s' field has no data and doesn't allow a default or null value." % self.instance_name)
+        if not self.null and not self.blank and value is None:
+            raise ApiFieldError(
+                    "The '%s' field has no data and doesn't allow a default or null value." %
+                    self.instance_name)
 
-        return bundle.data[self.instance_name]
+        return value
+
+    def is_related_field(self):
+        return getattr(self, 'is_related', False)
+
+    def is_m2m_field(self):
+        return getattr(self, 'is_m2m', False)
+
+    def has_related_object(self, bundle):
+        return bundle.related_obj and bundle.related_name in \
+                (self.attribute, self.instance_name)
+
+    def is_attribute_set(self, bundle):
+        return self.attribute and getattr(bundle.obj, self.attribute, None)
+
+    def instance_name_is_object_attr(self, bundle):
+        return self.instance_name and hasattr(bundle.obj, self.instance_name)
 
 
 class CharField(ApiField):
