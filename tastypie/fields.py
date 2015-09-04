@@ -578,6 +578,11 @@ class RelatedField(ApiField):
         Given a URI is provided, the related resource is attempted to be
         loaded based on the identifiers in the URI.
         """
+        err_msg = "Could not find the provided %s object via resource URI '%s'." % (fk_resource._meta.resource_name, uri,)
+        
+        if not uri:
+            raise ApiFieldError(err_msg)
+        
         try:
             obj = fk_resource.get_via_uri(uri, request=request)
             bundle = fk_resource.build_bundle(
@@ -586,7 +591,7 @@ class RelatedField(ApiField):
             )
             return fk_resource.full_dehydrate(bundle)
         except ObjectDoesNotExist:
-            raise ApiFieldError("Could not find the provided object via resource URI '%s'." % uri)
+            raise ApiFieldError(err_msg)
 
     def resource_from_data(self, fk_resource, data, request=None, related_obj=None, related_name=None):
         """
