@@ -34,8 +34,12 @@ addons:
 
 # command to install dependencies
 install:
-    - pip install tox
+    - pip install tox coveralls
+
+after_success:
+    - coveralls
 
 # command to run tests
 script:
+    - coverage erase
     - tox -e py${TRAVIS_PYTHON_VERSION/./}-${DJANGO_VERSION},docs
