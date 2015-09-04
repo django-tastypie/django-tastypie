@@ -1,3 +1,5 @@
+sudo: false
+
 language: python
 
 python:
@@ -24,8 +26,11 @@ matrix:
     - env: DJANGO_VERSION=1.7
       python: "2.6"
 
-before_install:
-    - sudo apt-get install python-sphinx python3-sphinx
+addons:
+  apt:
+    packages:
+    - python-sphinx
+    - python3-sphinx
 
 # command to install dependencies
 install:
