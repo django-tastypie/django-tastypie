@@ -1,3 +1,5 @@
+sudo: false
+
 language: python
 
 python:
@@ -16,6 +18,7 @@ env:
 matrix:
   allow_failures:
     - env: DJANGO_VERSION=dev
+    - env: MODE=flake8
   exclude:
     - env: DJANGO_VERSION=dev
       python: "2.6"
@@ -23,14 +26,35 @@ matrix:
       python: "2.6"
     - env: DJANGO_VERSION=1.7
       python: "2.6"
+  include:
+    - python: "2.7"
+      env: MODE=flake8
+    - python: "2.7"
+      env: MODE=docs
+    - python: "3.4"
+      env: MODE=docs
 
-before_install:
-    - sudo apt-get install python-sphinx python3-sphinx
+addons:
+  apt:
+    packages:
+    - python-sphinx
+    - python3-sphinx
+
+cache:
+  directories:
+    - $HOME/.cache/pip
+
+before_cache:
+  - rm -f $HOME/.cache/pip/log/debug.log
 
 # command to install dependencies
 install:
-    - pip install tox
+    - pip install tox coveralls
+
+after_success:
+    - coveralls
 
 # command to run tests
 script:
-    - tox -e py${TRAVIS_PYTHON_VERSION/./}-${DJANGO_VERSION},docs
+    - coverage erase
+    - tox -e py${TRAVIS_PYTHON_VERSION/./}-${DJANGO_VERSION}${MODE}
