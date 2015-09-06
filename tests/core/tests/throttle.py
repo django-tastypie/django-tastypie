@@ -38,11 +38,14 @@ class NoThrottleTestCase(TestCase):
         self.assertEqual(throttle_1.accessed('foobaz'), None)
 
 
+@mock.patch('tastypie.throttle.time')
 class CacheThrottleTestCase(TestCase):
     def tearDown(self):
         cache.clear()
 
-    def test_throttling(self):
+    def test_throttling(self, mocked_time):
+        mocked_time.time.return_value = time.time()
+
         throttle_1 = CacheThrottle(throttle_at=2, timeframe=5, expiration=2)
 
         self.assertEqual(throttle_1.should_be_throttled('daniel'), False)
@@ -73,19 +76,20 @@ class CacheThrottleTestCase(TestCase):
         self.assertEqual(throttle_1.accessed('cody'), None)
 
         # Test the timeframe.
-        ret_time = time.time() + throttle_1.timeframe + 1
-        
-        with mock.patch('tastypie.throttle.time') as mocked_time:
-            mocked_time.time.return_value = ret_time
-            self.assertEqual(throttle_1.should_be_throttled('daniel'), False)
-            self.assertEqual(len(cache.get('daniel_accesses')), 0)
+        mocked_time.time.return_value += throttle_1.timeframe + 1
+
+        self.assertEqual(throttle_1.should_be_throttled('daniel'), False)
+        self.assertEqual(len(cache.get('daniel_accesses')), 0)
 
 
+@mock.patch('tastypie.throttle.time')
 class CacheDBThrottleTestCase(TestCase):
     def tearDown(self):
         cache.clear()
 
-    def test_throttling(self):
+    def test_throttling(self, mocked_time):
+        mocked_time.time.return_value = time.time()
+
         throttle_1 = CacheDBThrottle(throttle_at=2, timeframe=5, expiration=2)
 
         self.assertEqual(throttle_1.should_be_throttled('daniel'), False)
@@ -129,11 +133,9 @@ class CacheDBThrottleTestCase(TestCase):
         self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 4)
 
         # Test the timeframe.
-        ret_time = time.time() + throttle_1.timeframe + 1
-        
-        with mock.patch('tastypie.throttle.time') as mocked_time:
-            mocked_time.time.return_value = ret_time
-            self.assertEqual(throttle_1.should_be_throttled('daniel'), False)
+        mocked_time.time.return_value += throttle_1.timeframe + 1
+
+        self.assertEqual(throttle_1.should_be_throttled('daniel'), False)
         self.assertEqual(len(cache.get('daniel_accesses')), 0)
         self.assertEqual(ApiAccess.objects.count(), 7)
         self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 4)
@@ -143,4 +145,3 @@ class ModelTestCase(TestCase):
     def test_unicode(self):
         access = ApiAccess(identifier="testing", accessed=0)
         self.assertEqual(force_text(access), 'testing @ 0')
-
