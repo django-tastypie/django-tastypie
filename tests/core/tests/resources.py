@@ -5,6 +5,7 @@ from decimal import Decimal
 import django
 import json
 from mock import patch
+import time
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -3189,7 +3190,9 @@ class ModelResourceTestCase(TestCase):
             self.assertIn('constant', note)
             self.assertNotIn('author', note)
 
-    def test_check_bool_throttling(self):
+    @patch('tastypie.throttle.time')
+    def test_check_bool_throttling(self, mocked_time):
+        mocked_time.time.return_value = time.time()
         # Stow.
         old_debug = settings.DEBUG
         settings.DEBUG = False
@@ -3250,7 +3253,9 @@ class ModelResourceTestCase(TestCase):
         settings.DEBUG = old_debug
         resource._meta.throttle = _orginal_throttle
 
-    def test_check_int_throttling(self):
+    @patch('tastypie.throttle.time')
+    def test_check_int_throttling(self, mocked_time):
+        mocked_time.time.return_value = time.time()
         # Stow.
         old_debug = settings.DEBUG
         settings.DEBUG = False
@@ -3299,7 +3304,9 @@ class ModelResourceTestCase(TestCase):
         settings.DEBUG = old_debug
         resource._meta.throttle = _orginal_throttle
 
-    def test_check_datetime_throttling(self):
+    @patch('tastypie.throttle.time')
+    def test_check_datetime_throttling(self, mocked_time):
+        mocked_time.time.return_value = time.time()
         # Stow.
         old_debug = settings.DEBUG
         settings.DEBUG = False
