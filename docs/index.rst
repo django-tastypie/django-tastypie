@@ -81,7 +81,7 @@ Quick Start
     urlpatterns = patterns('',
       # ...more URLconf bits here...
       # Then add:
-      (r'^api/', include(v1_api.urls)),
+      url(r'^api/', include(v1_api.urls)),
     )
 
 5. Hit http://localhost:8000/api/v1/?format=json in your browser!
