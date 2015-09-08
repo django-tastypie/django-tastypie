@@ -579,7 +579,8 @@ class ResourceTestCase(TestCase):
                     'nullable': True,
                     'readonly': False,
                     'type': 'datetime',
-                    'unique': False
+                    'unique': False,
+                    "primary_key": False
                 },
                 'name': {
                     'blank': False,
@@ -588,7 +589,8 @@ class ResourceTestCase(TestCase):
                     'nullable': False,
                     'readonly': False,
                     'type': 'string',
-                    'unique': False
+                    'unique': False,
+                    "primary_key": False
                 },
                 'resource_uri': {
                     'blank': False,
@@ -597,7 +599,8 @@ class ResourceTestCase(TestCase):
                     'nullable': False,
                     'readonly': True,
                     'type': 'string',
-                    'unique': False
+                    'unique': False,
+                    "primary_key": False
                 },
                 'view_count': {
                     'blank': False,
@@ -606,7 +609,8 @@ class ResourceTestCase(TestCase):
                     'nullable': False,
                     'readonly': False,
                     'type': 'integer',
-                    'unique': False
+                    'unique': False,
+                    "primary_key": False
                 }
             }
         })
@@ -630,7 +634,8 @@ class ResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'Integer data. Ex: 2673',
                     'unique': False,
-                    'type': 'integer'
+                    'type': 'integer',
+                    "primary_key": False
                 },
                 'date_joined': {
                     'nullable': True,
@@ -639,7 +644,8 @@ class ResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
                     'unique': False,
-                    'type': 'datetime'
+                    'type': 'datetime',
+                    "primary_key": False
                 },
                 'name': {
                     'nullable': False,
@@ -648,7 +654,8 @@ class ResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
                     'unique': False,
-                    'type': 'string'
+                    'type': 'string',
+                    "primary_key": False
                 },
                 'resource_uri': {
                     'nullable': False,
@@ -657,7 +664,8 @@ class ResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
                     'unique': False,
-                    'type': 'string'
+                    'type': 'string',
+                    "primary_key": False
                 }
             },
             'default_format': 'application/json',
@@ -1619,7 +1627,8 @@ class ModelResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'A single related resource. Can be either a URI or set of nested resource data.',
                     'unique': False,
-                    'type': 'related'
+                    'type': 'related',
+                    "primary_key": False
                 },
                 'title': {
                     'nullable': False,
@@ -1628,7 +1637,8 @@ class ModelResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
                     'unique': False,
-                    'type': 'string'
+                    'type': 'string',
+                    "primary_key": False
                 },
                 'created': {
                     'nullable': False,
@@ -1637,7 +1647,8 @@ class ModelResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
                     'unique': False,
-                    'type': 'datetime'
+                    'type': 'datetime',
+                    "primary_key": False
                 },
                 'is_active': {
                     'nullable': False,
@@ -1646,7 +1657,8 @@ class ModelResourceTestCase(TestCase):
                     'blank': True,
                     'help_text': 'Boolean data. Ex: True',
                     'unique': False,
-                    'type': 'boolean'
+                    'type': 'boolean',
+                    "primary_key": False
                 },
                 'content': {
                     'nullable': False,
@@ -1655,7 +1667,8 @@ class ModelResourceTestCase(TestCase):
                     'blank': True,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
                     'unique': False,
-                    'type': 'string'
+                    'type': 'string',
+                    "primary_key": False
                 },
                 'subjects': {
                     'related_type': 'to_many',
@@ -1665,7 +1678,8 @@ class ModelResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'Many related resources. Can be either a list of URIs or list of individually nested resource data.',
                     'unique': False,
-                    'type': 'related'
+                    'type': 'related',
+                    "primary_key": False
                 },
                 'slug': {
                     'nullable': False,
@@ -1674,7 +1688,8 @@ class ModelResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
                     'unique': False,
-                    'type': 'string'
+                    'type': 'string',
+                    "primary_key": False
                 },
                 'resource_uri': {
                     'nullable': False,
@@ -1683,7 +1698,8 @@ class ModelResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
                     'unique': False,
-                    'type': 'string'
+                    'type': 'string',
+                    "primary_key": False
                 }
             },
             'default_format': 'application/json',
@@ -3055,7 +3071,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "string",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "created": {
                     "blank": False,
@@ -3064,7 +3081,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "datetime",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "id": {
                     "blank": True,
@@ -3073,7 +3091,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "integer",
-                    "unique": True
+                    "unique": True,
+                    "primary_key": True
                 },
                 "is_active": {
                     "blank": True,
@@ -3082,7 +3101,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "boolean",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "resource_uri": {
                     "blank": False,
@@ -3091,7 +3111,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": True,
                     "type": "string",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "slug": {
                     "blank": False,
@@ -3100,7 +3121,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "string",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "title": {
                     "blank": False,
@@ -3109,7 +3131,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "string",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "updated": {
                     "blank": False,
@@ -3118,7 +3141,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "datetime",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 }
             },
             "filtering": {
