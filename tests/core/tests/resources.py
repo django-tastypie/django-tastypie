@@ -2495,7 +2495,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}')
+        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "baddata": "some data"}')
 
         resp = resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 201)
@@ -2522,6 +2522,7 @@ class ModelResourceTestCase(TestCase):
         self.assertTrue("resource_uri" in data)
         self.assertTrue("title" in data)
         self.assertTrue("is_active" in data)
+        self.assertFalse("baddata" in data)
 
         # Now make sure we can null-out a relation.
         # Associate some data first.
