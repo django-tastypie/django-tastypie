@@ -1,6 +1,9 @@
 # Basically just a sanity check to make sure things don't change from underneath us.
 from django.test import TestCase
-from tastypie.http import *
+from tastypie.http import HttpAccepted, HttpBadRequest, HttpConflict,\
+    HttpCreated, HttpGone, HttpMethodNotAllowed, HttpNoContent, HttpNotFound,\
+    HttpNotImplemented, HttpNotModified, HttpSeeOther, HttpTooManyRequests,\
+    HttpUnauthorized
 
 
 class HttpTestCase(TestCase):

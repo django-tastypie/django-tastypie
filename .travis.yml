@@ -18,7 +18,7 @@ env:
 matrix:
   allow_failures:
     - env: DJANGO_VERSION=dev
-    - env: MODE=flake8
+    - env: MODE=flake8-strict
   exclude:
     - env: DJANGO_VERSION=dev
       python: "2.6"
@@ -29,6 +29,8 @@ matrix:
   include:
     - python: "2.7"
       env: MODE=flake8
+    - python: "2.7"
+      env: MODE=flake8-strict
     - python: "2.7"
       env: MODE=docs
     - python: "3.4"

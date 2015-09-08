@@ -1,5 +1,6 @@
 import datetime
-from dateutil.tz import *
+from dateutil.tz import tzoffset
+from decimal import Decimal
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -8,7 +9,9 @@ from django.http import HttpRequest
 
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
-from tastypie.fields import *
+from tastypie.fields import NOT_PROVIDED, ApiField, BooleanField, CharField,\
+    DateField, DateTimeField, DecimalField, DictField, FileField, FloatField,\
+    IntegerField, ListField, TimeField, ToOneField, ToManyField
 from tastypie.resources import ModelResource
 from tastypie.utils import aware_datetime
 
