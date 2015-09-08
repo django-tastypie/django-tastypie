@@ -865,7 +865,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 field_object.api_name = self._meta.api_name
                 field_object.resource_name = self._meta.resource_name
 
-            bundle.data[field_name] = field_object.dehydrate(bundle, for_list=for_list)
+            bundle.data[field_name] = field_object.dehydrate(bundle)
 
             # Check for an optional method to do further dehydration.
             method = getattr(self, "dehydrate_%s" % field_name, None)
