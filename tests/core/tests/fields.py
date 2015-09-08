@@ -10,7 +10,7 @@ from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.fields import *
 from tastypie.resources import ModelResource
-from tastypie.utils import aware_datetime, aware_date
+from tastypie.utils import aware_datetime
 
 from core.models import Note, Subject, MediaBit
 from core.tests.mocks import MockRequest
@@ -322,12 +322,12 @@ class DecimalFieldTestCase(TestCase):
         field_2 = DecimalField(default='18.5')
         self.assertEqual(field_2.hydrate(bundle), Decimal('18.5'))
 
-        bundle = Bundle(data={'foo':'1.5'})
+        bundle = Bundle(data={'foo': '1.5'})
         field_3 = DecimalField()
-        field_3.instance_name='foo'
+        field_3.instance_name = 'foo'
         self.assertEqual(field_3.hydrate(bundle), Decimal('1.5'))
 
-        bundle = Bundle(data={'foo':'xxx'})
+        bundle = Bundle(data={'foo': 'xxx'})
         field_4 = DecimalField(attribute='foo')
         field_4.instance_name = 'foo'
         self.assertRaises(ApiFieldError, field_4.hydrate, bundle)
@@ -502,8 +502,6 @@ class DateFieldTestCase(TestCase):
         self.assertEqual(field_3.dehydrate(bundle), datetime.date(2010, 4, 2))
 
     def test_hydrate(self):
-        note = Note.objects.get(pk=1)
-
         bundle_1 = Bundle(data={
             'date': '2010-05-12',
         })
@@ -567,8 +565,6 @@ class DateTimeFieldTestCase(TestCase):
         self.assertEqual(field_3.dehydrate(bundle), aware_datetime(2010, 4, 2, 1, 11))
 
     def test_hydrate(self):
-        note = Note.objects.get(pk=1)
-
         bundle_1 = Bundle(data={
             'datetime': '2010-05-12 10:36:28',
         })
@@ -729,7 +725,7 @@ class ToOneFieldTestCase(TestCase):
         field_2 = ToManyField(UserResource, lambda bundle: User.objects.filter(pk=1))
         self.assertEqual(field_2.dehydrate(bundle), ['/api/v1/users/1/'])
 
-        field_3 = ToOneField(UserResource, lambda bundle:None)
+        field_3 = ToOneField(UserResource, lambda bundle: None)
         self.assertRaises(ApiFieldError, field_3.dehydrate, bundle)
 
     def test_dehydrate_full_detail_list(self):
@@ -737,12 +733,12 @@ class ToOneFieldTestCase(TestCase):
         request = MockRequest()
         bundle = Bundle(obj=note, request=request)
 
-        #details path with full_list=False
+        # details path with full_list=False
         request.path = "/api/v1/notes/"
         field_1 = ToOneField(UserResource, 'author', full=True, full_list=False)
         self.assertEqual(field_1.dehydrate(bundle), '/api/v1/users/1/')
 
-        #list path with full_detail=False
+        # list path with full_detail=False
         request.path = "/api/v1/notes/1/"
         field_1 = ToOneField(UserResource, 'author', full=True, full_detail=False)
         self.assertEqual(field_1.dehydrate(bundle, for_list=False), '/api/v1/users/1/')
@@ -827,12 +823,6 @@ class ToOneFieldTestCase(TestCase):
         fk_bundle = field_8.hydrate(bundle)
         self.assertEqual(field_8.hydrate(bundle), None)
         # Then use an unsaved object in the bundle also with ``null=True``.
-        new_note = Note(
-            title='Biplanes for all!',
-            slug='biplanes-for-all',
-            content='Somewhere, east of Manhattan, will lie the mythical land of planes with more one wing...'
-        )
-        new_bundle = Bundle(obj=new_note)
         field_9 = ToOneField(UserResource, 'author', null=True)
         field_9.instance_name = 'author'
         self.assertEqual(field_9.hydrate(bundle), None)
@@ -1111,7 +1101,7 @@ class ToManyFieldTestCase(TestCase):
             pass
 
     def test_dehydrate_full_detail_list(self):
-        #details path with full_detail=False
+        # details path with full_detail=False
         field_1 = ToManyField(SubjectResource, 'subjects', full=True, full_detail=False)
         field_1.instance_name = 'm2m'
         request = MockRequest()
@@ -1119,7 +1109,7 @@ class ToManyFieldTestCase(TestCase):
         bundle_1 = Bundle(obj=self.note_1, request=request)
         self.assertEqual(field_1.dehydrate(bundle_1, for_list=False), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
 
-        #list path with full_detail=False
+        # list path with full_detail=False
         field_2 = ToManyField(SubjectResource, 'subjects', full=True, full_detail=False)
         field_2.instance_name = 'm2m'
         request = MockRequest()
@@ -1138,7 +1128,7 @@ class ToManyFieldTestCase(TestCase):
         self.assertEqual(subject_bundle_list[1].obj.name, u'Photos')
         self.assertEqual(subject_bundle_list[1].obj.url, u'/photos/')
 
-        #list path with full_list=False
+        # list path with full_list=False
         field_3 = ToManyField(SubjectResource, 'subjects', full=True, full_list=False)
         field_3.instance_name = 'm2m'
         request = MockRequest()
@@ -1146,7 +1136,7 @@ class ToManyFieldTestCase(TestCase):
         bundle_3 = Bundle(obj=self.note_1, request=request)
         self.assertEqual(field_3.dehydrate(bundle_3), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
 
-        #detail path with full_list=False
+        # detail path with full_list=False
         field_4 = ToManyField(SubjectResource, 'subjects', full=True, full_list=False)
         field_4.instance_name = 'm2m'
         request = MockRequest()
@@ -1165,7 +1155,7 @@ class ToManyFieldTestCase(TestCase):
         self.assertEqual(subject_bundle_list[1].obj.name, u'Photos')
         self.assertEqual(subject_bundle_list[1].obj.url, u'/photos/')
 
-        #list url with callable returning True
+        # list url with callable returning True
         field_5 = ToManyField(SubjectResource, 'subjects', full=True, full_list=lambda x: True)
         field_5.instance_name = 'm2m'
         request = MockRequest()
@@ -1184,7 +1174,7 @@ class ToManyFieldTestCase(TestCase):
         self.assertEqual(subject_bundle_list[1].obj.name, u'Photos')
         self.assertEqual(subject_bundle_list[1].obj.url, u'/photos/')
 
-        #list url with callable returning False
+        # list url with callable returning False
         field_6 = ToManyField(SubjectResource, 'subjects', full=True, full_list=lambda x: False)
         field_6.instance_name = 'm2m'
         request = MockRequest()
@@ -1192,7 +1182,7 @@ class ToManyFieldTestCase(TestCase):
         bundle_6 = Bundle(obj=self.note_1, request=request)
         self.assertEqual(field_6.dehydrate(bundle_6), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
 
-        #detail url with callable returning True
+        # detail url with callable returning True
         field_7 = ToManyField(SubjectResource, 'subjects', full=True, full_detail=lambda x: True)
         field_7.instance_name = 'm2m'
         request = MockRequest()
@@ -1211,7 +1201,7 @@ class ToManyFieldTestCase(TestCase):
         self.assertEqual(subject_bundle_list[1].obj.name, u'Photos')
         self.assertEqual(subject_bundle_list[1].obj.url, u'/photos/')
 
-        #detail url with callable returning False
+        # detail url with callable returning False
         field_8 = ToManyField(SubjectResource, 'subjects', full=True, full_detail=lambda x: False)
         field_8.instance_name = 'm2m'
         request = MockRequest()
@@ -1219,7 +1209,7 @@ class ToManyFieldTestCase(TestCase):
         bundle_8 = Bundle(obj=self.note_1, request=request)
         self.assertEqual(field_8.dehydrate(bundle_8, for_list=False), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
 
-        #detail url with full_detail=True and get parameters
+        # detail url with full_detail=True and get parameters
         field_9 = ToManyField(SubjectResource, 'subjects', full=True, full_detail=True)
         field_9.instance_name = 'm2m'
         request = HttpRequest()
@@ -1242,7 +1232,6 @@ class ToManyFieldTestCase(TestCase):
         self.assertEqual(subject_bundle_list[1].obj.url, u'/photos/')
 
     def test_dehydrate_with_callable(self):
-        note = Note()
         bundle_1 = Bundle(obj=self.note_2)
         field_1 = ToManyField(SubjectResource, attribute=lambda bundle: Subject.objects.filter(notes=bundle.obj, name__startswith='Personal'))
         field_1.instance_name = 'm2m'

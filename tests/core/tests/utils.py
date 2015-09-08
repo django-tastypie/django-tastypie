@@ -11,7 +11,7 @@ from tastypie.utils.urls import trailing_slash
 from tastypie.utils.timezone import now
 
 try:
-    from django.utils import timezone as dj_tz
+    from django.utils import timezone as dj_tz  # flake8: noqa
     TZ_AVAILABLE = True
 except ImportError:
     TZ_AVAILABLE = False
@@ -132,4 +132,3 @@ if TZ_AVAILABLE:
 
             with mock.patch('django.utils.timezone.now', return_value=without_tz):
                 self.assertEqual(now().isoformat(), '2013-08-07T22:54:52')
-

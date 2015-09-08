@@ -14,9 +14,13 @@ from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
 from core.tests.resources import HttpRequest
 
-from related_resource.api.resources import CategoryResource, ForumResource, FreshNoteResource, JobResource, NoteResource, OrderResource, PersonResource, UserResource
+from related_resource.api.resources import CategoryResource, ForumResource,\
+    FreshNoteResource, JobResource, NoteResource, OrderResource,\
+    PersonResource, UserResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Label, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment, Forum, Order, OrderItem
+from related_resource.models import Category, Label, Tag, Taggable,\
+    TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product,\
+    Address, Job, Payment, Forum, Order, OrderItem
 from testcases import TestCaseWithFixture
 
 
@@ -25,12 +29,11 @@ class M2MResourcesTestCase(TestCaseWithFixture):
         """
         From Issue #1035
         """
-        
-        user=User.objects.create(username='gjcourt')
-        
-        ur=UserResource()
-        fr=ForumResource()
-        
+        user = User.objects.create(username='gjcourt')
+
+        ur = UserResource()
+        fr = ForumResource()
+
         resp = self.client.post(fr.get_resource_uri(), content_type='application/json', data=json.dumps({
             'name': 'Test Forum',
             'members': [ur.get_resource_uri(user)],
@@ -245,7 +248,7 @@ class RelationshipOppositeFromModelTestCase(TestCaseWithFixture):
         # a job with a payment exists to start with
         self.some_time_str = datetime.now().strftime('%Y-%m-%d %H:%M')
         job = Job.objects.create(name='SomeJob')
-        payment = Payment.objects.create(job=job, scheduled=self.some_time_str)
+        Payment.objects.create(job=job, scheduled=self.some_time_str)
 
     def test_create_similar(self):
         # We submit to job with the related payment included.
@@ -344,10 +347,11 @@ class NestedRelatedResourceTest(TestCaseWithFixture):
         pk = Person.objects.all()[0].pk
         request = MockRequest()
         request.method = 'GET'
-        request.path = reverse('api_dispatch_detail',
-                               kwargs={'pk': pk,
-                                       'resource_name': pr._meta.resource_name,
-                                       'api_name': pr._meta.api_name})
+        request.path = reverse('api_dispatch_detail', kwargs={
+            'pk': pk,
+            'resource_name': pr._meta.resource_name,
+            'api_name': pr._meta.api_name
+        })
         resp = pr.get_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 200)
 
@@ -363,10 +367,11 @@ class NestedRelatedResourceTest(TestCaseWithFixture):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.path = reverse('api_dispatch_detail', 
-                               kwargs={'pk': pk, 
-                                       'resource_name': pr._meta.resource_name, 
-                                       'api_name': pr._meta.api_name})
+        request.path = reverse('api_dispatch_detail', kwargs={
+            'pk': pk,
+            'resource_name': pr._meta.resource_name,
+            'api_name': pr._meta.api_name
+        })
         request.set_body(resp.content.decode('utf-8'))
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
@@ -486,7 +491,7 @@ class NestedRelatedResourceTest(TestCaseWithFixture):
     def test_many_to_one_extra_data_ignored(self):
         """
         Test a related ToMany resource with a nested full ToOne resource
-        
+
         FieldError would result when extra data is included on an embedded
         resource for an already saved object.
         """
@@ -538,7 +543,7 @@ class NestedRelatedResourceTest(TestCaseWithFixture):
         # clients may include extra data, which should be ignored. Make extra data is ignored on the resource and sub resources.
         person['thisfieldshouldbeignored'] = 'foobar'
         person['dogs'][0]['thisfieldshouldbeignored'] = 'foobar'
-        
+
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
@@ -642,7 +647,7 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
         request.set_body(body)
 
         with self.assertNumQueries(1):
-            resp = resource.post_list(request)
+            resource.post_list(request)
 
     def test_two_queries_for_post_list(self):
         """
@@ -662,7 +667,7 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
         request.set_body(body)
 
         with self.assertNumQueries(2):
-            resp = resource.post_list(request)
+            resource.post_list(request)
 
     def test_no_save_m2m_unchanged(self):
         """
@@ -686,21 +691,21 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
 
         request.set_body(body)
 
-        resource.post_list(request)  #_save_fails_test will explode if Label is saved
+        resource.post_list(request)  # _save_fails_test will explode if Label is saved
 
     def test_save_m2m_changed(self):
         """
         Posting a new or updated detail object with a related m2m object
         should save the m2m object if it's included inline.
         """
-
         resource = api.canonical_resource_for('tag')
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        body_dict = {'name':'school',
-                     'taggabletags':[{'extra':7}]
-                     }
+        body_dict = {
+            'name': 'school',
+            'taggabletags': [{'extra': 7}]
+        }
 
         request.set_body(json.dumps(body_dict))
 
@@ -712,13 +717,15 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
         taggable_tag = tag.taggabletags.all()[0]
         self.assertEqual(taggable_tag.extra, 7)
 
-        body_dict['taggabletags'] = [{'extra':1234}]
+        body_dict['taggabletags'] = [{'extra': 1234}]
 
         request.set_body(json.dumps(body_dict))
 
-        request.path = reverse('api_dispatch_detail', kwargs={'pk': tag.pk,
-                                                              'resource_name': resource._meta.resource_name,
-                                                              'api_name': resource._meta.api_name})
+        request.path = reverse('api_dispatch_detail', kwargs={
+            'pk': tag.pk,
+            'resource_name': resource._meta.resource_name,
+            'api_name': resource._meta.api_name
+        })
 
         resource.put_detail(request)
 
@@ -732,14 +739,13 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
         Data should persist when posting an updated detail object with
         unchanged reverse realated objects.
         """
-
         person = Person.objects.create(name='Ryan')
         dog = Dog.objects.create(name='Wilfred', owner=person)
         bone1 = Bone.objects.create(color='White', dog=dog)
         bone2 = Bone.objects.create(color='Grey', dog=dog)
-        
+
         self.assertEqual(dog.bones.count(), 2)
-        
+
         resource = api.canonical_resource_for('dog')
         request = MockRequest()
         request.GET = {'format': 'json'}
@@ -749,23 +755,23 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
             'id': dog.id,
             'name': 'Wilfred',
             'bones': [
-                {'id': bone1.id, 'color':  bone1.color},
-                {'id': bone2.id, 'color':  bone2.color}
+                {'id': bone1.id, 'color': bone1.color},
+                {'id': bone2.id, 'color': bone2.color}
             ]
         }
-        
+
         request.set_body(json.dumps(body_dict))
-        
+
         resp = resource.wrap_view('dispatch_detail')(request, pk=dog.pk)
-        
+
         self.assertEqual(resp.status_code, 204)
 
         dog = Dog.objects.all()[0]
-        
+
         dog_bones = dog.bones.all()
-        
+
         self.assertEqual(len(dog_bones), 2)
-        
+
         self.assertEqual(dog_bones[0], bone1)
         self.assertEqual(dog_bones[1], bone2)
 
@@ -825,25 +831,27 @@ class TestPutOnRelatedResource(TestCase):
             'username': 'valid but unique',
             'email': 'valid.unique@exmaple.com',
             'password': 'junk',
-            }
+        }
         user_data_2 = {
             'username': 'valid and very unique',
             'email': 'valid.very.unique@exmaple.com',
             'password': 'junk',
-            }
+        }
         user_data_3 = {
             'username': 'valid again',
             'email': 'valid.very.unique@exmaple.com',
             'password': 'junk',
-            }
+        }
 
         forum_data = {'members': [user_data_1, user_data_2, ],
                       'moderators': [user_data_3, ]}
         request.set_body(json.dumps(forum_data))
 
-        request.path = reverse('api_dispatch_detail', kwargs={'pk': forum.pk,
-                                                              'resource_name': resource._meta.resource_name,
-                                                              'api_name': resource._meta.api_name})
+        request.path = reverse('api_dispatch_detail', kwargs={
+            'pk': forum.pk,
+            'resource_name': resource._meta.resource_name,
+            'api_name': resource._meta.api_name
+        })
 
         response = resource.put_detail(request)
         self.assertEqual(response.status_code, 200)

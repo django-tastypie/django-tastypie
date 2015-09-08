@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 
 from tastypie import fields
 from tastypie.authorization import Authorization
-from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
+from tastypie.resources import ModelResource, ALL
 
 from .models import Note
 

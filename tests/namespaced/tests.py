@@ -1,7 +1,4 @@
-from django.conf import settings
 from django.core.urlresolvers import reverse, NoReverseMatch
-from django.http import HttpRequest
-import json
 from testcases import TestCaseWithFixture
 
 

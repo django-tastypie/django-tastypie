@@ -1,4 +1,3 @@
-import datetime
 from django.contrib.auth.models import User
 from django.db import models
 from tastypie.utils import now, aware_datetime
@@ -36,8 +35,10 @@ class Note(models.Model):
     def my_property(self):
         return 'my_property'
 
+
 class NoteWithEditor(Note):
     editor = models.ForeignKey(User, related_name='notes_edited')
+
 
 class Subject(models.Model):
     notes = models.ManyToManyField(Note, related_name='subjects')
@@ -78,4 +79,3 @@ class Counter(models.Model):
 
     def __unicode__(self):
         return self.name
-

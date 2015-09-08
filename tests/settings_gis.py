@@ -1,4 +1,4 @@
-from settings import *
+from settings import *  # flake8: noqa
 INSTALLED_APPS.append('gis')
 
 # We just hardcode postgis here.

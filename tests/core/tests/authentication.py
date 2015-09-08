@@ -1,14 +1,17 @@
 import base64
 import os
 import time
-import unittest
 import warnings
+
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.http import HttpRequest
 from django.test import TestCase
 from django.test.testcases import skipIf
-from tastypie.authentication import Authentication, BasicAuthentication, ApiKeyAuthentication, SessionAuthentication, DigestAuthentication, OAuthAuthentication, MultiAuthentication
+
+from tastypie.authentication import Authentication, BasicAuthentication,\
+    ApiKeyAuthentication, SessionAuthentication, DigestAuthentication,\
+    OAuthAuthentication, MultiAuthentication
 from tastypie.http import HttpUnauthorized
 from tastypie.models import ApiKey, create_api_key
 
@@ -298,6 +301,7 @@ class SessionAuthenticationTestCase(TestCase):
         request.user = User.objects.get(username='johndoe')
         self.assertEqual(auth.get_identifier(request), 'johndoe')
 
+
 @skipIf(python_digest is None, "python-digest is not installed")
 class DigestAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -441,7 +445,8 @@ class OAuthAuthenticationTestCase(TestCase):
             'oauth_timestamp': str(int(time.time())),
             'oauth_token': 'foo',
         }
-        self.request.META['Authorization'] = 'OAuth ' + ','.join([key+'='+value for key, value in self.request.REQUEST.items()])
+        self.request.META['Authorization'] = 'OAuth ' + ','.join(
+            [key + '=' + value for key, value in self.request.REQUEST.items()])
         resp = auth.is_authenticated(self.request)
         self.assertEqual(resp, True)
         self.assertEqual(self.request.user.pk, self.user.pk)
@@ -458,7 +463,8 @@ class OAuthAuthenticationTestCase(TestCase):
             'oauth_timestamp': str(int(time.time())),
             'oauth_token': 'bar',
         }
-        self.request.META['Authorization'] = 'OAuth ' + ','.join([key+'='+value for key, value in self.request.REQUEST.items()])
+        self.request.META['Authorization'] = 'OAuth ' + ','.join(
+            [key + '=' + value for key, value in self.request.REQUEST.items()])
         resp = auth.is_authenticated(self.request)
         self.assertFalse(resp)
 
@@ -474,7 +480,8 @@ class OAuthAuthenticationTestCase(TestCase):
             'oauth_timestamp': str(int(time.time())),
             'oauth_token': 'bar',
         }
-        self.request.META['Authorization'] = 'OAuth ' + ','.join([key+'='+value for key, value in self.request.REQUEST.items()])
+        self.request.META['Authorization'] = 'OAuth ' + ','.join(
+            [key + '=' + value for key, value in self.request.REQUEST.items()])
         resp = auth.is_authenticated(self.request)
         self.assertTrue(resp)
         self.assertEqual(self.request.user.pk, self.user_inactive.pk)
@@ -515,13 +522,13 @@ class MultiAuthenticationTestCase(TestCase):
         request3.POST['username'] = 'janedoe'
         request3.POST['api_key'] = 'invalid key'
 
-        #session auth should pass if since john_doe is logged in
+        # session auth should pass if since john_doe is logged in
         self.assertTrue(session_auth.is_authenticated(request1))
-        #api key auth should fail because of invalid api key
+        # api key auth should fail because of invalid api key
         self.assertEqual(isinstance(api_key_auth.is_authenticated(request2), HttpUnauthorized), True)
 
-        #multi auth shouldn't change users if api key auth fails
-        #multi auth passes since session auth is valid
+        # multi auth shouldn't change users if api key auth fails
+        # multi auth passes since session auth is valid
         self.assertEqual(request3.user.username, 'johndoe')
         self.assertTrue(auth.is_authenticated(request3))
         self.assertEqual(request3.user.username, 'johndoe')
@@ -563,7 +570,6 @@ class MultiAuthenticationTestCase(TestCase):
         self.assertEqual(auth.is_authenticated(request), True)
         self.assertEqual(auth.get_identifier(request), 'johndoe')
 
-
     def test_apikey_and_basic_auth(self):
         auth = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
         request = HttpRequest()
@@ -582,7 +588,6 @@ class MultiAuthenticationTestCase(TestCase):
         self.assertEqual(auth.is_authenticated(request), True)
         self.assertEqual(auth.get_identifier(request), 'johndoe')
 
-
         # Basic Auth works.
         request = HttpRequest()
         john_doe = User.objects.get(username='johndoe')
@@ -590,5 +595,3 @@ class MultiAuthenticationTestCase(TestCase):
         john_doe.save()
         request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass'.encode('utf-8')).decode('utf-8')
         self.assertEqual(auth.is_authenticated(request), True)
-
-

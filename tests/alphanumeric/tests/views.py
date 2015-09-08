@@ -1,6 +1,6 @@
+import json
 import django
 from django.http import HttpRequest
-import json
 from testcases import TestCaseWithFixture
 
 
@@ -26,7 +26,7 @@ class ViewsTestCase(TestCaseWithFixture):
         self.assertEqual(deserialized['meta']['limit'], 20)
         self.assertEqual(len(deserialized['objects']), 7)
         self.assertEqual([obj['name'] for obj in deserialized['objects']],
-                         [u'Skateboardrampe', u'Bigwheel', u'Trampolin', u'Laufrad', u'Bigwheel', u'Human Hamsterball', u'Ant Farm'])
+            [u'Skateboardrampe', u'Bigwheel', u'Trampolin', u'Laufrad', u'Bigwheel', u'Human Hamsterball', u'Ant Farm'])
 
         resp = self.client.get('/api/v1/products/11111/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
@@ -88,16 +88,14 @@ class ViewsTestCase(TestCaseWithFixture):
         deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 5)
         self.assertEqual(deserialized['name'], u'Ant Farm')
-        
-        #slashes, and more dots
+
+        # slashes, and more dots
         resp = self.client.get('/api/v1/products/set/76123/01;WS77.86/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 1)
         self.assertEqual(len(deserialized['objects']), 2)
         self.assertEqual([obj['name'] for obj in deserialized['objects']], [u'Bigwheel', u'Ant Farm'])
-
-
 
     def test_posts(self):
         request = HttpRequest()

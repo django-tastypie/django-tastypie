@@ -1,5 +1,8 @@
 from tastypie.api import Api
-from basic.api.resources import NoteResource, UserResource, BustedResource, CachedUserResource, PublicCachedUserResource, PrivateCachedUserResource, SlugBasedNoteResource, SessionUserResource
+from basic.api.resources import NoteResource, UserResource, BustedResource,\
+    CachedUserResource, PublicCachedUserResource, PrivateCachedUserResource,\
+    SlugBasedNoteResource, SessionUserResource
+
 
 api = Api(api_name='v1')
 api.register(NoteResource(), canonical=True)

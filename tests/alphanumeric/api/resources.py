@@ -1,5 +1,4 @@
 from tastypie.authorization import Authorization
-from tastypie.fields import CharField
 from tastypie.resources import ModelResource
 from alphanumeric.models import Product
 

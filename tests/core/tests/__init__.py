@@ -1,16 +1,16 @@
 import warnings
 warnings.simplefilter('ignore', Warning)
 
-from core.tests.api import *
-from core.tests.authentication import *
-from core.tests.authorization import *
-from core.tests.cache import *
-from core.tests.commands import *
-from core.tests.fields import *
-from core.tests.http import *
-from core.tests.paginator import *
-from core.tests.resources import *
-from core.tests.serializers import *
-from core.tests.throttle import *
-from core.tests.utils import *
-from core.tests.validation import *
+from core.tests.api import *  # flake8: noqa
+from core.tests.authentication import *  # flake8: noqa
+from core.tests.authorization import *  # flake8: noqa
+from core.tests.cache import *  # flake8: noqa
+from core.tests.commands import *  # flake8: noqa
+from core.tests.fields import *  # flake8: noqa
+from core.tests.http import *  # flake8: noqa
+from core.tests.paginator import *  # flake8: noqa
+from core.tests.resources import *  # flake8: noqa
+from core.tests.serializers import *  # flake8: noqa
+from core.tests.throttle import *  # flake8: noqa
+from core.tests.utils import *  # flake8: noqa
+from core.tests.validation import *  # flake8: noqa

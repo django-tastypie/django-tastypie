@@ -16,7 +16,7 @@ class ProfilingTestCase(TestCase):
         self.pr.enable()
 
     def tearDown(self):
-        p = pstats.Stats (self.pr)
+        p = pstats.Stats(self.pr)
         # p.strip_dirs()
         p.sort_stats('tottime')
         p.print_stats(75)

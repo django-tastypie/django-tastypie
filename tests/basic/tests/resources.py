@@ -1,6 +1,5 @@
 from django.contrib.auth.models import User
 from django.http import HttpRequest
-from tastypie.bundle import Bundle
 from tastypie.fields import ToOneField, ToManyField
 from tastypie.resources import ModelResource
 from basic.api.resources import SlugBasedNoteResource
@@ -96,7 +95,7 @@ class AnnotatedNoteModelResourceTestCase(TestCaseWithFixture):
 
         resource_1 = NoteWithAnnotationsResource()
         n1_bundle = resource_1.build_bundle(obj=n1)
-        dehydrated = resource_1.full_dehydrate(n1_bundle)
+        resource_1.full_dehydrate(n1_bundle)
 
 
 class DetailURIKwargsResourceTestCase(TestCaseWithFixture):
@@ -185,4 +184,3 @@ class SlugBasedResourceTestCase(TestCaseWithFixture):
 
         # Make sure it's gone.
         self.assertRaises(SlugBasedNote.DoesNotExist, SlugBasedNote.objects.get, pk='first-post')
-

@@ -1,5 +1,4 @@
 import mock
-import time
 
 from django.core.cache import cache
 from django.test import TestCase
@@ -49,7 +48,7 @@ class SimpleCacheTestCase(TestCase):
 
     def test_set(self):
         simple_cache = SimpleCache(timeout=1)
-        
+
         with mock.patch.object(simple_cache, 'cache', mock.Mock(wraps=simple_cache.cache)) as mocked_cache:
             simple_cache.set('foo', 'bar', timeout=10)
             simple_cache.set('moof', 'baz')
