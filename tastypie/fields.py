@@ -263,7 +263,7 @@ class DecimalField(ApiField):
         if value is None:
             return None
 
-        return Decimal(value)
+        return Decimal(str(value))
 
     def hydrate(self, bundle):
         value = super(DecimalField, self).hydrate(bundle)
