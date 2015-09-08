@@ -269,7 +269,7 @@ class DecimalField(ApiField):
         value = super(DecimalField, self).hydrate(bundle)
 
         if value and not isinstance(value, Decimal):
-            value = Decimal(value)
+            value = Decimal(str(value))
 
         return value
 
