@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import base64
 import copy
 import datetime
@@ -31,7 +33,7 @@ from tastypie.throttle import CacheThrottle
 from tastypie.utils import aware_datetime, make_naive
 from tastypie.validation import FormValidation
 from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord, Counter
-from core.tests.mocks import MockRequest
+from core.tests.mocks import dict_to_querydict, MockRequest
 from core.utils import SimpleHandler
 
 
@@ -2414,6 +2416,243 @@ class ModelResourceTestCase(TestCase):
                 }
             ])
 
+    def test_get_list_clientside_fields(self):
+        resource = YetAnotherRelatedNoteResource()
+        request = HttpRequest()
+        # 'id' is not present on YetAnotherRelatedNoteResource and will be ignored
+        request.GET = dict_to_querydict({'format': 'json', 'fields': ['id', 'title', 'author', 'resource_uri']})
+
+        resp = resource.get_list(request)
+        
+        self.assertEqual(resp.status_code, 200)
+        
+        list_data = json.loads(resp.content.decode('utf-8'))
+        
+        [(o['author'].pop('date_joined'), o['author'].pop('last_login')) for o in list_data['objects']]
+        
+        self.assertEqual(list_data['objects'], [
+            {
+                "resource_uri": "",
+                "title": "First Post!",
+                "author": {
+                    "email": "john@doe.com",
+                    "first_name": "",
+                    "id": 1,
+                    "is_active": True,
+                    "is_staff": False,
+                    "is_superuser": False,
+                    "last_name": "",
+                    "password": "abc123",
+                    "resource_uri": "/api/v1/users/1/",
+                    "username": "johndoe",
+                }
+            },
+            {
+                "resource_uri": "",
+                "title": "Another Post",
+                "author": {
+                    "email": "john@doe.com",
+                    "first_name": "",
+                    "id": 1,
+                    "is_active": True,
+                    "is_staff": False,
+                    "is_superuser": False,
+                    "last_name": "",
+                    "password": "abc123",
+                    "resource_uri": "/api/v1/users/1/",
+                    "username": "johndoe",
+                }
+            },
+            {
+                "resource_uri": "",
+                "title": "Hello World!",
+                "author": {
+                    "email": "jane@doe.com",
+                    "first_name": "",
+                    "id": 2,
+                    "is_active": True,
+                    "is_staff": False,
+                    "is_superuser": False,
+                    "last_name": "",
+                    "password": "def456",
+                    "resource_uri": "/api/v1/users/2/",
+                    "username": "janedoe",
+                }
+            },
+            {
+                "resource_uri": "",
+                "title": "Recent Volcanic Activity.",
+                "author": {
+                    "email": "jane@doe.com",
+                    "first_name": "",
+                    "id": 2,
+                    "is_active": True,
+                    "is_staff": False,
+                    "is_superuser": False,
+                    "last_name": "",
+                    "password": "def456",
+                    "resource_uri": "/api/v1/users/2/",
+                    "username": "janedoe",
+                }
+            },
+            {
+                "resource_uri": "",
+                "title": "My favorite new show",
+                "author": {
+                    "email": "john@doe.com",
+                    "first_name": "",
+                    "id": 1,
+                    "is_active": True,
+                    "is_staff": False,
+                    "is_superuser": False,
+                    "last_name": "",
+                    "password": "abc123",
+                    "resource_uri": "/api/v1/users/1/",
+                    "username": "johndoe",
+                }
+            },
+            {
+                "resource_uri": "",
+                "title": "Granny's Gone",
+                "author": {
+                    "email": "jane@doe.com",
+                    "first_name": "",
+                    "id": 2,
+                    "is_active": True,
+                    "is_staff": False,
+                    "is_superuser": False,
+                    "last_name": "",
+                    "password": "def456",
+                    "resource_uri": "/api/v1/users/2/",
+                    "username": "janedoe",
+                }
+            },
+        ])
+
+    def test_get_list_clientside_excludes(self):
+        resource = YetAnotherRelatedNoteResource()
+        request = HttpRequest()
+        # 'foo' will be ignored
+        request.GET = dict_to_querydict({'format': 'json', 'excludes': ['title', 'foo', 'slug', 'subjects']})
+
+        resp = resource.get_list(request)
+        self.assertEqual(resp.status_code, 200)
+        
+        list_data = json.loads(resp.content.decode('utf-8'))
+        
+        [(o['author'].pop('date_joined'), o['author'].pop('last_login')) for o in list_data['objects']]
+        self.maxDiff=None
+        self.assertEqual(list_data['objects'], [
+            {
+                "content": "This is my very first post using my shiny new API. Pretty sweet, huh?",
+                "created": "2010-03-30T20:05:00",
+                "is_active": True,
+                "resource_uri": "",
+                "author": {
+                    "email": "john@doe.com",
+                    "first_name": "",
+                    "id": 1,
+                    "is_active": True,
+                    "is_staff": False,
+                    "is_superuser": False,
+                    "last_name": "",
+                    "password": "abc123",
+                    "resource_uri": "/api/v1/users/1/",
+                    "username": "johndoe",
+                }
+            },
+            {
+                "content": "The dog ate my cat today. He looks seriously uncomfortable.",
+                "created": "2010-03-31T20:05:00",
+                "is_active": True,
+                "resource_uri": "",
+                "author": {
+                    "email": "john@doe.com",
+                    "first_name": "",
+                    "id": 1,
+                    "is_active": True,
+                    "is_staff": False,
+                    "is_superuser": False,
+                    "last_name": "",
+                    "password": "abc123",
+                    "resource_uri": "/api/v1/users/1/",
+                    "username": "johndoe",
+                }
+            },
+            {
+                "content": "On second though, not sure if I'm ready to share this with the world.",
+                "created": "2010-03-30T20:05:00",
+                "is_active": False,
+                "resource_uri": "",
+                "author": {
+                    "email": "jane@doe.com",
+                    "first_name": "",
+                    "id": 2,
+                    "is_active": True,
+                    "is_staff": False,
+                    "is_superuser": False,
+                    "last_name": "",
+                    "password": "def456",
+                    "resource_uri": "/api/v1/users/2/",
+                    "username": "janedoe",
+                }
+            },
+            {
+                "content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.",
+                "created": "2010-04-01T20:05:00",
+                "is_active": True,
+                "resource_uri": "",
+                "author": {
+                    "email": "jane@doe.com",
+                    "first_name": "",
+                    "id": 2,
+                    "is_active": True,
+                    "is_staff": False,
+                    "is_superuser": False,
+                    "last_name": "",
+                    "password": "def456",
+                    "resource_uri": "/api/v1/users/2/",
+                    "username": "janedoe",
+                }
+            },
+            {
+                "content": "I found an awesome new show on TV. It's about vampires and pancakes and the strong love between them that the wagon is trying to break up.",
+                "created": "2010-03-30T20:05:00",
+                "is_active": False,
+                "resource_uri": "",
+                "author": {
+                    "email": "john@doe.com",
+                    "first_name": "",
+                    "id": 1,
+                    "is_active": True,
+                    "is_staff": False,
+                    "is_superuser": False,
+                    "last_name": "",
+                    "password": "abc123",
+                    "resource_uri": "/api/v1/users/1/",
+                    "username": "johndoe",
+                }
+            },
+            {
+                "content": "Man, the second eruption came on fast. Granny didn\'t have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!",
+                "created": "2010-04-02T10:05:00",
+                "is_active": True,
+                "resource_uri": "",
+                "author": {
+                    "email": "jane@doe.com",
+                    "first_name": "",
+                    "id": 2,
+                    "is_active": True,
+                    "is_staff": False,
+                    "is_superuser": False,
+                    "last_name": "",
+                    "password": "def456",
+                    "resource_uri": "/api/v1/users/2/",
+                    "username": "janedoe",
+                }
+            }
+        ])
+
     def test_get_list_use_in(self):
         resource = UseInNoteResource()
         request = HttpRequest()
@@ -2437,6 +2676,128 @@ class ModelResourceTestCase(TestCase):
         resp = resource.get_detail(request, pk=2)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content.decode('utf-8'), '{"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}')
+
+        resp = resource.get_detail(request, pk=300)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_get_detail_clientside_fields(self):
+        resource = YetAnotherRelatedNoteResource()
+        request = HttpRequest()
+        # 'id' is not present on RelatedNoteResource and will be ignored
+        request.GET = dict_to_querydict({'format': 'json', 'fields': ['id', 'title', 'author', 'resource_uri']})
+
+        resp = resource.get_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 200)
+        
+        content = json.loads(resp.content.decode('utf-8'))
+        
+        del content['author']['date_joined']
+        del content['author']['last_login']
+        
+        self.assertEqual(content, {
+            "resource_uri": "",
+            "title": "First Post!",
+            "author": {
+                "email": "john@doe.com",
+                "first_name": "",
+                "id": 1,
+                "is_active": True,
+                "is_staff": False,
+                "is_superuser": False,
+                "last_name": "",
+                "password": "abc123",
+                "resource_uri": "/api/v1/users/1/",
+                "username": "johndoe",
+            }
+        })
+
+        resp = resource.get_detail(request, pk=2)
+        self.assertEqual(resp.status_code, 200)
+        
+        content = json.loads(resp.content.decode('utf-8'))
+        
+        del content['author']['date_joined']
+        del content['author']['last_login']
+        
+        self.assertEqual(content, {
+            "resource_uri": "",
+            "title": "Another Post",
+            "author": {
+                "email": "john@doe.com",
+                "first_name": "",
+                "id": 1,
+                "is_active": True,
+                "is_staff": False,
+                "is_superuser": False,
+                "last_name": "",
+                "password": "abc123",
+                "resource_uri": "/api/v1/users/1/",
+                "username": "johndoe",
+            }
+        })
+
+        resp = resource.get_detail(request, pk=300)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_get_detail_clientside_excludes(self):
+        resource = YetAnotherRelatedNoteResource()
+        request = HttpRequest()
+        # 'foo' will be ignored
+        request.GET = dict_to_querydict({'format': 'json', 'excludes': ['title', 'foo', 'slug', 'subjects']})
+
+        resp = resource.get_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 200)
+        
+        content = json.loads(resp.content.decode('utf-8'))
+        
+        del content['author']['date_joined']
+        del content['author']['last_login']
+        
+        self.assertEqual(content, {
+            "content": "This is my very first post using my shiny new API. Pretty sweet, huh?",
+            "created": "2010-03-30T20:05:00",
+            "is_active": True,
+            "resource_uri": "",
+            "author": {
+                "email": "john@doe.com",
+                "first_name": "",
+                "id": 1,
+                "is_active": True,
+                "is_staff": False,
+                "is_superuser": False,
+                "last_name": "",
+                "password": "abc123",
+                "resource_uri": "/api/v1/users/1/",
+                "username": "johndoe",
+            }
+        })
+
+        resp = resource.get_detail(request, pk=2)
+        self.assertEqual(resp.status_code, 200)
+        
+        content = json.loads(resp.content.decode('utf-8'))
+        
+        del content['author']['date_joined']
+        del content['author']['last_login']
+        
+        self.assertEqual(content, {
+            "content": "The dog ate my cat today. He looks seriously uncomfortable.",
+            "created": "2010-03-31T20:05:00",
+            "is_active": True,
+            "resource_uri": "",
+            "author": {
+                "email": "john@doe.com",
+                "first_name": "",
+                "id": 1,
+                "is_active": True,
+                "is_staff": False,
+                "is_superuser": False,
+                "last_name": "",
+                "password": "abc123",
+                "resource_uri": "/api/v1/users/1/",
+                "username": "johndoe",
+            }
+        })
 
         resp = resource.get_detail(request, pk=300)
         self.assertEqual(resp.status_code, 404)

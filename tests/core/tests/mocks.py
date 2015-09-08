@@ -1,4 +1,18 @@
 import django
+from django.http import QueryDict
+
+def dict_to_querydict(d, mutable=False):
+    qd = QueryDict('', mutable=True)
+    
+    for k, v in d.items():
+        if not isinstance(v, list):
+            v = [v]
+        
+        qd.setlist(k, v)
+    
+    qd._mutable = mutable
+    
+    return qd
 
 class MockRequest(object):
     def __init__(self):

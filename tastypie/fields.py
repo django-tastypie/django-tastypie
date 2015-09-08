@@ -566,12 +566,17 @@ class RelatedField(ApiField):
             return related_resource.get_resource_uri(bundle)
         else:
             # ZOMG extra data and big payloads.
-            bundle = related_resource.build_bundle(
-                obj=related_resource.instance,
+            new_bundle = related_resource.build_bundle(
+                obj=bundle.obj,
                 request=bundle.request,
-                objects_saved=bundle.objects_saved
+                objects_saved=bundle.objects_saved,
             )
-            return related_resource.full_dehydrate(bundle)
+            
+            if bundle.related_obj:
+                new_bundle.related_obj = bundle.related_obj
+                new_bundle.related_name = bundle.related_name
+            
+            return related_resource.full_dehydrate(new_bundle)
 
     def resource_from_uri(self, fk_resource, uri, request=None, related_obj=None, related_name=None):
         """
@@ -643,6 +648,7 @@ class RelatedField(ApiField):
             obj=obj,
             request=request
         )
+
         return fk_resource.full_dehydrate(bundle)
 
     def build_related_resource(self, value, request=None, related_obj=None, related_name=None):
@@ -743,7 +749,7 @@ class ToOneField(RelatedField):
             return None        
 
         self.fk_resource = self.get_related_resource(foreign_obj)
-        fk_bundle = Bundle(obj=foreign_obj, request=bundle.request)
+        fk_bundle = Bundle(obj=foreign_obj, request=bundle.request, related_name=self.related_name, related_obj=bundle.obj)
         return self.dehydrate_related(fk_bundle, self.fk_resource, for_list=for_list)
 
     def hydrate(self, bundle):
