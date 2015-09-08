@@ -339,11 +339,6 @@ class ResourceTestCase(TestCase):
         basic = BasicResourceWithDifferentListAndDetailFields()
         test_bundle_1 = basic.build_bundle(obj=test_object_1)
 
-        # Sanity check.
-        self.assertEqual(basic.name.value, None)
-        self.assertEqual(basic.view_count.value, None)
-        self.assertEqual(basic.date_joined.value, None)
-
         #check hydration with details
         bundle_1 = basic.full_dehydrate(test_bundle_1)
         self.assertEqual(bundle_1.data['name'], 'Daniel')
@@ -367,11 +362,6 @@ class ResourceTestCase(TestCase):
 
         basic = BasicResourceWithDifferentListAndDetailFieldsCallable()
         test_bundle_1 = basic.build_bundle(obj=test_object_1)
-
-        # Sanity check.
-        self.assertEqual(basic.name.value, None)
-        self.assertEqual(basic.view_count.value, None)
-        self.assertEqual(basic.date_joined.value, None)
 
         #check hydration with details
         bundle_1 = basic.full_dehydrate(test_bundle_1)
@@ -397,11 +387,6 @@ class ResourceTestCase(TestCase):
 
         basic = BasicResource()
         test_bundle_1 = basic.build_bundle(obj=test_object_1)
-
-        # Sanity check.
-        self.assertEqual(basic.name.value, None)
-        self.assertEqual(basic.view_count.value, None)
-        self.assertEqual(basic.date_joined.value, None)
 
         bundle_1 = basic.full_dehydrate(test_bundle_1)
         self.assertEqual(bundle_1.data['name'], 'Daniel')
@@ -1424,7 +1409,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['content'].null, False)
         self.assertEqual(annr.fields['content'].readonly, False)
         self.assertEqual(annr.fields['content'].unique, False)
-        self.assertEqual(annr.fields['content'].value, None)
 
         self.assertTrue(isinstance(annr.fields['created'], fields.DateTimeField))
         self.assertEqual(annr.fields['created'].attribute, 'created')
@@ -1434,7 +1418,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['created'].null, True)
         self.assertEqual(annr.fields['created'].readonly, False)
         self.assertEqual(annr.fields['created'].unique, False)
-        self.assertEqual(annr.fields['created'].value, None)
 
         self.assertTrue(isinstance(annr.fields['id'], fields.IntegerField))
         self.assertEqual(annr.fields['id'].attribute, 'id')
@@ -1444,7 +1427,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['id'].null, False)
         self.assertEqual(annr.fields['id'].readonly, False)
         self.assertEqual(annr.fields['id'].unique, True)
-        self.assertEqual(annr.fields['id'].value, None)
 
         self.assertTrue(isinstance(annr.fields['is_active'], fields.BooleanField))
         self.assertEqual(annr.fields['is_active'].attribute, 'is_active')
@@ -1454,7 +1436,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['is_active'].null, False)
         self.assertEqual(annr.fields['is_active'].readonly, False)
         self.assertEqual(annr.fields['is_active'].unique, False)
-        self.assertEqual(annr.fields['is_active'].value, None)
 
         self.assertTrue(isinstance(annr.fields['resource_uri'], fields.CharField))
         self.assertEqual(annr.fields['resource_uri'].attribute, None)
@@ -1464,7 +1445,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['resource_uri'].null, False)
         self.assertEqual(annr.fields['resource_uri'].readonly, True)
         self.assertEqual(annr.fields['resource_uri'].unique, False)
-        self.assertEqual(annr.fields['resource_uri'].value, None)
 
         self.assertTrue(isinstance(annr.fields['slug'], fields.CharField))
         self.assertEqual(annr.fields['slug'].attribute, 'slug')
@@ -1474,7 +1454,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['slug'].null, False)
         self.assertEqual(annr.fields['slug'].readonly, False)
         self.assertEqual(annr.fields['slug'].unique, True)
-        self.assertEqual(annr.fields['slug'].value, None)
 
         self.assertTrue(isinstance(annr.fields['title'], fields.CharField))
         self.assertEqual(annr.fields['title'].attribute, 'title')
@@ -1484,7 +1463,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['title'].null, False)
         self.assertEqual(annr.fields['title'].readonly, False)
         self.assertEqual(annr.fields['title'].unique, False)
-        self.assertEqual(annr.fields['title'].value, None)
 
         self.assertTrue(isinstance(annr.fields['updated'], fields.DateTimeField))
         self.assertEqual(annr.fields['updated'].attribute, 'updated')
@@ -1494,7 +1472,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['updated'].null, False)
         self.assertEqual(annr.fields['updated'].readonly, False)
         self.assertEqual(annr.fields['updated'].unique, False)
-        self.assertEqual(annr.fields['updated'].value, None)
 
     def test_urls(self):
         # The common case, where the ``Api`` specifies the name.

@@ -23,7 +23,6 @@ class ApiFieldTestCase(TestCase):
         self.assertEqual(field_1.attribute, None)
         self.assertEqual(field_1._default, NOT_PROVIDED)
         self.assertEqual(field_1.null, False)
-        self.assertEqual(field_1.value, None)
         self.assertEqual(field_1.help_text, '')
         self.assertEqual(field_1.use_in, 'all')
 
@@ -32,7 +31,6 @@ class ApiFieldTestCase(TestCase):
         self.assertEqual(field_2.attribute, 'foo')
         self.assertEqual(field_2._default, True)
         self.assertEqual(field_2.null, True)
-        self.assertEqual(field_2.value, None)
         self.assertEqual(field_2.readonly, True)
         self.assertEqual(field_2.help_text, 'Foo.')
         self.assertEqual(field_1.use_in, 'all')
