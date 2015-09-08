@@ -237,9 +237,9 @@ class Serializer(object):
         if isinstance(data, (list, tuple)):
             return [self.to_simple(item, options) for item in data]
         if isinstance(data, dict):
-            return dict((key, self.to_simple(val, options)) for (key, val) in data.items())
+            return {key: self.to_simple(val, options) for (key, val) in data.items()}
         elif isinstance(data, Bundle):
-            return dict((key, self.to_simple(val, options)) for (key, val) in data.data.items())
+            return {key: self.to_simple(val, options)) for (key, val) in data.data.items()}
         elif hasattr(data, 'dehydrated_type'):
             if getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == False:
                 if data.full:
@@ -343,9 +343,9 @@ class Serializer(object):
             for element in elements:
                 if element.tag in ('object', 'objects'):
                     return self.from_etree(element)
-            return dict((element.tag, self.from_etree(element)) for element in elements)
+            return {element.tag: self.from_etree(element) for element in elements}
         elif data.tag == 'object' or data.get('type') == 'hash':
-            return dict((element.tag, self.from_etree(element)) for element in data.getchildren())
+            return {element.tag: self.from_etree(element) for element in data.getchildren()}
         elif data.tag == 'objects' or data.get('type') == 'list':
             return [self.from_etree(element) for element in data.getchildren()]
         else:
