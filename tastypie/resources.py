@@ -854,7 +854,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             # If it's not for use in this mode, skip
             field_use_in = getattr(field_object, 'use_in', 'all')
             if callable(field_use_in):
-                if not field_use_in(bundle):
+                if not field_use_in(bundle, use_in):
                     continue
             else:
                 if field_use_in not in use_in:
