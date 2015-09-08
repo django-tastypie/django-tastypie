@@ -2458,8 +2458,8 @@ def convert_post_to_VERB(request, verb):
     """
     if request.method == verb:
         if hasattr(request, '_post'):
-            del(request._post)
-            del(request._files)
+            del request._post
+            del request._files
 
         try:
             request.method = "POST"
