@@ -37,8 +37,9 @@ class FormValidation(Validation):
     This form will be used to validate the data in ``bundle.data``.
     """
     def __init__(self, **kwargs):
-        if not 'form_class' in kwargs:
-            raise ImproperlyConfigured("You must provide a 'form_class' to 'FormValidation' classes.")
+        if 'form_class' not in kwargs:
+            raise ImproperlyConfigured(
+                "You must provide a 'form_class' to 'FormValidation' classes.")
 
         self.form_class = kwargs.pop('form_class')
         super(FormValidation, self).__init__(**kwargs)

@@ -1,8 +1,10 @@
 from __future__ import unicode_literals
+
 import datetime
 from dateutil.parser import parse
 import decimal
 from decimal import Decimal
+
 try:
     import importlib
 except ImportError:
@@ -25,7 +27,7 @@ class NOT_PROVIDED:
 # All the ApiField variants.
 
 class ApiField(object):
-    """The base implementation of a field used by the resources."""
+    "The base implementation of a field used by the resources."
     is_m2m = False
     is_related = False
     dehydrated_type = 'string'
@@ -158,7 +160,7 @@ class ApiField(object):
         """
         if self.readonly:
             return None
-        if not self.instance_name in bundle.data:
+        if self.instance_name not in bundle.data:
             if self.is_related and not self.is_m2m:
                 # We've got an FK (or alike field) & a possible parent object.
                 # Check for it.
@@ -509,7 +511,7 @@ class RelatedField(ApiField):
 
         # Fix the ``api_name`` if it's not present.
         if related_resource._meta.api_name is None:
-            if self._resource and not self._resource._meta.api_name is None:
+            if self._resource and self._resource._meta.api_name is not None:
                 related_resource._meta.api_name = self._resource._meta.api_name
 
         self._rel_resources[related_class] = related_resource
@@ -707,7 +709,6 @@ class ToOneField(RelatedField):
 
     def dehydrate(self, bundle, for_list=True):
         foreign_obj = None
-        error_to_raise = None
 
         if callable(self.attribute):
             previous_obj = bundle.obj
@@ -728,7 +729,6 @@ class ToOneField(RelatedField):
                     raise ApiFieldError("The related resource for resource %s could not be found." % (previous_obj))
                 else:
                     raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
-
             return None
 
         fk_resource = self.get_related_resource(foreign_obj)
@@ -742,6 +742,7 @@ class ToOneField(RelatedField):
             return value
 
         return self.build_related_resource(value, request=bundle.request)
+
 
 class ForeignKey(ToOneField):
     """

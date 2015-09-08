@@ -11,10 +11,11 @@ import django
 from django.conf import settings
 from django.conf.urls import patterns, url
 from django.contrib.gis.db.models.fields import GeometryField
-from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, ValidationError
-from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404, get_script_prefix
+from django.core.exceptions import ObjectDoesNotExist,\
+    MultipleObjectsReturned, ValidationError
+from django.core.urlresolvers import NoReverseMatch, reverse, Resolver404,\
+    get_script_prefix
 from django.core.signals import got_request_exception
-from django.db import transaction
 from django.db.models.constants import LOOKUP_SEP
 from django.db.models.sql.constants import QUERY_TERMS
 from django.http import HttpResponse, HttpResponseNotFound, Http404
@@ -27,13 +28,15 @@ from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.bundle import Bundle
 from tastypie.cache import NoCache
 from tastypie.constants import ALL, ALL_WITH_RELATIONS
-from tastypie.exceptions import NotFound, BadRequest, InvalidFilterError, HydrationError, InvalidSortError, ImmediateHttpResponse, Unauthorized
+from tastypie.exceptions import NotFound, BadRequest, InvalidFilterError,\
+    HydrationError, InvalidSortError, ImmediateHttpResponse, Unauthorized
 from tastypie import fields
 from tastypie import http
 from tastypie.paginator import Paginator
 from tastypie.serializers import Serializer
 from tastypie.throttle import BaseThrottle
-from tastypie.utils import is_valid_jsonp_callback_value, dict_strip_unicode_keys, trailing_slash
+from tastypie.utils import is_valid_jsonp_callback_value,\
+    dict_strip_unicode_keys, trailing_slash
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.validation import Validation
 from tastypie.compat import get_module_name, atomic_decorator
@@ -157,9 +160,9 @@ class DeclarativeMetaclass(type):
             new_class._meta.resource_name = resource_name
 
         if getattr(new_class._meta, 'include_resource_uri', True):
-            if not 'resource_uri' in new_class.base_fields:
+            if 'resource_uri' not in new_class.base_fields:
                 new_class.base_fields['resource_uri'] = fields.CharField(readonly=True)
-        elif 'resource_uri' in new_class.base_fields and not 'resource_uri' in attrs:
+        elif 'resource_uri' in new_class.base_fields and 'resource_uri' not in attrs:
             del(new_class.base_fields['resource_uri'])
 
         for field_name, field_object in new_class.base_fields.items():
@@ -183,7 +186,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
     def __init__(self, api_name=None):
         self.fields = deepcopy(self.base_fields)
 
-        if not api_name is None:
+        if api_name is not None:
             self._meta.api_name = api_name
 
     def __getattr__(self, name):
@@ -341,10 +344,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             urls += overridden_urls
 
         urls += self.base_urls()
-        urlpatterns = patterns('',
-            *urls
-        )
-        return urlpatterns
+        return patterns('', *urls)
 
     def determine_format(self, request):
         """
@@ -529,7 +529,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             response['Allow'] = allows
             raise ImmediateHttpResponse(response=response)
 
-        if not request_method in allowed:
+        if request_method not in allowed:
             response = http.HttpMethodNotAllowed(allows)
             response['Allow'] = allows
             raise ImmediateHttpResponse(response=response)
@@ -550,7 +550,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         if isinstance(auth_result, HttpResponse):
             raise ImmediateHttpResponse(response=auth_result)
 
-        if not auth_result is True:
+        if auth_result is not True:
             raise ImmediateHttpResponse(response=http.HttpUnauthorized())
 
     def throttle_check(self, request):
@@ -564,17 +564,17 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
         # Check to see if they should be throttled.
         throttle = self._meta.throttle.should_be_throttled(identifier)
-        
+
         if throttle:
             # Throttle limit exceeded.
-            
+
             response = http.HttpTooManyRequests()
-            
+
             if isinstance(throttle, int) and not isinstance(throttle, bool):
                 response['Retry-After'] = throttle
             elif isinstance(throttle, datetime):
                 response['Retry-After'] = format_date_time(mktime(throttle.timetuple()))
-            
+
             raise ImmediateHttpResponse(response=response)
 
     def log_throttled_access(self, request):
@@ -609,7 +609,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         """
         try:
             auth_result = self._meta.authorization.read_detail(object_list, bundle)
-            if not auth_result is True:
+            if auth_result is not True:
                 raise Unauthorized()
         except Unauthorized as e:
             self.unauthorized_result(e)
@@ -635,7 +635,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         """
         try:
             auth_result = self._meta.authorization.create_detail(object_list, bundle)
-            if not auth_result is True:
+            if auth_result is not True:
                 raise Unauthorized()
         except Unauthorized as e:
             self.unauthorized_result(e)
@@ -661,7 +661,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         """
         try:
             auth_result = self._meta.authorization.update_detail(object_list, bundle)
-            if not auth_result is True:
+            if auth_result is not True:
                 raise Unauthorized()
         except Unauthorized as e:
             self.unauthorized_result(e)
@@ -816,7 +816,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         chomped_uri = uri
 
         if prefix and chomped_uri.startswith(prefix):
-            chomped_uri = chomped_uri[len(prefix)-1:]
+            chomped_uri = chomped_uri[len(prefix) - 1:]
 
         # We mangle the path a bit further & run URL resolution against *only*
         # the current class. This ought to prevent bad URLs from resolving to
@@ -1001,7 +1001,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         if self._meta.filtering:
             data['filtering'] = self._meta.filtering
 
-        #Skip assigning pk_field_name for non-model resources
+        # Skip assigning pk_field_name for non-model resources
         try:
             pk_field_name = self._meta.queryset.model._meta.pk.name
         except AttributeError:
@@ -1396,7 +1396,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_list_data(request, deserialized)
 
-        if not self._meta.collection_name in deserialized:
+        if self._meta.collection_name not in deserialized:
             raise BadRequest("Invalid data sent: missing '%s'" % self._meta.collection_name)
 
         basic_bundle = self.build_bundle(request=request)
@@ -1418,8 +1418,12 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         if not self._meta.always_return_data:
             return http.HttpNoContent()
         else:
-            to_be_serialized = {}
-            to_be_serialized[self._meta.collection_name] = [self.full_dehydrate(bundle, for_list=True) for bundle in bundles_seen]
+            to_be_serialized = {
+                self._meta.collection_name: [
+                    self.full_dehydrate(b, for_list=True)
+                    for b in bundles_seen
+                ]
+            }
             to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
             return self.create_response(request, to_be_serialized)
 
@@ -1609,8 +1613,12 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         if not self._meta.always_return_data:
             return http.HttpAccepted()
         else:
-            to_be_serialized = {}
-            to_be_serialized['objects'] = [self.full_dehydrate(bundle, for_list=True) for bundle in bundles_seen]
+            to_be_serialized = {
+                'objects': [
+                    self.full_dehydrate(b, for_list=True)
+                    for b in bundles_seen
+                ]
+            }
             to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
             return self.create_response(request, to_be_serialized, response_class=http.HttpAccepted)
 
@@ -1745,7 +1753,7 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
                 continue
             if field_name in new_class.declared_fields:
                 continue
-            if len(include_fields) and not field_name in include_fields:
+            if len(include_fields) and field_name not in include_fields:
                 del(new_class.base_fields[field_name])
             if len(excludes) and field_name in excludes:
                 del(new_class.base_fields[field_name])
@@ -1754,9 +1762,9 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
         new_class.base_fields.update(new_class.get_fields(include_fields, excludes))
 
         if getattr(new_class._meta, 'include_absolute_url', True):
-            if not 'absolute_url' in new_class.base_fields:
+            if 'absolute_url' not in new_class.base_fields:
                 new_class.base_fields['absolute_url'] = fields.CharField(attribute='get_absolute_url', readonly=True)
-        elif 'absolute_url' in new_class.base_fields and not 'absolute_url' in attrs:
+        elif 'absolute_url' in new_class.base_fields and 'absolute_url' not in attrs:
             del(new_class.base_fields['absolute_url'])
 
         return new_class
@@ -1893,13 +1901,13 @@ class BaseModelResource(Resource):
         if filter_bits is None:
             filter_bits = []
 
-        if not field_name in self._meta.filtering:
+        if field_name not in self._meta.filtering:
             raise InvalidFilterError("The '%s' field does not allow filtering." % field_name)
 
         # Check to see if it's an allowed lookup type.
-        if not self._meta.filtering[field_name] in (ALL, ALL_WITH_RELATIONS):
+        if self._meta.filtering[field_name] not in (ALL, ALL_WITH_RELATIONS):
             # Must be an explicit whitelist.
-            if not filter_type in self._meta.filtering[field_name]:
+            if filter_type not in self._meta.filtering[field_name]:
                 raise InvalidFilterError("'%s' is not an allowed filter on the '%s' field." % (filter_type, field_name))
 
         if self.fields[field_name].attribute is None:
@@ -1983,7 +1991,7 @@ class BaseModelResource(Resource):
             field_name = filter_bits.pop(0)
             filter_type = 'exact'
 
-            if not field_name in self.fields:
+            if field_name not in self.fields:
                 # It's not a field we know about. Move along citizen.
                 continue
 
@@ -2014,8 +2022,8 @@ class BaseModelResource(Resource):
 
         parameter_name = 'order_by'
 
-        if not 'order_by' in options:
-            if not 'sort_by' in options:
+        if 'order_by' not in options:
+            if 'sort_by' not in options:
                 # Nothing to alter the order. Return what we've got.
                 return obj_list
             else:
@@ -2042,11 +2050,11 @@ class BaseModelResource(Resource):
                 field_name = order_by_bits[0][1:]
                 order = '-'
 
-            if not field_name in self.fields:
+            if field_name not in self.fields:
                 # It's not a field we know about. Move along citizen.
                 raise InvalidSortError("No matching '%s' field for ordering on." % field_name)
 
-            if not field_name in self._meta.ordering:
+            if field_name not in self._meta.ordering:
                 raise InvalidSortError("The '%s' field does not allow ordering." % field_name)
 
             if self.fields[field_name].attribute is None:
@@ -2106,9 +2114,9 @@ class BaseModelResource(Resource):
         # prevents FieldError when looking up nested resources containing extra data
         field_names = self._meta.object_class._meta.get_all_field_names()
         field_names.append('pk')
-        
+
         kwargs = dict([(k, v,) for k, v in kwargs.items() if k in field_names])
-        
+
         try:
             object_list = self.get_object_list(bundle.request).filter(**kwargs)
             stringified_kwargs = ', '.join(["%s=%s" % (k, v) for k, v in kwargs.items()])
@@ -2313,7 +2321,7 @@ class BaseModelResource(Resource):
             if field_object.readonly:
                 continue
 
-            if field_object.blank and not field_name in bundle.data:
+            if field_object.blank and field_name not in bundle.data:
                 continue
 
             # Get the object.
@@ -2418,7 +2426,7 @@ class BaseModelResource(Resource):
                     objects_saved=bundle.objects_saved
                 )
 
-                #Only save related models if they're newly added.
+                # Only save related models if they're newly added.
                 if updated_related_bundle.obj._state.adding:
                     related_resource.save(updated_related_bundle)
                 related_objs.append(updated_related_bundle.obj)

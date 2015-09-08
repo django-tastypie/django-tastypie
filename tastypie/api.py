@@ -113,9 +113,7 @@ class Api(object):
             warnings.warn("'override_urls' is a deprecated method & will be removed by v1.0.0. Please rename your method to ``prepend_urls``.")
             urlpatterns += overridden_urls
 
-        urlpatterns += patterns('',
-            *pattern_list
-        )
+        urlpatterns += patterns('', *pattern_list)
         return urlpatterns
 
     def top_level(self, request, api_name=None):

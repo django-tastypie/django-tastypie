@@ -333,7 +333,7 @@ class DigestAuthentication(Authentication):
             return self._unauthorized()
 
         try:
-            (auth_type, data) = request.META['HTTP_AUTHORIZATION'].split(' ', 1)
+            auth_type, data = request.META['HTTP_AUTHORIZATION'].split(' ', 1)
 
             if auth_type.lower() != 'digest':
                 return self._unauthorized()
@@ -426,7 +426,7 @@ class OAuthAuthentication(Authentication):
             raise ImproperlyConfigured("The 'django-oauth-plus' package could not be imported. It is required for use with the 'OAuthAuthentication' class.")
 
     def is_authenticated(self, request, **kwargs):
-        from oauth_provider.store import store, InvalidTokenError
+        from oauth_provider.store import store
 
         if self.is_valid_request(request):
             oauth_request = oauth_provider.utils.get_oauth_request(request)
