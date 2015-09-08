@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 import datetime
 from dateutil.parser import parse
 from decimal import Decimal
+import decimal
 import re
 try:
     import importlib
@@ -269,7 +270,10 @@ class DecimalField(ApiField):
         value = super(DecimalField, self).hydrate(bundle)
 
         if value and not isinstance(value, Decimal):
-            value = Decimal(value)
+            try:
+                value = Decimal(value)
+            except decimal.InvalidOperation:
+                raise ApiFieldError("Invalid decimal string for '%s' field: '%s'" % (self.instance_name, value))
 
         return value
 
