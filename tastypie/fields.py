@@ -909,7 +909,7 @@ class TimeField(ApiField):
         except (ValueError, TypeError) as e:
             raise ApiFieldError(str(e))
         else:
-            return datetime.time(dt.hour, dt.minute, dt.second)
+            return datetime.time(dt.hour, dt.minute, dt.second, dt.microsecond)
 
     def hydrate(self, bundle):
         value = super(TimeField, self).hydrate(bundle)
