@@ -6,8 +6,9 @@ from tastypie.authorization import Authorization
 
 from core.models import Note, MediaBit
 
-from related_resource.models import Category, Tag, ExtraData, Taggable,\
-    TaggableTag, Person, Company, Product, Address, Dog, Forum, DogHouse, Bone, Job, Payment, Label, Post
+from related_resource.models import Category, Tag, ExtraData, Taggable, \
+    TaggableTag, Person, Company, Product, Address, Dog, Forum, DogHouse, Bone, Job, Payment, Label, Post, OrderItem, \
+    Order
 
 
 class UserResource(ModelResource):
@@ -214,3 +215,20 @@ class ForumResource(ModelResource):
         authorization = Authorization()
         always_return_data = True
 
+class OrderItemResource(ModelResource):
+    order = fields.ForeignKey("related_resource.api.resources.OrderResource", "order")
+
+    class Meta:
+        queryset = OrderItem.objects.all()
+        resource_name = 'orderitem'
+        authorization = Authorization()
+
+
+class OrderResource(ModelResource):
+    items = fields.ToManyField("related_resource.api.resources.OrderItemResource", "items",
+                               related_name="order", full=True)
+
+    class Meta:
+        queryset = Order.objects.all()
+        resource_name = 'order'
+        authorization = Authorization()
