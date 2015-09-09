@@ -483,6 +483,70 @@ class NestedRelatedResourceTest(TestCaseWithFixture):
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
 
+    def test_many_to_one_extra_data_ignored(self):
+        """
+        Test a related ToMany resource with a nested full ToOne resource
+        
+        FieldError would result when extra data is included on an embedded
+        resource for an already saved object.
+        """
+        self.assertEqual(Person.objects.count(), 0)
+        self.assertEqual(Dog.objects.count(), 0)
+        self.assertEqual(DogHouse.objects.count(), 0)
+
+        pr = PersonResource()
+
+        data = {
+            'name': 'Joan Rivers',
+            'dogs': [
+                {
+                    'name': 'Snoopy',
+                    'house': {
+                        'color': 'Red'
+                    }
+                }
+            ]
+        }
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        request.set_body(json.dumps(data))
+        resp = pr.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(Person.objects.count(), 1)
+        self.assertEqual(Dog.objects.count(), 1)
+        self.assertEqual(DogHouse.objects.count(), 1)
+
+        pk = Person.objects.all()[0].pk
+        request = MockRequest()
+        request.method = 'GET'
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
+        resp = pr.get_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 200)
+
+        person = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(person['name'], 'Joan Rivers')
+        self.assertEqual(len(person['dogs']), 1)
+
+        dog = person['dogs'][0]
+        self.assertEqual(dog['name'], 'Snoopy')
+
+        house = dog['house']
+        self.assertEqual(house['color'], 'Red')
+
+        # clients may include extra data, which should be ignored. Make extra data is ignored on the resource and sub resources.
+        person['thisfieldshouldbeignored'] = 'foobar'
+        person['dogs'][0]['thisfieldshouldbeignored'] = 'foobar'
+        
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.set_body(json.dumps(person))
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
+        resp = pr.put_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 204)
+
     def test_many_to_many(self):
         """
         Test a related ToMany resource with a nested full ToMany resource

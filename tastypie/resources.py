@@ -2100,6 +2100,12 @@ class BaseModelResource(Resource):
         Takes optional ``kwargs``, which are used to narrow the query to find
         the instance.
         """
+        # prevents FieldError when looking up nested resources containing extra data
+        field_names = self._meta.object_class._meta.get_all_field_names()
+        field_names.append('pk')
+        
+        kwargs = dict([(k, v,) for k, v in kwargs.items() if k in field_names])
+        
         try:
             object_list = self.get_object_list(bundle.request).filter(**kwargs)
             stringified_kwargs = ', '.join(["%s=%s" % (k, v) for k, v in kwargs.items()])
