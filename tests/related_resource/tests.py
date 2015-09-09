@@ -14,11 +14,9 @@ from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
 from core.tests.resources import HttpRequest
 
-from related_resource.api.resources import CategoryResource, ForumResource, FreshNoteResource, JobResource, \
-    NoteResource, PersonResource, UserResource, OrderResource
+from related_resource.api.resources import CategoryResource, ForumResource, FreshNoteResource, JobResource, NoteResource, PersonResource, UserResource, OrderResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Label, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, \
-    DogHouse, Bone, Product, Address, Job, Payment, Forum, Order, OrderItem
+from related_resource.models import Category, Label, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment, Forum, Order, OrderItem
 from testcases import TestCaseWithFixture
 
 
