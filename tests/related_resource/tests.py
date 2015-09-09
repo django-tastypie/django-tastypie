@@ -14,9 +14,9 @@ from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
 from core.tests.resources import HttpRequest
 
-from related_resource.api.resources import CategoryResource, ForumResource, FreshNoteResource, JobResource, NoteResource, PersonResource, UserResource
+from related_resource.api.resources import CategoryResource, ForumResource, FreshNoteResource, JobResource, NoteResource, OrderResource, PersonResource, UserResource
 from related_resource.api.urls import api
-from related_resource.models import Category, Label, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment, Forum
+from related_resource.models import Category, Label, Tag, Taggable, TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product, Address, Job, Payment, Forum, Order, OrderItem
 from testcases import TestCaseWithFixture
 
 
@@ -854,3 +854,33 @@ class TestPutOnRelatedResource(TestCase):
 
         self.assertEqual(len(data['members']), 2)
         self.assertEqual(len(data['moderators']), 1)
+
+
+class ModelWithReverseItemsRelationshipTest(TestCase):
+    def test_reverse_items_relationship(self):
+        order_resource = OrderResource()
+
+        data = {
+            'name': 'order1',
+            'items': [
+                {
+                    'name': 'car',
+                },
+                {
+                    'name': 'yacht',
+                }
+            ]
+        }
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+
+        request.path = reverse('api_dispatch_list',
+                               kwargs={'resource_name': order_resource._meta.resource_name,
+                                       'api_name': order_resource._meta.api_name})
+        request.set_body(json.dumps(data))
+        resp = order_resource.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(Order.objects.count(), 1)
+        self.assertEqual(OrderItem.objects.count(), 2)

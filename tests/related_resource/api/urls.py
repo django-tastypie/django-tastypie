@@ -9,9 +9,9 @@ from related_resource.api.resources import NoteResource, UserResource, \
         CategoryResource, TagResource, TaggableTagResource, TaggableResource, \
         ExtraDataResource, FreshNoteResource, FreshMediaBitResource, \
         ForumResource, CompanyResource, ProductResource, AddressResource, \
-        PersonResource, DogResource, DogHouseResource, BoneResource
+        PersonResource, DogResource, DogHouseResource, BoneResource, \
+        LabelResource, PostResource, OrderResource, OrderItemResource
 
-from tests.related_resource.api.resources import LabelResource, PostResource
 
 api = Api(api_name='v1')
 api.register(NoteResource(), canonical=True)
@@ -33,5 +33,7 @@ api.register(DogHouseResource(), canonical=True)
 api.register(BoneResource(), canonical=True)
 api.register(PostResource(), canonical=True)
 api.register(LabelResource(), canonical=True)
+api.register(OrderResource(), canonical=True)
+api.register(OrderItemResource(), canonical=True)
 
 urlpatterns = api.urls
