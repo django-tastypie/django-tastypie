@@ -11,7 +11,7 @@ from django.middleware.csrf import _sanitize_token, constant_time_compare
 from django.utils.http import same_origin
 from django.utils.translation import ugettext as _
 from tastypie.http import HttpUnauthorized
-from tastypie.compat import User, username_field
+from tastypie.compat import get_user_model, get_username_field
 
 try:
     from hashlib import sha1
@@ -160,12 +160,9 @@ class ApiKeyAuthentication(Authentication):
         return HttpUnauthorized()
 
     def extract_credentials(self, request):
-        if request.META.get('HTTP_AUTHORIZATION') and request.META['HTTP_AUTHORIZATION'].lower().startswith('apikey '):
-            (auth_type, data) = request.META['HTTP_AUTHORIZATION'].split()
-
-            if auth_type.lower() != 'apikey':
-                raise ValueError("Incorrect authorization header.")
-
+        authorization = request.META.get('HTTP_AUTHORIZATION', '')
+        if authorization and authorization.lower().startswith('apikey '):
+            auth_type, data = authorization.split()
             username, api_key = data.split(':', 1)
         else:
             username = request.GET.get('username') or request.POST.get('username')
@@ -180,7 +177,6 @@ class ApiKeyAuthentication(Authentication):
         Should return either ``True`` if allowed, ``False`` if not or an
         ``HttpResponse`` if you need something custom.
         """
-        from tastypie.compat import User
 
         try:
             username, api_key = self.extract_credentials(request)
@@ -190,9 +186,12 @@ class ApiKeyAuthentication(Authentication):
         if not username or not api_key:
             return self._unauthorized()
 
+        username_field = get_username_field()
+        User = get_user_model()
+
         try:
             lookup_kwargs = {username_field: username}
-            user = User.objects.get(**lookup_kwargs)
+            user = User.objects.select_related('api_key').get(**lookup_kwargs)
         except (User.DoesNotExist, User.MultipleObjectsReturned):
             return self._unauthorized()
 
@@ -213,7 +212,8 @@ class ApiKeyAuthentication(Authentication):
         from tastypie.models import ApiKey
 
         try:
-            ApiKey.objects.get(user=user, key=api_key)
+            if user.api_key.key != api_key:
+                return self._unauthorized()
         except ApiKey.DoesNotExist:
             return self._unauthorized()
 
@@ -280,7 +280,8 @@ class SessionAuthentication(Authentication):
 
         This implementation returns the user's username.
         """
-        return getattr(request.user, username_field)
+
+        return getattr(request.user, get_username_field())
 
 
 class DigestAuthentication(Authentication):
@@ -366,6 +367,9 @@ class DigestAuthentication(Authentication):
         return True
 
     def get_user(self, username):
+        username_field = get_username_field()
+        User = get_user_model()
+
         try:
             lookup_kwargs = {username_field: username}
             user = User.objects.get(**lookup_kwargs)

@@ -4,9 +4,9 @@ import re
 import django
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.core.serializers import json  # FIXME: disambiguate name from JSON module
 from django.utils import six
 from django.utils.encoding import force_text, smart_bytes
+from django.core.serializers import json as djangojson
 
 from tastypie.bundle import Bundle
 from tastypie.exceptions import BadRequest, UnsupportedFormat
@@ -31,10 +31,7 @@ try:
 except ImportError:
     biplist = None
 
-try:
-    import simplejson
-except ImportError:
-    import json as simplejson
+import json
 
 
 XML_ENCODING = re.compile('<\?xml.*?\?>', re.IGNORECASE)
@@ -184,12 +181,14 @@ class Serializer(object):
 
         return data.isoformat()
 
-    def serialize(self, bundle, format='application/json', options={}):
+    def serialize(self, bundle, format='application/json', options=None):
         """
         Given some data and a format, calls the correct method to serialize
         the data and returns the result.
         """
         desired_format = None
+        if options is None:
+            options = {}
 
         for short_format, long_format in self.content_types.items():
             if format == long_format:
@@ -241,19 +240,6 @@ class Serializer(object):
             return dict((key, self.to_simple(val, options)) for (key, val) in data.items())
         elif isinstance(data, Bundle):
             return dict((key, self.to_simple(val, options)) for (key, val) in data.data.items())
-        elif hasattr(data, 'dehydrated_type'):
-            if getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == False:
-                if data.full:
-                    return self.to_simple(data.fk_resource, options)
-                else:
-                    return self.to_simple(data.value, options)
-            elif getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == True:
-                if data.full:
-                    return [self.to_simple(bundle, options) for bundle in data.m2m_bundles]
-                else:
-                    return [self.to_simple(val, options) for val in data.value]
-            else:
-                return self.to_simple(data.value, options)
         elif isinstance(data, datetime.datetime):
             return self.format_datetime(data)
         elif isinstance(data, datetime.date):
@@ -298,23 +284,6 @@ class Serializer(object):
             for field_name, field_object in data.data.items():
                 element.append(self.to_etree(field_object, options, name=field_name, depth=depth+1))
                 element[:] = sorted(element, key=lambda x: x.tag)
-        elif hasattr(data, 'dehydrated_type'):
-            if getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == False:
-                if data.full:
-                    return self.to_etree(data.fk_resource, options, name, depth+1)
-                else:
-                    return self.to_etree(data.value, options, name, depth+1)
-            elif getattr(data, 'dehydrated_type', None) == 'related' and data.is_m2m == True:
-                if data.full:
-                    element = Element(name or 'objects')
-                    for bundle in data.m2m_bundles:
-                        element.append(self.to_etree(bundle, options, bundle.resource_name, depth+1))
-                else:
-                    element = Element(name or 'objects')
-                    for value in data.value:
-                        element.append(self.to_etree(value, options, name, depth=depth+1))
-            else:
-                return self.to_etree(data.value, options, name)
         else:
             element = Element(name or 'value')
             simple_data = self.to_simple(data, options)
@@ -372,16 +341,16 @@ class Serializer(object):
         options = options or {}
         data = self.to_simple(data, options)
 
-        if django.get_version() >= '1.5':
-            return json.json.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
-        else:
-            return simplejson.dumps(data, cls=json.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
+        return djangojson.json.dumps(data, cls=djangojson.DjangoJSONEncoder, sort_keys=True, ensure_ascii=False)
 
     def from_json(self, content):
         """
         Given some JSON data, returns a Python dictionary of the decoded data.
         """
-        return simplejson.loads(content)
+        try:
+            return json.loads(content)
+        except ValueError:
+            raise BadRequest
 
     def to_jsonp(self, data, options=None):
         """

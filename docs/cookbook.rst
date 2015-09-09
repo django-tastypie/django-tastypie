@@ -145,6 +145,32 @@ something like the following::
 The added URLconf matches before the standard URLconf included by default &
 matches on the username provided in the URL.
 
+Another alternative approach is to override the ``dispatch`` method::
+
+    # myapp/api/resources.py
+    class EntryResource(ModelResource):
+        user = fields.ForeignKey(UserResource, 'user')
+
+        class Meta:
+            queryset = Entry.objects.all()
+            resource_name = 'entry'
+
+        def dispatch(self, request_type, request, **kwargs):
+            username = kwargs.pop('username')
+            kwargs['user'] = get_object_or_404(User, username=username)
+            return super(EntryResource, self).dispatch(request_type, request, **kwargs)
+
+    # urls.py
+    from django.conf.urls.defaults import *
+    from myapp.api import EntryResource
+
+    entry_resource = EntryResource()
+
+    urlpatterns = patterns('',
+        # The normal jazz here, then...
+        (r'^api/(?P<username>\w+)/', include(entry_resource.urls)),
+    )
+
 
 Nested Resources
 ----------------
@@ -172,32 +198,6 @@ handle the children::
 
             child_resource = ChildResource()
             return child_resource.get_detail(request, parent_id=obj.pk)
-
-Another alternative approach is to override the ``dispatch`` method::
-
-    # myapp/api/resources.py
-    class EntryResource(ModelResource):
-        user = fields.ForeignKey(UserResource, 'user')
-
-        class Meta:
-            queryset = Entry.objects.all()
-            resource_name = 'entry'
-
-        def dispatch(self, request_type, request, **kwargs):
-            username = kwargs.pop('username')
-            kwargs['user'] = get_object_or_404(User, username=username)
-            return super(EntryResource, self).dispatch(request_type, request, **kwargs)
-
-    # urls.py
-    from django.conf.urls.defaults import *
-    from myapp.api import EntryResource
-
-    entry_resource = EntryResource()
-
-    urlpatterns = patterns('',
-        # The normal jazz here, then...
-        (r'^api/(?P<username>\w+)/', include(entry_resource.urls)),
-    )
 
 
 Adding Search Functionality
@@ -295,6 +295,8 @@ where Tastypie uses underscore syntax, which can lead to "ugly" looking
 code in Javascript. You can create a custom serializer that emits
 values in camelCase instead::
 
+    import re
+    import simplejson
     from tastypie.serializers import Serializer
 
     import re
@@ -361,8 +363,8 @@ By default, Tastypie outputs JSON with no indentation or newlines (equivalent to
 :py:func:`json.dumps` with *indent* set to ``None``). You can override this
 behavior in a custom serializer::
 
-    import json as simplejson
-    from django.core.serializers import json
+    import json
+    from django.core.serializers.json import DjangoJSONEncoder
     from tastypie.serializers import Serializer
 
     class PrettyJSONSerializer(Serializer):
@@ -371,7 +373,7 @@ behavior in a custom serializer::
         def to_json(self, data, options=None):
             options = options or {}
             data = self.to_simple(data, options)
-            return simplejson.dumps(data, cls=json.DjangoJSONEncoder,
+            return json.dumps(data, cls=DjangoJSONEncoder,
                     sort_keys=True, ensure_ascii=False, indent=self.json_indent)
 
 Determining format via URL

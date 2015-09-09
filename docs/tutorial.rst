@@ -4,7 +4,7 @@
 Getting Started with Tastypie
 =============================
 
-Tastypie is a reusable app (that is, it relies only on it's own code and
+Tastypie is a reusable app (that is, it relies only on its own code and
 focuses on providing just a REST-style API) and is suitable for providing an
 API to any application without having to modify the sources of that app.
 
@@ -28,7 +28,7 @@ Here is ``myapp/models.py``::
     from tastypie.utils.timezone import now
     from django.contrib.auth.models import User
     from django.db import models
-    from django.template.defaultfilters import slugify
+    from django.utils.text import slugify
 
 
     class Entry(models.Model):
@@ -63,7 +63,7 @@ your project or ``PYTHONPATH``.
     * Django 1.5+
     * ``python-mimeparse`` 0.1.4+ (http://pypi.python.org/pypi/python-mimeparse)
     * ``dateutil`` (http://labix.org/python-dateutil)
-    * **OPTIONAL** - ``lxml`` (http://lxml.de/) if using the XML serializer
+    * **OPTIONAL** - ``lxml`` (http://lxml.de/) and ``defusedxml``  (https://pypi.python.org/pypi/defusedxml) if using the XML serializer
     * **OPTIONAL** - ``pyyaml`` (http://pyyaml.org/) if using the YAML serializer
 
   2. Either check out tastypie from GitHub_ or to pull a release off PyPI_.
@@ -108,7 +108,7 @@ though they can live anywhere in your application::
 
 This class, by virtue of being a :class:`~tastypie.resources.ModelResource`
 subclass, will introspect all non-relational fields on the ``Entry`` model and
-create it's own :mod:`ApiFields <tastypie.fields>` that map to those fields,
+create its own :mod:`ApiFields <tastypie.fields>` that map to those fields,
 much like the way Django's ``ModelForm`` class introspects.
 
 .. note::
@@ -182,7 +182,7 @@ us from doing POST/PUT/DELETE. Let's enable those::
         class Meta:
             queryset = Entry.objects.all()
             resource_name = 'entry'
-            authorization= Authorization()
+            authorization = Authorization()
 
 .. warning::
 

@@ -1,24 +1,21 @@
 from django.conf import settings
 from django.http import HttpRequest
 from django.test import TestCase
+from customuser.models import CustomUser
 from tastypie.models import ApiKey, create_api_key
 from django import get_version as django_version
 from django.test import TestCase
 from tastypie.authentication import ApiKeyAuthentication
 from tastypie.http import HttpUnauthorized
 
+
 class CustomUserTestCase(TestCase):
-    fixtures = ['custom_user.json']
+    fixtures = ['customuser.json']
     def setUp(self):
-        if django_version() < '1.5':
-            self.skipTest('This test requires Django 1.5 or higher')
-        else:
-            super(CustomUserTestCase, self).setUp()
-            ApiKey.objects.all().delete()
+        super(CustomUserTestCase, self).setUp()
+        ApiKey.objects.all().delete()
 
     def test_is_authenticated_get_params(self):
-        from django.contrib.auth.tests import CustomUser
-        CustomUser.objects = CustomUser.custom_objects
         auth = ApiKeyAuthentication()
         request = HttpRequest()
 

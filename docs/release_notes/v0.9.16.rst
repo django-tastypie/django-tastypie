@@ -1,0 +1,40 @@
+v0.9.16
+=======
+
+:date: 2013-08-03
+
+This release is a bugfix release, the last one before Python 3 support will be
+added. This is the final release of Tastypie that is compatible with Django 1.4.
+
+
+Features
+--------
+
+* Added support for Unicode HTTP method names. (SHA: 2ebb362)
+* Added a response for HTTP 422 Unprocessable Entity. (SHA: 7aadbf8)
+* Added ISO-8601 strict support. (SHA: 3043140)
+
+
+Bugfixes
+--------
+
+* Added a ``None`` value for ``username_field`` in the compat module.
+  (SHA: 569a72e)
+* Fixed a bug where ``obj_create`` would check authorization twice.
+  (SHA: 9a404fa)
+* Fixed test case to no longer require a defined object class. (SHA: d8e250f)
+* Fixed the signature on ``dehydrate`` in the GIS resource class. (SHA: f724919)
+* Fixed a bug involving updating foreign relations on create. (SHA: 50a6741)
+* Changed the PUT response code (with ``always_return_data = True``) from 202 to 200.
+  (SHA: abc0bef)
+* Documentation updates:
+
+    * Added an OAuth 2.0 example to the cookbook. (SHA: 7c93ae2)
+    * Added a ``detail_uri_name`` to the Non-PK example in the cookbook.
+      (SHA: 1fde565)
+    * Added docs warning about ``total_count`` & performance overhead by
+      default. (SHA: ebfbb7f)
+    * Updated the Nested Resources example in the cookbook. (SHA: d582ead)
+    * Added an example of converting a list of objects to JSON in the cookbook.
+      (SHA: 2e81342)
+

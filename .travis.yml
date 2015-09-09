@@ -1,25 +1,65 @@
+sudo: false
+
 language: python
 
 python:
   - "2.6"
   - "2.7"
   - "3.3"
+  - "3.4"
 
 env:
   - DJANGO_VERSION=1.5
+  - DJANGO_VERSION=1.6
+  - DJANGO_VERSION=1.7
+  - DJANGO_VERSION=1.8
   - DJANGO_VERSION=dev
 
 matrix:
   allow_failures:
     - env: DJANGO_VERSION=dev
+    - env: MODE=flake8
   exclude:
     - env: DJANGO_VERSION=dev
       python: "2.6"
+    - env: DJANGO_VERSION=1.8
+      python: "2.6"
+    - env: DJANGO_VERSION=1.7
+      python: "2.6"
+  include:
+    - python: "2.7"
+      env: MODE=flake8
+    - python: "2.7"
+      env: MODE=docs
+    - python: "3.4"
+      env: MODE=docs
+
+addons:
+  apt:
+    packages:
+    - python-sphinx
+    - python3-sphinx
+    - binutils
+    - libproj-dev
+    - gdal-bin
+    - spatialite-bin
+    - libspatialite-dev
+
+cache:
+  directories:
+    - $HOME/.cache/pip
+
+before_cache:
+  - rm -f $HOME/.cache/pip/log/debug.log
 
 # command to install dependencies
 install:
-    - pip install tox
+    - pip install tox coveralls
+
+after_success:
+    - coveralls
 
 # command to run tests
 script:
-    - tox -e py${TRAVIS_PYTHON_VERSION/./}-${DJANGO_VERSION},docs
+    - coverage erase
+    - tox -e py${TRAVIS_PYTHON_VERSION/./}-${DJANGO_VERSION}${MODE}

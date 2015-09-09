@@ -1,7 +1,8 @@
-lxml
-defusedxml
+-r ../requirements.txt
 biplist
-pyyaml
-python-mimeparse>=0.1.4
-python-dateutil>=2.1
-mock
+coverage
+defusedxml
+lxml
+mock<1.1.0
+pytz==2013b
+PyYAML

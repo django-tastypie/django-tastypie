@@ -1,0 +1,16 @@
+v0.10.0
+=======
+
+:date: 2013-08-03
+
+This release adds official Python 3 support! This effort was partially funded
+by RevSys_ & the PSF_, so much thanks to them!
+
+.. _RevSys: http://revsys.com/
+.. _PSF: http://www.python.org/psf/
+
+Features
+--------
+
+* Python 3 support! Not a lot to say, beyond there are a couple dependency
+  changes. Please see the :ref:`ref-python3` docs!

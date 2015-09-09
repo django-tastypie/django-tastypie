@@ -120,7 +120,7 @@ Implementing your own ``Authorization`` classes is a relatively simple
 process. Anything that is API-compatible is acceptable, only the method names
 matter to Tastypie.
 
-An example implementation of a user only being able to "their" objects might
+An example implementation of a user only being able to access or modify "their" objects might
 look like::
 
     from tastypie.authorization import Authorization
@@ -137,7 +137,7 @@ look like::
             return bundle.obj.user == bundle.request.user
 
         def create_list(self, object_list, bundle):
-            # Assuming their auto-assigned to ``user``.
+            # Assuming they're auto-assigned to ``user``.
             return object_list
 
         def create_detail(self, object_list, bundle):

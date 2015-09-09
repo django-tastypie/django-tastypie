@@ -1,11 +1,12 @@
 import django
 from django.contrib.auth.models import User
 from django.http import HttpRequest
-from django.test import TestCase, Client
+from django.test import Client
 import json
+from testcases import TestCaseWithFixture
 
 
-class ViewsTestCase(TestCase):
+class ViewsTestCase(TestCaseWithFixture):
     def setUp(self):
         if django.VERSION >= (1, 4):
             self.body_attr = "body"
@@ -89,7 +90,7 @@ class ViewsTestCase(TestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(json.loads(resp.content.decode('utf-8')),
             {
-                "error": "Could not find the provided object via resource URI \'/api/v1/users/9001/\'."
+                "error": "Could not find the provided users object via resource URI \'/api/v1/users/9001/\'."
             }
         )
 

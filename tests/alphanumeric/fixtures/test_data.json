@@ -46,11 +46,20 @@
     },
     {
         "fields": {
-            "name": "Trampolin",
+            "name": "Human Hamsterball",
             "created": "2010-05-04 20:05:00",
             "updated": "2010-05-04 20:05:00"
         },
         "model": "alphanumeric.product",
         "pk": "WS65150/01-01"
+    },
+    {
+        "fields": {
+            "name": "Ant Farm",
+            "created": "2010-05-04 20:05:00",
+            "updated": "2010-05-04 20:05:00"
+        },
+        "model": "alphanumeric.product",
+        "pk": "WS77.86"
     }
 ]

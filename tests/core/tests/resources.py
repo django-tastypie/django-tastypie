@@ -5,6 +5,7 @@ from decimal import Decimal
 import django
 import json
 from mock import patch
+import time
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -16,7 +17,7 @@ from django import forms
 from django.http import HttpRequest, QueryDict, Http404
 from django.test import TestCase
 from django.utils.encoding import force_text
-from django.utils import six
+from django.utils import six, timezone
 
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
@@ -338,11 +339,6 @@ class ResourceTestCase(TestCase):
         basic = BasicResourceWithDifferentListAndDetailFields()
         test_bundle_1 = basic.build_bundle(obj=test_object_1)
 
-        # Sanity check.
-        self.assertEqual(basic.name.value, None)
-        self.assertEqual(basic.view_count.value, None)
-        self.assertEqual(basic.date_joined.value, None)
-
         #check hydration with details
         bundle_1 = basic.full_dehydrate(test_bundle_1)
         self.assertEqual(bundle_1.data['name'], 'Daniel')
@@ -366,11 +362,6 @@ class ResourceTestCase(TestCase):
 
         basic = BasicResourceWithDifferentListAndDetailFieldsCallable()
         test_bundle_1 = basic.build_bundle(obj=test_object_1)
-
-        # Sanity check.
-        self.assertEqual(basic.name.value, None)
-        self.assertEqual(basic.view_count.value, None)
-        self.assertEqual(basic.date_joined.value, None)
 
         #check hydration with details
         bundle_1 = basic.full_dehydrate(test_bundle_1)
@@ -396,11 +387,6 @@ class ResourceTestCase(TestCase):
 
         basic = BasicResource()
         test_bundle_1 = basic.build_bundle(obj=test_object_1)
-
-        # Sanity check.
-        self.assertEqual(basic.name.value, None)
-        self.assertEqual(basic.view_count.value, None)
-        self.assertEqual(basic.date_joined.value, None)
 
         bundle_1 = basic.full_dehydrate(test_bundle_1)
         self.assertEqual(bundle_1.data['name'], 'Daniel')
@@ -578,7 +564,8 @@ class ResourceTestCase(TestCase):
                     'nullable': True,
                     'readonly': False,
                     'type': 'datetime',
-                    'unique': False
+                    'unique': False,
+                    "primary_key": False
                 },
                 'name': {
                     'blank': False,
@@ -587,7 +574,8 @@ class ResourceTestCase(TestCase):
                     'nullable': False,
                     'readonly': False,
                     'type': 'string',
-                    'unique': False
+                    'unique': False,
+                    "primary_key": False
                 },
                 'resource_uri': {
                     'blank': False,
@@ -596,7 +584,8 @@ class ResourceTestCase(TestCase):
                     'nullable': False,
                     'readonly': True,
                     'type': 'string',
-                    'unique': False
+                    'unique': False,
+                    "primary_key": False
                 },
                 'view_count': {
                     'blank': False,
@@ -605,7 +594,8 @@ class ResourceTestCase(TestCase):
                     'nullable': False,
                     'readonly': False,
                     'type': 'integer',
-                    'unique': False
+                    'unique': False,
+                    "primary_key": False
                 }
             }
         })
@@ -629,7 +619,8 @@ class ResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'Integer data. Ex: 2673',
                     'unique': False,
-                    'type': 'integer'
+                    'type': 'integer',
+                    "primary_key": False
                 },
                 'date_joined': {
                     'nullable': True,
@@ -638,7 +629,8 @@ class ResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
                     'unique': False,
-                    'type': 'datetime'
+                    'type': 'datetime',
+                    "primary_key": False
                 },
                 'name': {
                     'nullable': False,
@@ -647,7 +639,8 @@ class ResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
                     'unique': False,
-                    'type': 'string'
+                    'type': 'string',
+                    "primary_key": False
                 },
                 'resource_uri': {
                     'nullable': False,
@@ -656,7 +649,8 @@ class ResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
                     'unique': False,
-                    'type': 'string'
+                    'type': 'string',
+                    "primary_key": False
                 }
             },
             'default_format': 'application/json',
@@ -945,7 +939,7 @@ class UserResource(ModelResource):
     class Meta:
         queryset = User.objects.all()
         authorization = Authorization()
-
+        
     def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
         if bundle_or_obj is None:
             return '/api/v1/users/'
@@ -1292,6 +1286,9 @@ class ModelResourceTestCase(TestCase):
         else:
             self.body_attr = "raw_post_data"
 
+    def tearDown(self):
+        cache.clear()
+
     @patch('django.core.signals.got_request_exception.send')
     @patch('tastypie.resources.ModelResource.obj_get_list', side_effect=IOError)
     def test_exception_handling(self, obj_get_list_mock, send_signal_mock):
@@ -1301,6 +1298,18 @@ class ModelResourceTestCase(TestCase):
         res = resource.wrap_view('dispatch_list')(request)
         self.assertTrue(obj_get_list_mock.called, msg="Test invalid: obj_get_list should have been dispatched")
         self.assertTrue(send_signal_mock.called, msg="got_request_exception was not called after an error")
+
+    def test_escaping(self):
+        request = HttpRequest()
+        request.method = 'GET'
+        request.GET = {
+            'limit': '<script>alert(1)</script>',
+        }
+        resource = NoteResource()
+        res = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(res.status_code, 400)
+        err_data = json.loads(res.content.decode('utf-8'))
+        self.assertTrue('&lt;script&gt;alert(1)&lt;/script&gt;' in err_data['error'])
 
     def test_init(self):
         # Very minimal & stock.
@@ -1400,7 +1409,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['content'].null, False)
         self.assertEqual(annr.fields['content'].readonly, False)
         self.assertEqual(annr.fields['content'].unique, False)
-        self.assertEqual(annr.fields['content'].value, None)
 
         self.assertTrue(isinstance(annr.fields['created'], fields.DateTimeField))
         self.assertEqual(annr.fields['created'].attribute, 'created')
@@ -1410,7 +1418,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['created'].null, True)
         self.assertEqual(annr.fields['created'].readonly, False)
         self.assertEqual(annr.fields['created'].unique, False)
-        self.assertEqual(annr.fields['created'].value, None)
 
         self.assertTrue(isinstance(annr.fields['id'], fields.IntegerField))
         self.assertEqual(annr.fields['id'].attribute, 'id')
@@ -1420,7 +1427,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['id'].null, False)
         self.assertEqual(annr.fields['id'].readonly, False)
         self.assertEqual(annr.fields['id'].unique, True)
-        self.assertEqual(annr.fields['id'].value, None)
 
         self.assertTrue(isinstance(annr.fields['is_active'], fields.BooleanField))
         self.assertEqual(annr.fields['is_active'].attribute, 'is_active')
@@ -1430,7 +1436,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['is_active'].null, False)
         self.assertEqual(annr.fields['is_active'].readonly, False)
         self.assertEqual(annr.fields['is_active'].unique, False)
-        self.assertEqual(annr.fields['is_active'].value, None)
 
         self.assertTrue(isinstance(annr.fields['resource_uri'], fields.CharField))
         self.assertEqual(annr.fields['resource_uri'].attribute, None)
@@ -1440,7 +1445,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['resource_uri'].null, False)
         self.assertEqual(annr.fields['resource_uri'].readonly, True)
         self.assertEqual(annr.fields['resource_uri'].unique, False)
-        self.assertEqual(annr.fields['resource_uri'].value, None)
 
         self.assertTrue(isinstance(annr.fields['slug'], fields.CharField))
         self.assertEqual(annr.fields['slug'].attribute, 'slug')
@@ -1450,7 +1454,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['slug'].null, False)
         self.assertEqual(annr.fields['slug'].readonly, False)
         self.assertEqual(annr.fields['slug'].unique, True)
-        self.assertEqual(annr.fields['slug'].value, None)
 
         self.assertTrue(isinstance(annr.fields['title'], fields.CharField))
         self.assertEqual(annr.fields['title'].attribute, 'title')
@@ -1460,7 +1463,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['title'].null, False)
         self.assertEqual(annr.fields['title'].readonly, False)
         self.assertEqual(annr.fields['title'].unique, False)
-        self.assertEqual(annr.fields['title'].value, None)
 
         self.assertTrue(isinstance(annr.fields['updated'], fields.DateTimeField))
         self.assertEqual(annr.fields['updated'].attribute, 'updated')
@@ -1470,7 +1472,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['updated'].null, False)
         self.assertEqual(annr.fields['updated'].readonly, False)
         self.assertEqual(annr.fields['updated'].unique, False)
-        self.assertEqual(annr.fields['updated'].value, None)
 
     def test_urls(self):
         # The common case, where the ``Api`` specifies the name.
@@ -1504,6 +1505,9 @@ class ModelResourceTestCase(TestCase):
     def test_get_via_uri(self):
         resource = NoteResource(api_name='v1')
         note_1 = resource.get_via_uri('/api/v1/notes/1/')
+        self.assertEqual(note_1.pk, 1)
+        # Should work even if app name is the same as resource
+        note_1 = resource.get_via_uri('/notes/api/v1/notes/1/')
         self.assertEqual(note_1.pk, 1)
 
         try:
@@ -1600,7 +1604,8 @@ class ModelResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'A single related resource. Can be either a URI or set of nested resource data.',
                     'unique': False,
-                    'type': 'related'
+                    'type': 'related',
+                    "primary_key": False
                 },
                 'title': {
                     'nullable': False,
@@ -1609,7 +1614,8 @@ class ModelResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
                     'unique': False,
-                    'type': 'string'
+                    'type': 'string',
+                    "primary_key": False
                 },
                 'created': {
                     'nullable': False,
@@ -1618,7 +1624,8 @@ class ModelResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
                     'unique': False,
-                    'type': 'datetime'
+                    'type': 'datetime',
+                    "primary_key": False
                 },
                 'is_active': {
                     'nullable': False,
@@ -1627,7 +1634,8 @@ class ModelResourceTestCase(TestCase):
                     'blank': True,
                     'help_text': 'Boolean data. Ex: True',
                     'unique': False,
-                    'type': 'boolean'
+                    'type': 'boolean',
+                    "primary_key": False
                 },
                 'content': {
                     'nullable': False,
@@ -1636,7 +1644,8 @@ class ModelResourceTestCase(TestCase):
                     'blank': True,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
                     'unique': False,
-                    'type': 'string'
+                    'type': 'string',
+                    "primary_key": False
                 },
                 'subjects': {
                     'related_type': 'to_many',
@@ -1646,7 +1655,8 @@ class ModelResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'Many related resources. Can be either a list of URIs or list of individually nested resource data.',
                     'unique': False,
-                    'type': 'related'
+                    'type': 'related',
+                    "primary_key": False
                 },
                 'slug': {
                     'nullable': False,
@@ -1655,7 +1665,8 @@ class ModelResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
                     'unique': False,
-                    'type': 'string'
+                    'type': 'string',
+                    "primary_key": False
                 },
                 'resource_uri': {
                     'nullable': False,
@@ -1664,7 +1675,8 @@ class ModelResourceTestCase(TestCase):
                     'blank': False,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
                     'unique': False,
-                    'type': 'string'
+                    'type': 'string',
+                    "primary_key": False
                 }
             },
             'default_format': 'application/json',
@@ -1787,7 +1799,7 @@ class ModelResourceTestCase(TestCase):
         }
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp['content-type'], 'application/json')
-        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid limit \'<img%20src=\\"http://ycombinator.com/images/y18.gif\\">\' provided. Please provide a positive integer."}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid limit \'&lt;img%20src=\\"http://ycombinator.com/images/y18.gif\\"&gt;\' provided. Please provide a positive integer."}')
 
         request.GET = {
             'format': 'json',
@@ -1795,7 +1807,7 @@ class ModelResourceTestCase(TestCase):
         }
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp['content-type'], 'application/json')
-        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid limit \'<img%20src=\\"http://ycombinator.com/images/y18.gif\\">\' provided. Please provide a positive integer."}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid limit \'&lt;img%20src=\\"http://ycombinator.com/images/y18.gif\\"&gt;\' provided. Please provide a positive integer."}')
 
         request.GET = {
             'format': 'json',
@@ -1803,7 +1815,7 @@ class ModelResourceTestCase(TestCase):
         }
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp['content-type'], 'application/json')
-        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid offset \'<script>alert(\\"XSS\\")</script>\' provided. Please provide an integer."}')
+        self.assertEqual(resp.content.decode('utf-8'), '{"error": "Invalid offset \'&lt;script&gt;alert(\\"XSS\\")&lt;/script&gt;\' provided. Please provide an integer."}')
 
     def test_apply_sorting(self):
         resource = NoteResource()
@@ -2460,7 +2472,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}')
+        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "baddata": "some data"}')
 
         resp = resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 201)
@@ -2487,6 +2499,7 @@ class ModelResourceTestCase(TestCase):
         self.assertTrue("resource_uri" in data)
         self.assertTrue("title" in data)
         self.assertTrue("is_active" in data)
+        self.assertFalse("baddata" in data)
 
         # Now make sure we can null-out a relation.
         # Associate some data first.
@@ -2649,7 +2662,7 @@ class ModelResourceTestCase(TestCase):
         request._read_started = False
 
         self.assertEqual(Note.objects.count(), 6)
-        request._raw_post_data = request._body = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}, {"resource_uri": "/api/v1/notes/2/", "content": "This is note 2."}], "deleted_objects": ["/api/v1/notes/1/"]}'
+        request._raw_post_data = request._body = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}, {"resource_uri": "/api/v1/alwaysdatanote/2/", "content": "This is note 2."}], "deleted_objects": ["/api/v1/alwaysdatanote/1/"]}'
 
         resp = always_resource.patch_list(request)
         self.assertEqual(resp.status_code, 202)
@@ -2663,7 +2676,7 @@ class ModelResourceTestCase(TestCase):
         request._read_started = False
 
         self.assertEqual(Note.objects.count(), 6)
-        request._raw_post_data = request._body = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}, {"resource_uri": "/api/v1/notes/2/", "content": "This is note 2."}], "deleted_objects": ["/api/v1/notes/1/"]}'
+        request._raw_post_data = request._body = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}, {"resource_uri": "/api/v1/alwaysdatanote/2/", "content": "This is note 2."}], "deleted_objects": ["/api/v1/alwaysdatanote/1/"]}'
 
         resp = always_resource.patch_list(request)
         self.assertEqual(resp.status_code, 202)
@@ -3036,7 +3049,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "string",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "created": {
                     "blank": False,
@@ -3045,7 +3059,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "datetime",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "id": {
                     "blank": True,
@@ -3054,7 +3069,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "integer",
-                    "unique": True
+                    "unique": True,
+                    "primary_key": True
                 },
                 "is_active": {
                     "blank": True,
@@ -3063,7 +3079,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "boolean",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "resource_uri": {
                     "blank": False,
@@ -3072,7 +3089,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": True,
                     "type": "string",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "slug": {
                     "blank": False,
@@ -3081,7 +3099,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "string",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "title": {
                     "blank": False,
@@ -3090,7 +3109,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "string",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 },
                 "updated": {
                     "blank": False,
@@ -3099,7 +3119,8 @@ class ModelResourceTestCase(TestCase):
                     "nullable": False,
                     "readonly": False,
                     "type": "datetime",
-                    "unique": False
+                    "unique": False,
+                    "primary_key": False
                 }
             },
             "filtering": {
@@ -3171,12 +3192,27 @@ class ModelResourceTestCase(TestCase):
             self.assertIn('constant', note)
             self.assertNotIn('author', note)
 
-    def test_check_throttling(self):
+    @patch('tastypie.throttle.time')
+    def test_check_bool_throttling(self, mocked_time):
+        mocked_time.time.return_value = time.time()
         # Stow.
         old_debug = settings.DEBUG
         settings.DEBUG = False
 
         resource = ThrottledNoteResource()
+        _orginal_throttle = resource._meta.throttle
+        class BoolThrottle(resource._meta.throttle.__class__):
+            def should_be_throttled(self, *args, **kwargs):
+                ret = super(BoolThrottle, self).should_be_throttled(*args, **kwargs)
+                if ret:
+                    return True
+                return False
+        resource._meta.throttle = BoolThrottle(
+            throttle_at=resource._meta.throttle.throttle_at,
+            timeframe=resource._meta.throttle.timeframe,
+            expiration=resource._meta.throttle.expiration
+        )
+        
         request = HttpRequest()
         request.GET = {'format': 'json'}
         request.method = 'GET'
@@ -3197,6 +3233,7 @@ class ModelResourceTestCase(TestCase):
             self.fail()
         except ImmediateHttpResponse as e:
             self.assertEqual(e.response.status_code, 429)
+            self.assertNotIn('Retry-After', e.response)
             self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
         # Throttled.
@@ -3205,15 +3242,135 @@ class ModelResourceTestCase(TestCase):
             self.fail()
         except ImmediateHttpResponse as e:
             self.assertEqual(e.response.status_code, 429)
+            self.assertNotIn('Retry-After', e.response)
             self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
         # Check the ``wrap_view``.
         resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp.status_code, 429)
+        self.assertNotIn('Retry-After', resp)
         self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
         # Restore.
         settings.DEBUG = old_debug
+        resource._meta.throttle = _orginal_throttle
+
+    @patch('tastypie.throttle.time')
+    def test_check_int_throttling(self, mocked_time):
+        mocked_time.time.return_value = time.time()
+        # Stow.
+        old_debug = settings.DEBUG
+        settings.DEBUG = False
+
+        resource = ThrottledNoteResource()
+        _orginal_throttle = resource._meta.throttle
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+
+        # Not throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 1)
+
+        # Not throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Throttled.
+        try:
+            resp = resource.dispatch('list', request)
+            self.fail()
+        except ImmediateHttpResponse as e:
+            self.assertEqual(e.response.status_code, 429)
+            self.assertEqual(e.response['Retry-After'], '5')
+            self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Throttled.
+        try:
+            resp = resource.dispatch('list', request)
+            self.fail()
+        except ImmediateHttpResponse as e:
+            self.assertEqual(e.response.status_code, 429)
+            self.assertEqual(e.response['Retry-After'], '5')
+            self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Check the ``wrap_view``.
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp['Retry-After'], '5')
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Restore.
+        settings.DEBUG = old_debug
+        resource._meta.throttle = _orginal_throttle
+
+    @patch('tastypie.throttle.time')
+    def test_check_datetime_throttling(self, mocked_time):
+        mocked_time.time.return_value = time.time()
+        # Stow.
+        old_debug = settings.DEBUG
+        settings.DEBUG = False
+
+        retry_after = datetime.datetime(year=2014, month=8, day=8, hour=8, minute=55, tzinfo=timezone.utc)
+        retry_after_str = 'Fri, 08 Aug 2014 14:55:00 GMT'
+        
+        resource = ThrottledNoteResource()
+        _orginal_throttle = resource._meta.throttle
+        class DatetimeThrottle(resource._meta.throttle.__class__):
+            def should_be_throttled(self, *args, **kwargs):
+                ret = super(DatetimeThrottle, self).should_be_throttled(*args, **kwargs)
+                if ret:
+                    return retry_after
+                return False
+        resource._meta.throttle = DatetimeThrottle(
+            throttle_at=resource._meta.throttle.throttle_at,
+            timeframe=resource._meta.throttle.timeframe,
+            expiration=resource._meta.throttle.expiration
+        )
+        
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+
+        # Not throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 1)
+
+        # Not throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Throttled.
+        try:
+            resp = resource.dispatch('list', request)
+            self.fail()
+        except ImmediateHttpResponse as e:
+            self.assertEqual(e.response.status_code, 429)
+            self.assertEqual(e.response['Retry-After'], retry_after_str)
+            self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Throttled.
+        try:
+            resp = resource.dispatch('list', request)
+            self.fail()
+        except ImmediateHttpResponse as e:
+            self.assertEqual(e.response.status_code, 429)
+            self.assertEqual(e.response['Retry-After'], retry_after_str)
+            self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Check the ``wrap_view``.
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp['Retry-After'], retry_after_str)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Restore.
+        settings.DEBUG = old_debug
+        resource._meta.throttle = _orginal_throttle
 
     def test_generate_cache_key(self):
         resource = NoteResource()
@@ -3318,7 +3475,7 @@ class ModelResourceTestCase(TestCase):
             'slug': "yet-another-new-post",
             'content': "WHEEEEEE!",
             'is_active': True,
-            'author': '/api/v1/users/1/',
+            'author': '/api/v1/user/1/',
             'subjects': ['/api/v1/subjects/2/'],
         })
         note.obj_create(related_bundle)
@@ -3339,7 +3496,7 @@ class ModelResourceTestCase(TestCase):
             'slug': "yet-another-another-new-post",
             'content': "WHEEEEEE!",
             'is_active': True,
-            'author': '/api/v1/users/1/',
+            'author': '/api/v1/user/1/',
             'subjects': [{
                 'name': 'helloworld',
                 'url': 'http://example.com',
@@ -3429,7 +3586,7 @@ class ModelResourceTestCase(TestCase):
             'slug': "yet-another-new-post",
             'content': "WHEEEEEE!",
             'is_active': True,
-            'author': '/api/v1/users/2/',
+            'author': '/api/v1/user/2/',
             'subjects': ['/api/v1/subjects/2/', '/api/v1/subjects/1/'],
         })
         note.obj_update(related_bundle, pk=1)
@@ -3451,7 +3608,7 @@ class ModelResourceTestCase(TestCase):
             'slug': "yet-another-another-new-post",
             'content': "WHEEEEEE!",
             'is_active': True,
-            'author': '/api/v1/users/1/',
+            'author': '/api/v1/user/1/',
             'subjects': [{
                 'name': 'helloworld',
                 'url': 'http://example.com',
@@ -3492,7 +3649,7 @@ class ModelResourceTestCase(TestCase):
         # Now try a lookup that should fail.
         note = NoteResource()
         note_bundle = note.build_bundle(data={
-            "author": "/api/v1/users/1/",
+            "author": "/api/v1/user/1/",
             "title": "Something something Post!",
             "slug": "something-something-post",
             "content": "Stock post content.",
@@ -3743,7 +3900,7 @@ class ModelResourceTestCase(TestCase):
             # ``None`` to a required FK.
             hydrated1 = nmbr.full_hydrate(bundle_1)
             self.fail()
-        except Note.DoesNotExist:
+        except (Note.DoesNotExist, ValueError):
             pass
 
         # So we introduced ``blank=True``.
@@ -3755,7 +3912,7 @@ class ModelResourceTestCase(TestCase):
     def test_nullable_tomany_full_hydrate(self):
         nrrnr = NullableRelatedNoteResource()
         bundle_1 = Bundle(data={
-            'author': '/api/v1/users/1/',
+            'author': '/api/v1/user/1/',
             'subjects': [],
         })
 
@@ -3763,24 +3920,24 @@ class ModelResourceTestCase(TestCase):
         hydrated = nrrnr.full_hydrate(bundle_1)
         hydrated = nrrnr.hydrate_m2m(hydrated)
 
-        self.assertEqual(hydrated.data['author'], '/api/v1/users/1/')
+        self.assertEqual(hydrated.data['author'], '/api/v1/user/1/')
         self.assertEqual(hydrated.data['subjects'], [])
 
         # Regression: not specifying the tomany field should still work if
         # it is nullable.
         bundle_2 = Bundle(data={
-            'author': '/api/v1/users/1/',
+            'author': '/api/v1/user/1/',
         })
 
         hydrated2 = nrrnr.full_hydrate(bundle_2)
         hydrated2 = nrrnr.hydrate_m2m(hydrated2)
 
-        self.assertEqual(hydrated2.data['author'], '/api/v1/users/1/')
+        self.assertEqual(hydrated2.data['author'], '/api/v1/user/1/')
         self.assertEqual(hydrated2.data['subjects'], [])
 
         # Regression pt. II - Make sure saving the objects works.
         bundle_3 = Bundle(data={
-            'author': '/api/v1/users/1/',
+            'author': '/api/v1/user/1/',
         })
         hydrated3 = nrrnr.obj_create(bundle_2)
         self.assertEqual(hydrated2.obj.author.username, u'johndoe')
@@ -4072,6 +4229,9 @@ class BustedResource(BasicResource):
     def post_list(self, request, **kwargs):
         raise Http404("Not here either")
 
+    def post_detail(self, request, **kwargs):
+        raise YouFail("<script>alert(1)</script>")
+
 
 class BustedResourceTestCase(TestCase):
     def setUp(self):
@@ -4177,6 +4337,20 @@ class BustedResourceTestCase(TestCase):
         resp = self.resource.wrap_view('post_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 404)
 
+    def test_escaping(self):
+        settings.DEBUG = True
+        settings.TASTYPIE_FULL_DEBUG = False
+
+        request = HttpRequest()
+        request.method = 'POST'
+        request.POST = {
+            'whatever': 'stuff',
+        }
+        res = self.resource.wrap_view('dispatch_detail')(request, pk=1)
+        self.assertEqual(res.status_code, 500)
+        err_data = json.loads(res.content.decode('utf-8'))
+        self.assertTrue('&lt;script&gt;alert(1)&lt;/script&gt;' in err_data['error_message'])
+
 
 class ObjectlessResource(Resource):
     test = fields.CharField(default='objectless_test')
@@ -4192,4 +4366,3 @@ class ObjectlessResourceTestCase(TestCase):
         bundle = resource.build_bundle()
 
         self.assertTrue(bundle is not None)
-

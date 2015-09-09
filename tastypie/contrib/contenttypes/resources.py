@@ -11,7 +11,7 @@ class GenericResource(ModelResource):
     """
     def __init__(self, resources, *args, **kwargs):
         self.resource_mapping = dict((r._meta.resource_name, r) for r in resources)
-        return super(GenericResource, self).__init__(*args, **kwargs)
+        super(GenericResource, self).__init__(*args, **kwargs)
 
     def get_via_uri(self, uri, request=None):
         """

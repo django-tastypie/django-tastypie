@@ -10,7 +10,7 @@ except ImportError:
 
 setup(
     name='django-tastypie',
-    version='0.10.0',
+    version='0.12.2-dev',
     description='A flexible & capable API layer for Django.',
     author='Daniel Lindsley',
     author_email='daniel@toastdriven.com',
@@ -21,6 +21,7 @@ setup(
         'tastypie.utils',
         'tastypie.management',
         'tastypie.management.commands',
+        'tastypie.south_migrations',
         'tastypie.migrations',
         'tastypie.contrib',
         'tastypie.contrib.gis',
@@ -31,14 +32,14 @@ setup(
     },
     zip_safe=False,
     requires=[
-        # 'mimeparse',
+        'python_mimeparse(>=0.1.4)',
         'dateutil(>=1.5, !=2.0)',
     ],
     install_requires=[
-        # 'mimeparse',
+        'python-mimeparse >= 0.1.4',
         'python-dateutil >= 1.5, != 2.0',
     ],
-    tests_require=['mock'],
+    tests_require=['mock', 'PyYAML', 'lxml', 'defusedxml'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',

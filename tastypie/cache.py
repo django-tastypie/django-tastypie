@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
-from django.core.cache import cache
+from django.core.cache import get_cache
 
 
 class NoCache(object):
@@ -49,24 +49,26 @@ class NoCache(object):
 
 class SimpleCache(NoCache):
     """
-    Uses Django's current ``CACHE_BACKEND`` to store cached data.
+    Uses Django's current ``CACHES`` configuration to store cached data.
     """
 
-    def __init__(self, timeout=60, public=None, private=None, *args, **kwargs):
+    def __init__(self, cache_name='default', timeout=None, public=None,
+                 private=None, *args, **kwargs):
         """
         Optionally accepts a ``timeout`` in seconds for the resource's cache.
         Defaults to ``60`` seconds.
         """
         super(SimpleCache, self).__init__(*args, **kwargs)
-        self.timeout = timeout
+        self.cache = get_cache(cache_name)
+        self.timeout = timeout or self.cache.default_timeout
         self.public = public
         self.private = private
 
-    def get(self, key):
+    def get(self, key, **kwargs):
         """
         Gets a key from the cache. Returns ``None`` if the key is not found.
         """
-        return cache.get(key)
+        return self.cache.get(key, **kwargs)
 
     def set(self, key, value, timeout=None):
         """
@@ -76,10 +78,10 @@ class SimpleCache(NoCache):
         uses the resource's default timeout.
         """
 
-        if timeout == None:
+        if timeout is None:
             timeout = self.timeout
 
-        cache.set(key, value, timeout)
+        self.cache.set(key, value, timeout)
 
     def cache_control(self):
         control = {
