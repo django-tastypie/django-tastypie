@@ -191,7 +191,7 @@ class ApiKeyAuthentication(Authentication):
 
         try:
             lookup_kwargs = {username_field: username}
-            user = User.objects.get(**lookup_kwargs)
+            user = User.objects.select_related('api_key').get(**lookup_kwargs)
         except (User.DoesNotExist, User.MultipleObjectsReturned):
             return self._unauthorized()
 
@@ -212,7 +212,8 @@ class ApiKeyAuthentication(Authentication):
         from tastypie.models import ApiKey
 
         try:
-            ApiKey.objects.get(user=user, key=api_key)
+            if user.api_key.key != api_key:
+                return self._unauthorized()
         except ApiKey.DoesNotExist:
             return self._unauthorized()
 
