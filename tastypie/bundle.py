@@ -16,6 +16,7 @@ class Bundle(object):
                  data=None,
                  request=None,
                  related_obj=None,
+                 related_bundle=None,
                  related_name=None,
                  objects_saved=None,
                  related_objects_to_save=None,
@@ -23,6 +24,7 @@ class Bundle(object):
         self.obj = obj
         self.data = data or {}
         self.request = request or HttpRequest()
+        self.related_bundle = related_bundle
         self.related_obj = related_obj
         self.related_name = related_name
         self.errors = {}

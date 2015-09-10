@@ -42,11 +42,11 @@ class GenericForeignKeyField(fields.ToOneField):
 
         return partial(GenericResource, resources=self.to.values())
 
-    def resource_from_uri(self, fk_resource, uri, request=None, related_obj=None, related_name=None):
+    def resource_from_uri(self, fk_resource, uri, request=None, related_obj=None, related_name=None, related_bundle=None):
         try:
             obj = fk_resource.get_via_uri(uri, request=request)
             fk_resource = self.get_related_resource(obj)
-            return super(GenericForeignKeyField, self).resource_from_uri(fk_resource, uri, request, related_obj, related_name)
+            return super(GenericForeignKeyField, self).resource_from_uri(fk_resource, uri, request, related_obj, related_name, related_bundle)
         except ObjectDoesNotExist:
             raise ApiFieldError("Could not find the provided object via resource URI '%s'." % uri)
 
