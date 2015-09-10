@@ -10,12 +10,16 @@ from wsgiref.handlers import format_date_time
 import django
 from django.conf import settings
 from django.conf.urls import patterns, url
-from django.contrib.gis.db.models.fields import GeometryField
 from django.core.exceptions import ObjectDoesNotExist,\
     MultipleObjectsReturned, ValidationError
 from django.core.urlresolvers import NoReverseMatch, reverse, Resolver404,\
     get_script_prefix
 from django.core.signals import got_request_exception
+from django.core.exceptions import ImproperlyConfigured
+try:
+    from django.contrib.gis.db.models.fields import GeometryField
+except ImproperlyConfigured:
+    GeometryField = None
 from django.db.models.constants import LOOKUP_SEP
 from django.db.models.sql.constants import QUERY_TERMS
 from django.http import HttpResponse, HttpResponseNotFound, Http404
@@ -1983,7 +1987,7 @@ class BaseModelResource(Resource):
             query_terms = self._meta.queryset.query.query_terms
         else:
             query_terms = QUERY_TERMS
-        if django.VERSION >= (1, 8):
+        if django.VERSION >= (1, 8) and GeometryField:
             query_terms = query_terms | set(GeometryField.class_lookups.keys())
 
         for filter_expr, value in filters.items():
