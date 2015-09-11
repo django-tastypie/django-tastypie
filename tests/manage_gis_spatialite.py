@@ -8,12 +8,12 @@ if __name__ == "__main__":
     try:
         from django.contrib.gis.db.models.fields import GeometryField
 
-    except :
+    except ImproperlyConfigured:
         print "GEOS Not installed - not testing gis_spatialite"
 
     else:
         os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings_gis_spatialite")
 
         from django.core.management import execute_from_command_line
-        
+
         execute_from_command_line(sys.argv)
