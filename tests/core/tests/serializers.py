@@ -47,13 +47,13 @@ class AnotherNoteResource(ModelResource):
 class SerializerTestCase(TestCase):
     def test_init(self):
         serializer_1 = Serializer()
-        self.assertEqual(serializer_1.formats, ['json', 'xml', 'yaml', 'html', 'plist'])
-        self.assertEqual(serializer_1.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
-        self.assertEqual(serializer_1.supported_formats, ['application/json', 'application/xml', 'text/yaml', 'text/html', 'application/x-plist'])
+        self.assertEqual(serializer_1.formats, ['json', 'xml', 'yaml', 'plist'])
+        self.assertEqual(serializer_1.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'plist': 'application/x-plist'})
+        self.assertEqual(serializer_1.supported_formats, ['application/json', 'application/xml', 'text/yaml', 'application/x-plist'])
 
         serializer_2 = Serializer(formats=['json', 'xml'])
         self.assertEqual(serializer_2.formats, ['json', 'xml'])
-        self.assertEqual(serializer_2.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
+        self.assertEqual(serializer_2.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'plist': 'application/x-plist'})
         self.assertEqual(serializer_2.supported_formats, ['application/json', 'application/xml'])
 
         serializer_3 = Serializer(formats=['json', 'xml'], content_types={'json': 'text/json', 'xml': 'application/xml'})
@@ -80,7 +80,7 @@ class SerializerTestCase(TestCase):
             s = Serializer()
             self.assertEqual(list(s.formats), ['json', 'xml'])
             self.assertEqual(list(s.supported_formats), ['application/json', 'application/xml'])
-            self.assertEqual(s.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'html': 'text/html', 'plist': 'application/x-plist'})
+            self.assertEqual(s.content_types, {'xml': 'application/xml', 'yaml': 'text/yaml', 'json': 'application/json', 'jsonp': 'text/javascript', 'plist': 'application/x-plist'})
 
             # Confirm that subclasses which set their own formats list won't be overriden:
             class JSONSerializer(Serializer):
@@ -431,7 +431,6 @@ class StubbedSerializer(Serializer):
         self.from_json_called = False
         self.from_xml_called = False
         self.from_yaml_called = False
-        self.from_html_called = False
         self.from_jsonp_called = False
 
     def from_json(self, data):
@@ -444,10 +443,6 @@ class StubbedSerializer(Serializer):
 
     def from_yaml(self, data):
         self.from_yaml_called = True
-        return True
-
-    def from_html(self, data):
-        self.from_html_called = True
         return True
 
     def from_jsonp(self, data):
@@ -494,14 +489,4 @@ class ContentHeaderTest(TestCase):
         serializer = StubbedSerializer()
         serializer.deserialize('{}', 'text/javascript; charset=UTF-8')
         self.assertTrue(serializer.from_jsonp_called)
-
-    def test_deserialize_html(self):
-        serializer = StubbedSerializer()
-        serializer.deserialize('', 'text/html')
-        self.assertTrue(serializer.from_html_called)
-
-    def test_deserialize_html_with_charset(self):
-        serializer = StubbedSerializer()
-        serializer.deserialize('', 'text/html; charset=UTF-8')
-        self.assertTrue(serializer.from_html_called)
 

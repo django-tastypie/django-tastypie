@@ -819,7 +819,7 @@ class NoteResource(ModelResource):
         }
         ordering = ['title', 'slug', 'resource_uri']
         queryset = Note.objects.filter(is_active=True)
-        serializer = Serializer(formats=['json', 'jsonp', 'xml', 'yaml', 'html', 'plist'])
+        serializer = Serializer(formats=['json', 'jsonp', 'xml', 'yaml', 'plist'])
 
     def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
         if bundle_or_obj is None:
@@ -1568,13 +1568,22 @@ class ModelResourceTestCase(TestCase):
         request.META = {'HTTP_ACCEPT': 'text/yaml'}
         self.assertEqual(resource.determine_format(request), 'text/yaml')
 
+        # unsupported text/html should return default format
         request.META = {'HTTP_ACCEPT': 'text/html'}
-        self.assertEqual(resource.determine_format(request), 'text/html')
+        self.assertEqual(resource.determine_format(request), 'application/json')
+
+        # unsupported applicaiton/octet-stream returns default format
+        request.META = {'HTTP_ACCEPT': 'application/octet-stream'}
+        self.assertEqual(resource.determine_format(request), 'application/json')
 
         request.META = {'HTTP_ACCEPT': 'application/json,application/xml;q=0.9,*/*;q=0.8'}
         self.assertEqual(resource.determine_format(request), 'application/json')
 
         request.META = {'HTTP_ACCEPT': 'text/plain,application/xml,application/json;q=0.9,*/*;q=0.8'}
+        self.assertEqual(resource.determine_format(request), 'application/xml')
+
+        # your typical browser (chrome, firefoxs, no plugins) should get back xml
+        request.META = {'HTTP_ACCEPT': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'}
         self.assertEqual(resource.determine_format(request), 'application/xml')
 
     def adjust_schema(self, schema_dict):

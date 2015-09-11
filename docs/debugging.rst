@@ -15,10 +15,10 @@ This is actually not a bug and JSON support is present in your ``Resource``.
 This issue is that Tastypie respects the ``Accept`` header your browser sends.
 Most browsers send something like::
 
-    Accept: application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5
+    Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
 
-Note that ``application/xml`` comes first, which is a format that Tastypie
-handles by default, hence why you receive XML.
+Note that ``application/xml`` is the first format that Tastypie
+handles, hence you receive XML.
 
 If you use ``curl`` from the command line, you should receive JSON by default::
 
