@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os, sys
+from django.core.exceptions import ImproperlyConfigured
 
 if __name__ == "__main__":
 
@@ -7,10 +8,12 @@ if __name__ == "__main__":
     try:
         from django.contrib.gis.db.models.fields import GeometryField
 
+    except ImproperlyConfigured:
+        print "GEOS Not installed - not testing gis"
+
+    else:
         os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings_gis")
 
         from django.core.management import execute_from_command_line
 
         execute_from_command_line(sys.argv)
-    except:
-        print "GEOS Not installed - not testing gis"
