@@ -88,6 +88,7 @@ Contributors:
 * Renjith Thankachan for a patch that fixes `django.utils.importlib` error in Django 1.9+ release.
 * Sean Hayes (SeanHayes) for test suite and CI enhancements, various patches
 * Michael Thornhill (mthornhill) for strict dict checking bugfix
+* Fedor Baart (siggyf) for an update on the serializer
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 

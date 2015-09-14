@@ -75,7 +75,6 @@ class Serializer(object):
         * jsonp (Disabled by default)
         * xml
         * yaml
-        * html
         * plist (see http://explorapp.com/biplist/)
 
     It was designed to make changing behavior easy, either by overridding the
@@ -83,13 +82,12 @@ class Serializer(object):
     ``formats/content_types`` options or by altering the other hook methods.
     """
 
-    formats = ['json', 'xml', 'yaml', 'html', 'plist']
+    formats = ['json', 'xml', 'yaml', 'plist']
 
     content_types = {'json': 'application/json',
                      'jsonp': 'text/javascript',
                      'xml': 'application/xml',
                      'yaml': 'text/yaml',
-                     'html': 'text/html',
                      'plist': 'application/x-plist'}
 
     def __init__(self, formats=None, content_types=None, datetime_formatting=None):
@@ -445,27 +443,6 @@ class Serializer(object):
             content = smart_bytes(content)
 
         return biplist.readPlistFromString(content)
-
-    def to_html(self, data, options=None):
-        """
-        Reserved for future usage.
-
-        The desire is to provide HTML output of a resource, making an API
-        available to a browser. This is on the TODO list but not currently
-        implemented.
-        """
-        options = options or {}
-        return 'Sorry, not implemented yet. Please append "?format=json" to your URL.'
-
-    def from_html(self, content):
-        """
-        Reserved for future usage.
-
-        The desire is to handle form-based (maybe Javascript?) input, making an
-        API available to a browser. This is on the TODO list but not currently
-        implemented.
-        """
-        pass
 
 def get_type_string(data):
     """
