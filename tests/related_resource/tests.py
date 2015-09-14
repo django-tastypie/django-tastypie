@@ -12,7 +12,6 @@ from tastypie.exceptions import NotFound
 
 from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
-from core.tests.resources import HttpRequest
 
 from related_resource.api.resources import CategoryResource, ForumResource,\
     FreshNoteResource, JobResource, NoteResource, OrderResource,\
@@ -296,22 +295,59 @@ class RelatedPatchTestCase(TestCaseWithFixture):
         cat1 = Category.objects.create(name='Dad')
         cat2 = Category.objects.create(parent=cat1, name='Child')
 
-        request = HttpRequest()
+        request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PATCH'
         request.path = "/v1/category/%(pk)s/" % {'pk': cat2.pk}
-        request._read_started = False
 
         data = {
             'name': 'Kid'
         }
 
-        setattr(request, self.body_attr, json.dumps(data))
+        request.set_body(json.dumps(data))
+
         self.assertEqual(cat2.name, 'Child')
+
         resp = resource.patch_detail(request, pk=cat2.pk)
+
         self.assertEqual(resp.status_code, 202)
+
         cat2 = Category.objects.get(pk=2)
+
         self.assertEqual(cat2.name, 'Kid')
+
+    def test_patch_to_one_with_excluded_fields(self):
+        """
+        When fields are excluded the value of the field should not be set to a
+        default value if updated by tastypie.
+        """
+        resource = NoteResource()
+        note = Note.objects.create(author_id=1)
+        user = User.objects.get(pk=1)
+
+        self.assertEqual(user.password, 'this_is_not_a_valid_password_string')
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PATCH'
+        request.path = "/v1/note/%(pk)s/" % {'pk': note.pk}
+
+        data = {
+            'author': {
+                'id': 1,
+                'username': 'johndoe',
+                'email': 'john@doetown.com',
+            }
+        }
+
+        request.set_body(json.dumps(data))
+
+        resource.patch_detail(request, pk=note.pk)
+
+        user2 = User.objects.get(pk=1)
+
+        self.assertEqual(user2.email, 'john@doetown.com')
+        self.assertEqual(user2.password, 'this_is_not_a_valid_password_string')
 
 
 class NestedRelatedResourceTest(TestCaseWithFixture):
@@ -816,7 +852,7 @@ class CorrectUriRelationsTestCase(TestCaseWithFixture):
         with self.assertRaises(NotFound) as cm:
             nr.post_list(request)
 
-        self.assertEqual(str(cm.exception), "An incorrect URL was provided '/v1/notes/2/' for the 'UserResource' resource.")
+        self.assertEqual(str(cm.exception), "An incorrect URL was provided '/v1/notes/2/' for the 'UpdatableUserResource' resource.")
         self.assertEqual(Note.objects.count(), 2)
 
 

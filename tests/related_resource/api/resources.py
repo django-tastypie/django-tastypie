@@ -19,8 +19,16 @@ class UserResource(ModelResource):
         authorization = Authorization()
 
 
+class UpdatableUserResource(ModelResource):
+    class Meta:
+        resource_name = 'users'
+        queryset = User.objects.all()
+        allowed_methods = ['get', 'put']
+        authorization = Authorization()
+
+
 class NoteResource(ModelResource):
-    author = fields.ForeignKey(UserResource, 'author')
+    author = fields.ForeignKey(UpdatableUserResource, 'author')
 
     class Meta:
         resource_name = 'notes'

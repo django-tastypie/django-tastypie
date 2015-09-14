@@ -11,6 +11,9 @@ class MockRequest(object):
         self.path = ''
         self.method = 'GET'
 
+    def _load_post_and_files(self, *args, **kwargs):
+        pass
+
     def get_full_path(self, *args, **kwargs):
         return self.path
 
