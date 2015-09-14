@@ -33,6 +33,7 @@ from tastypie.validation import FormValidation
 from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord, Counter
 from core.tests.mocks import MockRequest
 from core.utils import SimpleHandler
+from core.tests.field_urls import ParameterizedNoteResource
 
 
 class CustomSerializer(Serializer):
@@ -2349,6 +2350,15 @@ class ModelResourceTestCase(TestCase):
                 "updated": make_naive(new_note.updated).isoformat()
             }
         ])
+
+        # Ensure that pagination works for resources that expect kwargs from the urlpattern
+        resource = ParameterizedNoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json', 'offset': 0, 'limit': 2}
+
+        resp = resource.get_list(request, param='fizzle')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, '{"meta": {"limit": 2, "next": "/parameterized/fizzle/api/v1/parameterized_notes/?format=json&limit=2&offset=2", "offset": 0, "previous": null, "total_count": 4}, "objects": [{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}, {"content": "The dog ate my cat today. He looks seriously uncomfortable.", "created": "2010-03-31T20:05:00", "id": 2, "is_active": true, "resource_uri": "/api/v1/notes/2/", "slug": "another-post", "title": "Another Post", "updated": "2010-03-31T20:05:00"}]}')
 
         # Regression - Ensure that the limit on the Resource gets used if
         # no other limit is requested.
