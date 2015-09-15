@@ -87,6 +87,11 @@ You have the option to set up a number of settings (see :doc:`settings`) but
 they all have sane defaults and are not required unless you need to tweak their
 values.
 
+If your django application is using ``django.middleware.transaction.TransactionalMiddleware``,
+you should replace it with ``tastypie.middleware.TransactionalMiddleware``.
+This will allow failure status codes like 400 and up, to rollback the database
+transaction. These responses don't raise exceptions there for the default django
+middleware doesn't catch them.
 
 Creating Resources
 ==================

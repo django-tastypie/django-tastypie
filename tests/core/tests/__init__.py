@@ -8,6 +8,7 @@ from core.tests.cache import *
 from core.tests.commands import *
 from core.tests.fields import *
 from core.tests.http import *
+from core.tests.middleware import *
 from core.tests.paginator import *
 from core.tests.resources import *
 from core.tests.serializers import *

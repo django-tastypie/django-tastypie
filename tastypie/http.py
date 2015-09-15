@@ -10,7 +10,6 @@ class HttpCreated(HttpResponse):
 
     def __init__(self, *args, **kwargs):
         location = kwargs.pop('location', '')
-
         super(HttpCreated, self).__init__(*args, **kwargs)
         self['Location'] = location
 
