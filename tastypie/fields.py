@@ -833,9 +833,8 @@ class ToManyField(RelatedField):
 
         m2m_dehydrated = []
 
-        # TODO: Also model-specific and leaky. Relies on there being a
-        #       ``Manager`` there.
-        for m2m in the_m2ms.all():
+        m2m_objs = the_m2ms if isinstance(the_m2ms, (list, tuple)) else list(the_m2ms.all())
+        for m2m in m2m_objs:
             m2m_resource = self.get_related_resource(m2m)
             m2m_bundle = Bundle(obj=m2m, request=bundle.request)
             m2m_dehydrated.append(self.dehydrate_related(m2m_bundle, m2m_resource, for_list=for_list))
