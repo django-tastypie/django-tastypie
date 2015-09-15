@@ -1,6 +1,10 @@
 from __future__ import unicode_literals
 import time
+
 from django.core.cache import cache
+
+
+_other_allowed_chars = frozenset(['_', '.', '-'])
 
 
 class BaseThrottle(object):
@@ -36,14 +40,14 @@ class BaseThrottle(object):
         Takes an identifier (like a username or IP address) and converts it
         into a key usable by the cache system.
         """
-        bits = []
+        bits = [
+            char
+            for char in identifier
+            if char.isalnum() or char in _other_allowed_chars
+        ]
+        bits.append('_accesses')
 
-        for char in identifier:
-            if char.isalnum() or char in ['_', '.', '-']:
-                bits.append(char)
-
-        safe_string = ''.join(bits)
-        return "%s_accesses" % safe_string
+        return ''.join(bits)
 
     def should_be_throttled(self, identifier, **kwargs):
         """

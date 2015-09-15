@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 import datetime
 import re
+
 import django
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -65,6 +66,34 @@ if yaml is not None:
             Resolver.__init__(self)
 
 
+_NUM = 0
+_DICT = 1
+_LIST = 2
+_STR = 3
+_BUNDLE = 4
+_DATETIME = 5
+_DATE = 6
+_TIME = 7
+
+_SIMPLETYPES = {
+    float: _NUM,
+    bool: _NUM,
+    dict: _DICT,
+    list: _LIST,
+    tuple: _LIST,
+    Bundle: _BUNDLE,
+    datetime.datetime: _DATETIME,
+    datetime.date: _DATE,
+    datetime.time: _TIME,
+}
+
+for integer_type in six.integer_types:
+    _SIMPLETYPES[integer_type] = _NUM
+
+for string_type in six.string_types:
+    _SIMPLETYPES[string_type] = _STR
+
+
 class Serializer(object):
     """
     A swappable class for serialization.
@@ -117,6 +146,24 @@ class Serializer(object):
                 self.supported_formats.append(self.content_types[format])
             except KeyError:
                 raise ImproperlyConfigured("Content type for specified type '%s' not found. Please provide it at either the class level or via the arguments." % format)
+
+        # Reverse the list, because mimeparse is weird like that. See also
+        # https://github.com/toastdriven/django-tastypie/issues#issue/12 for
+        # more information.
+        self.supported_formats_reversed = list(self.supported_formats)
+        self.supported_formats_reversed.reverse()
+
+        self._from_methods = {}
+        self._to_methods = {}
+
+        for short_format, long_format in self.content_types.items():
+            method = getattr(self, "from_%s" % short_format, None)
+
+            self._from_methods[long_format] = method
+
+            method = getattr(self, "to_%s" % short_format, None)
+
+            self._to_methods[long_format] = method
 
     def get_mime_for_format(self, format):
         """
@@ -184,45 +231,35 @@ class Serializer(object):
         Given some data and a format, calls the correct method to serialize
         the data and returns the result.
         """
-        desired_format = None
+        method = None
         if options is None:
             options = {}
 
-        for short_format, long_format in self.content_types.items():
-            if format == long_format:
-                if hasattr(self, "to_%s" % short_format):
-                    desired_format = short_format
-                    break
+        method = self._to_methods.get(format)
 
-        if desired_format is None:
+        if method is None:
             raise UnsupportedFormat("The format indicated '%s' had no available serialization method. Please check your ``formats`` and ``content_types`` on your Serializer." % format)
 
-        serialized = getattr(self, "to_%s" % desired_format)(bundle, options)
-        return serialized
+        return method(bundle, options)
 
     def deserialize(self, content, format='application/json'):
         """
         Given some data and a format, calls the correct method to deserialize
         the data and returns the result.
         """
-        desired_format = None
+        method = None
 
         format = format.split(';')[0]
 
-        for short_format, long_format in self.content_types.items():
-            if format == long_format:
-                if hasattr(self, "from_%s" % short_format):
-                    desired_format = short_format
-                    break
+        method = self._from_methods.get(format)
 
-        if desired_format is None:
+        if method is None:
             raise UnsupportedFormat("The format indicated '%s' had no available deserialization method. Please check your ``formats`` and ``content_types`` on your Serializer." % format)
 
         if isinstance(content, six.binary_type):
             content = force_text(content)
 
-        deserialized = getattr(self, "from_%s" % desired_format)(content)
-        return deserialized
+        return method(content)
 
     def to_simple(self, data, options):
         """
@@ -232,26 +269,39 @@ class Serializer(object):
         This brings complex Python data structures down to native types of the
         serialization format(s).
         """
-        if isinstance(data, (list, tuple)):
-            return [self.to_simple(item, options) for item in data]
-        if isinstance(data, dict):
-            return dict((key, self.to_simple(val, options)) for (key, val) in data.items())
-        elif isinstance(data, Bundle):
-            return dict((key, self.to_simple(val, options)) for (key, val) in data.data.items())
-        elif isinstance(data, datetime.datetime):
-            return self.format_datetime(data)
-        elif isinstance(data, datetime.date):
-            return self.format_date(data)
-        elif isinstance(data, datetime.time):
-            return self.format_time(data)
-        elif isinstance(data, bool):
-            return data
-        elif isinstance(data, (six.integer_types, float)):
-            return data
-        elif data is None:
+        if data is None:
             return None
-        else:
+
+        data_type = type(data)
+
+        stype = _STR
+
+        for dt in data_type.__mro__:
+            try:
+                stype = _SIMPLETYPES[dt]
+                break
+            except KeyError:
+                pass
+
+        if stype == _NUM:
+            return data
+        if stype == _DICT:
+            to_simple = self.to_simple
+            return dict([(key, to_simple(val, options)) for key, val in six.iteritems(data)])
+        if stype == _STR:
             return force_text(data)
+        if stype == _LIST:
+            to_simple = self.to_simple
+            return [to_simple(item, options) for item in data]
+        if stype == _BUNDLE:
+            to_simple = self.to_simple
+            return dict([(key, to_simple(val, options)) for key, val in six.iteritems(data.data)])
+        if stype == _DATETIME:
+            return self.format_datetime(data)
+        if stype == _DATE:
+            return self.format_date(data)
+        if stype == _TIME:
+            return self.format_time(data)
 
     def to_etree(self, data, options=None, name=None, depth=0):
         """

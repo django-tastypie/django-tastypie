@@ -113,6 +113,63 @@ class SerializerTestCase(TestCase):
             'false': False,
         }
 
+    def test__to_simple__none(self):
+        serializer = Serializer()
+        val = None
+        self.assertIs(serializer.to_simple(val, None), val)
+
+    def test__to_simple__float(self):
+        serializer = Serializer()
+        val = 1.0
+        self.assertIs(serializer.to_simple(val, None), val)
+
+    def test__to_simple__int(self):
+        serializer = Serializer()
+        val = 1
+        self.assertIs(serializer.to_simple(val, None), val)
+
+    def test__to_simple__bool(self):
+        serializer = Serializer()
+        val = True
+        self.assertIs(serializer.to_simple(val, None), val)
+
+    def test__to_simple__dict(self):
+        serializer = Serializer()
+        val = {'foo': True}
+        self.assertEqual(serializer.to_simple(val, None), {'foo': True})
+
+    def test__to_simple__list(self):
+        serializer = Serializer()
+        val = [True]
+        self.assertEqual(serializer.to_simple(val, None), [True])
+
+    def test__to_simple__tuple(self):
+        serializer = Serializer()
+        val = (True,)
+        self.assertEqual(serializer.to_simple(val, None), [True])
+
+    def test__to_simple__bundle(self):
+        serializer = Serializer()
+        val = Bundle(data={'foo': True})
+        self.assertEqual(serializer.to_simple(val, None), {'foo': True})
+
+    def test__to_simple__string(self):
+        serializer = Serializer()
+        val = b"\xc3\xa1hhh! I'm letting all the \xc3\xa1's out of my body."
+        self.assertEqual(serializer.to_simple(val, None), u"áhhh! I'm letting all the á's out of my body.")
+
+    def test__to_simple__datetime(self):
+        serializer = Serializer()
+        self.assertEqual(serializer.to_simple(datetime.datetime(2010, 12, 16, 2, 31, 33), None), '2010-12-16T02:31:33')
+
+    def test__to_simple__date(self):
+        serializer = Serializer()
+        self.assertEqual(serializer.to_simple(datetime.date(2010, 12, 16), None), '2010-12-16')
+
+    def test__to_simple__time(self):
+        serializer = Serializer()
+        self.assertEqual(serializer.to_simple(datetime.time(2, 31, 33), None), '02:31:33')
+
     def test_format_datetime(self):
         serializer = Serializer()
         self.assertEqual(serializer.format_datetime(datetime.datetime(2010, 12, 16, 2, 31, 33)), '2010-12-16T02:31:33')
