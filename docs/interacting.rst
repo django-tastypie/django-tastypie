@@ -45,7 +45,7 @@ We'll assume that we're interacting with the following Tastypie code::
 
 
     # urls.py
-    from django.conf.urls.defaults import *
+    from django.conf.urls import url, patterns, include
     from tastypie.api import Api
     from myapp.api.resources import EntryResource, UserResource
 

@@ -131,7 +131,7 @@ do this, we simply instantiate the resource in our URLconf and hook up its
 ``urls``::
 
     # urls.py
-    from django.conf.urls.defaults import *
+    from django.conf.urls import url, patterns, include
     from myapp.api import EntryResource
 
     entry_resource = EntryResource()
@@ -253,7 +253,7 @@ We'll go back to our URLconf (``urls.py``) and change it to match the
 following::
 
     # urls.py
-    from django.conf.urls.defaults import *
+    from django.conf.urls import url, patterns, include
     from tastypie.api import Api
     from myapp.api import EntryResource, UserResource
 
