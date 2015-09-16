@@ -114,7 +114,7 @@ class HTTPTestCase(TestServerTestCase):
                 }
             ]
         }
-        self.maxDiff = None
+
         resp = json.loads(data)
 
         # testing separately to help locate issues

@@ -297,7 +297,7 @@ class Serializer(object):
             return data
         if stype == _DICT:
             to_simple = self.to_simple
-            return dict([(key, to_simple(val, options)) for key, val in six.iteritems(data)])
+            return {key: to_simple(val, options) for key, val in six.iteritems(data)}
         if stype == _STR:
             return force_text(data)
         if stype == _LIST:
@@ -305,7 +305,7 @@ class Serializer(object):
             return [to_simple(item, options) for item in data]
         if stype == _BUNDLE:
             to_simple = self.to_simple
-            return dict([(key, to_simple(val, options)) for key, val in six.iteritems(data.data)])
+            return {key: to_simple(val, options) for key, val in six.iteritems(data.data)}
         if stype == _DATETIME:
             return self.format_datetime(data)
         if stype == _DATE:
@@ -373,11 +373,15 @@ class Serializer(object):
             for element in elements:
                 if element.tag in ('object', 'objects'):
                     return self.from_etree(element)
-            return dict((element.tag, self.from_etree(element))
-                for element in elements)
+            return {
+                element.tag: self.from_etree(element)
+                for element in elements
+            }
         elif data.tag == 'object' or data.get('type') == 'hash':
-            return dict((element.tag, self.from_etree(element))
-                for element in data.getchildren())
+            return {
+                element.tag: self.from_etree(element)
+                for element in data.getchildren()
+            }
         elif data.tag == 'objects' or data.get('type') == 'list':
             return [self.from_etree(element) for element in data.getchildren()]
         else:
