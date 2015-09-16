@@ -22,24 +22,20 @@ def determine_format(request, serializer, default_format='application/json'):
           malformed HTTP request headers!
     """
     # First, check if they forced the format.
-    if request.GET.get('format'):
-        if request.GET['format'] in serializer.formats:
-            return serializer.get_mime_for_format(request.GET['format'])
+    format = request.GET.get('format')
+    if format:
+        if format in serializer.formats:
+            return serializer.get_mime_for_format(format)
 
     # If callback parameter is present, use JSONP.
     if 'callback' in request.GET:
         return serializer.get_mime_for_format('jsonp')
 
     # Try to fallback on the Accepts header.
-    if request.META.get('HTTP_ACCEPT', '*/*') != '*/*':
-        formats = list(serializer.supported_formats) or []
-        # Reverse the list, because mimeparse is weird like that. See also
-        # https://github.com/toastdriven/django-tastypie/issues#issue/12 for
-        # more information.
-        formats.reverse()
-
+    accept = request.META.get('HTTP_ACCEPT', '*/*')
+    if accept != '*/*':
         try:
-            best_format = mimeparse.best_match(formats, request.META['HTTP_ACCEPT'])
+            best_format = mimeparse.best_match(serializer.supported_formats_reversed, accept)
         except ValueError:
             raise BadRequest('Invalid Accept header')
 
