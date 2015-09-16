@@ -225,8 +225,6 @@ Indicates how the related ``Resource`` will appear post-``dehydrate``. If
 that resource. If ``True``, the result of the sub-resource's ``dehydrate`` will
 be included in full. You can further control post-``dehydrate`` behaviour when
 requesting a resource or a list of resources by setting ``full_list`` and ``full_detail``.
-Note that if you intend to post data back to Tastypie after fully dehydrating a field then fields that are excluded from the API output for that field will be set to their default values in the related object. 
-For example: if you fully dehydrate a foreign key to the User model with password excluded from UserResource, password will be set to blank when you POST the data back again.
 
 ``full_list``
 ~~~~~~~~~~~~~
