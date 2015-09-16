@@ -31,7 +31,7 @@ class ApiField(object):
     dehydrated_type = 'string'
     help_text = ''
 
-    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, unique=False, help_text=None, use_in='all'):
+    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, unique=False, help_text=None, verbose_name=None, use_in='all'):
         """
         Sets up the field. This is generally called when the containing
         ``Resource`` is initialized.
@@ -61,6 +61,10 @@ class ApiField(object):
         human-readable description of the field exposed at the schema level.
         Defaults to the per-Field definition.
 
+        Optionally accepts ``verbose_name``, which lets you provide a
+        human-readable name for the field exposed at the schema level.
+        Defaults the field's attribute name, converting underscores to spaces
+
         Optionally accepts ``use_in``. This may be one of ``list``, ``detail``
         ``all`` or a callable which accepts a ``bundle`` and returns
         ``True`` or ``False``. Indicates wheather this field will be included
@@ -84,6 +88,9 @@ class ApiField(object):
 
         if use_in in ['all', 'detail', 'list'] or callable(use_in):
             self.use_in = use_in
+
+        if verbose_name:
+            self.verbose_name = verbose_name
 
         if help_text:
             self.help_text = help_text
