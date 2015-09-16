@@ -149,3 +149,28 @@ class HTTPTestCase(TestServerTestCase):
 
         self.assertEqual(cache_control, set(["s-maxage=3600", "max-age=3600", "private"]))
         self.assertTrue('"johndoe"' in response.read().decode('utf-8'))
+
+    def test_always_return_true_datefield(self):
+        # Create a signed note via POST
+        post_data = dict(
+            title = 'A Fancy Note',
+            content = 'Why are so many animals eating eachother?',
+            signed_by = 'tastyPie',
+            created = '2014-04-01',
+        )
+        connection = self.get_connection()
+        connection.request('POST', '/api/v3/signed_notes/', body=json.dumps(post_data), headers={'Accept': 'application/json', 'Content-type': 'application/json'})
+        response = connection.getresponse()
+        note = json.loads(response.read().decode('utf-8'))
+        self.assertEqual(note['created'], '2014-04-01')
+
+        # Update the note via PUT
+        note['signed_by'] = 'Tastypie'
+        note['updated'] = '2015-01-29'
+        connection.request('PUT', '/api/v3/signed_notes/%d/' % note['id'], body=json.dumps(note), headers={'Accept': 'application/json', 'Content-type': 'application/json'})
+        response = connection.getresponse()
+        updated_note = json.loads(response.read().decode('utf-8'))
+
+        # The created field should match on the two notes, we didn't change it
+        self.assertEqual(note['created'], updated_note['created'])
+        self.assertEqual(updated_note['created'], '2014-04-01')
