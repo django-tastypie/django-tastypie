@@ -6,18 +6,17 @@ import json
 from mock import patch
 import time
 
-import django
-from django.conf import settings
+from django import forms
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import FieldError, MultipleObjectsReturned
 from django.core import mail
 from django.core.urlresolvers import reverse
-from django import forms
 from django.http import HttpRequest, QueryDict, Http404
 from django.test import TestCase
-from django.utils.encoding import force_text
+from django.test.utils import override_settings
 from django.utils import timezone
+from django.utils.encoding import force_text
 
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
@@ -1286,11 +1285,6 @@ class ModelResourceTestCase(TestCase):
         self.note_1.subjects.add(self.subject_1)
         self.note_1.subjects.add(self.subject_2)
 
-        if django.VERSION >= (1, 4):
-            self.body_attr = "body"
-        else:
-            self.body_attr = "raw_post_data"
-
     def tearDown(self):
         cache.clear()
 
@@ -2447,7 +2441,7 @@ class ModelResourceTestCase(TestCase):
         request.method = 'PUT'
 
         self.assertEqual(Note.objects.count(), 6)
-        setattr(request, self.body_attr, '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}')
+        request.body = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}'
 
         resp = resource.put_list(request)
         self.assertEqual(resp.status_code, 204)
@@ -2468,7 +2462,7 @@ class ModelResourceTestCase(TestCase):
         request.method = 'PUT'
 
         self.assertEqual(Note.objects.count(), 6)
-        setattr(request, self.body_attr, '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}')
+        request.body = '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}'
 
         always_resource = AlwaysDataNoteResourceUseIn()
         resp = always_resource.put_list(request)
@@ -2485,7 +2479,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "baddata": "some data"}')
+        request.body = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "baddata": "some data"}'
 
         resp = resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 201)
@@ -2493,7 +2487,7 @@ class ModelResourceTestCase(TestCase):
         new_note = Note.objects.get(slug='cat-is-back')
         self.assertEqual(new_note.content, "The cat is back. The dog coughed him up out back.")
 
-        setattr(request, self.body_attr, '{"content": "The cat is gone again. I think it was the rabbits that ate him this time.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Gone", "updated": "2010-04-03 20:05:00"}')
+        request.body = '{"content": "The cat is gone again. I think it was the rabbits that ate him this time.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Gone", "updated": "2010-04-03 20:05:00"}'
 
         resp = resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 204)
@@ -2523,7 +2517,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": null}')
+        request.body = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": null}'
 
         resp = nullable_resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 204)
@@ -2539,7 +2533,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}')
+        request.body = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
 
         always_resource = AlwaysDataNoteResourceUseIn()
         resp = always_resource.put_detail(request, pk=new_note.pk)
@@ -2557,7 +2551,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, '{"date": "2012-09-07", "username": "WAT", "message": "hello"}')
+        request.body = '{"date": "2012-09-07", "username": "WAT", "message": "hello"}'
 
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, username="maraujop")
@@ -2569,7 +2563,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, '{"date": "WAT", "username": "maraujop", "message": "hello"}')
+        request.body = '{"date": "WAT", "username": "maraujop", "message": "hello"}'
 
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, date="2012-09-07")
@@ -2581,7 +2575,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, '{"date": "2012-09-07", "username": "maraujop", "message": "WAT"}')
+        request.body = '{"date": "2012-09-07", "username": "maraujop", "message": "WAT"}'
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, message="HELLO")
 
@@ -2595,7 +2589,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}')
+        request.body = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}'
 
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
@@ -3206,11 +3200,9 @@ class ModelResourceTestCase(TestCase):
             self.assertNotIn('author', note)
 
     @patch('tastypie.throttle.time')
+    @override_settings(DEBUG=False)
     def test_check_bool_throttling(self, mocked_time):
         mocked_time.time.return_value = time.time()
-        # Stow.
-        old_debug = settings.DEBUG
-        settings.DEBUG = False
 
         resource = ThrottledNoteResource()
         _orginal_throttle = resource._meta.throttle
@@ -3265,16 +3257,12 @@ class ModelResourceTestCase(TestCase):
         self.assertNotIn('Retry-After', resp)
         self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
-        # Restore.
-        settings.DEBUG = old_debug
         resource._meta.throttle = _orginal_throttle
 
     @patch('tastypie.throttle.time')
+    @override_settings(DEBUG=False)
     def test_check_int_throttling(self, mocked_time):
         mocked_time.time.return_value = time.time()
-        # Stow.
-        old_debug = settings.DEBUG
-        settings.DEBUG = False
 
         resource = ThrottledNoteResource()
         _orginal_throttle = resource._meta.throttle
@@ -3316,16 +3304,12 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp['Retry-After'], '5')
         self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
-        # Restore.
-        settings.DEBUG = old_debug
         resource._meta.throttle = _orginal_throttle
 
     @patch('tastypie.throttle.time')
+    @override_settings(DEBUG=False)
     def test_check_datetime_throttling(self, mocked_time):
         mocked_time.time.return_value = time.time()
-        # Stow.
-        old_debug = settings.DEBUG
-        settings.DEBUG = False
 
         retry_after = datetime.datetime(year=2014, month=8, day=8, hour=8, minute=55, tzinfo=timezone.utc)
         retry_after_str = 'Fri, 08 Aug 2014 14:55:00 GMT'
@@ -3383,8 +3367,6 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp['Retry-After'], retry_after_str)
         self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
 
-        # Restore.
-        settings.DEBUG = old_debug
         resource._meta.throttle = _orginal_throttle
 
     def test_generate_cache_key(self):
@@ -4241,40 +4223,26 @@ class BustedResource(BasicResource):
         raise YouFail("<script>alert(1)</script>")
 
 
+@override_settings(TASTYPIE_FULL_DEBUG=False, TASTYPIE_CANNED_ERROR="Sorry, this request could not be processed. Please try again later.")
 class BustedResourceTestCase(TestCase):
     def setUp(self):
-        # We're going to heavily jack with settings. :/
         super(BustedResourceTestCase, self).setUp()
-        self.old_debug = settings.DEBUG
-        self.old_full_debug = getattr(settings, 'TASTYPIE_FULL_DEBUG', False)
-        self.old_canned_error = getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later.")
-        self.old_broken_links = getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False)
 
         self.resource = BustedResource()
         self.request = HttpRequest()
         self.request.GET = {'format': 'json'}
         self.request.method = 'GET'
 
-    def tearDown(self):
-        settings.DEBUG = self.old_debug
-        settings.TASTYPIE_FULL_DEBUG = self.old_full_debug
-        settings.TASTYPIE_CANNED_ERROR = self.old_canned_error
-        settings.SEND_BROKEN_LINK_EMAILS = self.old_broken_links
-        super(BustedResourceTestCase, self).setUp()
-
+    @override_settings(DEBUG=True, TASTYPIE_FULL_DEBUG=True)
     def test_debug_on_with_full(self):
-        settings.DEBUG = True
-        settings.TASTYPIE_FULL_DEBUG = True
-
         try:
             self.resource.wrap_view('get_list')(self.request, pk=1)
             self.fail()
         except YouFail:
             pass
 
+    @override_settings(DEBUG=True, TASTYPIE_FULL_DEBUG=False)
     def test_debug_on_without_full(self):
-        settings.DEBUG = True
-        settings.TASTYPIE_FULL_DEBUG = False
         mail.outbox = []
 
         resp = self.resource.wrap_view('get_list')(self.request, pk=1)
@@ -4284,71 +4252,39 @@ class BustedResourceTestCase(TestCase):
         self.assertTrue(len(content['traceback']) > 0)
         self.assertEqual(len(mail.outbox), 0)
 
+    @override_settings(DEBUG=False, TASTYPIE_FULL_DEBUG=False)
     def test_debug_off(self):
-        settings.DEBUG = False
-        settings.TASTYPIE_FULL_DEBUG = False
+        SimpleHandler.logged = []
 
-        if django.VERSION >= (1, 3, 0):
-            SimpleHandler.logged = []
+        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
+        self.assertEqual(resp.status_code, 500)
+        self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+        self.assertEqual(len(SimpleHandler.logged), 1)
 
-            resp = self.resource.wrap_view('get_list')(self.request, pk=1)
-            self.assertEqual(resp.status_code, 500)
-            self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
-            self.assertEqual(len(SimpleHandler.logged), 1)
+        # Ensure that 404s don't send email.
+        resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+        self.assertEqual(len(SimpleHandler.logged), 1)
+        SimpleHandler.logged = []
 
-            # Ensure that 404s don't send email.
-            resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
-            self.assertEqual(resp.status_code, 404)
-            self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
-            self.assertEqual(len(SimpleHandler.logged), 1)
+    @override_settings(DEBUG=False, TASTYPIE_FULL_DEBUG=False, TASTYPIE_CANNED_ERROR="Oops, you bwoke it.")
+    def test_debug_off_custom_message(self):
+        SimpleHandler.logged = []
 
-            # Now with a custom message.
-            settings.TASTYPIE_CANNED_ERROR = "Oops, you bwoke it."
-
-            resp = self.resource.wrap_view('get_list')(self.request, pk=1)
-            self.assertEqual(resp.status_code, 500)
-            self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Oops, you bwoke it."}')
-            self.assertEqual(len(SimpleHandler.logged), 2)
-            SimpleHandler.logged = []
-        else:
-            mail.outbox = []
-
-            resp = self.resource.wrap_view('get_list')(self.request, pk=1)
-            self.assertEqual(resp.status_code, 500)
-            self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
-            self.assertEqual(len(mail.outbox), 1)
-
-            # Ensure that 404s don't send email.
-            resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
-            self.assertEqual(resp.status_code, 404)
-            self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
-            self.assertEqual(len(mail.outbox), 1)
-
-            # Ensure that 404s (with broken link emails enabled) DO send email.
-            settings.SEND_BROKEN_LINK_EMAILS = True
-            resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
-            self.assertEqual(resp.status_code, 404)
-            self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
-            self.assertEqual(len(mail.outbox), 2)
-
-            # Now with a custom message.
-            settings.TASTYPIE_CANNED_ERROR = "Oops, you bwoke it."
-
-            resp = self.resource.wrap_view('get_list')(self.request, pk=1)
-            self.assertEqual(resp.status_code, 500)
-            self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Oops, you bwoke it."}')
-            self.assertEqual(len(mail.outbox), 3)
-            mail.outbox = []
+        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
+        self.assertEqual(resp.status_code, 500)
+        self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Oops, you bwoke it."}')
+        self.assertEqual(len(SimpleHandler.logged), 1)
+        SimpleHandler.logged = []
 
     def test_http404_raises_404(self):
         self.request.method = 'POST'
         resp = self.resource.wrap_view('post_list')(self.request, pk=1)
         self.assertEqual(resp.status_code, 404)
 
+    @override_settings(DEBUG=True, TASTYPIE_FULL_DEBUG=False)
     def test_escaping(self):
-        settings.DEBUG = True
-        settings.TASTYPIE_FULL_DEBUG = False
-
         request = HttpRequest()
         request.method = 'POST'
         request.POST = {

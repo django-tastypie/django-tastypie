@@ -8,17 +8,7 @@ arrIN=(${VERSION//./ })
 major=${arrIN[0]}
 minor=${arrIN[1]}
 
-#Don't run customuser tests if django's version is less than 1.5.
-if [ $major -lt '2' -a $minor -lt '5' ]; then
-  ALL="core basic alphanumeric slashless namespaced related validation gis content_gfk authorization"
-else
-  ALL="core customuser basic alphanumeric slashless namespaced related validation gis gis_spatialite content_gfk authorization"
-fi
-
-test_module='.tests'
-if [ $major -lt '2' -a $minor -lt '6' ]; then
-  test_module=''
-fi
+ALL="core customuser basic alphanumeric slashless namespaced related validation gis gis_spatialite content_gfk authorization"
 
 if [ $# -eq 0 ]; then
     PYTESTPATHS=$ALL
@@ -51,6 +41,6 @@ for pytestpath in $PYTESTPATHS; do
         spatialite tastypie-spatialite.db "SELECT InitSpatialMetaData();"
     fi
     
-    ./manage_$type.py test $test_name$test_module --traceback
+    ./manage_$type.py test $test_name.tests --traceback
     echo; echo
 done

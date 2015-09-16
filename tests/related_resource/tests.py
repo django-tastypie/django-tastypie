@@ -1,7 +1,6 @@
 from datetime import datetime
 import json
 
-import django
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db.models.signals import pre_save
@@ -12,7 +11,6 @@ from tastypie.exceptions import NotFound
 
 from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
-from core.tests.resources import HttpRequest
 
 from related_resource.api.resources import CategoryResource, ForumResource,\
     FreshNoteResource, JobResource, NoteResource, OrderResource,\
@@ -283,20 +281,12 @@ class RelationshipOppositeFromModelTestCase(TestCaseWithFixture):
 class RelatedPatchTestCase(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
 
-    def setUp(self):
-        super(RelatedPatchTestCase, self).setUp()
-        # this test doesn't use MockRequest, so the body attribute is different.
-        if django.VERSION >= (1, 4):
-            self.body_attr = "_body"
-        else:
-            self.body_attr = "_raw_post_data"
-
     def test_patch_to_one(self):
         resource = FullCategoryResource()
         cat1 = Category.objects.create(name='Dad')
         cat2 = Category.objects.create(parent=cat1, name='Child')
 
-        request = HttpRequest()
+        request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PATCH'
         request.path = "/v1/category/%(pk)s/" % {'pk': cat2.pk}
@@ -306,7 +296,7 @@ class RelatedPatchTestCase(TestCaseWithFixture):
             'name': 'Kid'
         }
 
-        setattr(request, self.body_attr, json.dumps(data))
+        request.body = json.dumps(data)
         self.assertEqual(cat2.name, 'Child')
         resp = resource.patch_detail(request, pk=cat2.pk)
         self.assertEqual(resp.status_code, 202)

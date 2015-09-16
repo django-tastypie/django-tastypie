@@ -14,7 +14,7 @@ to run your existing software without modification.
 All tests pass under both Python 2 & 3.
 
 .. _`six`: http://pythonhosted.org/six/
-.. _`Django`: https://docs.djangoproject.com/en/1.5/topics/python3/#str-and-unicode-methods
+.. _`Django`: https://docs.djangoproject.com/en/dev/topics/python3/#str-and-unicode-methods
 
 
 Incompatibilities

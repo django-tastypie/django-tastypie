@@ -10,9 +10,7 @@ class GenericResource(ModelResource):
     Provides a stand-in resource for GFK relations.
     """
     def __init__(self, resources, *args, **kwargs):
-        self.resource_mapping = dict(
-            (r._meta.resource_name, r) for r in resources
-        )
+        self.resource_mapping = {r._meta.resource_name: r for r in resources}
         super(GenericResource, self).__init__(*args, **kwargs)
 
     def get_via_uri(self, uri, request=None):
