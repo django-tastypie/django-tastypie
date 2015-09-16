@@ -10,7 +10,15 @@ from wsgiref.handlers import format_date_time
 import django
 from django.conf import settings
 from django.conf.urls import patterns, url
-from django.contrib.gis.db.models.fields import GeometryField
+from django.core.exceptions import ImproperlyConfigured
+
+# Django 1.8 will run without GEOS so fail silently if not installed
+try:
+    from django.contrib.gis.db.models.fields import GeometryField
+    HAS_GEOS = True
+except ImproperlyConfigured:
+    HAS_GEOS = False
+
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, ValidationError
 from django.core.urlresolvers import NoReverseMatch, reverse, resolve, Resolver404, get_script_prefix
 from django.core.signals import got_request_exception
@@ -1975,7 +1983,7 @@ class BaseModelResource(Resource):
             query_terms = self._meta.queryset.query.query_terms
         else:
             query_terms = QUERY_TERMS
-        if django.VERSION >= (1, 8):
+        if django.VERSION >= (1, 8) and HAS_GEOS:
             query_terms = query_terms | set(GeometryField.class_lookups.keys())
 
         for filter_expr, value in filters.items():
