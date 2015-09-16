@@ -197,7 +197,7 @@ handle the children::
                 return HttpMultipleChoices("More than one resource is found at this URI.")
 
             child_resource = ChildResource()
-            return child_resource.get_detail(request, parent_id=obj.pk)
+            return child_resource.get_list(request, parent_id=obj.pk)
 
 
 Adding Search Functionality
