@@ -184,13 +184,10 @@ class ApiTestCase(TestCase):
         request.META = {'HTTP_ACCEPT': 'text/javascript'}
         request.GET = {'callback': ''}
 
-        try:
-            resp = api.top_level(request)
-            self.fail("Broken callback didn't fail!")
-        except BadRequest:
-            # Regression: We expect this, which is fine, but this used to
-            #             be an import error.
-            pass
+        # Regression: We expect this, which is fine, but this used to
+        #             be an import error.
+        with self.assertRaises(BadRequest):
+            api.top_level(request)
 
     def test_custom_api_serializer(self):
         """Confirm that an Api can use a custom serializer"""

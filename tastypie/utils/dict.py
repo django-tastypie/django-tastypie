@@ -11,4 +11,4 @@ def dict_strip_unicode_keys(uni_dict):
     if six.PY3:
         return uni_dict
 
-    return dict([(smart_bytes(key), value,) for key, value in uni_dict.items()])
+    return {smart_bytes(key): value for key, value in uni_dict.items()}

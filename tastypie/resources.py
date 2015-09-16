@@ -1,5 +1,4 @@
 from __future__ import unicode_literals
-from __future__ import with_statement
 from copy import deepcopy
 from datetime import datetime
 import logging
@@ -23,9 +22,10 @@ except (ImproperlyConfigured, ImportError):
 from django.db.models.constants import LOOKUP_SEP
 from django.db.models.sql.constants import QUERY_TERMS
 from django.http import HttpResponse, HttpResponseNotFound, Http404
+from django.utils import six
 from django.utils.cache import patch_cache_control, patch_vary_headers
 from django.utils.html import escape
-from django.utils import six
+from django.views.decorators.csrf import csrf_exempt
 
 from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
@@ -44,13 +44,6 @@ from tastypie.utils import dict_strip_unicode_keys,\
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.validation import Validation
 from tastypie.compat import get_module_name, atomic_decorator
-
-# If ``csrf_exempt`` isn't present, stub it.
-try:
-    from django.views.decorators.csrf import csrf_exempt
-except ImportError:
-    def csrf_exempt(func):
-        return func
 
 
 def sanitize(text):
@@ -288,9 +281,8 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
         # When DEBUG is False, send an error message to the admins (unless it's
         # a 404, in which case we check the setting).
-        send_broken_links = getattr(settings, 'SEND_BROKEN_LINK_EMAILS', False)
 
-        if not response_code == 404 or send_broken_links:
+        if not response_code == 404:
             log = logging.getLogger('django.request.tastypie')
             log.error('Internal Server Error: %s' % request.path, exc_info=True,
                       extra={'status_code': response_code, 'request': request})
@@ -2124,7 +2116,7 @@ class BaseModelResource(Resource):
         field_names = self._meta.object_class._meta.get_all_field_names()
         field_names.append('pk')
 
-        kwargs = dict([(k, v,) for k, v in kwargs.items() if k in field_names])
+        kwargs = {k: v for k, v in kwargs.items() if k in field_names}
 
         try:
             object_list = self.get_object_list(bundle.request).filter(**kwargs)

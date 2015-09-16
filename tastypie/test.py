@@ -305,7 +305,7 @@ class ResourceTestCase(TestCase):
             1,  # nonce_count
             digest_challenge=python_digest.build_digest_challenge(
                 time.time(),
-                getattr(settings, 'SECRET_KEY', ''),
+                settings.SECRET_KEY,
                 'django-tastypie',
                 opaque,
                 False

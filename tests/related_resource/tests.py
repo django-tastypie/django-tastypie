@@ -1,7 +1,6 @@
 from datetime import datetime
 import json
 
-import django
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db.models.signals import pre_save
@@ -21,9 +20,6 @@ from related_resource.models import Category, Label, Tag, Taggable,\
     TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product,\
     Address, Job, Payment, Forum, Order, OrderItem, Contact, ContactGroup
 from testcases import TestCaseWithFixture
-
-
-old_saving_algorithm = django.VERSION[1] < 6
 
 
 class M2MResourcesTestCase(TestCaseWithFixture):
@@ -320,14 +316,6 @@ class RelationshipOppositeFromModelTestCase(TestCaseWithFixture):
 
 class RelatedPatchTestCase(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
-
-    def setUp(self):
-        super(RelatedPatchTestCase, self).setUp()
-        # this test doesn't use MockRequest, so the body attribute is different.
-        if django.VERSION >= (1, 4):
-            self.body_attr = "_body"
-        else:
-            self.body_attr = "_raw_post_data"
 
     def test_patch_to_one(self):
         resource = FullCategoryResource()
@@ -846,7 +834,7 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
 
         request.set_body(json.dumps(body_dict))
 
-        with self.assertNumQueries(5 if old_saving_algorithm else 4):
+        with self.assertNumQueries(4):
             resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp.status_code, 201)
 
@@ -865,7 +853,7 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
             'api_name': resource._meta.api_name
         })
 
-        with self.assertNumQueries(7 if old_saving_algorithm else 5):
+        with self.assertNumQueries(5):
             resource.put_detail(request)
 
         # 'extra' should have changed
@@ -901,7 +889,7 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
 
         request.set_body(json.dumps(body_dict))
 
-        with self.assertNumQueries(19 if old_saving_algorithm else 14):
+        with self.assertNumQueries(14):
             resp = resource.wrap_view('dispatch_detail')(request, pk=dog.pk)
 
         self.assertEqual(resp.status_code, 204)
@@ -944,9 +932,7 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
         request._load_post_and_files = lambda *args, **kwargs: None
         request.set_body(json.dumps(data))
 
-        num_queries = 9 if old_saving_algorithm else 8
-
-        with self.assertNumQueries(num_queries):
+        with self.assertNumQueries(8):
             response = resource.wrap_view('dispatch_detail')(request, pk=c1.pk)
 
         self.assertEqual(response.status_code, 204, response.content)
