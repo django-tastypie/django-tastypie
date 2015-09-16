@@ -22,4 +22,4 @@ v0.9.12
 
 
 Backward-incompatible commits were not recorded prior to the release of v0.9.11
-but may be found using ``git grep --oneline ...v0.9.11 | grep "BACKWARD-"``.
+but may be found using ``git log --oneline ...v0.9.11 | grep "BACKWARD-"``.
