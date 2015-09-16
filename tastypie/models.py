@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from hashlib import sha1
 import hmac
 import time
 
@@ -8,12 +9,6 @@ from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 
 from tastypie.utils import now
-
-try:
-    from hashlib import sha1
-except ImportError:
-    import sha
-    sha1 = sha.sha
 
 
 @python_2_unicode_compatible

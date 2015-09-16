@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 from django.conf import settings
+from django.db import connections, reset_queries
+from django.http import QueryDict
 from django.test import TestCase
+
 from tastypie.exceptions import BadRequest
 from tastypie.paginator import Paginator
+
 from core.models import Note
-from django.db import reset_queries
-from django.http import QueryDict
 
 
 class PaginatorTestCase(TestCase):
@@ -22,12 +24,7 @@ class PaginatorTestCase(TestCase):
         super(PaginatorTestCase, self).tearDown()
 
     def _get_query_count(self):
-        try:
-            from django.db import connections
-            return connections['default'].queries
-        except ImportError:
-            from django.db import connection
-            return connection.queries
+        return connections['default'].queries
 
     def test_page1(self):
         reset_queries()

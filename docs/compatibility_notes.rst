@@ -19,7 +19,7 @@ updated & a migration was added (``0002_add_apikey_index.py``). However, due
 to the way MySQL works & the way Django generates index names, this migration
 would fail miserably on many MySQL installs.
 
-If you are using MySQL, South & the ``ApiKey`` authentication class, you should
+If you are using MySQL & the ``ApiKey`` authentication class, you may need to
 manually add an index for the the ``ApiKey.key`` field. Something to the effect
 of::
 

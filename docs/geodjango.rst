@@ -6,7 +6,7 @@ GeoDjango
 
 Tastypie features support for GeoDjango!  Resources return and accept 
 `GeoJSON <http://geojson.org/geojson-spec.html>`_ (or similarly-formatted
-analogs for other formats) and all `spatial lookup <https://docs.djangoproject.com/en/1.3/ref/contrib/gis/geoquerysets/#spatial-lookups>`_ filters are supported.  Distance lookups are not yet supported.
+analogs for other formats) and all `spatial lookup <https://docs.djangoproject.com/en/dev/ref/contrib/gis/geoquerysets/#spatial-lookups>`_ filters are supported.  Distance lookups are not yet supported.
 
 Usage
 =====
@@ -61,7 +61,7 @@ GeoJSON analog for your perferred format.
 Filtering
 ---------
 
-We can filter using any standard GeoDjango `spatial lookup <https://docs.djangoproject.com/en/1.3/ref/contrib/gis/geoquerysets/#spatial-lookups>`_ filter.  Simply provide a GeoJSON (or the analog) as a ``GET`` parameter value.
+We can filter using any standard GeoDjango `spatial lookup <https://docs.djangoproject.com/en/dev/ref/contrib/gis/geoquerysets/#spatial-lookups>`_ filter.  Simply provide a GeoJSON (or the analog) as a ``GET`` parameter value.
 
 Let's find all of our ``GeoNote`` resources that contain a point inside
 of `Golden Gate Park <https://sf.localwiki.org/Golden_Gate_Park>`_::

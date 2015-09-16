@@ -1057,12 +1057,8 @@ class ToManyFieldTestCase(TestCase):
         field_1 = ToManyField(SubjectResource, 'subjects')
         field_1.instance_name = 'm2m'
 
-        try:
-            # self.assertRaises isn't cooperating here. Do it the hard way.
+        with self.assertRaises(ApiFieldError):
             field_1.dehydrate(bundle_1)
-            self.fail()
-        except ApiFieldError:
-            pass
 
         field_2 = ToManyField(SubjectResource, 'subjects', null=True)
         field_2.instance_name = 'm2m'
@@ -1101,15 +1097,14 @@ class ToManyFieldTestCase(TestCase):
         bundle_6 = Bundle(obj=self.note_3)
         self.assertEqual(field_6.dehydrate(bundle_6), [])
 
-        try:
-            # Regression for missing variable initialization.
-            field_7 = ToManyField(SubjectResource, None)
-            field_7.instance_name = 'm2m'
-            bundle_7 = Bundle(obj=self.note_3)
+        # Regression for missing variable initialization.
+        field_7 = ToManyField(SubjectResource, None)
+        field_7.instance_name = 'm2m'
+        bundle_7 = Bundle(obj=self.note_3)
+
+        with self.assertRaises(ApiFieldError):
+            # ToManyField requires an attribute of some type.
             field_7.dehydrate(bundle_7)
-            self.fail('ToManyField requires an attribute of some type.')
-        except ApiFieldError:
-            pass
 
     def test_dehydrate_full_detail_list(self):
         # details path with full_detail=False

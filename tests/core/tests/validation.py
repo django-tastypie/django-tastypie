@@ -24,12 +24,13 @@ class NoteForm(forms.Form):
 
 
 class ValidationTestCase(TestCase):
-    def test_init(self):
+    def test_init_no_args(self):
         try:
             Validation()
         except Exception:
             self.fail("Initialization failed when it should have succeeded.")
 
+    def test_init_form_class_provided(self):
         try:
             Validation(form_class='foo')
         except Exception:
@@ -50,9 +51,10 @@ class ValidationTestCase(TestCase):
 
 
 class FormValidationTestCase(TestCase):
-    def test_init(self):
+    def test_init_no_args(self):
         self.assertRaises(ImproperlyConfigured, FormValidation)
 
+    def test_init_form_class_provided(self):
         try:
             FormValidation(form_class=NoteForm)
         except Exception:
@@ -101,9 +103,10 @@ class FormValidationTestCase(TestCase):
 
 
 class CleanedDataFormValidationTestCase(TestCase):
-    def test_init(self):
+    def test_init_no_args(self):
         self.assertRaises(ImproperlyConfigured, CleanedDataFormValidation)
 
+    def test_init_form_class_provided(self):
         try:
             CleanedDataFormValidation(form_class=NoteForm)
         except Exception:

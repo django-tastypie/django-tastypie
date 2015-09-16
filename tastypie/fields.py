@@ -4,11 +4,7 @@ import datetime
 from dateutil.parser import parse
 import decimal
 from decimal import Decimal
-
-try:
-    import importlib
-except ImportError:
-    from django.utils import importlib
+import importlib
 
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.db.models.fields.related import SingleRelatedObjectDescriptor
@@ -280,7 +276,7 @@ class DecimalField(ApiField):
         if value is None:
             return None
 
-        return Decimal(str(value))
+        return Decimal(value)
 
     def hydrate(self, bundle):
         value = super(DecimalField, self).hydrate(bundle)
@@ -624,7 +620,11 @@ class RelatedField(ApiField):
             fk_bundle.related_obj = related_obj
             fk_bundle.related_name = related_name
 
-        unique_keys = dict((k, v) for k, v in data.items() if k == 'pk' or (hasattr(fk_resource, k) and getattr(fk_resource, k).unique))
+        unique_keys = {
+            k: v
+            for k, v in data.items()
+            if k == 'pk' or (hasattr(fk_resource, k) and getattr(fk_resource, k).unique)
+        }
 
         # If we have no unique keys, we shouldn't go look for some resource that
         # happens to match other kwargs. In the case of a create, it might be the

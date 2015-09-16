@@ -1,8 +1,6 @@
 import json
 
-import django
 from django.contrib.auth.models import User
-from django.http import HttpRequest
 from django.test import Client
 
 from testcases import TestCaseWithFixture
@@ -10,10 +8,6 @@ from testcases import TestCaseWithFixture
 
 class ViewsTestCase(TestCaseWithFixture):
     def setUp(self):
-        if django.VERSION >= (1, 4):
-            self.body_attr = "body"
-        else:
-            self.body_attr = "raw_post_data"
         super(ViewsTestCase, self).setUp()
 
     def test_gets(self):
@@ -49,9 +43,7 @@ class ViewsTestCase(TestCaseWithFixture):
         self.assertRaises(Exception, self.client.get, '/api/v2/busted/', data={'format': 'json'})
 
     def test_posts(self):
-        request = HttpRequest()
         post_data = b'{"content": "A new post.", "is_active": true, "title": "New Title", "slug": "new-title", "user": "/api/v1/users/1/"}'
-        setattr(request, "_" + self.body_attr, post_data)
 
         resp = self.client.post('/api/v1/notes/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
@@ -66,9 +58,7 @@ class ViewsTestCase(TestCaseWithFixture):
         self.assertEqual(obj['user'], '/api/v1/users/1/')
 
     def test_puts(self):
-        request = HttpRequest()
         post_data = '{"content": "Another new post.", "is_active": true, "title": "Another New Title", "slug": "new-title", "user": "/api/v1/users/1/"}'
-        setattr(request, "_" + self.body_attr, post_data)
 
         resp = self.client.put('/api/v1/notes/1/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 204)
@@ -84,9 +74,7 @@ class ViewsTestCase(TestCaseWithFixture):
     def test_api_field_error(self):
         # When a field error is encountered, we should be presenting the message
         # back to the user.
-        request = HttpRequest()
         post_data = '{"content": "More internet memes.", "is_active": true, "title": "IT\'S OVER 9000!", "slug": "its-over", "user": "/api/v1/users/9001/"}'
-        setattr(request, "_" + self.body_attr, post_data)
 
         resp = self.client.post('/api/v1/notes/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 400)
