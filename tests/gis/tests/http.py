@@ -79,13 +79,13 @@ class HTTPTestCase(TestServerTestCase):
         connection = self.get_connection()
         post_data = '{"content": "A new post.", "is_active": true, "title": "New Title", "slug": "new-title", "user": "/api/v1/users/1/"}'
         connection.request('POST', '/api/v1/geonotes/', body=post_data, headers={'Accept': 'application/json', 'Content-type': 'application/json'})
-        
+
         response = connection.getresponse()
-        
+
         self.assertEqual(response.status, 201)
-        
+
         headers = dict(response.getheaders())
-        
+
         location = headers.get('location', headers.get('Location'))
         self.assertEqual(location, 'http://localhost:8001/api/v1/geonotes/4/')
 
@@ -112,14 +112,14 @@ class HTTPTestCase(TestServerTestCase):
         }"""
         connection.request('POST', '/api/v1/geonotes/', body=post_data, headers={'Accept': 'application/json', 'Content-type': 'application/json'})
         response = connection.getresponse()
-        
+
         self.assertEqual(response.status, 201)
-        
+
         headers = dict(response.getheaders())
-        
+
         location = headers.get('location', headers.get('Location'))
         self.assertEqual(location, 'http://localhost:8001/api/v1/geonotes/4/')
-        
+
         # make sure posted object exists
         connection.request('GET', '/api/v1/geonotes/4/', headers={'Accept': 'application/json'})
         response = connection.getresponse()
@@ -140,11 +140,11 @@ class HTTPTestCase(TestServerTestCase):
         post_data = """<object><created>2010-03-30T20:05:00</created><polys type="null"/><is_active type="boolean">True</is_active><title>Points inside Golden Gate Park note 2</title><lines type="null"/><slug>points-inside-golden-gate-park-note-2</slug><content>A new post.</content><points type="hash"><type>MultiPoint</type><coordinates type="list"><objects><value type="float">-122.475233</value><value type="float">37.768617</value></objects><objects><value type="float">-122.470416</value><value type="float">37.767382</value></objects></coordinates></points><user>/api/v1/users/1/</user></object>"""
         connection.request('POST', '/api/v1/geonotes/', body=post_data, headers={'Accept': 'application/xml', 'Content-type': 'application/xml'})
         response = connection.getresponse()
-        
+
         self.assertEqual(response.status, 201)
-        
+
         headers = dict(response.getheaders())
-        
+
         location = headers.get('location', headers.get('Location'))
         self.assertEqual(location, 'http://localhost:8001/api/v1/geonotes/4/')
 
@@ -171,7 +171,7 @@ class HTTPTestCase(TestServerTestCase):
 
         self.assertEqual(response.status, 200)
         data = response.read().decode('utf-8')
-        
+
         self.assertIn('<points type="hash"><coordinates type="list"><objects><value type="float">-122.475233</value><value type="float">37.768617</value></objects><objects><value type="float">-122.470416</value><value type="float">37.767382</value></objects></coordinates><type>MultiPoint</type></points>', data)
 
     def test_filter_within_on_points(self):

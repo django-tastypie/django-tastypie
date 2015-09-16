@@ -53,8 +53,9 @@ class BaseThrottle(object):
         """
         Returns whether or not the user has exceeded their throttle limit. If
         throttled, can return either True, and int specifying the number of
-        seconds to wait, or a datetime object specifying when to retry the request.
-        
+        seconds to wait, or a datetime object specifying when to retry the
+        request.
+
         Always returns ``False``, as this implementation does not actually
         throttle the user.
         """
@@ -77,7 +78,8 @@ class CacheThrottle(BaseThrottle):
         """
         Returns whether or not the user has exceeded their throttle limit. If
         throttled, can return either True, and int specifying the number of
-        seconds to wait, or a datetime object specifying when to retry the request.
+        seconds to wait, or a datetime object specifying when to retry the
+        request.
 
         Maintains a list of timestamps when the user accessed the api within
         the cache.
@@ -91,7 +93,7 @@ class CacheThrottle(BaseThrottle):
         now = int(time.time())
         timeframe = int(self.timeframe)
         throttle_at = int(self.throttle_at)
-        
+
         minimum_time = now - timeframe
         times_accessed = [access for access in cache.get(key, []) if access >= minimum_time]
         cache.set(key, times_accessed, self.expiration)

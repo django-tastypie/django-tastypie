@@ -17,6 +17,7 @@ def header_name(name):
     else:
         return name.lower()
 
+
 @override_settings(DEBUG=True)
 class HTTPTestCase(TestServerTestCase):
     def setUp(self):
@@ -42,7 +43,7 @@ class HTTPTestCase(TestServerTestCase):
         connection.request('GET', '/api/v1/', headers={'Accept': 'invalid'})
         response = connection.getresponse()
         connection.close()
-        data = response.read().decode('utf-8')
+        response.read().decode('utf-8')
         self.assertEqual(response.status, 400, "Invalid HTTP Accept headers should return HTTP 400")
 
     def test_get_resource_invalid_accept(self):
@@ -53,7 +54,7 @@ class HTTPTestCase(TestServerTestCase):
         connection.request('GET', '/api/v1/notes/', headers={'Accept': 'invalid'})
         response = connection.getresponse()
         connection.close()
-        data = response.read().decode('utf-8')
+        response.read().decode('utf-8')
         self.assertEqual(response.status, 400, "Invalid HTTP Accept headers should return HTTP 400")
 
     def test_get_apis_xml(self):

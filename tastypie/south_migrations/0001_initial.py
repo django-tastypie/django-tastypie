@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import datetime
 from south.db import db
 from south.v2 import SchemaMigration
-from django.db import models
 from tastypie.compat import AUTH_USER_MODEL
 
 
@@ -30,7 +29,6 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal('tastypie', ['ApiKey'])
 
-
     def backwards(self, orm):
 
         # Deleting model 'ApiAccess'
@@ -38,7 +36,6 @@ class Migration(SchemaMigration):
 
         # Deleting model 'ApiKey'
         db.delete_table('tastypie_apikey')
-
 
     models = {
         'auth.group': {

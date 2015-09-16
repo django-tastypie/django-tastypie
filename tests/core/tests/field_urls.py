@@ -14,7 +14,7 @@ class SubjectResource(ModelResource):
 class CustomNoteResource(ModelResource):
     author = fields.ForeignKey(UserResource, 'author')
     subjects = fields.ManyToManyField(SubjectResource, 'subjects')
-    
+
     class Meta:
         resource_name = 'notes'
         queryset = Note.objects.all()

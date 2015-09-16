@@ -1,8 +1,10 @@
+import json
+
 import django
 from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.test import Client
-import json
+
 from testcases import TestCaseWithFixture
 
 
@@ -88,7 +90,8 @@ class ViewsTestCase(TestCaseWithFixture):
 
         resp = self.client.post('/api/v1/notes/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 400)
-        self.assertEqual(json.loads(resp.content.decode('utf-8')),
+        self.assertEqual(
+            json.loads(resp.content.decode('utf-8')),
             {
                 "error": "Could not find the provided users object via resource URI \'/api/v1/users/9001/\'."
             }
@@ -143,7 +146,7 @@ class ViewsTestCase(TestCaseWithFixture):
 
     def test_session_auth(self):
         csrf_client = Client(enforce_csrf_checks=True)
-        super_duper = User.objects.create_superuser('daniel', 'daniel@example.com', 'pass')
+        User.objects.create_superuser('daniel', 'daniel@example.com', 'pass')
 
         # Unauthenticated.
         resp = csrf_client.get('/api/v2/sessionusers/', data={'format': 'json'})

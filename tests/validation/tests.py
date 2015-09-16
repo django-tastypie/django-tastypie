@@ -1,6 +1,3 @@
-from django.conf import settings
-from django.core.urlresolvers import reverse, NoReverseMatch
-from django.http import HttpRequest
 import json
 
 from basic.models import Note
@@ -13,30 +10,30 @@ class FilteringErrorsTestCase(TestCaseWithFixture):
     def test_valid_date(self):
         resp = self.client.get('/api/v1/notes/', data={
             'format': 'json',
-            'created__gte':'2010-03-31'
+            'created__gte': '2010-03-31'
         })
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized['objects']), Note.objects.filter(created__gte='2010-03-31').count())
 
-
     def test_invalid_date(self):
         resp = self.client.get('/api/v1/notes/', data={
             'format': 'json',
-            'created__gte':'foo-baz-bar'
+            'created__gte': 'foo-baz-bar'
         })
         self.assertEqual(resp.status_code, 400)
+
 
 class PostNestResouceValidationTestCase(TestCaseWithFixture):
     urls = 'validation.api.urls'
 
     def test_valid_data(self):
         data = json.dumps({
-            'title' : 'Test Title',
-            'slug' : 'test-title',
-            'content' : 'This is the content',
-            'user' : {'pk' : 1}, # loaded from fixtures
-            'annotated' : {'annotations' : 'This is an annotations'},
+            'title': 'Test Title',
+            'slug': 'test-title',
+            'content': 'This is the content',
+            'user': {'pk': 1},  # loaded from fixtures
+            'annotated': {'annotations': 'This is an annotations'},
         })
 
         resp = self.client.post('/api/v1/notes/', data=data, content_type='application/json')
@@ -46,11 +43,11 @@ class PostNestResouceValidationTestCase(TestCaseWithFixture):
 
     def test_invalid_data(self):
         data = json.dumps({
-            'title' : '',
-            'slug' : 'test-title',
-            'content' : 'This is the content',
-            'user' : {'pk' : 1}, # loaded from fixtures
-            'annotated' : {'annotations' : ''},
+            'title': '',
+            'slug': 'test-title',
+            'content': 'This is the content',
+            'user': {'pk': 1},  # loaded from fixtures
+            'annotated': {'annotations': ''},
         })
 
         resp = self.client.post('/api/v1/notes/', data=data, content_type='application/json')
@@ -70,10 +67,10 @@ class PutDetailNestResouceValidationTestCase(TestCaseWithFixture):
 
     def test_valid_data(self):
         data = json.dumps({
-            'title' : 'Test Title',
-            'slug' : 'test-title',
-            'content' : 'This is the content',
-            'annotated' : {'annotations' : 'This is another annotations'},
+            'title': 'Test Title',
+            'slug': 'test-title',
+            'content': 'This is the content',
+            'annotated': {'annotations': 'This is another annotations'},
         })
 
         resp = self.client.put('/api/v1/notes/1/', data=data, content_type='application/json')
@@ -84,10 +81,10 @@ class PutDetailNestResouceValidationTestCase(TestCaseWithFixture):
 
     def test_invalid_data(self):
         data = json.dumps({
-            'title' : '',
-            'slug' : '',
-            'content' : 'This is the content',
-            'annotated' : {'annotations' : None},
+            'title': '',
+            'slug': '',
+            'content': 'This is the content',
+            'annotated': {'annotations': None},
         })
 
         resp = self.client.put('/api/v1/notes/1/', data=data, content_type='application/json')
@@ -107,22 +104,22 @@ class PutListNestResouceValidationTestCase(TestCaseWithFixture):
     urls = 'validation.api.urls'
 
     def test_valid_data(self):
-        data = json.dumps({'objects' : [
+        data = json.dumps({'objects': [
             {
-                'id' : 1,
-                'title' : 'Test Title',
-                'slug' : 'test-title',
-                'content' : 'This is the content',
-                'annotated' : {'annotations' : 'This is another annotations'},
-                'user' : {'id' : 1}
+                'id': 1,
+                'title': 'Test Title',
+                'slug': 'test-title',
+                'content': 'This is the content',
+                'annotated': {'annotations': 'This is another annotations'},
+                'user': {'id': 1}
             },
             {
-                'id' : 2,
-                'title' : 'Test Title',
-                'slug' : 'test-title',
-                'content' : 'This is the content',
-                'annotated' : {'annotations' : 'This is the third annotations'},
-                'user' : {'id' : 1}
+                'id': 2,
+                'title': 'Test Title',
+                'slug': 'test-title',
+                'content': 'This is the content',
+                'annotated': {'annotations': 'This is the third annotations'},
+                'user': {'id': 1}
             }
 
         ]})
@@ -135,19 +132,19 @@ class PutListNestResouceValidationTestCase(TestCaseWithFixture):
         self.assertTrue(note['annotated'])
 
     def test_invalid_data(self):
-        data = json.dumps({'objects' : [
+        data = json.dumps({'objects': [
             {
-                'id' : 1,
-                'title' : 'Test Title',
-                'slug' : 'test-title',
-                'annotated' : {'annotations' : None},
-                'user' : {'id' : 1}
+                'id': 1,
+                'title': 'Test Title',
+                'slug': 'test-title',
+                'annotated': {'annotations': None},
+                'user': {'id': 1}
             },
             {
-                'id' : 2,
-                'title' : 'Test Title',
-                'annotated' : {'annotations' : None},
-                'user' : {'id' : 1}
+                'id': 2,
+                'title': 'Test Title',
+                'annotated': {'annotations': None},
+                'user': {'id': 1}
             }
         ]})
 

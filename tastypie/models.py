@@ -1,9 +1,12 @@
 from __future__ import unicode_literals
+
 import hmac
 import time
+
 from django.conf import settings
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
+
 from tastypie.utils import now
 
 try:
@@ -11,6 +14,7 @@ try:
 except ImportError:
     import sha
     sha1 = sha.sha
+
 
 @python_2_unicode_compatible
 class ApiAccess(models.Model):
@@ -31,6 +35,7 @@ class ApiAccess(models.Model):
 if 'django.contrib.auth' in settings.INSTALLED_APPS:
     import uuid
     from tastypie.compat import AUTH_USER_MODEL
+
     class ApiKey(models.Model):
         user = models.OneToOneField(AUTH_USER_MODEL, related_name='api_key')
         key = models.CharField(max_length=128, blank=True, default='', db_index=True)
@@ -53,7 +58,6 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
 
         class Meta:
             abstract = getattr(settings, 'TASTYPIE_ABSTRACT_APIKEY', False)
-
 
     def create_api_key(sender, **kwargs):
         """

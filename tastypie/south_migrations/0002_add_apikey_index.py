@@ -1,21 +1,19 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-import datetime
 from south.db import db
 from south.v2 import SchemaMigration
-from django.db import models
 from tastypie.compat import AUTH_USER_MODEL
 
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        if not db.backend_name in ('mysql', 'sqlite'):
+        if db.backend_name not in ('mysql', 'sqlite'):
             # Adding index on 'ApiKey', fields ['key']
             db.create_index('tastypie_apikey', ['key'])
 
     def backwards(self, orm):
-        if not db.backend_name in ('mysql', 'sqlite'):
+        if db.backend_name not in ('mysql', 'sqlite'):
             # Removing index on 'ApiKey', fields ['key']
             db.delete_index('tastypie_apikey', ['key'])
 

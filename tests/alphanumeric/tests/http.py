@@ -17,6 +17,7 @@ def header_name(name):
     else:
         return name.lower()
 
+
 @override_settings(DEBUG=True)
 class HTTPTestCase(TestServerTestCase):
     def setUp(self):
@@ -116,7 +117,7 @@ class HTTPTestCase(TestServerTestCase):
         self.maxDiff = None
         resp = json.loads(data)
 
-        #testing separately to help locate issues
+        # testing separately to help locate issues
         self.assertEqual(resp['meta'], expected['meta'])
         self.assertEqual(resp['objects'], expected['objects'])
 

@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
-from django.conf import settings
+
 import django
+from django.conf import settings
+
 
 __all__ = ['get_user_model', 'get_username_field', 'AUTH_USER_MODEL']
 
@@ -23,6 +25,7 @@ else:
 
     def get_username_field():
         return 'username'
+
 
 def get_module_name(meta):
     return getattr(meta, 'model_name', None) or getattr(meta, 'module_name')

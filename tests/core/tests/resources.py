@@ -2,11 +2,11 @@ import base64
 import copy
 import datetime
 from decimal import Decimal
-import django
 import json
 from mock import patch
 import time
 
+import django
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -17,7 +17,7 @@ from django import forms
 from django.http import HttpRequest, QueryDict, Http404
 from django.test import TestCase
 from django.utils.encoding import force_text
-from django.utils import six, timezone
+from django.utils import timezone
 
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
@@ -339,13 +339,13 @@ class ResourceTestCase(TestCase):
         basic = BasicResourceWithDifferentListAndDetailFields()
         test_bundle_1 = basic.build_bundle(obj=test_object_1)
 
-        #check hydration with details
+        # check hydration with details
         bundle_1 = basic.full_dehydrate(test_bundle_1)
         self.assertEqual(bundle_1.data['name'], 'Daniel')
         self.assertEqual(bundle_1.data['view_count'], 12)
         self.assertEqual(bundle_1.data.get('date_joined'), None)
 
-        #now check dehydration with lists
+        # now check dehydration with lists
         test_bundle_2 = basic.build_bundle(obj=test_object_1)
 
         bundle_2 = basic.full_dehydrate(test_bundle_2, for_list=True)
@@ -363,14 +363,14 @@ class ResourceTestCase(TestCase):
         basic = BasicResourceWithDifferentListAndDetailFieldsCallable()
         test_bundle_1 = basic.build_bundle(obj=test_object_1)
 
-        #check hydration with details
+        # check hydration with details
         bundle_1 = basic.full_dehydrate(test_bundle_1)
         self.assertEqual(bundle_1.data['name'], 'Daniel')
         self.assertEqual(bundle_1.data['view_count'], 12)
         self.assertEqual(bundle_1.data.get('date_joined'), None)
 
-        #now check dehydration with lists. Should be the same as details since
-        #we are using callables for the use_in
+        # now check dehydration with lists. Should be the same as details since
+        # we are using callables for the use_in
         test_bundle_2 = basic.build_bundle(obj=test_object_1)
 
         bundle_2 = basic.full_dehydrate(test_bundle_2, for_list=True)
@@ -827,6 +827,7 @@ class NoteResource(ModelResource):
 
         return '/api/v1/notes/%s/' % bundle_or_obj.obj.id
 
+
 class NoQuerysetNoteResource(ModelResource):
     class Meta:
         resource_name = 'noqsnotes'
@@ -926,6 +927,7 @@ class AlwaysUserNoteResource(NoteResource):
     def get_object_list(self, request):
         return super(AlwaysUserNoteResource, self).get_object_list(request).filter(author=request.user)
 
+
 class UseInNoteResource(NoteResource):
 
     content = fields.CharField(attribute='content', use_in='detail')
@@ -935,11 +937,12 @@ class UseInNoteResource(NoteResource):
         queryset = Note.objects.all()
         authorization = Authorization()
 
+
 class UserResource(ModelResource):
     class Meta:
         queryset = User.objects.all()
         authorization = Authorization()
-        
+
     def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
         if bundle_or_obj is None:
             return '/api/v1/users/'
@@ -958,7 +961,7 @@ class DetailedNoteResource(ModelResource):
             'title': ALL,
             'slug': ['exact'],
             'user': ALL,
-            'hello_world': ['exact'], # Note this is invalid for filtering.
+            'hello_world': ['exact'],  # Note this is invalid for filtering.
         }
         ordering = ['title', 'slug', 'user']
         queryset = Note.objects.filter(is_active=True)
@@ -970,10 +973,12 @@ class DetailedNoteResource(ModelResource):
 
         return '/api/v1/notes/%s/' % bundle_or_obj.obj.id
 
+
 class DetailedNoteResourceWithHydrate(DetailedNoteResource):
     def hydrate(self, bundle):
         bundle.data['user'] = bundle.request.user  # This should fail using TastyPie 0.9.11 if triggered in patch_list
         return bundle
+
 
 class RequiredFKNoteResource(ModelResource):
     editor = fields.ForeignKey(UserResource, 'editor')
@@ -1295,7 +1300,7 @@ class ModelResourceTestCase(TestCase):
         request = HttpRequest()
         request.method = 'GET'
         resource = NoteResource()
-        res = resource.wrap_view('dispatch_list')(request)
+        resource.wrap_view('dispatch_list')(request)
         self.assertTrue(obj_get_list_mock.called, msg="Test invalid: obj_get_list should have been dispatched")
         self.assertTrue(send_signal_mock.called, msg="got_request_exception was not called after an error")
 
@@ -1511,13 +1516,13 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(note_1.pk, 1)
 
         try:
-            should_fail = resource.get_via_uri('http://example.com/')
+            resource.get_via_uri('http://example.com/')
             self.fail("'get_via_uri' should fail miserably with something that isn't an object URI.")
         except NotFound:
             pass
 
         try:
-            should_also_fail = resource.get_via_uri('/api/v1/notes/')
+            resource.get_via_uri('/api/v1/notes/')
             self.fail("'get_via_uri' should fail miserably with something that isn't an object URI.")
         except MultipleObjectsReturned:
             pass
@@ -1928,7 +1933,7 @@ class ModelResourceTestCase(TestCase):
         try:
             resp = resource.get_list(request)
             self.fail()
-        except BadRequest as e:
+        except BadRequest:
             pass
 
         # Try again with ``wrap_view`` for sanity.
@@ -1940,7 +1945,7 @@ class ModelResourceTestCase(TestCase):
         try:
             resp = resource.get_list(request)
             self.fail()
-        except BadRequest as e:
+        except BadRequest:
             pass
 
         # Then an out of range limit.
@@ -1948,7 +1953,7 @@ class ModelResourceTestCase(TestCase):
         try:
             resp = resource.get_list(request)
             self.fail()
-        except BadRequest as e:
+        except BadRequest:
             pass
 
         # Valid slice.
@@ -2222,13 +2227,13 @@ class ModelResourceTestCase(TestCase):
             }
         ])
 
-        #invalid sorting
+        # invalid sorting
         request.GET = {'format': 'json', 'order_by': 'monkey'}
         resp = resource.wrap_view('get_list')(request)
         self.assertEqual(resp.status_code, 400)
         res = json.loads(resp.content.decode('utf-8'))
         self.assertTrue('error' in res.keys())
-        self.assertTrue('monkey' in res['error']) #Error looks like "No matching \'monkey\' field for ordering on.
+        self.assertTrue('monkey' in res['error'])  # Error looks like "No matching \'monkey\' field for ordering on.
 
         # Test to make sure we're not inadvertently caching the QuerySet.
         request.GET = {'format': 'json'}
@@ -2368,37 +2373,37 @@ class ModelResourceTestCase(TestCase):
         self.assertTrue('limit=3' in list_data['meta']['next'])
         self.assertTrue('offset=3' in list_data['meta']['next'])
         self.assertEqual(list_data['objects'], [
-                {
-                    "content": "This is my very first post using my shiny new API. Pretty sweet, huh?",
-                    "created": "2010-03-30T20:05:00",
-                    "id": 1,
-                    "is_active": True,
-                    "resource_uri": "/api/v1/notes/1/",
-                    "slug": "first-post",
-                    "title": "First Post!",
-                    "updated": "2010-03-30T20:05:00"
-                },
-                {
-                    "content": "The dog ate my cat today. He looks seriously uncomfortable.",
-                    "created": "2010-03-31T20:05:00",
-                    "id": 2,
-                    "is_active": True,
-                    "resource_uri": "/api/v1/notes/2/",
-                    "slug": "another-post",
-                    "title": "Another Post",
-                    "updated": "2010-03-31T20:05:00"
-                },
-                {
-                    "content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.",
-                    "created": "2010-04-01T20:05:00",
-                    "id": 4,
-                    "is_active": True,
-                    "resource_uri": "/api/v1/notes/4/",
-                    "slug": "recent-volcanic-activity",
-                    "title": "Recent Volcanic Activity.",
-                    "updated": "2010-04-01T20:05:00"
-                }
-            ])
+            {
+                "content": "This is my very first post using my shiny new API. Pretty sweet, huh?",
+                "created": "2010-03-30T20:05:00",
+                "id": 1,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/1/",
+                "slug": "first-post",
+                "title": "First Post!",
+                "updated": "2010-03-30T20:05:00"
+            },
+            {
+                "content": "The dog ate my cat today. He looks seriously uncomfortable.",
+                "created": "2010-03-31T20:05:00",
+                "id": 2,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/2/",
+                "slug": "another-post",
+                "title": "Another Post",
+                "updated": "2010-03-31T20:05:00"
+            },
+            {
+                "content": "My neighborhood\'s been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.",
+                "created": "2010-04-01T20:05:00",
+                "id": 4,
+                "is_active": True,
+                "resource_uri": "/api/v1/notes/4/",
+                "slug": "recent-volcanic-activity",
+                "title": "Recent Volcanic Activity.",
+                "updated": "2010-04-01T20:05:00"
+            }
+        ])
 
     def test_get_list_use_in(self):
         resource = UseInNoteResource()
@@ -2409,7 +2414,6 @@ class ModelResourceTestCase(TestCase):
         resp = json.loads(resp.content.decode('utf-8'))
         for note in resp['objects']:
             self.assertNotIn('content', note)
-
 
     def test_get_detail(self):
         resource = NoteResource()
@@ -3015,7 +3019,7 @@ class ModelResourceTestCase(TestCase):
         try:
             resp = resource.dispatch_detail(request, pk=1)
             self.fail()
-        except BadRequest as e:
+        except BadRequest:
             pass
 
         # Try again with ``wrap_view`` for sanity.
@@ -3210,6 +3214,7 @@ class ModelResourceTestCase(TestCase):
 
         resource = ThrottledNoteResource()
         _orginal_throttle = resource._meta.throttle
+
         class BoolThrottle(resource._meta.throttle.__class__):
             def should_be_throttled(self, *args, **kwargs):
                 ret = super(BoolThrottle, self).should_be_throttled(*args, **kwargs)
@@ -3221,7 +3226,7 @@ class ModelResourceTestCase(TestCase):
             timeframe=resource._meta.throttle.timeframe,
             expiration=resource._meta.throttle.expiration
         )
-        
+
         request = HttpRequest()
         request.GET = {'format': 'json'}
         request.method = 'GET'
@@ -3324,9 +3329,10 @@ class ModelResourceTestCase(TestCase):
 
         retry_after = datetime.datetime(year=2014, month=8, day=8, hour=8, minute=55, tzinfo=timezone.utc)
         retry_after_str = 'Fri, 08 Aug 2014 14:55:00 GMT'
-        
+
         resource = ThrottledNoteResource()
         _orginal_throttle = resource._meta.throttle
+
         class DatetimeThrottle(resource._meta.throttle.__class__):
             def should_be_throttled(self, *args, **kwargs):
                 ret = super(DatetimeThrottle, self).should_be_throttled(*args, **kwargs)
@@ -3338,7 +3344,7 @@ class ModelResourceTestCase(TestCase):
             timeframe=resource._meta.throttle.timeframe,
             expiration=resource._meta.throttle.expiration
         )
-        
+
         request = HttpRequest()
         request.GET = {'format': 'json'}
         request.method = 'GET'
@@ -3425,13 +3431,13 @@ class ModelResourceTestCase(TestCase):
     def test_obj_delete_list_custom_qs(self):
         self.assertEqual(len(Note.objects.all()), 6)
         base_bundle = Bundle()
-        notes = NoteResource().obj_delete_list(base_bundle)
+        NoteResource().obj_delete_list(base_bundle)
         self.assertEqual(len(Note.objects.all()), 2)
 
     def test_obj_delete_list_basic_qs(self):
         self.assertEqual(len(Note.objects.all()), 6)
         base_bundle = Bundle()
-        customs = VeryCustomNoteResource().obj_delete_list(base_bundle)
+        VeryCustomNoteResource().obj_delete_list(base_bundle)
         self.assertEqual(len(Note.objects.all()), 0)
 
     def test_obj_delete_list_non_queryset(self):
@@ -3446,7 +3452,7 @@ class ModelResourceTestCase(TestCase):
         request.method = 'DELETE'
         self.assertEqual(len(Note.objects.all()), 6)
         # This is a regression. Used to fail miserably.
-        notes = NonQuerysetNoteResource().delete_list(request=request)
+        NonQuerysetNoteResource().delete_list(request=request)
         self.assertEqual(len(Note.objects.all()), 4)
 
     def test_obj_delete_list_filtered(self):
@@ -3456,7 +3462,7 @@ class ModelResourceTestCase(TestCase):
 
         request = HttpRequest()
         request.method = 'DELETE'
-        request.GET = {'slug':str(note_to_delete.slug)}
+        request.GET = {'slug': str(note_to_delete.slug)}
         NoteResource().delete_list(request=request)
         self.assertEqual(len(Note.objects.all()), 5)
 
@@ -3786,7 +3792,6 @@ class ModelResourceTestCase(TestCase):
                 default_format = 'application/xml'
 
         validated = ValidatedNoteResource()
-        validated_xml = ValidatedXMLNoteResource()
 
         # Test empty data.
         bundle = Bundle(data={})
@@ -3945,10 +3950,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(hydrated2.data['subjects'], [])
 
         # Regression pt. II - Make sure saving the objects works.
-        bundle_3 = Bundle(data={
-            'author': '/api/v1/user/1/',
-        })
-        hydrated3 = nrrnr.obj_create(bundle_2)
+        nrrnr.obj_create(bundle_2)
         self.assertEqual(hydrated2.obj.author.username, u'johndoe')
         self.assertEqual(hydrated2.obj.subjects.count(), 0)
 
@@ -4045,13 +4047,13 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(ponr._post_limits, 1)
 
         try:
-            too_many = ponr.obj_get(bundle=base_bundle, is_active=True, pk__gte=1)
+            ponr.obj_get(bundle=base_bundle, is_active=True, pk__gte=1)
             self.fail()
         except MultipleObjectsReturned as e:
             self.assertEqual(str(e), "More than 'Note' matched 'is_active=True, pk__gte=1'.")
 
         try:
-            too_many = ponr.obj_get(bundle=base_bundle, pk=1000000)
+            ponr.obj_get(bundle=base_bundle, pk=1000000)
             self.fail()
         except Note.DoesNotExist as e:
             self.assertEqual(str(e), "Couldn't find an instance of 'Note' which matched 'pk=1000000'.")
@@ -4113,7 +4115,6 @@ class ModelResourceTestCase(TestCase):
         hydrated_2 = rornr.full_hydrate(hbundle_2)
         self.assertEqual(hydrated_2.obj.author.username, 'johndoe')
 
-
     def test_readonly_save_related(self):
         rornr = ReadOnlyRelatedNoteResource()
         note = Note.objects.get(pk=1)
@@ -4148,14 +4149,12 @@ class ModelResourceTestCase(TestCase):
         finally:
             related_obj.save = _real_save
 
-
     def test_collection_name(self):
         resource = AlternativeCollectionNameNoteResource()
         request = HttpRequest()
         response = resource.get_list(request)
         response_data = json.loads(force_text(response.content))
         self.assertTrue('alt_objects' in response_data)
-
 
     def test_collection_name_patch_list(self):
         """Test that patch list accepts alternative names"""
@@ -4268,7 +4267,7 @@ class BustedResourceTestCase(TestCase):
         settings.TASTYPIE_FULL_DEBUG = True
 
         try:
-            resp = self.resource.wrap_view('get_list')(self.request, pk=1)
+            self.resource.wrap_view('get_list')(self.request, pk=1)
             self.fail()
         except YouFail:
             pass

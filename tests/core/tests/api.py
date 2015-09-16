@@ -3,7 +3,7 @@ from django.http import HttpRequest
 from django.test import TestCase
 from tastypie.api import Api
 from tastypie.exceptions import NotRegistered, BadRequest
-from tastypie.resources import Resource, ModelResource
+from tastypie.resources import ModelResource
 from tastypie.serializers import Serializer
 from core.models import Note
 
@@ -98,7 +98,6 @@ class ApiTestCase(TestCase):
 
         self.assertEqual(isinstance(api.canonical_resource_for('notes'), NoteResource), True)
 
-        api_2 = Api()
         api.unregister(user_resource._meta.resource_name)
         self.assertRaises(NotRegistered, api.canonical_resource_for, 'users')
 

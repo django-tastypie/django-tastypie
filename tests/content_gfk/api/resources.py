@@ -10,6 +10,7 @@ class DefinitionResource(ModelResource):
         resource_name = 'definitions'
         queryset = Definition.objects.all()
 
+
 class NoteResource(ModelResource):
 
     class Meta:
@@ -22,6 +23,7 @@ class QuoteResource(ModelResource):
     class Meta:
         resource_name = 'quotes'
         queryset = Quote.objects.all()
+
 
 class RatingResource(ModelResource):
     content_object = GenericForeignKeyField({

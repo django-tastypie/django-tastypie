@@ -1,5 +1,5 @@
-import mock
 import json
+import mock
 
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
@@ -13,6 +13,7 @@ from .api.resources import PerUserAuthorization
 # run they'll pass.
 def ret_false(*args):
     return False
+
 
 class PerUserAuthorizationTestCase(ResourceTestCase):
     def setUp(self):

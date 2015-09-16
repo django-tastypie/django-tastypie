@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
+
 from tastypie.exceptions import TastypieError, Unauthorized
 from tastypie.compat import get_module_name
+
 
 class Authorization(object):
     """
@@ -172,7 +174,10 @@ class DjangoAuthorization(Authorization):
         if klass is False:
             return []
 
-        permission = '%s.add_%s' % (klass._meta.app_label, get_module_name(klass._meta))
+        permission = '%s.add_%s' % (
+            klass._meta.app_label,
+            get_module_name(klass._meta)
+        )
 
         if not bundle.request.user.has_perm(permission):
             return []
@@ -185,7 +190,10 @@ class DjangoAuthorization(Authorization):
         if klass is False:
             raise Unauthorized("You are not allowed to access that resource.")
 
-        permission = '%s.add_%s' % (klass._meta.app_label, get_module_name(klass._meta))
+        permission = '%s.add_%s' % (
+            klass._meta.app_label,
+            get_module_name(klass._meta)
+        )
 
         if not bundle.request.user.has_perm(permission):
             raise Unauthorized("You are not allowed to access that resource.")
@@ -198,7 +206,10 @@ class DjangoAuthorization(Authorization):
         if klass is False:
             return []
 
-        permission = '%s.change_%s' % (klass._meta.app_label, get_module_name(klass._meta))
+        permission = '%s.change_%s' % (
+            klass._meta.app_label,
+            get_module_name(klass._meta)
+        )
 
         if not bundle.request.user.has_perm(permission):
             return []
@@ -211,7 +222,10 @@ class DjangoAuthorization(Authorization):
         if klass is False:
             raise Unauthorized("You are not allowed to access that resource.")
 
-        permission = '%s.change_%s' % (klass._meta.app_label, get_module_name(klass._meta))
+        permission = '%s.change_%s' % (
+            klass._meta.app_label,
+            get_module_name(klass._meta)
+        )
 
         if not bundle.request.user.has_perm(permission):
             raise Unauthorized("You are not allowed to access that resource.")
@@ -224,7 +238,10 @@ class DjangoAuthorization(Authorization):
         if klass is False:
             return []
 
-        permission = '%s.delete_%s' % (klass._meta.app_label, get_module_name(klass._meta))
+        permission = '%s.delete_%s' % (
+            klass._meta.app_label,
+            get_module_name(klass._meta)
+        )
 
         if not bundle.request.user.has_perm(permission):
             return []
@@ -237,7 +254,10 @@ class DjangoAuthorization(Authorization):
         if klass is False:
             raise Unauthorized("You are not allowed to access that resource.")
 
-        permission = '%s.delete_%s' % (klass._meta.app_label, get_module_name(klass._meta))
+        permission = '%s.delete_%s' % (
+            klass._meta.app_label,
+            get_module_name(klass._meta)
+        )
 
         if not bundle.request.user.has_perm(permission):
             raise Unauthorized("You are not allowed to access that resource.")
