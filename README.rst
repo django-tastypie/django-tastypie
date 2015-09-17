@@ -2,19 +2,25 @@
 django-tastypie
 ===============
 
+.. image:: https://readthedocs.org/projects/django-tastypie/badge/
+    :target: https://django-tastypie.readthedocs.org/
+    :alt: Docs
+
 .. image:: https://travis-ci.org/django-tastypie/django-tastypie.svg
     :target: https://travis-ci.org/django-tastypie/django-tastypie
+    :alt: CI
 
-.. image:: https://coveralls.io/repos/django-tastypie/django-tastypie/badge.svg?branch=master&service=github
-  :target: https://coveralls.io/github/django-tastypie/django-tastypie?branch=master
+.. image:: https://coveralls.io/repos/django-tastypie/django-tastypie/badge.svg?service=github
+    :target: https://coveralls.io/github/django-tastypie/django-tastypie
+    :alt: Code Coverage
 
-.. image:: https://pypip.in/v/django-tastypie/badge.png
-    :target: https://crate.io/packages/django-tastypie/
-    :alt: Latest PyPI version
+.. image:: https://img.shields.io/pypi/v/django-tastypie.svg
+    :target: https://pypi.python.org/pypi/django-tastypie
+    :alt: Version
 
-.. image:: https://pypip.in/d/django-tastypie/badge.png
-    :target: https://crate.io/packages/django-tastypie/
-    :alt: Number of PyPI downloads
+.. image:: https://img.shields.io/pypi/dm/django-tastypie.svg
+    :target: https://pypi.python.org/pypi/django-tastypie
+    :alt: Downloads
 
 Creating delicious APIs for Django apps since 2010.
 
