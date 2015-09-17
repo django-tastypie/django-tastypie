@@ -56,6 +56,8 @@ before_cache:
 
 # command to install dependencies
 install:
+    - export PIP_DOWNLOAD_CACHE=$HOME/.cache/pip
+    - pip install -U pip wheel virtualenv
     - pip install tox coveralls
 
 after_success:
