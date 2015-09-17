@@ -2,6 +2,20 @@
 django-tastypie
 ===============
 
+.. image:: https://travis-ci.org/django-tastypie/django-tastypie.svg
+    :target: https://travis-ci.org/django-tastypie/django-tastypie
+
+.. image:: https://coveralls.io/repos/django-tastypie/django-tastypie/badge.svg?branch=master&service=github
+  :target: https://coveralls.io/github/django-tastypie/django-tastypie?branch=master
+
+.. image:: https://pypip.in/v/django-tastypie/badge.png
+    :target: https://crate.io/packages/django-tastypie/
+    :alt: Latest PyPI version
+
+.. image:: https://pypip.in/d/django-tastypie/badge.png
+    :target: https://crate.io/packages/django-tastypie/
+    :alt: Number of PyPI downloads
+
 Creating delicious APIs for Django apps since 2010.
 
 Currently in beta (v0.12.2) but being used actively in production on several
