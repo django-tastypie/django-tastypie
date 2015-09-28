@@ -388,7 +388,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
         Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
         """
-        deserialized = self._meta.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        deserialized = self._meta.serializer.deserialize(data, format=format)
         return deserialized
 
     def alter_list_data_to_serialize(self, request, data):
