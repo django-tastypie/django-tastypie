@@ -8,6 +8,7 @@ from tastypie.exceptions import NotRegistered, BadRequest
 from tastypie.serializers import Serializer
 from tastypie.utils import trailing_slash, is_valid_jsonp_callback_value
 from tastypie.utils.mime import determine_format, build_content_type
+from tastypie.resources import Resource
 
 
 class Api(object):
@@ -37,6 +38,9 @@ class Api(object):
         ``True``.
         """
         resource_name = getattr(resource._meta, 'resource_name', None)
+
+        if not isinstance(resource, Resource):
+            raise ValueError("An instance of ``Resource`` subclass should be passed in for %s" % resource_name)
 
         if resource_name is None:
             raise ImproperlyConfigured("Resource %r must define a 'resource_name'." % resource)
