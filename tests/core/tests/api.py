@@ -46,6 +46,8 @@ class ApiTestCase(TestCase):
         self.assertEqual(sorted(api._registry.keys()), ['notes', 'users'])
         self.assertEqual(len(api._canonicals), 2)
 
+        self.assertRaises(ValueError, api.register, NoteResource)
+
     def test_global_registry(self):
         api = Api()
         self.assertEqual(len(api._registry), 0)
