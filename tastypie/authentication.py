@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 import base64
+from hashlib import sha1
 import hmac
 import time
 import uuid
@@ -10,14 +11,9 @@ from django.core.exceptions import ImproperlyConfigured
 from django.middleware.csrf import _sanitize_token, constant_time_compare
 from django.utils.http import same_origin
 from django.utils.translation import ugettext as _
-from tastypie.http import HttpUnauthorized
-from tastypie.compat import get_user_model, get_username_field
 
-try:
-    from hashlib import sha1
-except ImportError:
-    import sha
-    sha1 = sha.sha
+from tastypie.compat import get_user_model, get_username_field
+from tastypie.http import HttpUnauthorized
 
 try:
     import python_digest
@@ -189,8 +185,8 @@ class ApiKeyAuthentication(Authentication):
         username_field = get_username_field()
         User = get_user_model()
 
+        lookup_kwargs = {username_field: username}
         try:
-            lookup_kwargs = {username_field: username}
             user = User.objects.select_related('api_key').get(**lookup_kwargs)
         except (User.DoesNotExist, User.MultipleObjectsReturned):
             return self._unauthorized()
@@ -315,7 +311,7 @@ class DigestAuthentication(Authentication):
         opaque = hmac.new(str(new_uuid).encode('utf-8'), digestmod=sha1).hexdigest()
         response['WWW-Authenticate'] = python_digest.build_digest_challenge(
             timestamp=time.time(),
-            secret=getattr(settings, 'SECRET_KEY', ''),
+            secret=settings.SECRET_KEY,
             realm=self.realm,
             opaque=opaque,
             stale=False
@@ -343,7 +339,7 @@ class DigestAuthentication(Authentication):
         digest_response = python_digest.parse_digest_credentials(request.META['HTTP_AUTHORIZATION'])
 
         # FIXME: Should the nonce be per-user?
-        if not python_digest.validate_nonce(digest_response.nonce, getattr(settings, 'SECRET_KEY', '')):
+        if not python_digest.validate_nonce(digest_response.nonce, settings.SECRET_KEY):
             return self._unauthorized()
 
         user = self.get_user(digest_response.username)
