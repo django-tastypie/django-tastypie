@@ -250,6 +250,25 @@ class ConvertTestCase(TestCase):
 
 
 class ResourceTestCase(TestCase):
+    def test_deserialize(self):
+        request = MockRequest()
+        request.META['CONTENT_TYPE'] = 'application/xml'
+        request.set_body('<objects></objects>')
+
+        basic = BasicResource()
+        data = basic.deserialize(request, request.body)
+
+        self.assertEqual(data, [])
+
+    def test_deserialize_no_contenttype_header(self):
+        request = MockRequest()
+        request.set_body('[]')
+
+        basic = BasicResource()
+        data = basic.deserialize(request, request.body)
+
+        self.assertEqual(data, [])
+
     def test_fields(self):
         basic = BasicResource()
         self.assertEqual(len(basic.fields), 4)
