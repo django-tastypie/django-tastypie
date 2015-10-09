@@ -581,7 +581,8 @@ class RelatedField(ApiField):
             obj = fk_resource.get_via_uri(uri, request=request)
             bundle = fk_resource.build_bundle(
                 obj=obj,
-                request=request
+                request=request,
+                via_uri=True
             )
             return fk_resource.full_dehydrate(bundle)
         except ObjectDoesNotExist:
@@ -609,14 +610,14 @@ class RelatedField(ApiField):
         # happens to match other kwargs. In the case of a create, it might be the
         # completely wrong resource.
         # We also need to check to see if updates are allowed on the FK resource.
-        if unique_keys and fk_resource.can_update():
+        if unique_keys:
             try:
-                return fk_resource.obj_update(fk_bundle, skip_errors=True, **data)
-            except (NotFound, TypeError):
+                fk_resource.obj_get(fk_bundle, skip_errors=True, **data)
+            except (ObjectDoesNotExist, NotFound, TypeError):
                 try:
                     # Attempt lookup by primary key
-                    return fk_resource.obj_update(fk_bundle, skip_errors=True, **unique_keys)
-                except NotFound:
+                    fk_resource.obj_get(fk_bundle, skip_errors=True, **unique_keys)
+                except (ObjectDoesNotExist, NotFound):
                     pass
             except MultipleObjectsReturned:
                 pass

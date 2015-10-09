@@ -14,13 +14,17 @@ from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
 
 from related_resource.api.resources import CategoryResource, ForumResource,\
-    FreshNoteResource, JobResource, NoteResource, OrderResource,\
-    PersonResource, UserResource
+    FreshNoteResource, JobResource, NoteResource,\
+    NoteWithUpdatableUserResource, OrderResource, PersonResource, UserResource,\
+    Contact, ContactGroup
 from related_resource.api.urls import api
 from related_resource.models import Category, Label, Tag, Taggable,\
     TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product,\
     Address, Job, Payment, Forum, Order, OrderItem
 from testcases import TestCaseWithFixture
+
+
+old_saving_algorithm = django.VERSION[1] < 6
 
 
 class M2MResourcesTestCase(TestCaseWithFixture):
@@ -38,8 +42,11 @@ class M2MResourcesTestCase(TestCaseWithFixture):
             'members': [ur.get_resource_uri(user)],
             'moderators': [ur.get_resource_uri(user)],
         }))
+
         self.assertEqual(resp.status_code, 201, resp.content)
+
         data = json.loads(resp.content.decode('utf-8'))
+
         self.assertEqual(len(data['moderators']), 1)
         self.assertEqual(len(data['members']), 1)
 
@@ -316,7 +323,42 @@ class RelatedPatchTestCase(TestCaseWithFixture):
 
         self.assertEqual(cat2.name, 'Kid')
 
-    def test_patch_to_one_with_excluded_fields(self):
+    def test_patch_detail_with_missing_related_fields(self):
+        """
+        When fields are excluded the value of the field should not be set to a
+        default value if updated by tastypie.
+        """
+        resource = NoteWithUpdatableUserResource()
+        note = Note.objects.create(author_id=1)
+        user = User.objects.get(pk=1)
+
+        self.assertEqual(user.password, 'this_is_not_a_valid_password_string')
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PATCH'
+        request.path = "/v1/noteswithupdatableuser/%(pk)s/" % {'pk': note.pk}
+
+        data = {
+            'author': {
+                'id': 1,
+                'username': 'johndoe',
+                'email': 'john@doetown.com',
+            }
+        }
+
+        request.set_body(json.dumps(data))
+
+        resp = resource.patch_detail(request, pk=note.pk)
+
+        self.assertEqual(resp.status_code, 202)
+
+        user2 = User.objects.get(pk=1)
+
+        self.assertEqual(user2.email, 'john@doetown.com')
+        self.assertEqual(user2.password, 'this_is_not_a_valid_password_string')
+
+    def test_patch_detail_dont_update_related_without_permission(self):
         """
         When fields are excluded the value of the field should not be set to a
         default value if updated by tastypie.
@@ -342,7 +384,9 @@ class RelatedPatchTestCase(TestCaseWithFixture):
 
         request.set_body(json.dumps(data))
 
-        resource.patch_detail(request, pk=note.pk)
+        resp = resource.patch_detail(request, pk=note.pk)
+
+        self.assertEqual(resp.status_code, 202)
 
         user2 = User.objects.get(pk=1)
 
@@ -649,12 +693,37 @@ class NestedRelatedResourceTest(TestCaseWithFixture):
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
 
+    def test_many_to_many_change_nested(self):
+        """
+        Test a related ToMany resource with a nested full ToMany resource
+        """
+        self.assertEqual(Person.objects.count(), 0)
+        self.assertEqual(Dog.objects.count(), 0)
+        self.assertEqual(Bone.objects.count(), 0)
+
+        pr = PersonResource()
+
+        person = Person.objects.create(name='Joan Rivers')
+        dog = person.dogs.create(name='Snoopy')
+        bone = dog.bones.create(color='white')
+
+        pk = person.pk
+        request = MockRequest()
+        request.method = 'GET'
+        request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
+        resp = pr.get_detail(request, pk=pk)
+        self.assertEqual(resp.status_code, 200)
+
+        data = json.loads(resp.content.decode('utf-8'))
+
+        self.assertEqual(data['dogs'][0]['bones'][0]['color'], 'white')
+
         # Change just a nested resource via PUT
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        person['dogs'][0]['bones'][0]['color'] = 'gray'
-        body = json.dumps(person)
+        data['dogs'][0]['bones'][0]['color'] = 'gray'
+        body = json.dumps(data)
         request.set_body(body)
         request.path = reverse('api_dispatch_detail', kwargs={'pk': pk, 'resource_name': pr._meta.resource_name, 'api_name': pr._meta.api_name})
         resp = pr.put_detail(request, pk=pk)
@@ -745,7 +814,8 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
 
         request.set_body(json.dumps(body_dict))
 
-        resp = resource.wrap_view('dispatch_list')(request)
+        with self.assertNumQueries(5 if old_saving_algorithm else 4):
+            resp = resource.wrap_view('dispatch_list')(request)
         self.assertEqual(resp.status_code, 201)
 
         # 'extra' should have been set
@@ -763,7 +833,8 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
             'api_name': resource._meta.api_name
         })
 
-        resource.put_detail(request)
+        with self.assertNumQueries(7 if old_saving_algorithm else 5):
+            resource.put_detail(request)
 
         # 'extra' should have changed
         tag = Tag.objects.all()[0]
@@ -773,7 +844,7 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
     def test_no_save_m2m_unchanged_existing_data_persists(self):
         """
         Data should persist when posting an updated detail object with
-        unchanged reverse realated objects.
+        unchanged reverse related objects.
         """
         person = Person.objects.create(name='Ryan')
         dog = Dog.objects.create(name='Wilfred', owner=person)
@@ -798,7 +869,8 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
 
         request.set_body(json.dumps(body_dict))
 
-        resp = resource.wrap_view('dispatch_detail')(request, pk=dog.pk)
+        with self.assertNumQueries(19 if old_saving_algorithm else 14):
+            resp = resource.wrap_view('dispatch_detail')(request, pk=dog.pk)
 
         self.assertEqual(resp.status_code, 204)
 
@@ -810,6 +882,62 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
 
         self.assertEqual(dog_bones[0], bone1)
         self.assertEqual(dog_bones[1], bone2)
+
+    def test_no_save_m2m_related(self):
+        """
+        When saving an object with a M2M field, don't save that related object's related objects.
+        """
+        cg1 = ContactGroup.objects.create(name='The Inebriati')
+        cg2 = ContactGroup.objects.create(name='The Stone Cutters')
+
+        c1 = Contact.objects.create(name='foo')
+        c2 = Contact.objects.create(name='bar')
+        c2.groups.add(cg1, cg2)
+        c3 = Contact.objects.create(name='baz')
+        c3.groups.add(cg1)
+
+        self.assertEqual(list(c1.groups.all()), [])
+        self.assertEqual(list(c2.groups.all()), [cg1, cg2])
+        self.assertEqual(list(c3.groups.all()), [cg1])
+
+        data = {
+            'name': c1.name,
+            'groups': [reverse('api_dispatch_detail', kwargs={'api_name': 'v1', 'resource_name': 'contactgroup', 'pk': cg1.pk})],
+        }
+
+        resource = api.canonical_resource_for('contact')
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request._load_post_and_files = lambda *args, **kwargs: None
+        request.set_body(json.dumps(data))
+
+        num_queries = 9 if old_saving_algorithm else 8
+
+        with self.assertNumQueries(num_queries):
+            response = resource.wrap_view('dispatch_detail')(request, pk=c1.pk)
+
+        self.assertEqual(response.status_code, 204, response.content)
+
+        new_contacts = Contact.objects.all()
+        new_c1 = new_contacts[0]
+        new_c2 = new_contacts[1]
+        new_c3 = new_contacts[2]
+
+        self.assertEqual(new_c1.name, c1.name)
+
+        self.assertEqual(new_c1.id, c1.id)
+        self.assertEqual(list(new_c1.groups.all()), [cg1])
+        self.assertEqual(new_c2.id, c2.id)
+        self.assertEqual(list(new_c2.groups.all()), [cg1, cg2])
+        self.assertEqual(new_c3.id, c3.id)
+        self.assertEqual(list(new_c3.groups.all()), [cg1])
+
+        new_cg1 = ContactGroup.objects.get(id=cg1.id)
+        new_cg2 = ContactGroup.objects.get(id=cg2.id)
+
+        self.assertEqual(list(new_cg1.members.all()), [new_c1, new_c2, new_c3])
+        self.assertEqual(list(new_cg2.members.all()), [new_c2])
 
 
 class CorrectUriRelationsTestCase(TestCaseWithFixture):
@@ -852,7 +980,7 @@ class CorrectUriRelationsTestCase(TestCaseWithFixture):
         with self.assertRaises(NotFound) as cm:
             nr.post_list(request)
 
-        self.assertEqual(str(cm.exception), "An incorrect URL was provided '/v1/notes/2/' for the 'UpdatableUserResource' resource.")
+        self.assertEqual(str(cm.exception), "An incorrect URL was provided '/v1/notes/2/' for the 'UserResource' resource.")
         self.assertEqual(Note.objects.count(), 2)
 
 

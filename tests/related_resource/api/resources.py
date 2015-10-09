@@ -6,9 +6,9 @@ from tastypie.authorization import Authorization
 
 from core.models import Note, MediaBit
 
-from related_resource.models import Category, Tag, ExtraData, Taggable,\
-    TaggableTag, Person, Company, Product, Address, Dog, DogHouse, Forum,\
-    Bone, Job, Label, Payment, Post, Order, OrderItem
+from related_resource.models import Bone, Category, Contact, ContactGroup,\
+    ExtraData, Person, Company, Product, Address, Dog, DogHouse, Forum,\
+    Job, Label, Order, OrderItem, Payment, Post, Tag, Taggable, TaggableTag
 
 
 class UserResource(ModelResource):
@@ -28,10 +28,19 @@ class UpdatableUserResource(ModelResource):
 
 
 class NoteResource(ModelResource):
-    author = fields.ForeignKey(UpdatableUserResource, 'author')
+    author = fields.ForeignKey(UserResource, 'author')
 
     class Meta:
         resource_name = 'notes'
+        queryset = Note.objects.all()
+        authorization = Authorization()
+
+
+class NoteWithUpdatableUserResource(ModelResource):
+    author = fields.ForeignKey(UpdatableUserResource, 'author')
+
+    class Meta:
+        resource_name = 'noteswithupdatableuser'
         queryset = Note.objects.all()
         authorization = Authorization()
 
@@ -250,4 +259,22 @@ class OrderResource(ModelResource):
     class Meta:
         queryset = Order.objects.all()
         resource_name = 'order'
+        authorization = Authorization()
+
+
+class ContactGroupResource(ModelResource):
+    members = fields.ToManyField('related_resource.api.resources.ContactResource', 'members', related_name='groups', null=True, blank=True)
+
+    class Meta:
+        queryset = ContactGroup.objects.prefetch_related('members')
+        resource_name = 'contactgroup'
+        authorization = Authorization()
+
+
+class ContactResource(ModelResource):
+    groups = fields.ToManyField(ContactGroupResource, 'groups', related_name='members', null=True, blank=True)
+
+    class Meta:
+        queryset = Contact.objects.prefetch_related('groups')
+        resource_name = 'contact'
         authorization = Authorization()
