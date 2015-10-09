@@ -313,6 +313,34 @@ class RelatedPatchTestCase(TestCaseWithFixture):
         cat2 = Category.objects.get(pk=2)
         self.assertEqual(cat2.name, 'Kid')
 
+    def test_patch_to_one_with_excluded_fields(self):
+        """When fields are excluded the value of the field should not be set to a default value if updated by tastypie"""
+        resource = NoteResource()
+        note = Note.objects.create(author_id=1)
+        user = User.objects.get(pk=1)
+        self.assertEqual(user.password, 'this_is_not_a_valid_password_string')
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PATCH'
+        request.path = "/v1/note/%(pk)s/" % {'pk': note.pk}
+        request._read_started = False
+
+        data = {
+            'author': {     
+                            'id' : 1,
+                            'username': 'johndoe',
+                            'email': 'john@doetown.com',
+                        }
+                 }
+
+        setattr(request, self.body_attr, json.dumps(data))
+        resp = resource.patch_detail(request, pk=note.pk)
+        user2 = User.objects.get(pk=1)
+        self.assertEqual(user2.email,'john@doetown.com')
+        self.assertEqual(user2.password, 'this_is_not_a_valid_password_string')
+
+
+
 
 class NestedRelatedResourceTest(TestCaseWithFixture):
     urls = 'related_resource.api.urls'
@@ -375,6 +403,10 @@ class NestedRelatedResourceTest(TestCaseWithFixture):
         request.set_body(resp.content.decode('utf-8'))
         resp = pr.put_detail(request, pk=pk)
         self.assertEqual(resp.status_code, 204)
+
+
+
+
 
     def test_one_to_many(self):
         """
