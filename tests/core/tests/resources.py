@@ -1507,26 +1507,47 @@ class ModelResourceTestCase(TestCase):
             'pk': 1,
         }), '/notes/1/')
 
-    def test_get_via_uri(self):
+    def test__get_via_uri(self):
         resource = NoteResource(api_name='v1')
         note_1 = resource.get_via_uri('/api/v1/notes/1/')
         self.assertEqual(note_1.pk, 1)
+
+    def test__get_via_uri__app_name_same_as_resource(self):
+        resource = NoteResource(api_name='v1')
         # Should work even if app name is the same as resource
         note_1 = resource.get_via_uri('/notes/api/v1/notes/1/')
         self.assertEqual(note_1.pk, 1)
 
+    def test__get_via_uri__uri_has_special_chars(self):
+        resource = NoteResource(api_name='v1')
+        # Should work even if app name is the same as resource
+        note_1 = resource.get_via_uri('/~krichy/api/v1/notes/1/')
+        self.assertEqual(note_1.pk, 1)
+
+    def test__get_via_uri__uri_has_encoded_special_chars(self):
+        resource = NoteResource(api_name='v1')
+        # Should work even if app name is the same as resource
+        note_1 = resource.get_via_uri('/%7ekrichy/api/v1/notes/1/')
+        self.assertEqual(note_1.pk, 1)
+
+    def test__get_via_uri__invalid_uri(self):
+        resource = NoteResource(api_name='v1')
         try:
             resource.get_via_uri('http://example.com/')
             self.fail("'get_via_uri' should fail miserably with something that isn't an object URI.")
         except NotFound:
             pass
 
+    def test__get_via_uri__list_uri(self):
+        resource = NoteResource(api_name='v1')
         try:
             resource.get_via_uri('/api/v1/notes/')
             self.fail("'get_via_uri' should fail miserably with something that isn't an object URI.")
         except MultipleObjectsReturned:
             pass
 
+    def test__get_via_uri__with_request(self):
+        resource = NoteResource(api_name='v1')
         # Check with the request.
         request = HttpRequest()
         note_1 = resource.get_via_uri('/api/v1/notes/1/', request=request)
@@ -3388,11 +3409,11 @@ class ModelResourceTestCase(TestCase):
         resource._meta.throttle = _orginal_throttle
 
     def test_generate_cache_key(self):
-        resource = NoteResource()
-        self.assertEqual(resource.generate_cache_key(), 'None:notes::')
-        self.assertEqual(resource.generate_cache_key('abc', '123'), 'None:notes:abc:123:')
-        self.assertEqual(resource.generate_cache_key(foo='bar', moof='baz'), 'None:notes::foo=bar:moof=baz')
-        self.assertEqual(resource.generate_cache_key('abc', '123', foo='bar', moof='baz'), 'None:notes:abc:123:foo=bar:moof=baz')
+        resource = NoteResource(api_name='v1')
+        self.assertEqual(resource.generate_cache_key(), 'v1:notes::')
+        self.assertEqual(resource.generate_cache_key('abc', '123'), 'v1:notes:abc:123:')
+        self.assertEqual(resource.generate_cache_key(foo='bar', moof='baz'), 'v1:notes::foo=bar:moof=baz')
+        self.assertEqual(resource.generate_cache_key('abc', '123', foo='bar', moof='baz'), 'v1:notes:abc:123:foo=bar:moof=baz')
 
     def test_cached_fetch_list(self):
         resource = NoteResource()
