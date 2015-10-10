@@ -250,6 +250,41 @@ class ConvertTestCase(TestCase):
 
 
 class ResourceTestCase(TestCase):
+    def test_meta_not_shared_between_class_and_instance(self):
+        basic1 = BasicResource()
+
+        self.assertIsNot(basic1._meta, BasicResource.Meta)
+        self.assertIsNot(basic1._meta, BasicResource._meta)
+
+        basic1._meta.resource_name = 'foo'
+
+        self.assertEqual(basic1._meta.resource_name, 'foo')
+        self.assertEqual(BasicResource.Meta.resource_name, 'basic')
+
+    def test_meta_not_shared_between_instances(self):
+        basic1 = BasicResource()
+        basic2 = BasicResource()
+
+        self.assertEqual(basic1._meta.resource_name, 'basic')
+        self.assertEqual(basic2._meta.resource_name, 'basic')
+
+        self.assertIsNot(basic1._meta, basic2._meta)
+
+        basic1._meta.resource_name = 'foo'
+
+        self.assertEqual(basic1._meta.resource_name, 'foo')
+        self.assertEqual(basic2._meta.resource_name, 'basic')
+
+    def test_init_set_api_name(self):
+        basic1 = BasicResource()
+        basic2 = BasicResource(api_name='v1')
+        basic3 = BasicResource(api_name='v2')
+
+        self.assertEqual(basic1._meta.api_name, None)
+        self.assertEqual(basic2._meta.api_name, 'v1')
+        self.assertEqual(basic3._meta.api_name, 'v2')
+        self.assertFalse(hasattr(BasicResource.Meta, 'api_name'))
+
     def test_deserialize(self):
         request = MockRequest()
         request.META['CONTENT_TYPE'] = 'application/xml'
