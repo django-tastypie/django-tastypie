@@ -58,14 +58,14 @@ A common pattern is needing to limit a queryset by something that changes
 per-request, for instance the date/time. You can accomplish this by lightly
 modifying ``get_object_list``::
 
-    from tastypie.utils import now
+    from django.utils import timezone
 
     class MyResource(ModelResource):
         class Meta:
             queryset = MyObject.objects.all()
 
         def get_object_list(self, request):
-            return super(MyResource, self).get_object_list(request).filter(start_date__gte=now)
+            return super(MyResource, self).get_object_list(request).filter(start_date__gte=timezone.now())
 
 
 Using Your ``Resource`` In Regular Views
