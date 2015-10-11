@@ -11,7 +11,7 @@ from django.utils.encoding import force_text, smart_bytes
 from django.core.serializers import json as djangojson
 
 from tastypie.bundle import Bundle
-from tastypie.exceptions import BadRequest, UnsupportedFormat
+from tastypie.exceptions import UnsupportedFormat
 from tastypie.utils import format_datetime, format_date, format_time,\
     make_naive
 
@@ -410,10 +410,7 @@ class Serializer(object):
         """
         Given some JSON data, returns a Python dictionary of the decoded data.
         """
-        try:
-            return json.loads(content)
-        except ValueError:
-            raise BadRequest
+        return json.loads(content)
 
     def to_jsonp(self, data, options=None):
         """
@@ -447,9 +444,8 @@ class Serializer(object):
         """
         Given some XML data, returns a Python dictionary of the decoded data.
 
-        By default XML entity declarations and DTDs will raise a BadRequest
-        exception content but subclasses may choose to override this if
-        necessary.
+        By default XML entity declarations and DTDs will raise a ValueError
+        exception but subclasses may choose to override this if necessary.
         """
         if lxml is None:
             raise ImproperlyConfigured(
@@ -465,7 +461,7 @@ class Serializer(object):
                 forbid_entities=forbid_entities
             )
         except (LxmlError, DefusedXmlException):
-            raise BadRequest()
+            raise ValueError('XML parsing failed.')
 
         return self.from_etree(parsed.getroot())
 
