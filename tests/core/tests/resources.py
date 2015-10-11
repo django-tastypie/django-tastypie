@@ -3934,13 +3934,10 @@ class ModelResourceTestCase(TestCase):
             'title': "Foo",
         })
 
-        try:
+        with self.assertRaises(ValueError):
             # This is where things blow up, because you can't assign
             # ``None`` to a required FK.
             hydrated1 = nmbr.full_hydrate(bundle_1)
-            self.fail()
-        except (Note.DoesNotExist, ValueError):
-            pass
 
         # So we introduced ``blank=True``.
         bmbr = BlankMediaBitResource()
