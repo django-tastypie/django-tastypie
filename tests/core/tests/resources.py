@@ -86,7 +86,7 @@ class BasicResourceWithDifferentListAndDetailFieldsCallable(Resource):
 
 
 class BasicResource(Resource):
-    name = fields.CharField(attribute='name')
+    name = fields.CharField(attribute='name', verbose_name="Basic name")
     view_count = fields.IntegerField(attribute='view_count', default=0)
     date_joined = fields.DateTimeField(null=True)
 
@@ -561,10 +561,9 @@ class ResourceTestCase(TestCase):
         self.assertRaises(NotImplementedError, basic.rollback, bundles_seen)
 
     def test_build_schema(self):
-        self.maxDiff = None
         basic = BasicResource()
         schema = adjust_schema(basic.build_schema())
-        self.assertEqual(schema, {
+        expected_schema = {
             'allowed_detail_http_methods': ['get', 'post', 'put', 'delete', 'patch'],
             'allowed_list_http_methods': ['get', 'post', 'put', 'delete', 'patch'],
             'default_format': 'application/json',
@@ -575,49 +574,54 @@ class ResourceTestCase(TestCase):
                     'default': 'No default provided.',
                     'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
                     'nullable': True,
+                    'verbose_name': "date joined",
                     'readonly': False,
                     'type': 'datetime',
                     'unique': False,
-                    "primary_key": False
+                    'primary_key': False,
                 },
                 'name': {
                     'blank': False,
                     'default': 'No default provided.',
                     'help_text': 'Unicode string data. Ex: "Hello World"',
                     'nullable': False,
+                    'verbose_name': "Basic name",
                     'readonly': False,
                     'type': 'string',
                     'unique': False,
-                    "primary_key": False
+                    'primary_key': False,
                 },
                 'resource_uri': {
                     'blank': False,
                     'default': 'No default provided.',
                     'help_text': 'Unicode string data. Ex: "Hello World"',
                     'nullable': False,
+                    'verbose_name': "resource uri",
                     'readonly': True,
                     'type': 'string',
                     'unique': False,
-                    "primary_key": False
+                    'primary_key': False,
                 },
                 'view_count': {
                     'blank': False,
                     'default': 0,
                     'help_text': 'Integer data. Ex: 2673',
                     'nullable': False,
+                    'verbose_name': 'view count',
                     'readonly': False,
                     'type': 'integer',
                     'unique': False,
-                    "primary_key": False
+                    'primary_key': False,
                 }
             }
-        })
+        }
+        self.assertEqual(schema, expected_schema)
 
         basic = BasicResource()
         basic._meta.ordering = ['date_joined', 'name']
         basic._meta.filtering = {'date_joined': ['gt', 'gte'], 'name': ALL}
         schema = adjust_schema(basic.build_schema())
-        self.assertEqual(schema, {
+        expected_schema = {
             'filtering': {
                 'name': 1,
                 'date_joined': ['gt', 'gte']
@@ -628,6 +632,8 @@ class ResourceTestCase(TestCase):
                 'view_count': {
                     'nullable': False,
                     'default': 0,
+                    'help_text': 'Integer data. Ex: 2673',
+                    'verbose_name': "view count",
                     'readonly': False,
                     'blank': False,
                     'help_text': 'Integer data. Ex: 2673',
@@ -638,6 +644,8 @@ class ResourceTestCase(TestCase):
                 'date_joined': {
                     'nullable': True,
                     'default': 'No default provided.',
+                    'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
+                    'verbose_name': "date joined",
                     'readonly': False,
                     'blank': False,
                     'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
@@ -648,6 +656,8 @@ class ResourceTestCase(TestCase):
                 'name': {
                     'nullable': False,
                     'default': 'No default provided.',
+                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'verbose_name': "Basic name",
                     'readonly': False,
                     'blank': False,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
@@ -658,6 +668,8 @@ class ResourceTestCase(TestCase):
                 'resource_uri': {
                     'nullable': False,
                     'default': 'No default provided.',
+                    'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'verbose_name': "resource uri",
                     'readonly': True,
                     'blank': False,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
@@ -669,7 +681,8 @@ class ResourceTestCase(TestCase):
             'default_format': 'application/json',
             'default_limit': 20,
             'allowed_list_http_methods': ['get', 'post', 'put', 'delete', 'patch']
-        })
+        }
+        self.assertEqual(schema, expected_schema)
 
     def test_subclassing(self):
         class CommonMeta:
@@ -1057,7 +1070,7 @@ class SubjectResource(ModelResource):
 
 
 class RelatedNoteResource(ModelResource):
-    author = fields.ForeignKey(UserResource, 'author')
+    author = fields.ForeignKey(UserResource, 'author', verbose_name='The Author')
     subjects = fields.ManyToManyField(SubjectResource, 'subjects')
 
     class Meta:
@@ -1628,7 +1641,7 @@ class ModelResourceTestCase(TestCase):
     def test_build_schema(self):
         related = RelatedNoteResource()
         schema = adjust_schema(related.build_schema())
-        self.assertEqual(schema, {
+        expected_schema = {
             'filtering': {
                 'subjects': 2,
                 'author': 1
@@ -1642,6 +1655,7 @@ class ModelResourceTestCase(TestCase):
                     'readonly': False,
                     'blank': False,
                     'help_text': 'A single related resource. Can be either a URI or set of nested resource data.',
+                    'verbose_name': 'The Author',
                     'unique': False,
                     'type': 'related',
                     "primary_key": False
@@ -1652,6 +1666,7 @@ class ModelResourceTestCase(TestCase):
                     'readonly': False,
                     'blank': False,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'verbose_name': 'The Title',
                     'unique': False,
                     'type': 'string',
                     "primary_key": False
@@ -1662,6 +1677,7 @@ class ModelResourceTestCase(TestCase):
                     'readonly': False,
                     'blank': False,
                     'help_text': 'A date & time as a string. Ex: "2010-11-10T03:07:43"',
+                    'verbose_name': 'created',
                     'unique': False,
                     'type': 'datetime',
                     "primary_key": False
@@ -1672,6 +1688,7 @@ class ModelResourceTestCase(TestCase):
                     'readonly': False,
                     'blank': True,
                     'help_text': 'Boolean data. Ex: True',
+                    'verbose_name': 'is active',
                     'unique': False,
                     'type': 'boolean',
                     "primary_key": False
@@ -1682,6 +1699,7 @@ class ModelResourceTestCase(TestCase):
                     'readonly': False,
                     'blank': True,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'verbose_name': 'content',
                     'unique': False,
                     'type': 'string',
                     "primary_key": False
@@ -1693,6 +1711,7 @@ class ModelResourceTestCase(TestCase):
                     'readonly': False,
                     'blank': False,
                     'help_text': 'Many related resources. Can be either a list of URIs or list of individually nested resource data.',
+                    'verbose_name': 'subjects',
                     'unique': False,
                     'type': 'related',
                     "primary_key": False
@@ -1703,6 +1722,7 @@ class ModelResourceTestCase(TestCase):
                     'readonly': False,
                     'blank': False,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'verbose_name': 'slug',
                     'unique': False,
                     'type': 'string',
                     "primary_key": False
@@ -1713,6 +1733,7 @@ class ModelResourceTestCase(TestCase):
                     'readonly': True,
                     'blank': False,
                     'help_text': 'Unicode string data. Ex: "Hello World"',
+                    'verbose_name': 'resource uri',
                     'unique': False,
                     'type': 'string',
                     "primary_key": False
@@ -1721,7 +1742,8 @@ class ModelResourceTestCase(TestCase):
             'default_format': 'application/json',
             'default_limit': 20,
             'allowed_list_http_methods': ['get', 'post', 'put', 'delete', 'patch']
-        })
+        }
+        self.assertEqual(schema, expected_schema)
 
     def test_build_filters(self):
         resource = NoteResource()
@@ -3067,14 +3089,13 @@ class ModelResourceTestCase(TestCase):
         request.method = 'GET'
 
         # Patch the ``created/updated`` defaults for testability.
-        old_created = resource.fields['created']._default
-        old_updated = resource.fields['updated']._default
-        resource.fields['created']._default = aware_datetime(2011, 9, 24, 0, 2)
-        resource.fields['updated']._default = aware_datetime(2011, 9, 24, 0, 2)
+        with patch.object(resource.fields['created'], '_default', new=aware_datetime(2011, 9, 24, 0, 2)):
+            with patch.object(resource.fields['updated'], '_default', new=aware_datetime(2011, 9, 24, 0, 2)):
+                resp = resource.get_schema(request)
 
-        resp = resource.get_schema(request)
         self.assertEqual(resp.status_code, 200)
-        schema = {
+
+        expected_schema = {
             "allowed_detail_http_methods": ["get", "post", "put", "delete", "patch"],
             "allowed_list_http_methods": ["get", "post", "put", "delete", "patch"],
             "default_format": "application/json",
@@ -3084,6 +3105,7 @@ class ModelResourceTestCase(TestCase):
                     "blank": True,
                     "default": "",
                     "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "verbose_name": 'content',
                     "nullable": False,
                     "readonly": False,
                     "type": "string",
@@ -3094,6 +3116,7 @@ class ModelResourceTestCase(TestCase):
                     "blank": False,
                     "default": "2011-09-24T00:02:00",
                     "help_text": "A date & time as a string. Ex: \"2010-11-10T03:07:43\"",
+                    "verbose_name": 'created',
                     "nullable": False,
                     "readonly": False,
                     "type": "datetime",
@@ -3104,6 +3127,7 @@ class ModelResourceTestCase(TestCase):
                     "blank": True,
                     "default": "",
                     "help_text": "Integer data. Ex: 2673",
+                    "verbose_name": 'ID',
                     "nullable": False,
                     "readonly": False,
                     "type": "integer",
@@ -3114,6 +3138,7 @@ class ModelResourceTestCase(TestCase):
                     "blank": True,
                     "default": True,
                     "help_text": "Boolean data. Ex: True",
+                    "verbose_name": 'is active',
                     "nullable": False,
                     "readonly": False,
                     "type": "boolean",
@@ -3124,6 +3149,7 @@ class ModelResourceTestCase(TestCase):
                     "blank": False,
                     "default": "No default provided.",
                     "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "verbose_name": 'resource uri',
                     "nullable": False,
                     "readonly": True,
                     "type": "string",
@@ -3134,6 +3160,7 @@ class ModelResourceTestCase(TestCase):
                     "blank": False,
                     "default": "No default provided.",
                     "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "verbose_name": 'slug',
                     "nullable": False,
                     "readonly": False,
                     "type": "string",
@@ -3144,6 +3171,7 @@ class ModelResourceTestCase(TestCase):
                     "blank": False,
                     "default": "No default provided.",
                     "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "verbose_name": 'The Title',
                     "nullable": False,
                     "readonly": False,
                     "type": "string",
@@ -3154,6 +3182,7 @@ class ModelResourceTestCase(TestCase):
                     "blank": False,
                     "default": "2011-09-24T00:02:00",
                     "help_text": "A date & time as a string. Ex: \"2010-11-10T03:07:43\"",
+                    "verbose_name": 'updated',
                     "nullable": False,
                     "readonly": False,
                     "type": "datetime",
@@ -3168,11 +3197,131 @@ class ModelResourceTestCase(TestCase):
             },
             "ordering": ["title", "slug", "resource_uri"],
         }
-        self.assertEqual(json.loads(resp.content.decode('utf-8')), schema)
 
-        # Unpatch.
-        resource.fields['created']._default = old_created
-        resource.fields['updated']._default = old_updated
+        schema = json.loads(resp.content.decode('utf-8'))
+
+        self.assertEqual(schema, expected_schema)
+
+    def test_get_schema_with_related(self):
+        resource = RelatedNoteResource()
+
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+
+        # Patch the ``created/updated`` defaults for testability.
+        with patch.object(resource.fields['created'], '_default', new=aware_datetime(2011, 9, 24, 0, 2)):
+            resp = resource.get_schema(request)
+
+        self.assertEqual(resp.status_code, 200)
+
+        expected_schema = {
+            "allowed_detail_http_methods": ["get", "post", "put", "delete", "patch"],
+            "allowed_list_http_methods": ["get", "post", "put", "delete", "patch"],
+            "default_format": "application/json",
+            "default_limit": 20,
+            "fields": {
+                "content": {
+                    "blank": True,
+                    "default": "",
+                    "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "verbose_name": 'content',
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "string",
+                    "unique": False,
+                    "primary_key": False
+                },
+                "created": {
+                    "blank": False,
+                    "default": "2011-09-24T00:02:00",
+                    "help_text": "A date & time as a string. Ex: \"2010-11-10T03:07:43\"",
+                    "verbose_name": 'created',
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "datetime",
+                    "unique": False,
+                    "primary_key": False
+                },
+                "is_active": {
+                    "blank": True,
+                    "default": True,
+                    "help_text": "Boolean data. Ex: True",
+                    "verbose_name": 'is active',
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "boolean",
+                    "unique": False,
+                    "primary_key": False
+                },
+                "resource_uri": {
+                    "blank": False,
+                    "default": "No default provided.",
+                    "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "verbose_name": 'resource uri',
+                    "nullable": False,
+                    "readonly": True,
+                    "type": "string",
+                    "unique": False,
+                    "primary_key": False
+                },
+                "slug": {
+                    "blank": False,
+                    "default": "No default provided.",
+                    "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "verbose_name": 'slug',
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "string",
+                    "unique": False,
+                    "primary_key": False
+                },
+                "title": {
+                    "blank": False,
+                    "default": "No default provided.",
+                    "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "verbose_name": 'The Title',
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "string",
+                    "unique": False,
+                    "primary_key": False
+                },
+                'author': {
+                    "blank": False,
+                    "default": "No default provided.",
+                    "help_text": 'A single related resource. Can be either a URI or set of nested resource data.',
+                    "verbose_name": 'The Author',
+                    "readonly": False,
+                    "nullable": False,
+                    "type": 'related',
+                    "unique": False,
+                    "primary_key": False,
+                    "related_type": 'to_one'
+                },
+                'subjects': {
+                    "blank": False,
+                    "default": "No default provided.",
+                    "help_text": 'Many related resources. Can be either a list of URIs or list of individually nested resource data.',
+                    "verbose_name": 'subjects',
+                    "readonly": False,
+                    "nullable": False,
+                    "type": 'related',
+                    "unique": False,
+                    "primary_key": False,
+                    "related_type": 'to_many'
+                }
+            },
+            'default_format': 'application/json',
+            'filtering': {
+                'author': ALL,
+                'subjects': ALL_WITH_RELATIONS,
+            },
+        }
+
+        schema = json.loads(resp.content.decode('utf-8'))
+
+        self.assertEqual(schema, expected_schema)
 
     def test_get_multiple(self):
         resource = NoteResource()

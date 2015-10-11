@@ -165,7 +165,7 @@ class DeclarativeMetaclass(type):
 
         if getattr(new_class._meta, 'include_resource_uri', True):
             if 'resource_uri' not in new_class.base_fields:
-                new_class.base_fields['resource_uri'] = fields.CharField(readonly=True)
+                new_class.base_fields['resource_uri'] = fields.CharField(readonly=True, verbose_name="resource uri")
         elif 'resource_uri' in new_class.base_fields and 'resource_uri' not in attrs:
             del(new_class.base_fields['resource_uri'])
 
@@ -1021,7 +1021,9 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 'help_text': field_object.help_text,
                 'unique': field_object.unique,
                 'primary_key': True if field_name == pk_field_name else False,
+                'verbose_name': field_object.verbose_name or field_name.replace("_", " "),
             }
+
             if field_object.dehydrated_type == 'related':
                 if field_object.is_m2m:
                     related_type = 'to_many'
@@ -1865,6 +1867,7 @@ class BaseModelResource(Resource):
             kwargs = {
                 'attribute': f.name,
                 'help_text': f.help_text,
+                'verbose_name': f.verbose_name,
             }
 
             if f.null is True:

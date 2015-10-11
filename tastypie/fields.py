@@ -33,7 +33,7 @@ class ApiField(object):
     dehydrated_type = 'string'
     help_text = ''
 
-    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, unique=False, help_text=None, use_in='all'):
+    def __init__(self, attribute=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, unique=False, help_text=None, use_in='all', verbose_name=None):
         """
         Sets up the field. This is generally called when the containing
         ``Resource`` is initialized.
@@ -70,6 +70,9 @@ class ApiField(object):
         is a callable, and returns ``True``, the field will be included during
         dehydration.
         Defaults to ``all``.
+
+        Optionally accepts ``verbose_name``, which lets you provide a
+        more verbose name of the field exposed at the schema level.
         """
         # Track what the index thinks this field is called.
         self.instance_name = None
@@ -86,6 +89,8 @@ class ApiField(object):
 
         if use_in in ['all', 'detail', 'list'] or callable(use_in):
             self.use_in = use_in
+
+        self.verbose_name = verbose_name
 
         if help_text:
             self.help_text = help_text
@@ -429,7 +434,8 @@ class RelatedField(ApiField):
     self_referential = False
     help_text = 'A related resource. Can be either a URI or set of nested resource data.'
 
-    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, use_in='all', full_list=True, full_detail=True):
+    def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, use_in='all', verbose_name=None, full_list=True, full_detail=True):
+
         """
         Builds the field and prepares it to access to related data.
 
@@ -473,6 +479,9 @@ class RelatedField(ApiField):
         dehydration.
         Defaults to ``all``.
 
+        Optionally accepts ``verbose_name``, which lets you provide a
+        more verbose name of the field exposed at the schema level.
+
         Optionally accepts a ``full_list``, which indicated whether or not
         data should be fully dehydrated when the request is for a list of
         resources. Accepts ``True``, ``False`` or a callable that accepts
@@ -485,7 +494,7 @@ class RelatedField(ApiField):
         bundle and returns ``True`` or ``False``.Depends on ``full``
         being ``True``. Defaults to ``True``.
         """
-        super(RelatedField, self).__init__(attribute=attribute, default=default, null=null, blank=blank, readonly=readonly, unique=unique, help_text=help_text, use_in=use_in)
+        super(RelatedField, self).__init__(attribute=attribute, default=default, null=null, blank=blank, readonly=readonly, unique=unique, help_text=help_text, use_in=use_in, verbose_name=verbose_name)
         self.related_name = related_name
         self.to = to
         self._to_class = None
@@ -709,12 +718,14 @@ class ToOneField(RelatedField):
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
                  null=False, blank=False, readonly=False, full=False,
-                 unique=False, help_text=None, use_in='all', full_list=True, full_detail=True):
+                 unique=False, help_text=None, use_in='all', verbose_name=None,
+                 full_list=True, full_detail=True):
         super(ToOneField, self).__init__(
             to, attribute, related_name=related_name, default=default,
             null=null, blank=blank, readonly=readonly, full=full,
             unique=unique, help_text=help_text, use_in=use_in,
-            full_list=full_list, full_detail=full_detail
+            verbose_name=verbose_name, full_list=full_list,
+            full_detail=full_detail
         )
 
     def dehydrate(self, bundle, for_list=True):
@@ -783,12 +794,14 @@ class ToManyField(RelatedField):
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED,
                  null=False, blank=False, readonly=False, full=False,
-                 unique=False, help_text=None, use_in='all', full_list=True, full_detail=True):
+                 unique=False, help_text=None, use_in='all', verbose_name=None,
+                 full_list=True, full_detail=True):
         super(ToManyField, self).__init__(
             to, attribute, related_name=related_name, default=default,
             null=null, blank=blank, readonly=readonly, full=full,
             unique=unique, help_text=help_text, use_in=use_in,
-            full_list=full_list, full_detail=full_detail
+            verbose_name=verbose_name, full_list=full_list,
+            full_detail=full_detail
         )
 
     def dehydrate(self, bundle, for_list=True):
