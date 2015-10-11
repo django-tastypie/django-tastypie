@@ -20,7 +20,7 @@ except ImportError:
 class TrailingSlashTestCase(TestCase):
     def test(self):
         self.assertEqual(trailing_slash, '/')
-    
+
     def test_callable(self):
         self.assertEqual(trailing_slash(), '/')
 

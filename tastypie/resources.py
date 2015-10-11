@@ -39,8 +39,8 @@ from tastypie import http
 from tastypie.paginator import Paginator
 from tastypie.serializers import Serializer
 from tastypie.throttle import BaseThrottle
-from tastypie.utils import is_valid_jsonp_callback_value,\
-    dict_strip_unicode_keys, trailing_slash
+from tastypie.utils import dict_strip_unicode_keys,\
+    is_valid_jsonp_callback_value, string_to_python, trailing_slash
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.validation import Validation
 from tastypie.compat import get_module_name, atomic_decorator
@@ -1941,12 +1941,7 @@ class BaseModelResource(Resource):
         Turn the string ``value`` into a python object.
         """
         # Simple values
-        if value in ['true', 'True', True]:
-            value = True
-        elif value in ['false', 'False', False]:
-            value = False
-        elif value in ('nil', 'none', 'None', None):
-            value = None
+        value = string_to_python(value)
 
         # Split on ',' if not empty string and either an in or range filter.
         if filter_type in ('in', 'range') and len(value):
