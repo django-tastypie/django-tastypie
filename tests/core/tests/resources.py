@@ -4522,13 +4522,8 @@ class BustedResourceTestCase(TestCase):
         self.assertEqual(len(mail.outbox), 0)
 
     @override_settings(DEBUG=False, TASTYPIE_FULL_DEBUG=False)
-    def test_debug_off(self):
+    def test_debug_off_404(self):
         SimpleHandler.logged = []
-
-        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
-        self.assertEqual(resp.status_code, 500)
-        self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
-        self.assertEqual(len(SimpleHandler.logged), 1)
 
         # Ensure that 404s don't send email.
         resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
@@ -4536,6 +4531,15 @@ class BustedResourceTestCase(TestCase):
         self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
         self.assertEqual(len(SimpleHandler.logged), 1)
         SimpleHandler.logged = []
+
+    @override_settings(DEBUG=False, TASTYPIE_FULL_DEBUG=False)
+    def test_debug_off(self):
+        SimpleHandler.logged = []
+
+        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
+        self.assertEqual(resp.status_code, 500)
+        self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+        self.assertEqual(len(SimpleHandler.logged), 1)
 
     @override_settings(DEBUG=False, TASTYPIE_FULL_DEBUG=False, TASTYPIE_CANNED_ERROR="Oops, you bwoke it.")
     def test_debug_off_custom_message(self):

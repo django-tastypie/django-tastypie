@@ -264,36 +264,28 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         import sys
         the_trace = '\n'.join(traceback.format_exception(*(sys.exc_info())))
         response_class = http.HttpApplicationError
-        response_code = 500
 
-        NOT_FOUND_EXCEPTIONS = (NotFound, ObjectDoesNotExist, Http404)
-
-        if isinstance(exception, NOT_FOUND_EXCEPTIONS):
+        if isinstance(exception, (NotFound, ObjectDoesNotExist, Http404)):
             response_class = HttpResponseNotFound
-            response_code = 404
+
+        log = logging.getLogger('django.request.tastypie')
+        log.error('Internal Server Error: %s' % request.path, exc_info=True,
+                  extra={'status_code': response_class.status_code, 'request': request})
+
+        # Send the signal so other apps are aware of the exception.
+        got_request_exception.send(self.__class__, request=request)
 
         if settings.DEBUG:
             data = {
                 "error_message": sanitize(six.text_type(exception)),
                 "traceback": the_trace,
             }
-            return self.error_response(request, data, response_class=response_class)
+        else:
+            # Prep the data going out.
+            data = {
+                "error_message": getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later."),
+            }
 
-        # When DEBUG is False, send an error message to the admins (unless it's
-        # a 404, in which case we check the setting).
-
-        if not response_code == 404:
-            log = logging.getLogger('django.request.tastypie')
-            log.error('Internal Server Error: %s' % request.path, exc_info=True,
-                      extra={'status_code': response_code, 'request': request})
-
-        # Send the signal so other apps are aware of the exception.
-        got_request_exception.send(self.__class__, request=request)
-
-        # Prep the data going out.
-        data = {
-            "error_message": getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later."),
-        }
         return self.error_response(request, data, response_class=response_class)
 
     def _build_reverse_url(self, name, args=None, kwargs=None):
