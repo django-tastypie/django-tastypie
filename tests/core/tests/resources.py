@@ -1564,6 +1564,21 @@ class ModelResourceTestCase(TestCase):
         except NotFound:
             pass
 
+    def test__get_via_uri__bad_uri_containing_resource_name(self):
+        resource = NoteResource(api_name='v1')
+        with self.assertRaises(NotFound):
+            resource.get_via_uri('/notes/api/v1/photos/1/')
+
+    def test__get_via_uri__nonexistant_resource(self):
+        resource = NoteResource(api_name='v1')
+        with self.assertRaises(NotFound):
+            resource.get_via_uri('/api/v1/foo/1/')
+
+    def test__get_via_uri__different_resource(self):
+        resource = NoteResource(api_name='v1')
+        with self.assertRaises(NotFound):
+            resource.get_via_uri('/api/v1/photos/1/')
+
     def test__get_via_uri__list_uri(self):
         resource = NoteResource(api_name='v1')
         try:
