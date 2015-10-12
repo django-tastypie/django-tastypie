@@ -23,6 +23,7 @@ except ImproperlyConfigured:
 from django.db.models.constants import LOOKUP_SEP
 from django.db.models.sql.constants import QUERY_TERMS
 from django.http import HttpResponse, HttpResponseNotFound, Http404
+from django.utils.http import urlunquote
 from django.utils.cache import patch_cache_control, patch_vary_headers
 from django.utils.html import escape
 from django.utils import six
@@ -817,7 +818,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         simply override this method.
         """
         prefix = get_script_prefix()
-        chomped_uri = uri
+        chomped_uri = urlunquote(uri)
 
         if prefix and chomped_uri.startswith(prefix):
             chomped_uri = chomped_uri[len(prefix) - 1:]
