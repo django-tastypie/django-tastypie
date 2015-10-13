@@ -698,7 +698,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
         return auth_result
 
-    def build_bundle(self, obj=None, data=None, request=None, objects_saved=None):
+    def build_bundle(self, obj=None, data=None, request=None, objects_saved=None, via_uri=None):
         """
         Given either an object, a data dictionary or both, builds a ``Bundle``
         for use throughout the ``dehydrate/hydrate`` cycle.
@@ -714,7 +714,8 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             obj=obj,
             data=data,
             request=request,
-            objects_saved=objects_saved
+            objects_saved=objects_saved,
+            via_uri=via_uri
         )
 
     def build_filters(self, filters=None):
@@ -2277,6 +2278,9 @@ class BaseModelResource(Resource):
         return u"%s.%s.%s" % (obj._meta.app_label, get_module_name(obj._meta), obj.pk)
 
     def save(self, bundle, skip_errors=False):
+        if bundle.via_uri:
+            return bundle
+
         self.is_valid(bundle)
 
         if bundle.errors and not skip_errors:
@@ -2292,8 +2296,11 @@ class BaseModelResource(Resource):
         self.save_related(bundle)
 
         # Save the main object.
-        bundle.obj.save()
-        bundle.objects_saved.add(self.create_identifier(bundle.obj))
+        obj_id = self.create_identifier(bundle.obj)
+
+        if obj_id not in bundle.objects_saved or bundle.obj._state.adding:
+            bundle.obj.save()
+            bundle.objects_saved.add(obj_id)
 
         # Now pick up the M2M bits.
         m2m_bundle = self.hydrate_m2m(bundle)
@@ -2346,15 +2353,6 @@ class BaseModelResource(Resource):
                 setattr(related_obj, field_object.related_name, bundle.obj)
 
             related_resource = field_object.get_related_resource(related_obj)
-
-            # Before we build the bundle & try saving it, let's make sure we
-            # haven't already saved it.
-            if related_obj:
-                obj_id = self.create_identifier(related_obj)
-
-                if obj_id in bundle.objects_saved:
-                    # It's already been saved. We're done here.
-                    continue
 
             if bundle.data.get(field_name) and hasattr(bundle.data[field_name], 'keys'):
                 # Only build & save if there's data, not just a URI.
@@ -2414,25 +2412,16 @@ class BaseModelResource(Resource):
             for related_bundle in bundle.data[field_name]:
                 related_resource = field_object.get_related_resource(bundle.obj)
 
-                # Before we build the bundle & try saving it, let's make sure we
-                # haven't already saved it.
-                obj_id = self.create_identifier(related_bundle.obj)
-
-                if obj_id in bundle.objects_saved:
-                    # It's already been saved. We're done here.
-                    continue
-
                 # Only build & save if there's data, not just a URI.
                 updated_related_bundle = related_resource.build_bundle(
                     obj=related_bundle.obj,
                     data=related_bundle.data,
                     request=bundle.request,
-                    objects_saved=bundle.objects_saved
+                    objects_saved=bundle.objects_saved,
+                    via_uri=related_bundle.via_uri,
                 )
 
-                # Only save related models if they're newly added.
-                if updated_related_bundle.obj._state.adding:
-                    related_resource.save(updated_related_bundle)
+                related_resource.save(updated_related_bundle)
                 related_objs.append(updated_related_bundle.obj)
 
             related_mngr.add(*related_objs)

@@ -45,7 +45,7 @@ class TestServerThread(threading.Thread):
             httpd = StoppableWSGIServer(server_address, basehttp.WSGIRequestHandler)
             httpd.set_app(handler)
             self.started.set()
-        except basehttp.WSGIServerException as e:
+        except socket.error as e:
             self.error = e
             self.started.set()
             return
