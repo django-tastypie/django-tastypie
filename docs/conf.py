@@ -18,11 +18,15 @@
 # sys.path.append(os.path.abspath('.'))
 
 import datetime
+import os
 import sys
 
 sys.path.append('..')
 
 from tastypie import __short_version__, __version__  # flake8: noqa
+
+docs_path = os.path.dirname(__file__)
+doctest_path = [os.path.join(docs_path, 'code'), os.path.join(docs_path, '..')]
 
 # -- General configuration ----------------------------------------------------
 
