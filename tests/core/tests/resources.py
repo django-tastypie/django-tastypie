@@ -900,6 +900,18 @@ class AlwaysDataNoteResourceUseIn(NoteResource):
         authorization = Authorization()
 
 
+class NoteResourceNonUniqueDetailUriName(NoteResource):
+    author = fields.CharField(attribute='author__username', use_in="detail")
+    constant = fields.IntegerField(default=20, use_in="list")
+
+    class Meta:
+        resource_name = 'nonuniqueidnote'
+        queryset = Note.objects.filter(is_active=True)
+        always_return_data = True
+        authorization = Authorization()
+        detail_uri_name = 'slug'
+
+
 class VeryCustomNoteResource(NoteResource):
     author = fields.CharField(attribute='author__username')
     constant = fields.IntegerField(default=20)
@@ -2509,7 +2521,7 @@ class ModelResourceTestCase(TestCase):
         request.method = 'PUT'
 
         self.assertEqual(Note.objects.count(), 6)
-        setattr(request, self.body_attr, '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}')
+        request.set_body('{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}')
 
         resp = resource.put_list(request)
         self.assertEqual(resp.status_code, 204)
@@ -2530,7 +2542,7 @@ class ModelResourceTestCase(TestCase):
         request.method = 'PUT'
 
         self.assertEqual(Note.objects.count(), 6)
-        setattr(request, self.body_attr, '{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}')
+        request.set_body('{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}')
 
         always_resource = AlwaysDataNoteResourceUseIn()
         resp = always_resource.put_list(request)
@@ -2547,7 +2559,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "baddata": "some data"}')
+        request.set_body('{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "baddata": "some data"}')
 
         resp = resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 201)
@@ -2555,7 +2567,7 @@ class ModelResourceTestCase(TestCase):
         new_note = Note.objects.get(slug='cat-is-back')
         self.assertEqual(new_note.content, "The cat is back. The dog coughed him up out back.")
 
-        setattr(request, self.body_attr, '{"content": "The cat is gone again. I think it was the rabbits that ate him this time.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Gone", "updated": "2010-04-03 20:05:00"}')
+        request.set_body('{"content": "The cat is gone again. I think it was the rabbits that ate him this time.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Gone", "updated": "2010-04-03 20:05:00"}')
 
         resp = resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 204)
@@ -2585,7 +2597,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": null}')
+        request.set_body('{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00", "author": null}')
 
         resp = nullable_resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 204)
@@ -2601,7 +2613,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}')
+        request.set_body('{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}')
 
         always_resource = AlwaysDataNoteResourceUseIn()
         resp = always_resource.put_detail(request, pk=new_note.pk)
@@ -2619,7 +2631,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, '{"date": "2012-09-07", "username": "WAT", "message": "hello"}')
+        request.set_body('{"date": "2012-09-07", "username": "WAT", "message": "hello"}')
 
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, username="maraujop")
@@ -2631,7 +2643,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, '{"date": "WAT", "username": "maraujop", "message": "hello"}')
+        request.set_body('{"date": "WAT", "username": "maraujop", "message": "hello"}')
 
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, date="2012-09-07")
@@ -2643,7 +2655,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        setattr(request, self.body_attr, '{"date": "2012-09-07", "username": "maraujop", "message": "WAT"}')
+        request.set_body('{"date": "2012-09-07", "username": "maraujop", "message": "WAT"}')
         date_record_resource = DateRecordResource()
         resp = date_record_resource.put_detail(request, message="HELLO")
 
@@ -2651,13 +2663,49 @@ class ModelResourceTestCase(TestCase):
         data = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(data['message'], "hello")
 
+    def test_put_detail_with_non_unique_detail_uri_name(self):
+        """
+        Make sure when something besides 'pk' is used for detail_uri_name and
+        it isn't unique that we still look up the correct object and don't
+        create a duplicate.
+        """
+        self.assertFalse(Note._meta.get_field('slug').unique)
+
+        new_note = Note.objects.get(slug='another-post')
+        new_note.author = User.objects.get(username='johndoe')
+        new_note.save()
+
+        self.assertEqual(Note.objects.count(), 6)
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.set_body('{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}')
+
+        resource = NoteResourceNonUniqueDetailUriName()
+        resp = resource.put_detail(request, slug=new_note.slug)
+
+        self.assertEqual(resp.status_code, 200)
+
+        self.assertEqual(Note.objects.count(), 6)
+
+        data = json.loads(resp.content.decode('utf-8'))
+
+        self.assertEqual(data["id"], new_note.pk)
+        self.assertEqual(data["slug"], new_note.slug)
+        self.assertTrue("author" in data)
+        self.assertFalse("constant" in data)
+        self.assertTrue("resource_uri" in data)
+        self.assertTrue("title" in data)
+        self.assertTrue("is_active" in data)
+
     def test_post_list(self):
         self.assertEqual(Note.objects.count(), 6)
         resource = NoteResource()
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'POST'
-        setattr(request, self.body_attr, '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}')
+        request.set_body('{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}')
 
         resp = resource.post_list(request)
         self.assertEqual(resp.status_code, 201)
