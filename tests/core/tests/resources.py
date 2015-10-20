@@ -16,6 +16,7 @@ from django.core.urlresolvers import reverse
 from django import forms
 from django.http import HttpRequest, QueryDict, Http404
 from django.test import TestCase
+from django.test.testcases import skipIf
 from django.utils.encoding import force_text
 from django.utils import timezone
 
@@ -30,7 +31,7 @@ from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
 from tastypie.utils import aware_datetime, make_naive
 from tastypie.validation import FormValidation
-from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord, Counter
+from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord, Counter, MyDefaultPKModel, MyUUIDModel
 from core.tests.mocks import MockRequest
 from core.utils import adjust_schema, SimpleHandler
 
@@ -910,6 +911,24 @@ class NoteResourceNonUniqueDetailUriName(NoteResource):
         always_return_data = True
         authorization = Authorization()
         detail_uri_name = 'slug'
+
+
+class MyDefaultPKModelResource(ModelResource):
+    class Meta:
+        resource_name = 'mydefaultpkmodel'
+        queryset = MyDefaultPKModel.objects.all()
+        always_return_data = True
+        authorization = Authorization()
+
+
+if MyUUIDModel:
+    class MyUUIDModelResourceNonUniqueDetailUriName(ModelResource):
+        class Meta:
+            resource_name = 'nonuniqueidmyuuidmodel'
+            queryset = MyUUIDModel.objects.all()
+            always_return_data = True
+            authorization = Authorization()
+            detail_uri_name = 'anotheruuid'
 
 
 class VeryCustomNoteResource(NoteResource):
@@ -2680,7 +2699,7 @@ class ModelResourceTestCase(TestCase):
         request = MockRequest()
         request.GET = {'format': 'json'}
         request.method = 'PUT'
-        request.set_body('{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}')
+        request.set_body('{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}')
 
         resource = NoteResourceNonUniqueDetailUriName()
         resp = resource.put_detail(request, slug=new_note.slug)
@@ -2698,6 +2717,59 @@ class ModelResourceTestCase(TestCase):
         self.assertTrue("resource_uri" in data)
         self.assertTrue("title" in data)
         self.assertTrue("is_active" in data)
+
+    @skipIf(MyUUIDModel is None, 'UUIDField not available')
+    def test_put_detail_with_non_unique_uuid_detail_uri_name(self):
+        """
+        Make sure when something besides 'pk' is used for detail_uri_name and
+        it isn't unique that we still look up the correct object and don't
+        create a duplicate.
+        """
+        self.assertFalse(MyUUIDModel._meta.get_field('anotheruuid').unique)
+
+        myuuidmodel = MyUUIDModel.objects.create()
+
+        self.assertEqual(MyUUIDModel.objects.count(), 1)
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.set_body('{"content": "The cat is back. The dog coughed him up out back."}')
+
+        resource = MyUUIDModelResourceNonUniqueDetailUriName()
+        resp = resource.put_detail(request, anotheruuid=myuuidmodel.anotheruuid)
+
+        self.assertEqual(resp.status_code, 200)
+
+        self.assertEqual(MyUUIDModel.objects.count(), 1)
+
+        data = json.loads(resp.content.decode('utf-8'))
+
+        self.assertEqual(data["id"], str(myuuidmodel.pk))
+        self.assertEqual(data["anotheruuid"], str(myuuidmodel.anotheruuid))
+        self.assertNotEqual(data["content"], '')
+
+    def test_put_detail_with_default_pk(self):
+        obj = MyDefaultPKModel.objects.create()
+
+        self.assertEqual(MyDefaultPKModel.objects.count(), 1)
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.set_body('{"content": "The cat is back. The dog coughed him up out back."}')
+
+        resource = MyDefaultPKModelResource()
+        resp = resource.put_detail(request, pk=obj.pk)
+
+        self.assertEqual(resp.status_code, 200)
+
+        self.assertEqual(MyDefaultPKModel.objects.count(), 1)
+
+        data = json.loads(resp.content.decode('utf-8'))
+
+        self.assertEqual(data["id"], obj.pk)
+        self.assertNotEqual(data["content"], '')
 
     def test_post_list(self):
         self.assertEqual(Note.objects.count(), 6)

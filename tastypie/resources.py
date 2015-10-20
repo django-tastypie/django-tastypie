@@ -188,6 +188,10 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
     data sources, such as search results, files, other data, etc.
     """
     def __init__(self, api_name=None):
+        # this can cause:
+        # TypeError: object.__new__(method-wrapper) is not safe, use method-wrapper.__new__()
+        # when trying to copy a generator used as a default. Wrap call to
+        # generator in lambda to get around this error.
         self.fields = deepcopy(self.base_fields)
 
         if api_name is not None:
@@ -2192,7 +2196,10 @@ class BaseModelResource(Resource):
         """
         A ORM-specific implementation of ``obj_update``.
         """
-        if not bundle.obj or not self.get_bundle_detail_data(bundle):
+        bundle_detail_data = self.get_bundle_detail_data(bundle) if bundle.obj else None
+        arg_detail_data = kwargs.get(self._meta.detail_uri_name, None)
+
+        if not bundle_detail_data or (arg_detail_data and bundle_detail_data != arg_detail_data):
             try:
                 lookup_kwargs = self.lookup_kwargs_with_identifiers(bundle, kwargs)
             except:

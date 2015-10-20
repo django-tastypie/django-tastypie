@@ -1,5 +1,9 @@
+from itertools import count
+import uuid
+
 from django.contrib.auth.models import User
 from django.db import models
+
 from tastypie.utils import now, aware_datetime
 
 
@@ -79,3 +83,20 @@ class Counter(models.Model):
 
     def __unicode__(self):
         return self.name
+
+
+int_source = count(1)
+
+
+class MyDefaultPKModel(models.Model):
+    id = models.IntegerField(primary_key=True, default=lambda: next(int_source), editable=False)
+    content = models.TextField(blank=True, default='')
+
+
+if hasattr(models, 'UUIDField'):
+    class MyUUIDModel(models.Model):
+        id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+        anotheruuid = models.UUIDField(default=uuid.uuid4)
+        content = models.TextField(blank=True, default='')
+else:
+    MyUUIDModel = None
