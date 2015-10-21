@@ -9,7 +9,6 @@ from django.test.testcases import skipIf
 
 from tastypie.bundle import Bundle
 from tastypie import fields
-from tastypie.exceptions import BadRequest
 from tastypie.serializers import Serializer
 from tastypie.resources import ModelResource
 
@@ -285,7 +284,7 @@ class SerializerTestCase(TestCase):
     def test_malformed_xml(self):
         serializer = Serializer()
         data = '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<request><somelist type="list"><valueNO CARRIER'
-        self.assertRaises(BadRequest, serializer.from_xml, data)
+        self.assertRaises(ValueError, serializer.from_xml, data)
 
     def test_to_json(self):
         serializer = Serializer()
@@ -306,7 +305,7 @@ class SerializerTestCase(TestCase):
     def test_from_broken_json(self):
         serializer = Serializer()
         data = '{"foo": "bar",NO CARRIER'
-        self.assertRaises(BadRequest, serializer.from_json, data)
+        self.assertRaises(ValueError, serializer.from_json, data)
 
     def test_round_trip_xml(self):
         serializer = Serializer()
@@ -350,7 +349,7 @@ class SerializerTestCase(TestCase):
         data = """<!DOCTYPE bomb [<!ENTITY a "evil chars">]>
         <bomb>&a;</bomb>
         """
-        self.assertRaises(BadRequest, serializer.from_xml, data)
+        self.assertRaises(ValueError, serializer.from_xml, data)
 
     def test_to_jsonp(self):
         serializer = Serializer()

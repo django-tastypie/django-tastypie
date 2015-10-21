@@ -384,8 +384,10 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
         Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
         """
-        deserialized = self._meta.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', format))
-        return deserialized
+        try:
+            return self._meta.serializer.deserialize(data, format=request.META.get('CONTENT_TYPE', format))
+        except ValueError as e:
+            raise BadRequest("Invalid data sent: %s" % e)
 
     def alter_list_data_to_serialize(self, request, data):
         """

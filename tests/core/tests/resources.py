@@ -811,6 +811,20 @@ class ResourceTestCase(TestCase):
 
         self.assertNotIn('view_count', basic_resource_list[0])
 
+    def test_deserialization_error_raises_bad_request(self):
+        resource = BasicResource()
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+        # missing closing bracket
+        request.body = '{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"'
+
+        with self.assertRaises(BadRequest) as ctx:
+            resource.deserialize(request, request.body)
+
+        self.assertTrue(ctx.exception.args[0].startswith('Invalid data sent: '))
+
 
 # ====================
 # Model-based tests...
