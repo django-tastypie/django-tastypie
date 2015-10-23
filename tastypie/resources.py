@@ -3,6 +3,7 @@ from __future__ import with_statement
 from copy import deepcopy
 from datetime import datetime
 import logging
+logger = logging.getLogger(__name__)
 from time import mktime
 import warnings
 from wsgiref.handlers import format_date_time
@@ -239,12 +240,15 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
                 return response
             except (BadRequest, fields.ApiFieldError) as e:
+                logger.exception('Bad request/API field error')
                 data = {"error": sanitize(e.args[0]) if getattr(e, 'args') else ''}
                 return self.error_response(request, data, response_class=http.HttpBadRequest)
             except ValidationError as e:
+                logger.exception('Validation error')
                 data = {"error": sanitize(e.messages)}
                 return self.error_response(request, data, response_class=http.HttpBadRequest)
             except Exception as e:
+                logger.exception('Unhandled exception')
                 if hasattr(e, 'response'):
                     return e.response
 
