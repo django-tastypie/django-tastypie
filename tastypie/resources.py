@@ -239,12 +239,18 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
                 return response
             except (BadRequest, fields.ApiFieldError) as e:
+                log = logging.getLogger('django.request.tastypie')
+                log.exception('Bad request/API field error')
                 data = {"error": sanitize(e.args[0]) if getattr(e, 'args') else ''}
                 return self.error_response(request, data, response_class=http.HttpBadRequest)
             except ValidationError as e:
+                log = logging.getLogger('django.request.tastypie')
+                log.exception('Validation error')
                 data = {"error": sanitize(e.messages)}
                 return self.error_response(request, data, response_class=http.HttpBadRequest)
             except Exception as e:
+                log = logging.getLogger('django.request.tastypie')
+                log.exception('Unhandled exception')
                 if hasattr(e, 'response'):
                     return e.response
 
