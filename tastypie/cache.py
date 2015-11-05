@@ -60,7 +60,7 @@ class SimpleCache(NoCache):
         """
         super(SimpleCache, self).__init__(*args, **kwargs)
         self.cache = get_cache(cache_name)
-        self.timeout = timeout if not timeout is None else self.cache.default_timeout
+        self.timeout = timeout if timeout is not None else self.cache.default_timeout
         self.public = public
         self.private = private
 
