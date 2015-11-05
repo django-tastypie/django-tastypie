@@ -36,7 +36,7 @@ class HTTPTestCase(TestServerTestCase):
         connection.close()
         data = response.read().decode('utf-8')
         self.assertEqual(response.status, 200)
-        self.assertEqual(data,'{"cache_disabled_users": {"list_endpoint": "/api/v1/cache_disabled_users/", "schema": "/api/v1/cache_disabled_users/schema/"}, "cached_users": {"list_endpoint": "/api/v1/cached_users/", "schema": "/api/v1/cached_users/schema/"}, "notes": {"list_endpoint": "/api/v1/notes/", "schema": "/api/v1/notes/schema/"}, "private_cached_users": {"list_endpoint": "/api/v1/private_cached_users/", "schema": "/api/v1/private_cached_users/schema/"}, "public_cached_users": {"list_endpoint": "/api/v1/public_cached_users/", "schema": "/api/v1/public_cached_users/schema/"}, "users": {"list_endpoint": "/api/v1/users/", "schema": "/api/v1/users/schema/"}}')
+        self.assertEqual(data, '{"cache_disabled_users": {"list_endpoint": "/api/v1/cache_disabled_users/", "schema": "/api/v1/cache_disabled_users/schema/"}, "cached_users": {"list_endpoint": "/api/v1/cached_users/", "schema": "/api/v1/cached_users/schema/"}, "notes": {"list_endpoint": "/api/v1/notes/", "schema": "/api/v1/notes/schema/"}, "private_cached_users": {"list_endpoint": "/api/v1/private_cached_users/", "schema": "/api/v1/private_cached_users/schema/"}, "public_cached_users": {"list_endpoint": "/api/v1/public_cached_users/", "schema": "/api/v1/public_cached_users/schema/"}, "users": {"list_endpoint": "/api/v1/users/", "schema": "/api/v1/users/schema/"}}')
 
     def test_get_apis_invalid_accept(self):
         connection = self.get_connection()

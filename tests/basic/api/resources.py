@@ -29,12 +29,14 @@ class PublicCachedUserResource(ModelResource):
         resource_name = 'public_cached_users'
         cache = SimpleCache(timeout=3600, public=True)
 
+
 class CacheDisabledUserResource(ModelResource):
     class Meta:
         allowed_methods = ('get', )
         queryset = User.objects.all()
         resource_name = 'cache_disabled_users'
         cache = SimpleCache(timeout=0)
+
 
 class PrivateCachedUserResource(ModelResource):
     class Meta:
