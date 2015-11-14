@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 from __future__ import with_statement
-from copy import deepcopy
+from copy import copy, deepcopy
 from datetime import datetime
 import logging
 from time import mktime
@@ -99,28 +99,20 @@ class ResourceOptions(object):
     collection_name = 'objects'
     detail_uri_name = 'pk'
 
-    def __new__(cls, meta=None):
-        overrides = {}
+    def __init__(self, meta=None):
+        super(ResourceOptions, self).__init__()
 
         # Handle overrides.
         if meta:
             for override_name in dir(meta):
                 # No internals please.
                 if not override_name.startswith('_'):
-                    overrides[override_name] = getattr(meta, override_name)
+                    setattr(self, override_name, getattr(meta, override_name))
 
-        allowed_methods = overrides.get('allowed_methods', ['get', 'post', 'put', 'delete', 'patch'])
-
-        if overrides.get('list_allowed_methods', None) is None:
-            overrides['list_allowed_methods'] = allowed_methods
-
-        if overrides.get('detail_allowed_methods', None) is None:
-            overrides['detail_allowed_methods'] = allowed_methods
-
-        if six.PY3:
-            return object.__new__(type('ResourceOptions', (cls,), overrides))
-        else:
-            return object.__new__(type(b'ResourceOptions', (cls,), overrides))
+        if self.list_allowed_methods is None:
+            self.list_allowed_methods = self.allowed_methods
+        if self.detail_allowed_methods is None:
+            self.detail_allowed_methods = self.allowed_methods
 
 
 class DeclarativeMetaclass(type):
@@ -193,6 +185,8 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         # when trying to copy a generator used as a default. Wrap call to
         # generator in lambda to get around this error.
         self.fields = deepcopy(self.base_fields)
+
+        self._meta = copy(self._meta)
 
         if api_name is not None:
             self._meta.api_name = api_name
@@ -1749,14 +1743,15 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
 class ModelDeclarativeMetaclass(DeclarativeMetaclass):
     def __new__(cls, name, bases, attrs):
-        meta = attrs.get('Meta')
+        new_class = super(ModelDeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
 
-        if meta and hasattr(meta, 'queryset'):
+        meta = new_class._meta
+
+        if hasattr(meta, 'queryset') and meta.queryset is not None:
             setattr(meta, 'object_class', meta.queryset.model)
 
-        new_class = super(ModelDeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
-        include_fields = getattr(new_class._meta, 'fields', [])
-        excludes = getattr(new_class._meta, 'excludes', [])
+        include_fields = getattr(meta, 'fields', [])
+        excludes = getattr(meta, 'excludes', [])
         field_names = list(new_class.base_fields.keys())
 
         for field_name in field_names:
@@ -1772,7 +1767,7 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
         # Add in the new fields.
         new_class.base_fields.update(new_class.get_fields(include_fields, excludes))
 
-        if getattr(new_class._meta, 'include_absolute_url', True):
+        if meta.include_absolute_url:
             if 'absolute_url' not in new_class.base_fields:
                 new_class.base_fields['absolute_url'] = fields.CharField(attribute='get_absolute_url', readonly=True)
         elif 'absolute_url' in new_class.base_fields and 'absolute_url' not in attrs:
