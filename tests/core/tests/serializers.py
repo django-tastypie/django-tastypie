@@ -386,10 +386,10 @@ class SerializerTestCase(TestCase):
 
         sample_1 = serializer.from_plist(b'bplist00bybiplist1.0\x00\xd4\x01\x02\x03\x04\x05\x06\x07\x08WsnowmanSageTname[date_joineda&\x03\x10\x1bf\x00D\x00a\x00n\x00i\x00e\x00lZ2010-03-27\x15\x1e&*/;>@M\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\t\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00X')
         self.assertEqual(len(sample_1), 4)
-        self.assertEqual(sample_1[b'name'], 'Daniel')
-        self.assertEqual(sample_1[b'age'], 27)
-        self.assertEqual(sample_1[b'date_joined'], b'2010-03-27')
-        self.assertEqual(sample_1[b'snowman'], u'☃')
+        self.assertEqual(sample_1['name'], 'Daniel')
+        self.assertEqual(sample_1['age'], 27)
+        self.assertEqual(sample_1['date_joined'], '2010-03-27')
+        self.assertEqual(sample_1['snowman'], u'☃')
 
 
 class ResourceSerializationTestCase(TestCase):

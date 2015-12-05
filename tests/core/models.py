@@ -98,5 +98,14 @@ if hasattr(models, 'UUIDField'):
         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
         anotheruuid = models.UUIDField(default=uuid.uuid4)
         content = models.TextField(blank=True, default='')
+        order = models.IntegerField(default=0, blank=True)
+
+        class Meta:
+            ordering = ('order',)
+
+    class MyRelatedUUIDModel(models.Model):
+        myuuidmodels = models.ManyToManyField(MyUUIDModel)
+        content = models.TextField(blank=True, default='')
 else:
     MyUUIDModel = None
+    MyRelatedUUIDModel = None

@@ -46,7 +46,8 @@ class ApiFieldTestCase(TestCase):
         field_4 = ApiField(use_in="detail")
         self.assertEqual(field_4.use_in, 'detail')
 
-        use_in_callable = lambda x: True
+        def use_in_callable(x):
+            return True
         field_5 = ApiField(use_in=use_in_callable)
         self.assertTrue(field_5.use_in is use_in_callable)
 
@@ -677,7 +678,8 @@ class ToOneFieldTestCase(TestCase):
         field_6 = ToOneField(UserResource, 'author', default=1, null=True, readonly=True, help_text="Points to a User.", use_in="detail")
         self.assertEqual(field_6.use_in, 'detail')
 
-        use_in_callable = lambda x: True
+        def use_in_callable(x):
+            return True
         field_7 = ToOneField(UserResource, 'author', default=1, null=True, readonly=True, help_text="Points to a User.", use_in=use_in_callable)
         self.assertTrue(field_7.use_in is use_in_callable)
 
@@ -1026,7 +1028,8 @@ class ToManyFieldTestCase(TestCase):
         field_6 = ToManyField(SubjectResource, 'author', default=1, null=True, readonly=True, help_text="Points to a User.", use_in="detail")
         self.assertEqual(field_6.use_in, 'detail')
 
-        use_in_callable = lambda x: True
+        def use_in_callable(x):
+            return True
         field_7 = ToManyField(SubjectResource, 'author', default=1, null=True, readonly=True, help_text="Points to a User.", use_in=use_in_callable)
         self.assertTrue(field_7.use_in is use_in_callable)
 
