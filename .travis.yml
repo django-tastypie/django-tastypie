@@ -16,10 +16,12 @@ env:
   - DJANGO_VERSION=1.6
   - DJANGO_VERSION=1.7
   - DJANGO_VERSION=1.8
+  - DJANGO_VERSION=1.9
   - DJANGO_VERSION=dev
 
 matrix:
   allow_failures:
+    - env: DJANGO_VERSION=1.9
     - env: DJANGO_VERSION=dev
     - env: MODE=flake8-strict
   exclude:
@@ -40,6 +42,8 @@ matrix:
     - python: "3.3"
       env: MODE=docs
     - env: DJANGO_VERSION=dev
+      python: "2.6"
+    - env: DJANGO_VERSION=1.9
       python: "2.6"
     - env: DJANGO_VERSION=1.8
       python: "2.6"
@@ -64,8 +68,8 @@ before_cache:
 
 # command to install dependencies
 install:
-    - export PIP_DOWNLOAD_CACHE=$HOME/.cache/pip
-    - pip install -U pip wheel virtualenv
+    - pip install -U pip
+    - pip install -U wheel virtualenv
     - pip install tox coveralls
 
 after_success:
