@@ -27,16 +27,8 @@ class BackfillApiKeysTestCase(TestCase):
 
         self.assertEqual(ApiKey.objects.count(), 0)
 
-        try:
-            ApiKey.objects.get(user=new_user)
-            self.fail('Wha? The user mysteriously has a key? WTF?')
-        except ApiKey.DoesNotExist:
-            pass
-
         call_command('backfill_api_keys', verbosity=0)
+
         self.assertEqual(ApiKey.objects.count(), 1)
 
-        try:
-            ApiKey.objects.get(user=new_user)
-        except ApiKey.DoesNotExist:
-            self.fail("No key means the command didn't work.")
+        self.assertEqual(ApiKey.objects.filter(user=new_user).count(), 1)

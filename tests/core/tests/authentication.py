@@ -1,13 +1,12 @@
 import base64
-import os
 import time
 import warnings
+from unittest import skipIf
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.http import HttpRequest
 from django.test import TestCase
-from django.test.testcases import skipIf
 
 from tastypie.authentication import Authentication, BasicAuthentication,\
     ApiKeyAuthentication, SessionAuthentication, DigestAuthentication,\
@@ -274,20 +273,26 @@ class SessionAuthenticationTestCase(TestCase):
         self.assertTrue(auth.is_authenticated(request))
 
         # Secure & wrong referrer.
-        os.environ["HTTPS"] = "on"
+        class SecureRequest(HttpRequest):
+            def _get_scheme(self):
+                return 'https'
+
+        request = SecureRequest()
         request.method = 'POST'
+        request.COOKIES = {
+            settings.CSRF_COOKIE_NAME: 'abcdef1234567890abcdef1234567890'
+        }
         request.META = {
             'HTTP_X_CSRFTOKEN': 'abcdef1234567890abcdef1234567890'
         }
         request.META['HTTP_HOST'] = 'example.com'
         request.META['HTTP_REFERER'] = ''
+        request.user = User.objects.get(username='johndoe')
         self.assertFalse(auth.is_authenticated(request))
 
         # Secure & correct referrer.
         request.META['HTTP_REFERER'] = 'https://example.com/'
         self.assertTrue(auth.is_authenticated(request))
-
-        os.environ["HTTPS"] = "off"
 
     def test_get_identifier(self):
         auth = SessionAuthentication()

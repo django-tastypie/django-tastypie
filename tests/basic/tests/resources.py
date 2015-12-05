@@ -66,17 +66,11 @@ class NoteModelResourceTestCase(TestCaseWithFixture):
         self.assertEqual(nplur.notes.to, 'FooResource')
         self.assertEqual(lur.notes.to, 'basic.tests.resources.NoteResource')
 
-        try:
+        with self.assertRaises(ImportError):
             ilur.notes.to_class()
-            self.fail("to_class on InvalidLazyUserResource should fail!")
-        except ImportError:
-            pass
 
-        try:
+        with self.assertRaises(ImportError):
             nplur.notes.to_class()
-            self.fail("to_class on NoPathLazyUserResource should fail!")
-        except ImportError:
-            pass
 
         to_class = lur.notes.to_class()
         self.assertTrue(isinstance(to_class, NoteResource))

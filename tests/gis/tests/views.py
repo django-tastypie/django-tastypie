@@ -41,7 +41,7 @@ class ViewsTestCase(TestCaseWithFixture):
 
         resp = self.client.post('/api/v1/geonotes/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp['location'], 'http://testserver/api/v1/geonotes/4/')
+        self.assertTrue(resp['location'].endswith('/api/v1/geonotes/4/'))
 
         # make sure posted object exists
         resp = self.client.get('/api/v1/geonotes/4/', data={'format': 'json'})

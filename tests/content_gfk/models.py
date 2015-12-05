@@ -1,6 +1,6 @@
 from django.db import models
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes import generic
 
 
 class Definition(models.Model):
@@ -24,4 +24,4 @@ class Rating(models.Model):
     rating = models.PositiveIntegerField(choices=RATINGS, default=3)
     content_type = models.ForeignKey(ContentType)
     object_id = models.PositiveIntegerField()
-    content_object = generic.GenericForeignKey('content_type', 'object_id')
+    content_object = GenericForeignKey('content_type', 'object_id')

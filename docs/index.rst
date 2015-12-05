@@ -97,7 +97,7 @@ Required
 --------
 
 * Python 2.6+ or Python 3.3+
-* Django 1.5+
+* Django 1.7+
 * dateutil (http://labix.org/python-dateutil) >= 2.1
 
 Optional
