@@ -1,6 +1,7 @@
 import socket
 import threading
 
+import django
 from django.core.handlers.wsgi import WSGIHandler
 from django.core.management import call_command
 from django.core.servers import basehttp
@@ -66,7 +67,11 @@ class TestServerThread(threading.Thread):
                 cursor.execute('SELECT InitSpatialMetaData()')
                 cursor.fetchone()
 
-            call_command('syncdb', interactive=False, verbosity=0)
+            if django.VERSION >= (1, 9):
+                call_command('migrate', run_syncdb=True, interactive=False, verbosity=0)
+            else:
+                call_command('syncdb', interactive=False, verbosity=0)
+                call_command('migrate', interactive=False, verbosity=0)
 
             # Import the fixture data into the test database.
             if hasattr(self, 'fixtures'):

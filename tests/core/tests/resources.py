@@ -5,6 +5,7 @@ from decimal import Decimal
 import json
 from mock import patch
 import time
+from unittest import skipIf
 
 from django import forms
 from django.contrib.auth.models import User
@@ -14,7 +15,6 @@ from django.core import mail
 from django.core.urlresolvers import reverse
 from django.http import HttpRequest, QueryDict, Http404
 from django.test import TestCase
-from django.test.testcases import skipIf
 from django.test.utils import override_settings
 from django.utils import timezone
 from django.utils.encoding import force_text

@@ -87,7 +87,7 @@ class HTTPTestCase(TestServerTestCase):
         headers = dict(response.getheaders())
 
         location = headers.get('location', headers.get('Location'))
-        self.assertEqual(location, 'http://localhost:8001/api/v1/geonotes/4/')
+        self.assertTrue(location.endswith('/api/v1/geonotes/4/'))
 
         # make sure posted object exists
         connection.request('GET', '/api/v1/geonotes/4/', headers={'Accept': 'application/json'})
@@ -118,7 +118,7 @@ class HTTPTestCase(TestServerTestCase):
         headers = dict(response.getheaders())
 
         location = headers.get('location', headers.get('Location'))
-        self.assertEqual(location, 'http://localhost:8001/api/v1/geonotes/4/')
+        self.assertTrue(location.endswith('/api/v1/geonotes/4/'))
 
         # make sure posted object exists
         connection.request('GET', '/api/v1/geonotes/4/', headers={'Accept': 'application/json'})
@@ -146,7 +146,7 @@ class HTTPTestCase(TestServerTestCase):
         headers = dict(response.getheaders())
 
         location = headers.get('location', headers.get('Location'))
-        self.assertEqual(location, 'http://localhost:8001/api/v1/geonotes/4/')
+        self.assertTrue(location.endswith('/api/v1/geonotes/4/'))
 
         # make sure posted object exists
         connection.request('GET', '/api/v1/geonotes/4/', headers={'Accept': 'application/json'})

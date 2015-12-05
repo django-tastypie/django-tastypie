@@ -98,7 +98,7 @@ class ViewsTestCase(TestCaseWithFixture):
 
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp['location'], 'http://testserver/api/v1/products/12345/')
+        self.assertTrue(resp['location'].endswith('/api/v1/products/12345/'))
 
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/12345/', data={'format': 'json'})
@@ -114,7 +114,7 @@ class ViewsTestCase(TestCaseWithFixture):
 
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp['location'], 'http://testserver/api/v1/products/12345ABC/')
+        self.assertTrue(resp['location'].endswith('/api/v1/products/12345ABC/'))
 
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/12345ABC/', data={'format': 'json'})
@@ -130,7 +130,7 @@ class ViewsTestCase(TestCaseWithFixture):
 
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp['location'], 'http://testserver/api/v1/products/WK12345/')
+        self.assertTrue(resp['location'].endswith('/api/v1/products/WK12345/'))
 
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/WK12345/', data={'format': 'json'})
@@ -146,7 +146,7 @@ class ViewsTestCase(TestCaseWithFixture):
 
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp['location'], 'http://testserver/api/v1/products/76123/03/')
+        self.assertTrue(resp['location'].endswith('/api/v1/products/76123/03/'))
 
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/76123/03/', data={'format': 'json'})
@@ -161,7 +161,7 @@ class ViewsTestCase(TestCaseWithFixture):
 
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp['location'], 'http://testserver/api/v1/products/WS65150/02/')
+        self.assertTrue(resp['location'].endswith('/api/v1/products/WS65150/02/'))
 
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/WS65150/02/', data={'format': 'json'})

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import datetime
 from decimal import Decimal
+from unittest import skipIf
 import yaml
 
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
-from django.test.testcases import skipIf
 
 from tastypie.bundle import Bundle
 from tastypie import fields

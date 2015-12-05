@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 
+import django
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db.models.signals import pre_save
@@ -889,7 +890,7 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
 
         request.set_body(json.dumps(body_dict))
 
-        with self.assertNumQueries(14):
+        with self.assertNumQueries(13 if django.VERSION >= (1, 9) else 14):
             resp = resource.wrap_view('dispatch_detail')(request, pk=dog.pk)
 
         self.assertEqual(resp.status_code, 204)
