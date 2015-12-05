@@ -20,7 +20,7 @@ class ViewsTestCase(TestCaseWithFixture):
         resp = self.client.get('/api/v1/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content.decode('utf-8'))
-        self.assertEqual(len(deserialized), 5)
+        self.assertEqual(len(deserialized), 6)
         self.assertEqual(deserialized['notes'], {'list_endpoint': '/api/v1/notes/', 'schema': '/api/v1/notes/schema/'})
 
         resp = self.client.get('/api/v1/notes/', data={'format': 'json'})
