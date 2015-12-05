@@ -91,6 +91,7 @@ Contributors:
 * Fedor Baart (siggyf) for an update on the serializer
 * Alexey Kotlyarov (koterpillar) - fixing DateField/DateTimeField.
 * Yuri Govorushchenko (metametadata) for documentation fixes.
+* Guilhem Saurel (Nim65s) for a minor issue with Django 1.9
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
