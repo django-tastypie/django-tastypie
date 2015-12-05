@@ -7,9 +7,13 @@ from decimal import Decimal
 import importlib
 
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
-from django.db.models.fields.related import SingleRelatedObjectDescriptor
-from django.utils import datetime_safe
-from django.utils import six
+try:
+    from django.db.models.fields.related import\
+        SingleRelatedObjectDescriptor as ReverseOneToOneDescriptor
+except ImportError:
+    from django.db.models.fields.related_descriptors import\
+        ReverseOneToOneDescriptor
+from django.utils import datetime_safe, six
 
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
@@ -764,7 +768,7 @@ class ToOneField(RelatedField):
         if value is None:
             return value
 
-        if bundle.obj and isinstance(getattr(bundle.obj.__class__, self.attribute), SingleRelatedObjectDescriptor):
+        if bundle.obj and isinstance(getattr(bundle.obj.__class__, self.attribute), ReverseOneToOneDescriptor):
             # This is the case when we are writing to a reverse one to one field.
             # Enable related name to make this work fantastically.
             # see https://code.djangoproject.com/ticket/18638 (bug; closed; worksforme)
