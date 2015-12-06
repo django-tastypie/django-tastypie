@@ -101,6 +101,29 @@ class DjangoAuthorizationTestCase(TestCase):
         self.user = User.objects.all()[0]
         self.user.user_permissions.clear()
 
+    def test_without_user(self):
+        request = HttpRequest()
+        request.user = None
+        resource = DjangoNoteResource()
+        auth = resource._meta.authorization
+        bundle = resource.build_bundle(request=request)
+
+        bundle.request.method = 'GET'
+        self.assertEqual(len(auth.read_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.read_detail(resource.get_object_list(bundle.request)[0], bundle))
+
+        bundle.request.method = 'POST'
+        self.assertEqual(len(auth.create_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.create_detail, resource.get_object_list(bundle.request)[0], bundle)
+
+        bundle.request.method = 'PUT'
+        self.assertEqual(len(auth.update_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.update_detail, resource.get_object_list(bundle.request)[0], bundle)
+
+        bundle.request.method = 'DELETE'
+        self.assertEqual(len(auth.delete_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.delete_detail, resource.get_object_list(bundle.request)[0], bundle)
+
     def test_no_perms(self):
         # sanity check: user has no permissions
         self.assertFalse(self.user.get_all_permissions())
