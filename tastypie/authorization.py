@@ -179,7 +179,7 @@ class DjangoAuthorization(Authorization):
             get_module_name(klass._meta)
         )
 
-        if not bundle.request.user.has_perm(permission):
+        if not bundle.request.user or not bundle.request.user.has_perm(permission):
             return []
 
         return object_list
@@ -195,7 +195,7 @@ class DjangoAuthorization(Authorization):
             get_module_name(klass._meta)
         )
 
-        if not bundle.request.user.has_perm(permission):
+        if not bundle.request.user or not bundle.request.user.has_perm(permission):
             raise Unauthorized("You are not allowed to access that resource.")
 
         return True
@@ -211,7 +211,7 @@ class DjangoAuthorization(Authorization):
             get_module_name(klass._meta)
         )
 
-        if not bundle.request.user.has_perm(permission):
+        if not bundle.request.user or not bundle.request.user.has_perm(permission):
             return []
 
         return object_list
@@ -227,7 +227,7 @@ class DjangoAuthorization(Authorization):
             get_module_name(klass._meta)
         )
 
-        if not bundle.request.user.has_perm(permission):
+        if not bundle.request.user or not bundle.request.user.has_perm(permission):
             raise Unauthorized("You are not allowed to access that resource.")
 
         return True
@@ -243,7 +243,7 @@ class DjangoAuthorization(Authorization):
             get_module_name(klass._meta)
         )
 
-        if not bundle.request.user.has_perm(permission):
+        if not bundle.request.user or not bundle.request.user.has_perm(permission):
             return []
 
         return object_list
@@ -259,7 +259,7 @@ class DjangoAuthorization(Authorization):
             get_module_name(klass._meta)
         )
 
-        if not bundle.request.user.has_perm(permission):
+        if not bundle.request.user or not bundle.request.user.has_perm(permission):
             raise Unauthorized("You are not allowed to access that resource.")
 
         return True
