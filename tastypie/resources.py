@@ -8,7 +8,7 @@ from wsgiref.handlers import format_date_time
 
 import django
 from django.conf import settings
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 from django.core.exceptions import ObjectDoesNotExist,\
     MultipleObjectsReturned, ValidationError
 from django.core.urlresolvers import NoReverseMatch, reverse, Resolver404,\
@@ -344,7 +344,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             urls += overridden_urls
 
         urls += self.base_urls()
-        return patterns('', *urls)
+        return urls
 
     def determine_format(self, request):
         """

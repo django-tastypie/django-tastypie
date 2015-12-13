@@ -32,7 +32,7 @@ OAuth 2.0 authentication with Tasty Pie.::
             resource_name = 'poll'
             authorization = DjangoAuthorization()
             authentication = OAuth20Authentication()
-            
+
 
 Adding Custom Values
 --------------------
@@ -198,15 +198,15 @@ Another alternative approach is to override the ``dispatch`` method::
             return super(EntryResource, self).dispatch(request_type, request, **kwargs)
 
     # urls.py
-    from django.conf.urls import url, patterns, include
+    from django.conf.urls import url, include
     from myapp.api import EntryResource
 
     entry_resource = EntryResource()
 
-    urlpatterns = patterns('',
+    urlpatterns = [
         # The normal jazz here, then...
-        (r'^api/(?P<username>\w+)/', include(entry_resource.urls)),
-    )
+        url(r'^api/(?P<username>\w+)/', include(entry_resource.urls)),
+    ]
 
 
 Nested Resources
@@ -245,7 +245,7 @@ approach uses Haystack_, though you could hook it up to any search technology.
 We leave the CRUD methods of the resource alone, choosing to add a new endpoint
 at ``/api/v1/notes/search/``::
 
-    from django.conf.urls import url, patterns, include
+    from django.conf.urls import url, include
     from django.core.paginator import Paginator, InvalidPage
     from django.http import Http404
     from haystack.query import SearchQuerySet

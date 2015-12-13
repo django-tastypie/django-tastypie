@@ -71,17 +71,17 @@ A basic example looks like:
 
     # urls.py
     # =======
-    from django.conf.urls.defaults import *
+    from django.conf.urls.defaults import url, include
     from tastypie.api import Api
     from myapp.api import EntryResource
 
     v1_api = Api(api_name='v1')
     v1_api.register(EntryResource())
 
-    urlpatterns = patterns('',
+    urlpatterns = [
         # The normal jazz here then...
-        (r'^api/', include(v1_api.urls)),
-    )
+        url(r'^api/', include(v1_api.urls)),
+    ]
 
 That gets you a fully working, read-write API for the ``Entry`` model that
 supports all CRUD operations in a RESTful way. JSON/XML/YAML support is already

@@ -72,17 +72,18 @@ Quick Start
 
 4. In your root URLconf, add the following code (around where the admin code might be)::
 
+    from django.conf.urls import url, include
     from tastypie.api import Api
     from my_app.api.resources import MyModelResource
 
     v1_api = Api(api_name='v1')
     v1_api.register(MyModelResource())
 
-    urlpatterns = patterns('',
+    urlpatterns = [
       # ...more URLconf bits here...
       # Then add:
-      (r'^api/', include(v1_api.urls)),
-    )
+      url(r'^api/', include(v1_api.urls)),
+    ]
 
 5. Hit http://localhost:8000/api/v1/?format=json in your browser!
 
