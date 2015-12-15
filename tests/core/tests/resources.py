@@ -4554,9 +4554,15 @@ class YouFail(Exception):
     pass
 
 
+class YouFailWithResponseAttr(Exception):
+    response = None
+
+
 class BustedResource(BasicResource):
+    err_class = YouFail
+
     def get_list(self, request, **kwargs):
-        raise YouFail("Something blew up.")
+        raise self.err_class("Something blew up.")
 
     def get_detail(self, request, **kwargs):
         raise NotFound("It's just not there.")
@@ -4565,7 +4571,7 @@ class BustedResource(BasicResource):
         raise Http404("Not here either")
 
     def post_detail(self, request, **kwargs):
-        raise YouFail("<script>alert(1)</script>")
+        raise self.err_class("<script>alert(1)</script>")
 
 
 @override_settings(TASTYPIE_FULL_DEBUG=False, TASTYPIE_CANNED_ERROR="Sorry, this request could not be processed. Please try again later.")
@@ -4580,7 +4586,78 @@ class BustedResourceTestCase(TestCase):
 
     @override_settings(DEBUG=True, TASTYPIE_FULL_DEBUG=True)
     def test_debug_on_with_full(self):
-        with self.assertRaises(YouFail):
+        with self.assertRaises(self.resource.err_class):
+            self.resource.wrap_view('get_list')(self.request, pk=1)
+
+    @override_settings(DEBUG=True, TASTYPIE_FULL_DEBUG=False)
+    def test_debug_on_without_full(self):
+        mail.outbox = []
+
+        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
+        self.assertEqual(resp.status_code, 500)
+        content = json.loads(resp.content.decode('utf-8'))
+        self.assertEqual(content['error_message'], 'Something blew up.')
+        self.assertTrue(len(content['traceback']) > 0)
+        self.assertEqual(len(mail.outbox), 0)
+
+    @override_settings(DEBUG=False, TASTYPIE_FULL_DEBUG=False)
+    def test_debug_off(self):
+        SimpleHandler.logged = []
+
+        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
+        self.assertEqual(resp.status_code, 500)
+        self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+        self.assertEqual(len(SimpleHandler.logged), 1)
+
+        # Ensure that 404s don't send email.
+        resp = self.resource.wrap_view('get_detail')(self.request, pk=10000000)
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Sorry, this request could not be processed. Please try again later."}')
+        self.assertEqual(len(SimpleHandler.logged), 1)
+        SimpleHandler.logged = []
+
+    @override_settings(DEBUG=False, TASTYPIE_FULL_DEBUG=False, TASTYPIE_CANNED_ERROR="Oops, you bwoke it.")
+    def test_debug_off_custom_message(self):
+        SimpleHandler.logged = []
+
+        resp = self.resource.wrap_view('get_list')(self.request, pk=1)
+        self.assertEqual(resp.status_code, 500)
+        self.assertEqual(resp.content.decode('utf-8'), '{"error_message": "Oops, you bwoke it."}')
+        self.assertEqual(len(SimpleHandler.logged), 1)
+        SimpleHandler.logged = []
+
+    def test_http404_raises_404(self):
+        self.request.method = 'POST'
+        resp = self.resource.wrap_view('post_list')(self.request, pk=1)
+        self.assertEqual(resp.status_code, 404)
+
+    @override_settings(DEBUG=True, TASTYPIE_FULL_DEBUG=False)
+    def test_escaping(self):
+        request = HttpRequest()
+        request.method = 'POST'
+        request.POST = {
+            'whatever': 'stuff',
+        }
+        res = self.resource.wrap_view('dispatch_detail')(request, pk=1)
+        self.assertEqual(res.status_code, 500)
+        err_data = json.loads(res.content.decode('utf-8'))
+        self.assertTrue('&lt;script&gt;alert(1)&lt;/script&gt;' in err_data['error_message'])
+
+
+@override_settings(TASTYPIE_FULL_DEBUG=False, TASTYPIE_CANNED_ERROR="Sorry, this request could not be processed. Please try again later.")
+class BustedResourceWithNoneResponseErrorAttrTestCase(TestCase):
+    def setUp(self):
+        super(BustedResourceWithNoneResponseErrorAttrTestCase, self).setUp()
+
+        self.resource = BustedResource()
+        self.resource.err_class = YouFailWithResponseAttr
+        self.request = HttpRequest()
+        self.request.GET = {'format': 'json'}
+        self.request.method = 'GET'
+
+    @override_settings(DEBUG=True, TASTYPIE_FULL_DEBUG=True)
+    def test_debug_on_with_full(self):
+        with self.assertRaises(self.resource.err_class):
             self.resource.wrap_view('get_list')(self.request, pk=1)
 
     @override_settings(DEBUG=True, TASTYPIE_FULL_DEBUG=False)

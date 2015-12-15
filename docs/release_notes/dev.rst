@@ -6,3 +6,5 @@ copied to the release notes for the next release.
 
 Bugfixes
 --------
+
+* Prevent muting non-tastypie's exceptions (#1297) (#1404)

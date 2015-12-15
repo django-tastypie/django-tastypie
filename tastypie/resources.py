@@ -238,7 +238,9 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 data = {"error": sanitize(e.messages)}
                 return self.error_response(request, data, response_class=http.HttpBadRequest)
             except Exception as e:
-                if hasattr(e, 'response'):
+                # Prevent muting non-django's exceptions
+                # i.e. RequestException from 'requests' library
+                if hasattr(e, 'response') and isinstance(e.response, HttpResponse):
                     return e.response
 
                 # A real, non-expected exception.
