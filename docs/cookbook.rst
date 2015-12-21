@@ -169,6 +169,8 @@ For example, if you want to expose ``User`` resources by username, you can do
 something like the following::
 
     # myapp/api/resources.py
+    from django.conf.urls.defaults import url
+
     class UserResource(ModelResource):
         class Meta:
             queryset = User.objects.all()
