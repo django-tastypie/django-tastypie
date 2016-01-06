@@ -7,4 +7,5 @@ copied to the release notes for the next release.
 Bugfixes
 --------
 
-* list of changes here
+* Updated DjangoAuthorization to disallow read unless a user has `change` permission. (#1407, PR #1409)
+
