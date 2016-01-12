@@ -782,7 +782,7 @@ class ToOneField(RelatedField):
             # This is the case when we are writing to a reverse one to one field.
             # Enable related name to make this work fantastically.
             # see https://code.djangoproject.com/ticket/18638 (bug; closed; worksforme)
-            # and https://github.com/toastdriven/django-tastypie/issues/566
+            # and https://github.com/django-tastypie/django-tastypie/issues/566
 
             # this gets the related_name of the one to one field of our model
             self.related_name = getattr(bundle.obj.__class__, self.attribute).related.field.name

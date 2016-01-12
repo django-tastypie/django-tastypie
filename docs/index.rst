@@ -133,7 +133,7 @@ common reasons for tastypie.
 Reference Material
 ==================
 
-* http://github.com/toastdriven/django-tastypie/tree/master/tests/basic shows
+* https://github.com/django-tastypie/django-tastypie/tree/master/tests/basic shows
   basic usage of tastypie
 * http://en.wikipedia.org/wiki/REST
 * http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
@@ -146,7 +146,7 @@ Running The Tests
 
 The easiest way to get setup to run Tastypie's tests looks like::
 
-  $ git clone https://github.com/toastdriven/django-tastypie.git
+  $ git clone https://github.com/django-tastypie/django-tastypie.git
   $ cd django-tastypie
   $ virtualenv env
   $ . env/bin/activate
@@ -165,4 +165,4 @@ These will be noted as allowed failures in the ``.travis.yml`` file.) If you
 find a failure, please `report it`_ along with the versions of the installed
 software.
 
-.. _`report it`: https://github.com/toastdriven/django-tastypie/issues
+.. _`report it`: https://github.com/django-tastypie/django-tastypie/issues

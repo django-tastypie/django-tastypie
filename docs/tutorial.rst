@@ -72,7 +72,7 @@ your project or ``PYTHONPATH``.
   3. Either symlink the ``tastypie`` directory into your project or copy the
      directory in. What ever works best for you.
 
-.. _GitHub: http://github.com/toastdriven/django-tastypie
+.. _GitHub: https://github.com/django-tastypie/django-tastypie
 .. _PyPI: http://pypi.python.org/pypi/django-tastypie
 
 

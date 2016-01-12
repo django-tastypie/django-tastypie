@@ -192,7 +192,7 @@ class ApiTestCase(TestCase):
     def test_custom_api_serializer(self):
         """Confirm that an Api can use a custom serializer"""
 
-        # Origin: https://github.com/toastdriven/django-tastypie/pull/817
+        # Origin: https://github.com/django-tastypie/django-tastypie/pull/817
 
         class JSONSerializer(Serializer):
             formats = ('json', )
