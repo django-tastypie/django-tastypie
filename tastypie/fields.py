@@ -615,8 +615,18 @@ class RelatedField(ApiField):
         """
         # Try to hydrate the data provided.
         data = dict_strip_unicode_keys(data)
+        obj = None
+        if getattr(fk_resource._meta, 'include_resource_uri', True) and 'resource_uri' in data:
+            uri = data['resource_uri']
+            err_msg = "Could not find the provided %s object via resource URI '%s'." % (fk_resource._meta.resource_name, uri,)
+            try:
+                obj = fk_resource.get_via_uri(uri, request=request)
+            except ObjectDoesNotExist:
+                raise ApiFieldError(err_msg)
+
         fk_bundle = fk_resource.build_bundle(
             data=data,
+            obj=obj,
             request=request
         )
 
@@ -634,7 +644,7 @@ class RelatedField(ApiField):
         # happens to match other kwargs. In the case of a create, it might be the
         # completely wrong resource.
         # We also need to check to see if updates are allowed on the FK resource.
-        if unique_keys:
+        if not obj and unique_keys:
             try:
                 fk_resource.obj_get(fk_bundle, skip_errors=True, **data)
             except (ObjectDoesNotExist, NotFound, TypeError):

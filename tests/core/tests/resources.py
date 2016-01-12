@@ -30,7 +30,7 @@ from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
 from tastypie.utils import aware_datetime, make_naive
 from tastypie.validation import FormValidation
-from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord, Counter, MyDefaultPKModel, MyUUIDModel
+from core.models import Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord, Counter, MyDefaultPKModel, MyUUIDModel, MyRelatedUUIDModel
 from core.tests.mocks import MockRequest
 from core.utils import adjust_schema, SimpleHandler
 
@@ -925,6 +925,23 @@ if MyUUIDModel:
             always_return_data = True
             authorization = Authorization()
             detail_uri_name = 'anotheruuid'
+
+        def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
+            if bundle_or_obj is None:
+                return '/api/v1/nonuniqueidmyuuidmodel/'
+
+            if hasattr(bundle_or_obj, 'obj'):
+                bundle_or_obj = bundle_or_obj.obj
+            return '/api/v1/nonuniqueidmyuuidmodel/%s/' % bundle_or_obj.anotheruuid
+
+    class MyRelatedUUIDModelResource(ModelResource):
+        myuuidmodels = fields.ManyToManyField(MyUUIDModelResourceNonUniqueDetailUriName, 'myuuidmodels', full=True)
+
+        class Meta:
+            resource_name = 'myrelateduuidmodel'
+            queryset = MyRelatedUUIDModel.objects.all()
+            always_return_data = True
+            authorization = Authorization()
 
 
 class VeryCustomNoteResource(NoteResource):
@@ -2718,9 +2735,65 @@ class ModelResourceTestCase(TestCase):
 
         data = json.loads(resp.content.decode('utf-8'))
 
-        self.assertEqual(data["id"], str(myuuidmodel.pk))
-        self.assertEqual(data["anotheruuid"], str(myuuidmodel.anotheruuid))
-        self.assertNotEqual(data["content"], '')
+        self.assertEqual(data['id'], str(myuuidmodel.pk))
+        self.assertEqual(data['anotheruuid'], str(myuuidmodel.anotheruuid))
+        self.assertNotEqual(data['content'], '')
+
+    @skipIf(MyUUIDModel is None, 'UUIDField not available')
+    def test_patch_detail_with_m2m_non_unique_uuid_detail_uri_name(self):
+        """
+        Make sure when something besides 'pk' is used for detail_uri_name and
+        it isn't unique that we still look up the correct object and don't
+        create a duplicate.
+        Make sure this still works when used as a related resource.
+        """
+        self.assertFalse(MyUUIDModel._meta.get_field('anotheruuid').unique)
+
+        myuuidmodel = MyUUIDModel.objects.create()
+        myrelateduuidmodel = MyRelatedUUIDModel.objects.create()
+        myrelateduuidmodel.myuuidmodels.add(myuuidmodel)
+
+        self.assertEqual(MyUUIDModel.objects.count(), 1)
+        self.assertEqual(MyRelatedUUIDModel.objects.count(), 1)
+
+        data = {
+            'myuuidmodels': [
+                {
+                    'content': 'foo',
+                    'resource_uri': MyUUIDModelResourceNonUniqueDetailUriName().get_resource_uri(myuuidmodel)
+                },
+                {
+                    'content': 'bar',
+                    'order': 1,
+                }
+            ]
+        }
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.set_body(json.dumps(data))
+
+        self.assertNotEqual(myuuidmodel.content, data['myuuidmodels'][0]['content'])
+
+        resource = MyRelatedUUIDModelResource()
+        resp = resource.patch_detail(request, pk=myrelateduuidmodel.pk)
+
+        self.assertEqual(resp.status_code, 202)
+
+        self.assertEqual(MyUUIDModel.objects.count(), 2)
+        self.assertEqual(MyRelatedUUIDModel.objects.count(), 1)
+
+        myuuidmodel = MyUUIDModel.objects.get(pk=myuuidmodel.pk)
+
+        self.assertEqual(myuuidmodel.content, data['myuuidmodels'][0]['content'])
+
+        resp_data = json.loads(resp.content.decode('utf-8'))
+
+        self.assertEqual(resp_data['myuuidmodels'][0]['id'], str(myuuidmodel.pk))
+        self.assertEqual(resp_data['myuuidmodels'][0]['anotheruuid'], str(myuuidmodel.anotheruuid))
+        self.assertEqual(resp_data['myuuidmodels'][0]['content'], data['myuuidmodels'][0]['content'])
+        self.assertEqual(resp_data['myuuidmodels'][1]['content'], data['myuuidmodels'][1]['content'])
 
     def test_put_detail_with_default_pk(self):
         obj = MyDefaultPKModel.objects.create()
