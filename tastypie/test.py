@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 import time
+import warnings
 
 from django.conf import settings
 from django.test import TestCase
@@ -243,12 +244,13 @@ https://docs.djangoproject.com/en/dev/topics/testing/#module-django.test.client
         return self.client.delete(uri, **kwargs)
 
 
-class ResourceTestCase(TestCase):
+class ResourceTestCaseMixin(object):
     """
-    A useful base class for the start of testing Tastypie APIs.
+    A mixin of useful methods for testing Tastypie APIs.
+    Below we use this to subclass Django's TestCase and TransactionTestCase classes.
     """
     def setUp(self):
-        super(ResourceTestCase, self).setUp()
+        super(ResourceTestCaseMixin, self).setUp()
         self.serializer = Serializer()
         self.api_client = TestApiClient()
 
@@ -572,3 +574,16 @@ class ResourceTestCase(TestCase):
         changes.
         """
         self.assertEqual(sorted(data.keys()), sorted(expected))
+
+
+class ResourceTestCase(ResourceTestCaseMixin, TestCase):
+    """
+    This class exists for backwards compatibility, from before ResourceTestCaseMixin was added.
+    It throws a deprecation warning.
+    """
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "'ResourceTestCase' is deprecated & will be removed by v1.0.0. "
+            "Please use ``ResourceTestCaseMixin`` instead. "
+            "For example: ``class MyTest(ResourceTestCaseMixin, django.test.TestCase):``.")
+        super(ResourceTestCase, self).__init__(*args, **kwargs)
