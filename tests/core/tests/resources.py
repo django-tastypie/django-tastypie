@@ -2534,6 +2534,7 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.put_list(request)
         self.assertEqual(resp.status_code, 204)
+        self.assertNotIn('Content-Type', resp)
         self.assertEqual(resp.content.decode('utf-8'), '')
         self.assertEqual(Note.objects.count(), 3)
         self.assertEqual(Note.objects.filter(is_active=True).count(), 1)
@@ -2580,6 +2581,7 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 204)
+        self.assertNotIn('Content-Type', resp)
         self.assertEqual(Note.objects.count(), 7)
         new_note = Note.objects.get(slug='cat-is-back')
         self.assertEqual(new_note.content, u'The cat is gone again. I think it was the rabbits that ate him this time.')
@@ -2610,6 +2612,7 @@ class ModelResourceTestCase(TestCase):
 
         resp = nullable_resource.put_detail(request, pk=10)
         self.assertEqual(resp.status_code, 204)
+        self.assertNotIn('Content-Type', resp)
         self.assertEqual(Note.objects.count(), 7)
         new_note = Note.objects.get(slug='cat-is-back')
         self.assertEqual(new_note.author, None)
@@ -2861,6 +2864,7 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.delete_list(request)
         self.assertEqual(resp.status_code, 204)
+        self.assertNotIn('Content-Type', resp)
         # Only the non-actives are left alive.
         self.assertEqual(Note.objects.count(), 2)
 
@@ -2873,6 +2877,7 @@ class ModelResourceTestCase(TestCase):
 
         resp = resource.delete_detail(request, pk=2)
         self.assertEqual(resp.status_code, 204)
+        self.assertNotIn('Content-Type', resp)
         self.assertEqual(Note.objects.count(), 5)
 
     def test_patch_list(self):
