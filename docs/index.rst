@@ -43,19 +43,6 @@ interfaces.
    release_notes/index
 
 
-Getting Help
-============
-
-There are two primary ways of getting help. 
-
-1. Go to `StackOverflow`_ and post a question with the `tastypie` tag.
-2. We have an IRC channel (`#tastypie on irc.freenode.net`_) to get help,
-   bounce an idea by us, or generally shoot the breeze.
-
-.. _`StackOverflow`: https://stackoverflow.com/questions/tagged/tastypie
-.. _#tastypie on irc.freenode.net: irc://irc.freenode.net/tastypie
-
-
 Quick Start
 ===========
 
@@ -93,31 +80,30 @@ Quick Start
 Requirements
 ============
 
-Tastypie requires the following modules. If you use Pip_, you can install
-the necessary bits via the included ``requirements.txt``:
+Core
+----
 
-Required
---------
-
-* Python 2.6+ or Python 3.3+
-* Django 1.7+
+* Python 2.7+ or Python 3.4+
+* Django 1.7 through Django 1.9
 * dateutil (http://labix.org/python-dateutil) >= 2.1
+
+Format Support
+--------------
+
+* XML: lxml 3 (http://lxml.de/) and defusedxml (https://pypi.python.org/pypi/defusedxml)
+* YAML: pyyaml (http://pyyaml.org/)
+* binary plist: biplist (http://explorapp.com/biplist/)
 
 Optional
 --------
 
-* python_digest (https://bitbucket.org/akoha/python-digest/)
-* lxml (http://lxml.de/) and defusedxml (https://bitbucket.org/tiran/defusedxml) if using the XML serializer
-* pyyaml (http://pyyaml.org/) if using the YAML serializer
-* biplist (https://pypi.python.org/pypi/biplist) if using the binary plist serializer
-
-.. _Pip: http://pip.openplans.org/
+* HTTP Digest authentication: python3-digest (https://bitbucket.org/akoha/python-digest/)
 
 
 Why Tastypie?
 =============
 
-There are other, better known API frameworks out there for Django. You need to
+There are other API frameworks out there for Django. You need to
 assess the options available and decide for yourself. That said, here are some
 common reasons for tastypie.
 
@@ -128,19 +114,31 @@ common reasons for tastypie.
   the problem domain.
 * You want/need XML serialization that is treated equally to JSON (and YAML is
   there too).
-* You want to support my perceived NIH syndrome, which is less about NIH and more
-  about trying to help out friends/coworkers.
 
 
 Reference Material
 ==================
 
+* https://django-tastypie.readthedocs.org/en/latest/
 * https://github.com/django-tastypie/django-tastypie/tree/master/tests/basic shows
   basic usage of tastypie
 * http://en.wikipedia.org/wiki/REST
 * http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
 * http://www.ietf.org/rfc/rfc2616.txt
 * http://jacobian.org/writing/rest-worst-practices/
+
+
+Getting Help
+============
+
+There are two primary ways of getting help.
+
+1. Go to `StackOverflow`_ and post a question with the `tastypie` tag.
+2. We have an IRC channel (`#tastypie on irc.freenode.net`_) to get help,
+   bounce an idea by us, or generally shoot the breeze.
+
+.. _`StackOverflow`: https://stackoverflow.com/questions/tagged/tastypie
+.. _#tastypie on irc.freenode.net: irc://irc.freenode.net/tastypie
 
 
 Running The Tests

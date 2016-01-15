@@ -94,7 +94,7 @@ http://django-tastypie.readthedocs.org/.
 Why Tastypie?
 =============
 
-There are other, better known API frameworks out there for Django. You need to
+There are other API frameworks out there for Django. You need to
 assess the options available and decide for yourself. That said, here are some
 common reasons for tastypie.
 
@@ -105,8 +105,6 @@ common reasons for tastypie.
   the problem domain.
 * You want/need XML serialization that is treated equally to JSON (and YAML is
   there too).
-* You want to support my perceived NIH syndrome, which is less about NIH and more
-  about trying to help out friends/coworkers.
 
 
 Reference Material
@@ -119,6 +117,19 @@ Reference Material
 * http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
 * http://www.ietf.org/rfc/rfc2616.txt
 * http://jacobian.org/writing/rest-worst-practices/
+
+
+Getting Help
+============
+
+There are two primary ways of getting help.
+
+1. Go to `StackOverflow`_ and post a question with the `tastypie` tag.
+2. We have an IRC channel (`#tastypie on irc.freenode.net`_) to get help,
+   bounce an idea by us, or generally shoot the breeze.
+
+.. _`StackOverflow`: https://stackoverflow.com/questions/tagged/tastypie
+.. _#tastypie on irc.freenode.net: irc://irc.freenode.net/tastypie
 
 
 Security
