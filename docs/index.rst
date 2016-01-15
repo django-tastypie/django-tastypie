@@ -46,12 +46,13 @@ interfaces.
 Getting Help
 ============
 
-There are two primary ways of getting help. We have a `mailing list`_ hosted at
-Google (http://groups.google.com/group/django-tastypie/) and an IRC channel
-(`#tastypie on irc.freenode.net`_) to get help, want to bounce idea or
-generally shoot the breeze.
+There are two primary ways of getting help. 
 
-.. _`mailing list`: http://groups.google.com/group/django-tastypie/
+1. Go to `StackOverflow`_ and post a question with the `tastypie` tag.
+2. We have an IRC channel (`#tastypie on irc.freenode.net`_) to get help,
+   bounce an idea by us, or generally shoot the breeze.
+
+.. _`StackOverflow`: https://stackoverflow.com/questions/tagged/tastypie
 .. _#tastypie on irc.freenode.net: irc://irc.freenode.net/tastypie
 
 
