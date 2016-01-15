@@ -85,6 +85,19 @@ class ViewsTestCase(TestCaseWithFixture):
             }
         )
 
+    def test_invalid_json_error(self):
+        # When the given data is not valid JSON a readable error message should be returned.
+        post_data = '{"content": "More internet memes.", "is_active": true, "title": "IT\'S OVER 9000!", "slug": "its-over",'
+
+        resp = self.client.post('/api/v1/notes/', data=post_data, content_type='application/json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(
+            json.loads(resp.content.decode('utf-8')),
+            {
+                "error": "Request is not valid JSON."
+            }
+        )
+
     def test_options(self):
         resp = self.client.options('/api/v1/notes/')
         self.assertEqual(resp.status_code, 200)
