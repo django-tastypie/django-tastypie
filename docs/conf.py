@@ -22,7 +22,7 @@ import sys
 
 sys.path.append('..')
 
-from tastypie import __short_version__, __version__
+from tastypie import __short_version__, __version__  # flake8: noqa
 
 # -- General configuration ----------------------------------------------------
 
