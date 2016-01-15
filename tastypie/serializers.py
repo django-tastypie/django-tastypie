@@ -417,7 +417,7 @@ class Serializer(object):
         try:
             return json.loads(content)
         except ValueError:
-            raise BadRequest
+            raise BadRequest('Request is not valid JSON.')
 
     def to_jsonp(self, data, options=None):
         """
