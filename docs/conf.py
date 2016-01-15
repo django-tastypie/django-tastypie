@@ -18,6 +18,10 @@
 # sys.path.append(os.path.abspath('.'))
 
 import datetime
+import sys
+
+sys.path.append('..')
+
 from tastypie import __short_version__, __version__
 
 # -- General configuration ----------------------------------------------------
