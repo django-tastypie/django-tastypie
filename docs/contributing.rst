@@ -90,10 +90,12 @@ In order to be merged into Tastypie, contributions must have the following:
 
 Please also:
 
-* Add the issue you're solving to the list in docs/release_notes/dev.rst,
-  include issue and PR numbers.
+* Unless your change only modifies the documentation, add the issue you're
+  solving to the list in docs/release_notes/dev.rst, include issue and PR
+  numbers.
 * Squash your changes down to a single commit, or down to one commit containing
-  your tests and one more commit containing the fix.
+  your failing tests and one more commit containing the fix that makes those
+  tests pass.
 
 If your contribution lacks any of these things, they will have to be added
 by a core contributor before being merged into Tastypie proper, which may take
