@@ -133,7 +133,7 @@ Getting Help
 
 There are two primary ways of getting help.
 
-1. Go to `StackOverflow`_ and post a question with the `tastypie` tag.
+1. Go to `StackOverflow`_ and post a question with the ``tastypie`` tag.
 2. We have an IRC channel (`#tastypie on irc.freenode.net`_) to get help,
    bounce an idea by us, or generally shoot the breeze.
 
