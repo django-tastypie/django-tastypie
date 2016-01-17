@@ -7,4 +7,5 @@ copied to the release notes for the next release.
 Bugfixes
 --------
 
-* Prevent muting non-tastypie's exceptions (#1297) (#1404)
+* Prevent muting non-tastypie's exceptions (#1297, PR #1404)
+* Gracefully handle UnsupportFormat exception (#1154, PR #1417)
