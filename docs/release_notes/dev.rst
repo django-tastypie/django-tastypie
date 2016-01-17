@@ -8,3 +8,4 @@ Bugfixes
 --------
 
 * Prevent muting non-tastypie's exceptions (#1297) (#1404)
+* Gracefully handle UnsupportFormat exception (#1154)
