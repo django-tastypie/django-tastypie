@@ -1,18 +1,23 @@
 from __future__ import unicode_literals
+
 from copy import deepcopy
 from datetime import datetime
 import logging
+import sys
 from time import mktime
+import traceback
 import warnings
 from wsgiref.handlers import format_date_time
 
 import django
 from django.conf import settings
 from django.conf.urls import url
-from django.core.exceptions import ObjectDoesNotExist,\
-    MultipleObjectsReturned, ValidationError
-from django.core.urlresolvers import NoReverseMatch, reverse, Resolver404,\
-    get_script_prefix
+from django.core.exceptions import (
+    ObjectDoesNotExist, MultipleObjectsReturned, ValidationError,
+)
+from django.core.urlresolvers import (
+    NoReverseMatch, reverse, Resolver404, get_script_prefix
+)
 from django.core.signals import got_request_exception
 from django.core.exceptions import ImproperlyConfigured
 try:
@@ -32,15 +37,19 @@ from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.bundle import Bundle
 from tastypie.cache import NoCache
 from tastypie.constants import ALL, ALL_WITH_RELATIONS
-from tastypie.exceptions import NotFound, BadRequest, InvalidFilterError,\
-    HydrationError, InvalidSortError, ImmediateHttpResponse, Unauthorized
+from tastypie.exceptions import (
+    NotFound, BadRequest, InvalidFilterError, HydrationError, InvalidSortError,
+    ImmediateHttpResponse, Unauthorized, UnsupportedFormat,
+)
 from tastypie import fields
 from tastypie import http
 from tastypie.paginator import Paginator
 from tastypie.serializers import Serializer
 from tastypie.throttle import BaseThrottle
-from tastypie.utils import dict_strip_unicode_keys,\
-    is_valid_jsonp_callback_value, string_to_python, trailing_slash
+from tastypie.utils import (
+    dict_strip_unicode_keys, is_valid_jsonp_callback_value, string_to_python,
+    trailing_slash,
+)
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.validation import Validation
 from tastypie.compat import get_module_name, atomic_decorator
@@ -262,8 +271,6 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         return wrapper
 
     def _handle_500(self, request, exception):
-        import traceback
-        import sys
         the_trace = '\n'.join(traceback.format_exception(*(sys.exc_info())))
         response_class = http.HttpApplicationError
         response_code = 500
@@ -273,6 +280,10 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         if isinstance(exception, NOT_FOUND_EXCEPTIONS):
             response_class = HttpResponseNotFound
             response_code = 404
+
+        elif isinstance(exception, UnsupportedFormat):
+            response_class = http.HttpBadRequest
+            response_code = 400
 
         if settings.DEBUG:
             data = {
