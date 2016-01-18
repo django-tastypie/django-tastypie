@@ -96,6 +96,7 @@ Contributors:
 * John Lucas (jlucas91) for an improvement to the response for requests with invalid JSON.
 * Judit Novak (juditnovak) for related schema updates
 * Mike Bryant (mikebryant) for unit tests
+* Maxim Filipenko (prokaktus) for changing repr value to str in Python 2
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
