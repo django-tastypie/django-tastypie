@@ -1110,22 +1110,51 @@ class ModelWithReverseItemsRelationshipTest(TestCase):
 
 
 class OneToOneTestCase(TestCase):
-    def test_reverse_one_to_one_post(self):
-        ed = ExtraData.objects.create(name='ed_name')
-        resource = TagResource()
 
+    def setUp(self):
+        self.ed = ExtraData.objects.create(name='ed_name')
+        self.resource = TagResource()
+
+    def _create_request(self, method="POST", **kwargs):
         # Post the extradata element which is attached to a "reverse" OneToOne
         request = MockRequest()
-        request.method = "POST"
-        request.body = json.dumps({
-            "name": "tag_name",
-            "tagged": [],
-            "extradata": "/v1/extradata/%s/" % ed.pk
-        })
+        request.method = method
+        data = {"name": "tag_name", "tagged": []}
+        data.update(kwargs)
+        request.body = json.dumps(data)
+        return request
 
-        resp = resource.post_list(request)
+    def test_reverse_one_to_one_post(self):
+        request = self._create_request(
+            extradata="/v1/extradata/%s/" % self.ed.pk
+        )
+
+        resp = self.resource.post_list(request)
         # Assert that the status code is CREATED
         self.assertEqual(resp.status_code, 201)
 
         tag = Tag.objects.get(pk=int(resp['Location'].split("/")[-2]))
-        self.assertEqual(tag.extradata, ed)
+        self.assertEqual(tag.extradata, self.ed)
+
+    def test_one_to_one_two_patches(self):
+        # update some tag
+        tag = Tag.objects.create(name='tag_name')
+        request = self._create_request(
+            method="PATCH",
+            extradata="/v1/extradata/%s/" % self.ed.pk
+        )
+        self.resource.patch_detail(request, pk=tag.pk)
+        request = self._create_request(
+            method="PATCH",
+            name="new_tag_name"
+        )
+
+        # update another tag
+        tag2 = Tag.objects.create(name="tag_name")
+        resp = self.resource.patch_detail(request, pk=tag2.pk)
+
+        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(
+            Tag.objects.get(pk=tag2.pk).name,
+            "new_tag_name"
+        )
