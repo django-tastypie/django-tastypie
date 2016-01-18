@@ -3927,19 +3927,33 @@ class ModelResourceTestCase(TestCase):
 
     def test_obj_update(self):
         self.assertEqual(Note.objects.all().count(), 6)
+
         note = NoteResource()
         base_bundle = Bundle()
         note_obj = note.obj_get(base_bundle, pk=1)
         note_bundle = note.build_bundle(obj=note_obj)
         note_bundle = note.full_dehydrate(note_bundle)
         note_bundle.data['title'] = 'Whee!'
-        note.obj_update(note_bundle, pk=1)
+        with self.assertNumQueries(1):
+            note.obj_update(note_bundle, pk=1)
         self.assertEqual(Note.objects.all().count(), 6)
         numero_uno = Note.objects.get(pk=1)
         self.assertEqual(numero_uno.title, u'Whee!')
         self.assertEqual(numero_uno.slug, u'first-post')
         self.assertEqual(numero_uno.content, u'This is my very first post using my shiny new API. Pretty sweet, huh?')
         self.assertEqual(numero_uno.is_active, True)
+
+        # same setup as above, just need to test with '1' as the pk (str
+        # instead of int)
+        note = NoteResource()
+        base_bundle = Bundle()
+        note_obj = note.obj_get(base_bundle, pk=1)
+        note_bundle = note.build_bundle(obj=note_obj)
+        note_bundle = note.full_dehydrate(note_bundle)
+        note_bundle.data['title'] = 'Whee!'
+        with self.assertNumQueries(1):
+            note.obj_update(note_bundle, pk='1')
+        self.assertEqual(Note.objects.all().count(), 6)
 
         self.assertEqual(Note.objects.all().count(), 6)
         note = RelatedNoteResource()

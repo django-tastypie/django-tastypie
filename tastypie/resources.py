@@ -756,7 +756,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
         Usually just accesses ``bundle.obj.pk`` by default.
         """
-        return getattr(bundle.obj, self._meta.detail_uri_name)
+        return getattr(bundle.obj, self._meta.detail_uri_name, None)
 
     # URL-related methods.
 
@@ -2204,10 +2204,10 @@ class BaseModelResource(Resource):
         """
         A ORM-specific implementation of ``obj_update``.
         """
-        bundle_detail_data = self.get_bundle_detail_data(bundle) if bundle.obj else None
-        arg_detail_data = kwargs.get(self._meta.detail_uri_name, None)
+        bundle_detail_data = self.get_bundle_detail_data(bundle)
+        arg_detail_data = kwargs.get(self._meta.detail_uri_name)
 
-        if not bundle_detail_data or (arg_detail_data and bundle_detail_data != arg_detail_data):
+        if bundle_detail_data is None or (arg_detail_data is not None and str(bundle_detail_data) != str(arg_detail_data)):
             try:
                 lookup_kwargs = self.lookup_kwargs_with_identifiers(bundle, kwargs)
             except:
