@@ -170,3 +170,20 @@ class Contact(models.Model):
 
     def __unicode__(self):
         return u'%s' % self.name
+
+
+# A backing model for a ReadOnly resource.
+class Constant(models.Model):
+    symbol = models.CharField(max_length=1)
+    value = models.DecimalField()
+
+    def __unicode__(self):
+        return u"%s = %f" % (self.symbol, self.value)
+
+
+class Equation(models.Model):
+    description = models.CharField(max_length=100)
+    constants = models.ManyToManyField(Constant)
+
+    def __unicode__(self):
+        return "".join([c.symbol for c in self.constants.all()])
