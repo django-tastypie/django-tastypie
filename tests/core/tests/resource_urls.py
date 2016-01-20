@@ -1,14 +1,24 @@
-from django.conf.urls import include, url
+try:
+    from django.conf.urls import patterns, include
+except ImportError:  # Django < 1.4
+    from django.conf.urls.defaults import patterns, include
+from django.contrib.auth.models import User
 from tastypie import fields
 from tastypie.resources import ModelResource
 from core.models import Note, Subject
-from core.tests.api import Api, UserResource
+from core.tests.api import Api
 
 
 class SubjectResource(ModelResource):
     class Meta:
         resource_name = 'subjects'
         queryset = Subject.objects.all()
+
+
+class UserResource(ModelResource):
+    class Meta:
+        resource_name = 'user'
+        queryset = User.objects.all()
 
 
 class CustomNoteResource(ModelResource):
@@ -25,6 +35,6 @@ api.register(CustomNoteResource())
 api.register(UserResource())
 api.register(SubjectResource())
 
-urlpatterns = [
-    url(r'^api/', include(api.urls)),
-]
+urlpatterns = patterns('',
+    (r'^api/', include(api.urls)),
+)

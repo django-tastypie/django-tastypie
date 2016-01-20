@@ -9,3 +9,4 @@ Bugfixes
 
 * Prevent muting non-tastypie's exceptions (#1297, PR #1404)
 * Gracefully handle UnsupportFormat exception (#1154, PR #1417)
+* Add related schema urls (#782, PR #1309)

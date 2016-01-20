@@ -94,6 +94,9 @@ Contributors:
 * Guilhem Saurel (Nim65s) for a minor issue with Django 1.9
 * Jack Cushman (jcushman) for converting ResourceTestCase to ResourceTestCaseMixin.
 * John Lucas (jlucas91) for an improvement to the response for requests with invalid JSON.
+* Judit Novak (juditnovak) for related schema updates
+* Mike Bryant (mikebryant) for unit tests
+
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 
