@@ -776,8 +776,7 @@ return the response traveling with the exception.
 The standard URLs this ``Resource`` should respond to. These include the
 list, detail, schema & multiple endpoints by default.
 
-Should return a list of individual URLconf lines (**NOT** wrapped in
-``patterns``).
+Should return a list of individual URLconf lines.
 
 ``override_urls``
 -----------------
@@ -795,8 +794,7 @@ instead.
 A hook for adding your own URLs or matching before the default URLs. Useful for
 adding custom endpoints or overriding the built-in ones (from ``base_urls``).
 
-Should return a list of individual URLconf lines (**NOT** wrapped in
-``patterns``).
+Should return a list of individual URLconf lines.
 
 ``urls``
 --------

@@ -1,18 +1,23 @@
 from __future__ import unicode_literals
+
 from copy import deepcopy
 from datetime import datetime
 import logging
+import sys
 from time import mktime
+import traceback
 import warnings
 from wsgiref.handlers import format_date_time
 
 import django
 from django.conf import settings
-from django.conf.urls import patterns, url
-from django.core.exceptions import ObjectDoesNotExist,\
-    MultipleObjectsReturned, ValidationError
-from django.core.urlresolvers import NoReverseMatch, reverse, Resolver404,\
-    get_script_prefix
+from django.conf.urls import url
+from django.core.exceptions import (
+    ObjectDoesNotExist, MultipleObjectsReturned, ValidationError,
+)
+from django.core.urlresolvers import (
+    NoReverseMatch, reverse, Resolver404, get_script_prefix
+)
 from django.core.signals import got_request_exception
 from django.core.exceptions import ImproperlyConfigured
 try:
@@ -32,15 +37,19 @@ from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.bundle import Bundle
 from tastypie.cache import NoCache
 from tastypie.constants import ALL, ALL_WITH_RELATIONS
-from tastypie.exceptions import NotFound, BadRequest, InvalidFilterError,\
-    HydrationError, InvalidSortError, ImmediateHttpResponse, Unauthorized
+from tastypie.exceptions import (
+    NotFound, BadRequest, InvalidFilterError, HydrationError, InvalidSortError,
+    ImmediateHttpResponse, Unauthorized, UnsupportedFormat,
+)
 from tastypie import fields
 from tastypie import http
 from tastypie.paginator import Paginator
 from tastypie.serializers import Serializer
 from tastypie.throttle import BaseThrottle
-from tastypie.utils import dict_strip_unicode_keys,\
-    is_valid_jsonp_callback_value, string_to_python, trailing_slash
+from tastypie.utils import (
+    dict_strip_unicode_keys, is_valid_jsonp_callback_value, string_to_python,
+    trailing_slash,
+)
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.validation import Validation
 from tastypie.compat import get_module_name, atomic_decorator
@@ -238,7 +247,9 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 data = {"error": sanitize(e.messages)}
                 return self.error_response(request, data, response_class=http.HttpBadRequest)
             except Exception as e:
-                if hasattr(e, 'response'):
+                # Prevent muting non-django's exceptions
+                # i.e. RequestException from 'requests' library
+                if hasattr(e, 'response') and isinstance(e.response, HttpResponse):
                     return e.response
 
                 # A real, non-expected exception.
@@ -260,8 +271,6 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         return wrapper
 
     def _handle_500(self, request, exception):
-        import traceback
-        import sys
         the_trace = '\n'.join(traceback.format_exception(*(sys.exc_info())))
         response_class = http.HttpApplicationError
         response_code = 500
@@ -271,6 +280,10 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         if isinstance(exception, NOT_FOUND_EXCEPTIONS):
             response_class = HttpResponseNotFound
             response_code = 404
+
+        elif isinstance(exception, UnsupportedFormat):
+            response_class = http.HttpBadRequest
+            response_code = 400
 
         if settings.DEBUG:
             data = {
@@ -344,7 +357,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             urls += overridden_urls
 
         urls += self.base_urls()
-        return patterns('', *urls)
+        return urls
 
     def determine_format(self, request):
         """
@@ -743,7 +756,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
         Usually just accesses ``bundle.obj.pk`` by default.
         """
-        return getattr(bundle.obj, self._meta.detail_uri_name)
+        return getattr(bundle.obj, self._meta.detail_uri_name, None)
 
     # URL-related methods.
 
@@ -1661,6 +1674,9 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         if not self._meta.always_return_data:
             return http.HttpAccepted()
         else:
+            # Invalidate prefetched_objects_cache for bundled object
+            # because we might have changed a prefetched field
+            bundle.obj._prefetched_objects_cache = {}
             bundle = self.full_dehydrate(bundle)
             bundle = self.alter_detail_data_to_serialize(request, bundle)
             return self.create_response(request, bundle, response_class=http.HttpAccepted)
@@ -2188,10 +2204,10 @@ class BaseModelResource(Resource):
         """
         A ORM-specific implementation of ``obj_update``.
         """
-        bundle_detail_data = self.get_bundle_detail_data(bundle) if bundle.obj else None
-        arg_detail_data = kwargs.get(self._meta.detail_uri_name, None)
+        bundle_detail_data = self.get_bundle_detail_data(bundle)
+        arg_detail_data = kwargs.get(self._meta.detail_uri_name)
 
-        if not bundle_detail_data or (arg_detail_data and bundle_detail_data != arg_detail_data):
+        if bundle_detail_data is None or (arg_detail_data is not None and str(bundle_detail_data) != str(arg_detail_data)):
             try:
                 lookup_kwargs = self.lookup_kwargs_with_identifiers(bundle, kwargs)
             except:

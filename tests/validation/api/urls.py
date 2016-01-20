@@ -1,4 +1,4 @@
-from django.conf.urls import patterns, include, url
+from django.conf.urls import include, url
 
 from tastypie.api import Api
 
@@ -11,6 +11,6 @@ api.register(NoteResource(), canonical=True)
 api.register(UserResource(), canonical=True)
 api.register(AnnotatedNoteResource(), canonical=True)
 
-urlpatterns = patterns('',
+urlpatterns = [
     url(r'^api/', include(api.urls)),
-)
+]

@@ -8,13 +8,16 @@ except ImportError:
     from setuptools import setup
 
 
+from tastypie import __version__
+
+
 setup(
     name='django-tastypie',
-    version='0.12.2-dev',
+    version=__version__,
     description='A flexible & capable API layer for Django.',
     author='Daniel Lindsley',
     author_email='daniel@toastdriven.com',
-    url='http://github.com/toastdriven/django-tastypie/',
+    url='https://github.com/django-tastypie/django-tastypie',
     long_description=open('README.rst', 'r').read(),
     packages=[
         'tastypie',

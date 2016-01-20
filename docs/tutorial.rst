@@ -72,7 +72,7 @@ your project or ``PYTHONPATH``.
   3. Either symlink the ``tastypie`` directory into your project or copy the
      directory in. What ever works best for you.
 
-.. _GitHub: http://github.com/toastdriven/django-tastypie
+.. _GitHub: https://github.com/django-tastypie/django-tastypie
 .. _PyPI: http://pypi.python.org/pypi/django-tastypie
 
 
@@ -131,16 +131,16 @@ do this, we simply instantiate the resource in our URLconf and hook up its
 ``urls``::
 
     # urls.py
-    from django.conf.urls import url, patterns, include
+    from django.conf.urls import url, include
     from myapp.api import EntryResource
 
     entry_resource = EntryResource()
 
-    urlpatterns = patterns('',
+    urlpatterns = [
         # The normal jazz here...
-        (r'^blog/', include('myapp.urls')),
-        (r'^api/', include(entry_resource.urls)),
-    )
+        url(r'^blog/', include('myapp.urls')),
+        url(r'^api/', include(entry_resource.urls)),
+    ]
 
 Now it's just a matter of firing up server (``./manage.py runserver``) and
 going to http://127.0.0.1:8000/api/entry/?format=json. You should get back a
@@ -253,7 +253,7 @@ We'll go back to our URLconf (``urls.py``) and change it to match the
 following::
 
     # urls.py
-    from django.conf.urls import url, patterns, include
+    from django.conf.urls import url, include
     from tastypie.api import Api
     from myapp.api import EntryResource, UserResource
 
@@ -261,11 +261,11 @@ following::
     v1_api.register(UserResource())
     v1_api.register(EntryResource())
 
-    urlpatterns = patterns('',
+    urlpatterns = [
         # The normal jazz here...
-        (r'^blog/', include('myapp.urls')),
-        (r'^api/', include(v1_api.urls)),
-    )
+        url(r'^blog/', include('myapp.urls')),
+        url(r'^api/', include(v1_api.urls)),
+    ]
 
 Note that we're now creating an :class:`~tastypie.api.Api` instance,
 registering our ``EntryResource`` and ``UserResource`` instances with it and

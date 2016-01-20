@@ -33,8 +33,8 @@ So you've found a bug or have a great idea for a feature. Here's the steps you
 should take to help get it added/fixed in Tastypie:
 
 * First, check to see if there's an existing issue/pull request for the
-  bug/feature. All issues are at https://github.com/toastdriven/django-tastypie/issues
-  and pull reqs are at https://github.com/toastdriven/django-tastypie/pulls.
+  bug/feature. All issues are at https://github.com/django-tastypie/django-tastypie/issues
+  and pull reqs are at https://github.com/django-tastypie/django-tastypie/pulls.
 * If there isn't one there, please file an issue. The ideal report includes:
 
   * A description of the problem/suggestion.
@@ -87,6 +87,15 @@ In order to be merged into Tastypie, contributions must have the following:
   for those changes.
 * Must be appropriately licensed (see "Philosophy").
 * Adds yourself to the AUTHORS file.
+
+Please also:
+
+* Unless your change only modifies the documentation, add the issue you're
+  solving to the list in docs/release_notes/dev.rst, include issue and PR
+  numbers.
+* Squash your changes down to a single commit, or down to one commit containing
+  your failing tests and one more commit containing the fix that makes those
+  tests pass.
 
 If your contribution lacks any of these things, they will have to be added
 by a core contributor before being merged into Tastypie proper, which may take

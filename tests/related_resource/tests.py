@@ -1003,44 +1003,76 @@ class CorrectUriRelationsTestCase(TestCaseWithFixture):
         self.assertEqual(Note.objects.count(), 2)
 
 
-class TestPutOnRelatedResource(TestCase):
-    def test_m2m_put_prefetch(self):
-        resource = api.canonical_resource_for('forum')
+class PrefetchRelatedTests(TestCase):
+    def setUp(self):
+        self.forum = Forum.objects.create()
+        self.resource = api.canonical_resource_for('forum')
+
+        self.user_data = [
+            {
+                'username': 'valid but unique',
+                'email': 'valid.unique@exmaple.com',
+                'password': 'junk',
+            },
+            {
+                'username': 'valid and very unique',
+                'email': 'valid.very.unique@exmaple.com',
+                'password': 'junk',
+            },
+            {
+                'username': 'valid again',
+                'email': 'valid.very.unique@exmaple.com',
+                'password': 'junk',
+            },
+        ]
+
+    def tearDown(self):
+        usernames = [data['username'] for data in self.user_data]
+        User.objects.filter(username__in=usernames).delete()
+        self.forum.delete()
+
+    def make_request(self, method):
         request = MockRequest()
         request.GET = {'format': 'json'}
-        request.method = 'PUT'
-        forum = Forum.objects.create()
-        user_data_1 = {
-            'username': 'valid but unique',
-            'email': 'valid.unique@exmaple.com',
-            'password': 'junk',
-        }
-        user_data_2 = {
-            'username': 'valid and very unique',
-            'email': 'valid.very.unique@exmaple.com',
-            'password': 'junk',
-        }
-        user_data_3 = {
-            'username': 'valid again',
-            'email': 'valid.very.unique@exmaple.com',
-            'password': 'junk',
-        }
-
-        forum_data = {'members': [user_data_1, user_data_2, ],
-                      'moderators': [user_data_3, ]}
-        request.set_body(json.dumps(forum_data))
-
+        request.method = method
+        request.set_body(json.dumps({
+            'members': [
+                self.user_data[0],
+                self.user_data[1],
+            ],
+            'moderators': [self.user_data[2]],
+        }))
         request.path = reverse('api_dispatch_detail', kwargs={
-            'pk': forum.pk,
-            'resource_name': resource._meta.resource_name,
-            'api_name': resource._meta.api_name
+            'pk': self.forum.pk,
+            'resource_name': self.resource._meta.resource_name,
+            'api_name': self.resource._meta.api_name
         })
 
-        response = resource.put_detail(request)
+        return request
+
+    def test_m2m_put(self):
+        request = self.make_request('PUT')
+        response = self.resource.put_detail(request)
+
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content.decode('utf-8'))
 
-        # Check that the query does what it's supposed to and only the return value is wrong
+        # Check that the query does what it's supposed to
+        # and only the return value is wrong
+        self.assertEqual(User.objects.count(), 3)
+
+        self.assertEqual(len(data['members']), 2)
+        self.assertEqual(len(data['moderators']), 1)
+
+    def test_m2m_patch(self):
+        request = self.make_request('PATCH')
+        response = self.resource.patch_detail(request)
+
+        self.assertEqual(response.status_code, 202)
+        data = json.loads(response.content.decode('utf-8'))
+
+        # Check that the query does what it's supposed to
+        # and only the return value is wrong
         self.assertEqual(User.objects.count(), 3)
 
         self.assertEqual(len(data['members']), 2)
