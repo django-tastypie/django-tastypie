@@ -954,7 +954,6 @@ class MediaBitResource(ModelResource):
 
 class ToManyFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
-    urls = 'core.tests.field_urls'
 
     def setUp(self):
         self.note_1 = Note.objects.get(pk=1)

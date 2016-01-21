@@ -224,6 +224,8 @@ This time, we get back a lot more data::
                 "nullable": false,
                 "readonly": false,
                 "type": "related"
+                "related_type": "to_one"
+                "related_schema": "/api/v1/user/schema/"
             }
         },
         "filtering": {

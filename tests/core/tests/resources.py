@@ -1349,7 +1349,7 @@ class CounterUpdateDetailResource(ModelResource):
 
 class ModelResourceTestCase(TestCase):
     fixtures = ['note_testdata.json']
-    urls = 'core.tests.field_urls'
+    urls = 'core.tests.resource_urls'
 
     def setUp(self):
         super(ModelResourceTestCase, self).setUp()
@@ -1696,7 +1696,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resource.determine_format(request), 'application/xml')
 
     def test_build_schema(self):
-        related = RelatedNoteResource()
+        related = RelatedNoteResource(api_name='v1')
         schema = adjust_schema(related.build_schema())
         expected_schema = {
             'filtering': {
@@ -1707,6 +1707,7 @@ class ModelResourceTestCase(TestCase):
             'fields': {
                 'author': {
                     'related_type': 'to_one',
+                    'related_schema': '/api/v1/user/schema/',
                     'nullable': False,
                     'default': 'No default provided.',
                     'readonly': False,
@@ -1763,6 +1764,7 @@ class ModelResourceTestCase(TestCase):
                 },
                 'subjects': {
                     'related_type': 'to_many',
+                    'related_schema': '/api/v1/subjects/schema/',
                     'nullable': False,
                     'default': 'No default provided.',
                     'readonly': False,
@@ -3489,6 +3491,7 @@ class ModelResourceTestCase(TestCase):
                     "type": 'related',
                     "unique": False,
                     "primary_key": False,
+                    "related_schema": '/api/v1/user/schema/',
                     "related_type": 'to_one'
                 },
                 'subjects': {
@@ -3501,6 +3504,7 @@ class ModelResourceTestCase(TestCase):
                     "type": 'related',
                     "unique": False,
                     "primary_key": False,
+                    "related_schema": '/api/v1/subjects/schema/',
                     "related_type": 'to_many'
                 }
             },
