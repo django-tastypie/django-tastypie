@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 try:
-    from setuptools import setup
+    from setuptools import setup, find_packages
 except ImportError:
     from ez_setup import use_setuptools
     use_setuptools()
-    from setuptools import setup
+    from setuptools import setup, find_packages
 
 
 from tastypie import __version__
@@ -19,16 +19,7 @@ setup(
     author_email='daniel@toastdriven.com',
     url='https://github.com/django-tastypie/django-tastypie',
     long_description=open('README.rst', 'r').read(),
-    packages=[
-        'tastypie',
-        'tastypie.utils',
-        'tastypie.management',
-        'tastypie.management.commands',
-        'tastypie.migrations',
-        'tastypie.contrib',
-        'tastypie.contrib.gis',
-        'tastypie.contrib.contenttypes',
-    ],
+    packages=find_packages(exclude=['tests.*']),
     package_data={
         'tastypie': ['templates/tastypie/*'],
     },
