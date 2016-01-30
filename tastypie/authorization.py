@@ -216,19 +216,3 @@ class DjangoAuthorization(Authorization):
 
     def delete_detail(self, object_list, bundle):
         return self.perm_obj_checks(bundle.request, 'delete', bundle.obj)
-
-
-class DjangoObjectAuthorization(DjangoAuthorization):
-    '''
-    Uses permission checking from ``django.contrib.auth`` to map
-    ``POST / PUT / DELETE / PATCH`` to their equivalent Django auth
-    permissions.
-
-    Both the list & detail simply check the object they're based on.
-    Object level authorization api is added since django 1.5. However,
-    it will default to no-access unless an AUTHENTICATION_BACKENDS is
-    setup to handle those checks.
-    '''
-
-    def check_user_perm(self, user, permission, obj_or_list):
-        return user.has_perm(permission, obj_or_list)
