@@ -113,8 +113,8 @@ class DjangoAuthorizationTestCase(TestCase):
         bundle = resource.build_bundle(request=request)
 
         bundle.request.method = 'GET'
-        self.assertEqual(len(auth.read_list(resource.get_object_list(bundle.request), bundle)), 4)
-        self.assertTrue(auth.read_detail(resource.get_object_list(bundle.request)[0], bundle))
+        self.assertEqual(len(auth.read_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.read_detail, resource.get_object_list(bundle.request)[0], bundle)
 
         bundle.request.method = 'POST'
         self.assertEqual(len(auth.create_list(resource.get_object_list(bundle.request), bundle)), 0)
@@ -142,8 +142,8 @@ class DjangoAuthorizationTestCase(TestCase):
         bundle = resource.build_bundle(request=request)
 
         bundle.request.method = 'GET'
-        self.assertEqual(len(auth.read_list(resource.get_object_list(bundle.request), bundle)), 4)
-        self.assertTrue(auth.read_detail(resource.get_object_list(bundle.request)[0], bundle))
+        self.assertEqual(len(auth.read_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.read_detail, resource.get_object_list(bundle.request)[0], bundle)
 
         bundle.request.method = 'POST'
         self.assertEqual(len(auth.create_list(resource.get_object_list(bundle.request), bundle)), 4)
@@ -196,8 +196,8 @@ class DjangoAuthorizationTestCase(TestCase):
         bundle = resource.build_bundle(request=request)
 
         bundle.request.method = 'GET'
-        self.assertEqual(len(auth.read_list(resource.get_object_list(bundle.request), bundle)), 4)
-        self.assertTrue(auth.read_detail(resource.get_object_list(bundle.request)[0], bundle))
+        self.assertEqual(len(auth.read_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.read_detail, resource.get_object_list(bundle.request)[0], bundle)
 
         bundle.request.method = 'POST'
         self.assertEqual(len(auth.create_list(resource.get_object_list(bundle.request), bundle)), 0)
