@@ -1224,6 +1224,26 @@ class BlankMediaBitResource(ModelResource):
         return bundle
 
 
+class ALwaysDataBlankMediaBitResource(ModelResource):
+    # Allow ``note`` to be omitted, even though it's a required field.
+    note = fields.ToOneField(NoteResource, 'note', blank=True)
+
+    class Meta:
+        queryset = MediaBit.objects.all()
+        always_return_data = True
+        authorization = Authorization()
+
+    # We'll custom populate the note here if it's not present.
+    # Doesn't make a ton of sense in this context, but for things
+    # like ``user`` or ``site`` that you can autopopulate based
+    # on the request.
+    def hydrate_note(self, bundle):
+        if not bundle.data.get('note'):
+            bundle.obj.note = Note.objects.get(pk=1)
+
+        return bundle
+
+
 class TestOptionsResource(ModelResource):
     class Meta:
         queryset = Note.objects.all()
@@ -3060,6 +3080,71 @@ class ModelResourceTestCase(TestCase):
         self.assertTrue("resource_uri" in data)
         self.assertTrue("title" in data)
         self.assertTrue("is_active" in data)
+
+    def test_patch_list_filefield_fix(self):
+        resource = BlankMediaBitResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PATCH'
+        request._read_started = False
+
+        self.assertEqual(MediaBit.objects.count(), 1)
+        request._raw_post_data = request._body = '{"objects": [{"title": "Funny Dog Picture", "note": "/api/v1/notes/2/", "image": "lulz/dogz.gif"}, {"resource_uri": "/api/v1/blankmediabit/1/", "title": "Super Funny Cat Picture"}], "deleted_objects": []}'
+        resp = resource.patch_list(request)
+        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(resp.content.decode('utf-8'), '')
+        self.assertEqual(MediaBit.objects.count(), 2)
+        new_mediabit = MediaBit.objects.get(title='Funny Dog Picture')
+        self.assertEqual(new_mediabit.image.name, "lulz/dogz.gif")
+        updated_mediabit = MediaBit.objects.get(pk=1)
+        self.assertEqual(updated_mediabit.title, "Super Funny Cat Picture")
+
+        self.assertEqual(updated_mediabit.image.name, "lulz/catz.gif")  # Check if name isn't replaced by url
+
+    def test_patch_detail_filefield_fix(self):
+        resource = BlankMediaBitResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PATCH'
+        request._read_started = False
+
+        self.assertEqual(MediaBit.objects.count(), 1)
+
+        # Change title, do not touch the image
+        request._raw_post_data = request._body = '{"title": "Boring Cat Picture"}'
+
+        resp = resource.patch_detail(request, pk=10)
+        self.assertEqual(resp.status_code, 404)
+
+        resp = resource.patch_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(MediaBit.objects.count(), 1)
+        mediabit = MediaBit.objects.get(pk=1)
+        self.assertEqual(mediabit.title, "Boring Cat Picture")
+        self.assertEqual(mediabit.image.name, "lulz/catz.gif")  # imagefield still stores the name and not url
+
+        # Change image
+        request._raw_post_data = request._body = '{"image": "lulz/catz_new.gif"}'
+
+        resp = resource.patch_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(MediaBit.objects.count(), 1)
+        mediabit = MediaBit.objects.get(pk=1)
+        self.assertEqual(mediabit.title, "Boring Cat Picture")  # Title is the same as what it was set before
+        self.assertEqual(mediabit.image.name, "lulz/catz_new.gif")  # imagefield stores new image
+
+        always_resource = ALwaysDataBlankMediaBitResource()
+        request._raw_post_data = request._body = '{"title": "Cat is Funny Again!"}'
+        resp = always_resource.patch_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 202)
+        data = json.loads(resp.content.decode('utf-8'))
+        self.assertTrue("id" in data)
+        self.assertEqual(data["id"], 1)
+        self.assertTrue("title" in data)
+        self.assertEqual(data["title"], u'Cat is Funny Again!')
+        self.assertTrue("image" in data)
+        self.assertEqual(data["image"], u'http://localhost:8080/media/lulz/catz_new.gif')  # Response data contains the URL as dehydrated by the user
+        self.assertTrue("resource_uri" in data)
 
     def test_dispatch_list(self):
         resource = NoteResource()

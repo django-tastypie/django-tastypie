@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from tastypie import fields
 from tastypie.resources import ModelResource
 from core.models import Note, Subject
+from core.tests.resources import BlankMediaBitResource
 from core.tests.api import Api
 
 
@@ -34,6 +35,7 @@ api = Api(api_name='v1')
 api.register(CustomNoteResource())
 api.register(UserResource())
 api.register(SubjectResource())
+api.register(BlankMediaBitResource())
 
 urlpatterns = patterns('',
     (r'^api/', include(api.urls)),
