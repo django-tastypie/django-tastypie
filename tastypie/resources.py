@@ -20,6 +20,8 @@ from django.core.urlresolvers import (
 )
 from django.core.signals import got_request_exception
 from django.core.exceptions import ImproperlyConfigured
+from django.db.models import ImageField, FileField
+
 try:
     from django.contrib.gis.db.models.fields import GeometryField
 except (ImproperlyConfigured, ImportError):
@@ -269,6 +271,18 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 return self._handle_500(request, e)
 
         return wrapper
+
+    def handle_patch_for_filefields(self, bundle, data_to_patch):
+        obj = bundle.obj
+        data_to_patch_copy = data_to_patch.copy()
+        fixed_data = {}
+
+        for field in obj._meta.get_fields():
+            if type(field) in [ImageField, FileField]:
+                fixed_data[unicode(field.name)] = field._get_val_from_obj(obj).name
+
+        fixed_data.update(data_to_patch_copy)
+        return fixed_data
 
     def _handle_500(self, request, exception):
         the_trace = '\n'.join(traceback.format_exception(*(sys.exc_info())))
@@ -1601,7 +1615,8 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                     bundle = self.build_bundle(obj=obj, request=request)
                     bundle = self.full_dehydrate(bundle, for_list=True)
                     bundle = self.alter_detail_data_to_serialize(request, bundle)
-                    self.update_in_place(request, bundle, data)
+                    fixed_data = self.handle_patch_for_filefields(bundle, data)
+                    self.update_in_place(request, bundle, fixed_data)
                 except (ObjectDoesNotExist, MultipleObjectsReturned):
                     # The object referenced by resource_uri doesn't exist,
                     # so this is a create-by-PUT equivalent.
@@ -1671,7 +1686,8 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
         # Now update the bundle in-place.
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
-        self.update_in_place(request, bundle, deserialized)
+        fixed_deserialized = self.handle_patch_for_filefields(bundle, deserialized)
+        self.update_in_place(request, bundle, fixed_deserialized)
 
         if not self._meta.always_return_data:
             return http.HttpAccepted()
