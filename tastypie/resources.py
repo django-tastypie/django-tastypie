@@ -298,7 +298,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         data_to_patch_copy = data_to_patch.copy()
         fixed_data = {}
 
-        for field in obj._meta.get_fields():
+        for field in obj._meta.local_fields:
             if type(field) in [ImageField, FileField]:
                 fixed_data[field.name] = field._get_val_from_obj(obj).name
 
