@@ -81,6 +81,7 @@ class BasicResourceWithDifferentListAndDetailFields(Resource):
 
     class Meta:
         object_class = TestObject
+        detail_uri_name = 'name'
         resource_name = 'basic'
 
 
@@ -91,6 +92,7 @@ class BasicResourceWithDifferentListAndDetailFieldsCallable(Resource):
 
     class Meta:
         object_class = TestObject
+        detail_uri_name = 'name'
         resource_name = 'basic'
 
 
@@ -101,6 +103,7 @@ class BasicResource(Resource):
 
     class Meta:
         object_class = TestObject
+        detail_uri_name = 'name'
         resource_name = 'basic'
         authorization = Authorization()
 
@@ -132,6 +135,7 @@ class AnotherBasicResource(BasicResource):
 
     class Meta:
         object_class = TestObject
+        detail_uri_name = 'name'
         resource_name = 'anotherbasic'
         authorization = Authorization()
 
@@ -158,6 +162,7 @@ class NoUriBasicResource(BasicResource):
 
     class Meta:
         object_class = TestObject
+        detail_uri_name = 'name'
         include_resource_uri = False
         authorization = Authorization()
 
@@ -167,6 +172,7 @@ class NullableNameResource(Resource):
 
     class Meta:
         object_class = TestObject
+        detail_uri_name = 'name'
         resource_name = 'nullable_name'
         authorization = Authorization()
 
@@ -174,6 +180,7 @@ class NullableNameResource(Resource):
 class MangledBasicResource(BasicResource):
     class Meta:
         object_class = TestObject
+        detail_uri_name = 'name'
         resource_name = 'mangledbasic'
         authorization = Authorization()
 

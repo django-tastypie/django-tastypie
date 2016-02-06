@@ -762,15 +762,20 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
     def detail_uri_kwargs(self, bundle_or_obj):
         """
-        This needs to be implemented at the user level.
+        Given a ``Bundle`` or an object (typically a ``Model`` instance),
+        it returns the extra kwargs needed to generate a detail URI.
 
-        Given a ``Bundle`` or an object, it returns the extra kwargs needed to
-        generate a detail URI.
-
-        ``ModelResource`` includes a full working version specific to Django's
-        ``Models``.
+        By default, it uses this resource's ``detail_uri_name`` in order to
+        create the URI.
         """
-        raise NotImplementedError()
+        kwargs = {}
+
+        if isinstance(bundle_or_obj, Bundle):
+            bundle_or_obj = bundle_or_obj.obj
+
+        kwargs[self._meta.detail_uri_name] = getattr(bundle_or_obj, self._meta.detail_uri_name)
+
+        return kwargs
 
     def resource_uri_kwargs(self, bundle_or_obj=None):
         """
@@ -2465,22 +2470,6 @@ class BaseModelResource(Resource):
                 related_objs.append(updated_related_bundle.obj)
 
             related_mngr.add(*related_objs)
-
-    def detail_uri_kwargs(self, bundle_or_obj):
-        """
-        Given a ``Bundle`` or an object (typically a ``Model`` instance),
-        it returns the extra kwargs needed to generate a detail URI.
-
-        By default, it uses the model's ``pk`` in order to create the URI.
-        """
-        kwargs = {}
-
-        if isinstance(bundle_or_obj, Bundle):
-            kwargs[self._meta.detail_uri_name] = getattr(bundle_or_obj.obj, self._meta.detail_uri_name)
-        else:
-            kwargs[self._meta.detail_uri_name] = getattr(bundle_or_obj, self._meta.detail_uri_name)
-
-        return kwargs
 
 
 class ModelResource(six.with_metaclass(ModelDeclarativeMetaclass, BaseModelResource)):
