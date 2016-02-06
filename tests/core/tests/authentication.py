@@ -553,12 +553,14 @@ class MultiAuthenticationTestCase(TestCase):
         # Wrong username details.
         request = HttpRequest()
         request.GET['username'] = 'foo'
+
         self.assertEqual(auth.is_authenticated(request), True)
         self.assertEqual(auth.get_identifier(request), 'noaddr_nohost')
 
         # No api_key.
         request = HttpRequest()
         request.GET['username'] = 'daniel'
+
         self.assertEqual(auth.is_authenticated(request), True)
         self.assertEqual(auth.get_identifier(request), 'noaddr_nohost')
 
@@ -566,37 +568,86 @@ class MultiAuthenticationTestCase(TestCase):
         request = HttpRequest()
         request.GET['username'] = 'daniel'
         request.GET['api_key'] = 'foo'
+
         self.assertEqual(auth.is_authenticated(request), True)
         self.assertEqual(auth.get_identifier(request), 'noaddr_nohost')
 
         request = HttpRequest()
         request.GET['username'] = 'johndoe'
         request.GET['api_key'] = john_doe.api_key.key
-        self.assertEqual(auth.is_authenticated(request), True)
-        self.assertEqual(auth.get_identifier(request), 'johndoe')
 
-    def test_apikey_and_basic_auth(self):
+        self.assertEqual(auth.is_authenticated(request), True)
+        self.assertEqual(auth.get_identifier(request), john_doe.username)
+
+    def test_multiauth_apikey_and_basic_auth__no_details_fails(self):
+        auth = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+        request = HttpRequest()
+
+        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
+
+    def test_multiauth_apikey_and_basic_auth__basic_returns_authenticate(self):
+        auth = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+        request = HttpRequest()
+
+        self.assertEqual(
+            auth.is_authenticated(request)['WWW-Authenticate'],
+            'Basic Realm="django-tastypie"'
+        )
+
+    def test_multiauth_apikey_and_basic_auth__api_key_works_in_query(self):
         auth = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
         request = HttpRequest()
         john_doe = User.objects.get(username='johndoe')
 
-        # No API Key or HTTP Basic auth details should fail.
-        self.assertEqual(isinstance(auth.is_authenticated(request), HttpUnauthorized), True)
-
-        # Basic Auth still returns appropriately.
-        self.assertEqual(auth.is_authenticated(request)['WWW-Authenticate'], 'Basic Realm="django-tastypie"')
-
-        # API Key Auth works.
-        request = HttpRequest()
-        request.GET['username'] = 'johndoe'
+        request.GET['username'] = john_doe.username
         request.GET['api_key'] = john_doe.api_key.key
-        self.assertEqual(auth.is_authenticated(request), True)
-        self.assertEqual(auth.get_identifier(request), 'johndoe')
 
-        # Basic Auth works.
+        self.assertEqual(auth.is_authenticated(request), True)
+        self.assertEqual(auth.get_identifier(request), john_doe.username)
+
+    def test_multiauth_apikey_and_basic_auth__api_key_works_in_header(self):
+        auth = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+        request = HttpRequest()
+        john_doe = User.objects.get(username='johndoe')
+
+        request.META['HTTP_AUTHORIZATION'] = 'ApiKey %s:%s' % (john_doe.username, john_doe.api_key.key,)
+
+        self.assertEqual(auth.is_authenticated(request), True)
+        self.assertEqual(auth.get_identifier(request), john_doe.username)
+
+    def test_multiauth_apikey_and_basic_auth__api_key_works_in_header__space_in_username(self):
+        auth = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+        request = HttpRequest()
+        john_doe = User.objects.get(username='johndoe')
+        john_doe.username = 'john doe'
+        john_doe.save()
+
+        request.META['HTTP_AUTHORIZATION'] = 'ApiKey %s:%s' % (john_doe.username, john_doe.api_key.key,)
+
+        self.assertEqual(auth.is_authenticated(request), True)
+        self.assertEqual(auth.get_identifier(request), john_doe.username)
+
+    def test_multiauth_apikey_and_basic_auth__basic_auth_works(self):
+        auth = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
         request = HttpRequest()
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass')
         john_doe.save()
+
         request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass'.encode('utf-8')).decode('utf-8')
+
         self.assertEqual(auth.is_authenticated(request), True)
+        self.assertEqual(auth.get_identifier(request), john_doe.username)
+
+    def test_multiauth_apikey_and_basic_auth__basic_auth_works__space_in_username(self):
+        auth = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+        request = HttpRequest()
+        john_doe = User.objects.get(username='johndoe')
+        john_doe.username = 'john doe'
+        john_doe.set_password('pass')
+        john_doe.save()
+
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('john doe:pass'.encode('utf-8')).decode('utf-8')
+
+        self.assertEqual(auth.is_authenticated(request), True)
+        self.assertEqual(auth.get_identifier(request), john_doe.username)

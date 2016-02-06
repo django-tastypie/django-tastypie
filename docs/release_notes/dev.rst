@@ -8,4 +8,4 @@ Bugfixes
 --------
 
 * Updated DjangoAuthorization to disallow read unless a user has `change` permission. (#1407, PR #1409)
-
+* Authorization classes now handle usernames containing spaces. Closes #966.
