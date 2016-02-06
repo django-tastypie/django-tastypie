@@ -97,6 +97,7 @@ Contributors:
 * Judit Novak (juditnovak) for related schema updates
 * Mike Bryant (mikebryant) for unit tests
 * Maxim Filipenko (prokaktus) for changing repr value to str in Python 2
+* Anant Jain (anant90) for a minor resource api patch.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
