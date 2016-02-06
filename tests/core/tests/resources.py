@@ -1,4 +1,5 @@
 import base64
+from collections import OrderedDict
 import copy
 import datetime
 from decimal import Decimal
@@ -4071,7 +4072,9 @@ class ModelResourceTestCase(TestCase):
 
     def test_obj_update_single_hydrate(self):
         counter = Counter.objects.get(pk=1)
+
         self.assertEqual(counter.count, 1)
+
         cr = CounterResource()
         counter_bundle = cr.build_bundle(data={
             "pk": counter.pk,
@@ -4079,6 +4082,7 @@ class ModelResourceTestCase(TestCase):
             "slug": "signups",
         })
         cr.obj_update(counter_bundle, pk=1)
+
         self.assertEqual(Counter.objects.all().count(), 2)
         counter = Counter.objects.get(pk=1)
         self.assertEqual(counter.count, 1)
@@ -4098,6 +4102,23 @@ class ModelResourceTestCase(TestCase):
         self.assertEquals(counter_bundle._update_auth_call_count, 1)
         self.assertEquals(counter_bundle.obj.name, "Signups")
         self.assertEquals(counter_bundle.obj.slug, "signups")
+
+    def test_lookup_kwargs_with_identifiers__field_without_attr(self):
+        """
+        Verify PR #942 fixed.
+        """
+        class FieldWithoutAttributeNoteResource(NoteResource):
+            noattrfield = fields.CharField()
+        note = FieldWithoutAttributeNoteResource()
+        note_bundle = note.build_bundle()
+        note_bundle.data['title'] = 'Whee!'
+
+        # need to use ordered dict to make sure 'noattrfield' comes before
+        # 'id', otherwise the value of 'id' gets used for 'noattrfield'.
+        kwargs = OrderedDict([('noattrfield', 'foo'), ('id', 1)])
+        lookup_kwargs = note.lookup_kwargs_with_identifiers(note_bundle, kwargs)
+
+        self.assertEqual(lookup_kwargs, {'id': 1})
 
     def test_obj_delete(self):
         self.assertEqual(Note.objects.all().count(), 6)

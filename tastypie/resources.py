@@ -2191,7 +2191,8 @@ class BaseModelResource(Resource):
             field_object = self.fields[identifier]
 
             # Skip readonly or related fields.
-            if field_object.readonly is True or field_object.is_related:
+            if field_object.readonly or field_object.is_related or\
+                    not field_object.attribute:
                 continue
 
             # Check for an optional method to do further hydration.
@@ -2200,10 +2201,7 @@ class BaseModelResource(Resource):
             if method:
                 bundle = method(bundle)
 
-            if field_object.attribute:
-                value = field_object.hydrate(bundle)
-
-            lookup_kwargs[identifier] = value
+            lookup_kwargs[identifier] = field_object.hydrate(bundle)
 
         return lookup_kwargs
 
