@@ -2,13 +2,15 @@ from django.contrib.auth.models import User
 
 from tastypie import fields
 from tastypie.resources import ModelResource
-from tastypie.authorization import Authorization
+from tastypie.authentication import Authentication
+from tastypie.authorization import Authorization, ReadOnlyAuthorization
 
 from core.models import Note, MediaBit
 
 from related_resource.models import Bone, Category, Contact, ContactGroup,\
     ExtraData, Person, Company, Product, Address, Dog, DogHouse, Forum,\
-    Job, Label, Order, OrderItem, Payment, Post, Tag, Taggable, TaggableTag
+    Job, Label, Order, OrderItem, Payment, Post, Tag, Taggable, TaggableTag,\
+    Constant, Equation
 
 
 class UserResource(ModelResource):
@@ -277,4 +279,25 @@ class ContactResource(ModelResource):
     class Meta:
         queryset = Contact.objects.prefetch_related('groups')
         resource_name = 'contact'
+        authorization = Authorization()
+
+
+class ConstantResource(ModelResource):
+    class Meta:
+        always_return_data = True
+        queryset = Constant.objects.all()
+        authenticaion = Authentication()
+        authorization = ReadOnlyAuthorization()
+
+
+class EquationResource(ModelResource):
+    description = fields.CharField()
+    constants = fields.ToManyField(
+        ConstantResource, 'constants', related_name='equations', null=True,
+        blank=True, full=True)
+
+    class Meta:
+        always_return_data = True
+        queryset = Equation.objects.all()
+        authenticaion = Authentication()
         authorization = Authorization()

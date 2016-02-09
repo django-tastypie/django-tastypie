@@ -15,11 +15,13 @@ from core.tests.mocks import MockRequest
 
 from related_resource.api.resources import CategoryResource, ForumResource,\
     FreshNoteResource, JobResource, NoteResource, OrderResource,\
-    NoteWithUpdatableUserResource, PersonResource, TagResource, UserResource
+    NoteWithUpdatableUserResource, PersonResource, TagResource, UserResource,\
+    ConstantResource, EquationResource
 from related_resource.api.urls import api
 from related_resource.models import Category, Label, Tag, Taggable,\
     TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product,\
-    Address, Job, Payment, Forum, Order, OrderItem, Contact, ContactGroup
+    Address, Job, Payment, Forum, Order, OrderItem, Contact, ContactGroup,\
+    Constant
 from testcases import TestCaseWithFixture
 
 
@@ -1129,3 +1131,28 @@ class OneToOneTestCase(TestCase):
 
         tag = Tag.objects.get(pk=int(resp['Location'].split("/")[-2]))
         self.assertEqual(tag.extradata, ed)
+
+
+class RelatedResourceReadOnlyTestCase(TestCase):
+    def test_related_resource_does_not_raise_401(self):
+        constants = [
+            Constant.objects.create(symbol="e", value="2.718"),
+            Constant.objects.create(symbol="c", value="299792458")
+        ]
+
+        equation = EquationResource()
+        request = MockRequest()
+        request.method = "POST"
+        request.body = json.dumps({
+            "constants": ["/api/v1/constant/1/"],
+        })
+        resp = equation.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+
+        request = MockRequest()
+        request.method = "PATCH"
+        request.body = json.dumps({
+            "description": "Some equation."
+        })
+        resp = equation.patch_detail(request)
+        self.assertEqual(resp.status_code, 202)
