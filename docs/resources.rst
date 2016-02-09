@@ -1190,16 +1190,6 @@ A hook to allow making returning the list of available objects.
 ``ModelResource`` includes a full working version specific to Django's
 ``Models``.
 
-``apply_authorization_limits``
-------------------------------
-
-.. method:: Resource.apply_authorization_limits(self, request, object_list)
-
-Allows the ``Authorization`` class to further limit the object list.
-Also a hook to customize per ``Resource``.
-
-Calls ``Authorization.apply_limits`` if available.
-
 ``can_create``
 --------------
 
