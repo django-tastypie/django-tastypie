@@ -727,7 +727,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             via_uri=via_uri
         )
 
-    def build_filters(self, filters=None):
+    def build_filters(self, filters=None, bundle=None):
         """
         Allows for the filtering of applicable objects.
 
@@ -1978,7 +1978,7 @@ class BaseModelResource(Resource):
 
         return value
 
-    def build_filters(self, filters=None):
+    def build_filters(self, filters=None, bundle=None):
         """
         Given a dictionary of filters, create the necessary ORM-level filters.
 
@@ -2120,7 +2120,7 @@ class BaseModelResource(Resource):
 
         # Update with the provided kwargs.
         filters.update(kwargs)
-        applicable_filters = self.build_filters(filters=filters)
+        applicable_filters = self.build_filters(filters=filters, bundle=bundle)
 
         try:
             objects = self.apply_filters(bundle.request, applicable_filters)
