@@ -54,9 +54,9 @@ if 'django.contrib.auth' in settings.INSTALLED_APPS:
         class Meta:
             abstract = getattr(settings, 'TASTYPIE_ABSTRACT_APIKEY', False)
 
-    def create_api_key(sender, **kwargs):
+    def create_api_key(sender, instance, created, **kwargs):
         """
         A signal for hooking up automatic ``ApiKey`` creation.
         """
-        if kwargs.get('created') is True:
-            ApiKey.objects.create(user=kwargs.get('instance'))
+        if kwargs.get('raw', False) is False and created is True:
+            ApiKey.objects.create(user=instance)

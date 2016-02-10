@@ -71,7 +71,7 @@ A basic example looks like:
 
     # urls.py
     # =======
-    from django.conf.urls.defaults import url, include
+    from django.conf.urls import url, include
     from tastypie.api import Api
     from myapp.api import EntryResource
 

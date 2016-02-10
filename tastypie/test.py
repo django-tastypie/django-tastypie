@@ -4,15 +4,10 @@ import warnings
 
 from django.conf import settings
 from django.test import TestCase
-from django.test.client import FakePayload, Client
+from django.test.client import Client
 from django.utils.encoding import force_text
 
 from tastypie.serializers import Serializer
-
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
 
 
 class TestApiClient(object):
@@ -194,18 +189,7 @@ https://docs.djangoproject.com/en/dev/topics/testing/#module-django.test.client
         if authentication is not None:
             kwargs['HTTP_AUTHORIZATION'] = authentication
 
-        # This hurts because Django doesn't support PATCH natively.
-        parsed = urlparse(uri)
-        r = {
-            'CONTENT_LENGTH': len(kwargs['data']),
-            'CONTENT_TYPE': content_type,
-            'PATH_INFO': self.client._get_path(parsed),
-            'QUERY_STRING': parsed[4],
-            'REQUEST_METHOD': 'PATCH',
-            'wsgi.input': FakePayload(kwargs['data']),
-        }
-        r.update(kwargs)
-        return self.client.request(**r)
+        return self.client.patch(uri, **kwargs)
 
     def delete(self, uri, format='json', data=None, authentication=None,
             **kwargs):

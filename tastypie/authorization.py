@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from tastypie.exceptions import TastypieError, Unauthorized
+from tastypie.exceptions import Unauthorized
 from tastypie.compat import get_module_name
 
 
@@ -16,14 +16,6 @@ class Authorization(object):
         """
         self.resource_meta = instance
         return self
-
-    def apply_limits(self, request, object_list):
-        """
-        Deprecated.
-
-        FIXME: REMOVE BEFORE 1.0
-        """
-        raise TastypieError("Authorization classes no longer support `apply_limits`. Please update to using `read_list`.")
 
     def read_list(self, object_list, bundle):
         """

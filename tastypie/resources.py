@@ -61,11 +61,6 @@ def sanitize(text):
     return escape(text).replace('&#39;', "'").replace('&quot;', '"')
 
 
-class NOT_AVAILABLE:
-    def __str__(self):
-        return 'No such data is available.'
-
-
 class ResourceOptions(object):
     """
     A configuration class for ``Resource``.
@@ -131,18 +126,15 @@ class DeclarativeMetaclass(type):
         declared_fields = {}
 
         # Inherit any fields from parent(s).
-        try:
-            parents = [b for b in bases if issubclass(b, Resource)]
-            # Simulate the MRO.
-            parents.reverse()
+        parents = [b for b in bases if issubclass(b, Resource)]
+        # Simulate the MRO.
+        parents.reverse()
 
-            for p in parents:
-                parent_fields = getattr(p, 'base_fields', {})
+        for p in parents:
+            parent_fields = getattr(p, 'base_fields', {})
 
-                for field_name, field_object in parent_fields.items():
-                    attrs['base_fields'][field_name] = deepcopy(field_object)
-        except NameError:
-            pass
+            for field_name, field_object in parent_fields.items():
+                attrs['base_fields'][field_name] = deepcopy(field_object)
 
         for field_name, obj in attrs.copy().items():
             # Look for ``dehydrated_type`` instead of doing ``isinstance``,
@@ -200,9 +192,10 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             self._meta.api_name = api_name
 
     def __getattr__(self, name):
-        if name in self.fields:
+        try:
             return self.fields[name]
-        raise AttributeError(name)
+        except KeyError:
+            raise AttributeError(name)
 
     def wrap_view(self, view):
         """
@@ -1045,7 +1038,10 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 else:
                     related_type = 'to_one'
                 data['fields'][field_name]['related_type'] = related_type
-                uri = reverse('api_get_schema', kwargs={'api_name': self._meta.api_name, 'resource_name': field_object.to_class()._meta.resource_name})
+                uri = reverse('api_get_schema', kwargs={
+                    'api_name': self._meta.api_name,
+                    'resource_name': field_object.to_class()._meta.resource_name
+                })
                 data['fields'][field_name]['related_schema'] = uri
 
         return data
@@ -1087,14 +1083,6 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         ``Models``.
         """
         raise NotImplementedError()
-
-    def apply_authorization_limits(self, request, object_list):
-        """
-        Deprecated.
-
-        FIXME: REMOVE BEFORE 1.0
-        """
-        return self._meta.authorization.apply_limits(request, object_list)
 
     def can_create(self):
         """

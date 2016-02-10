@@ -47,6 +47,8 @@ As an example, we'll take integrating with Riak_ (a Dynamo-like NoSQL store)
 since it has both a simple API and demonstrate what hooking up to a
 non-relational datastore looks like::
 
+    import riak
+
     from tastypie import fields
     from tastypie.authorization import Authorization
     from tastypie.resources import Resource
@@ -161,4 +163,4 @@ have decreased readability.
 All said and done, just nine methods needed overriding, eight of which were
 highly specific to how data access is done.
 
-.. _Riak: http://www.basho.com/products_riak_overview.php
+.. _Riak: https://pypi.python.org/pypi/riak

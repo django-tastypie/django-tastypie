@@ -1,7 +1,4 @@
-try:
-    from django.conf.urls import patterns, include
-except ImportError:  # Django < 1.4
-    from django.conf.urls.defaults import patterns, include
+from django.conf.urls import include, url
 from django.contrib.auth.models import User
 from tastypie import fields
 from tastypie.resources import ModelResource
@@ -35,6 +32,6 @@ api.register(CustomNoteResource())
 api.register(UserResource())
 api.register(SubjectResource())
 
-urlpatterns = patterns('',
-    (r'^api/', include(api.urls)),
-)
+urlpatterns = [
+    url(r'^api/', include(api.urls)),
+]

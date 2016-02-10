@@ -242,6 +242,7 @@ something like the following:
 .. testcode::
 
     # myapp/api/resources.py
+    from django.conf.urls import url
     from django.contrib.auth.models import User
 
 
@@ -311,6 +312,8 @@ handle the children:
 
     class ChildResource(ModelResource):
         pass
+
+    from tastypie.utils import trailing_slash
 
     class ParentResource(ModelResource):
         children = fields.ToManyField(ChildResource, 'children')
@@ -405,8 +408,8 @@ and every user will be working only with objects associated with them. Let's see
 how to implement it for two basic operations: listing and creation of an object.
 
 For listing we want to list only objects for which 'user' field matches
-'request.user'. This could be done by applying a filter in the ``apply_authorization_limits``
-method of your resource.
+'request.user'. This could be done by applying a filter in the
+``authorized_read_list`` method of your resource.
 
 For creating we'd have to wrap ``obj_create`` method of ``ModelResource``. Then the
 resulting code will look something like:
@@ -429,8 +432,8 @@ resulting code will look something like:
         def obj_create(self, bundle, **kwargs):
             return super(MyModelResource, self).obj_create(bundle, user=bundle.request.user)
 
-        def apply_authorization_limits(self, request, object_list):
-            return object_list.filter(user=request.user)
+        def authorized_read_list(self, object_list, bundle):
+            return object_list.filter(user=bundle.request.user)
 
 .. testoutput::
    :options: +NORMALIZE_WHITESPACE
