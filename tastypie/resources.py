@@ -2350,7 +2350,7 @@ class BaseModelResource(Resource):
             if related_obj is None:
                 related_obj = bundle.related_objects_to_save.get(field_object.attribute, None)
 
-            if field_object.related_name:
+            if related_obj and field_object.related_name:
                 # this might be a reverse relation, so we need to save this
                 # model, attach it to the related object, and save the related
                 # object.
