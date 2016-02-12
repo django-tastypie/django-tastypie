@@ -1129,3 +1129,25 @@ class OneToOneTestCase(TestCase):
 
         tag = Tag.objects.get(pk=int(resp['Location'].split("/")[-2]))
         self.assertEqual(tag.extradata, ed)
+
+    @staticmethod
+    def patch_details(resource, pk, **kwargs):
+        # Post the extradata element which is attached to a "reverse" OneToOne
+        request = MockRequest()
+        request.method = "PATCH"
+        request.body = json.dumps(kwargs)
+        response = resource.patch_detail(request, pk=pk)
+        return response
+
+    def test_one_to_one_two_patches_in_a_row(self):
+        resource = TagResource()
+        ed = ExtraData.objects.create(name='ed_name')
+        tag = Tag.objects.create(name='tag_name')
+        tag2 = Tag.objects.create(name="tag_name2")
+        extra_data = "/v1/extradata/%s/" % ed.pk
+
+        self.patch_details(resource, tag.pk, extradata=extra_data)
+        resp = self.patch_details(resource, tag2.pk, name="new_tag_name")
+
+        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(Tag.objects.get(pk=tag2.pk).name, "new_tag_name")
