@@ -7,6 +7,7 @@ copied to the release notes for the next release.
 Bugfixes
 --------
 
+* Fix in `Resource.save_related`: `related_obj` can  be empty in patch requests (introduced in #1378). (Fixes #1436)
 * Updated DjangoAuthorization to disallow read unless a user has `change` permission. (#1407, PR #1409)
 * Authorization classes now handle usernames containing spaces. Closes #966.
 * Cleaned up old, unneeded code. (closes PR #1433)
@@ -20,3 +21,6 @@ Bugfixes
     * Include import statement for trailing_slash. (by @ljosa, closes #770)
     * Fix docs: `Meta.filtering` is actually a dict. (by @georgedorn, closes #807)
     * Fix load data command. (by @blite, closes #357, #358)
+* Related schemas no longer raise error when not URL accessible. (Fixes PR #1439)
+* Avoid modifying Field instances during request/response cycle. (closes #1415)
+* Removing the Manager dependency in ToManyField.dehydrate(). (Closes #537)
