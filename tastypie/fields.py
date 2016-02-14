@@ -432,7 +432,6 @@ class RelatedField(ApiField):
     """
     dehydrated_type = 'related'
     is_related = True
-    self_referential = False
     help_text = 'A related resource. Can be either a URI or set of nested resource data.'
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, use_in='all', verbose_name=None, full_list=True, full_detail=True):
@@ -507,18 +506,6 @@ class RelatedField(ApiField):
         self.api_name = None
         self.resource_name = None
 
-        if self.to == 'self':
-            self.self_referential = True
-
-    def contribute_to_class(self, cls, name):
-        super(RelatedField, self).contribute_to_class(cls, name)
-
-        # Check if we're self-referential and hook it up.
-        # We can't do this quite like Django because there's no ``AppCache``
-        # here (which I think we should avoid as long as possible).
-        if self.self_referential or self.to == 'self':
-            self._to_class = cls
-
     def get_related_resource(self, related_instance):
         """
         Instaniates the related resource.
@@ -548,6 +535,13 @@ class RelatedField(ApiField):
 
         if not isinstance(self.to, six.string_types):
             self._to_class = self.to
+            return self._to_class
+
+        # Check if we're self-referential and hook it up.
+        # We can't do this quite like Django because there's no ``AppCache``
+        # here (which I think we should avoid as long as possible).
+        if self.to == 'self':
+            self._to_class = self._resource
             return self._to_class
 
         # It's a string. Let's figure it out.
