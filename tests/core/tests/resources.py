@@ -634,6 +634,7 @@ class ResourceTestCase(TestCase):
         }
         self.assertEqual(schema, expected_schema)
 
+    def test_build_schema__altered_meta(self):
         basic = BasicResource()
         basic._meta.ordering = ['date_joined', 'name']
         basic._meta.filtering = {'date_joined': ['gt', 'gte'], 'name': ALL}
@@ -3526,6 +3527,131 @@ class ModelResourceTestCase(TestCase):
         schema = json.loads(resp.content.decode('utf-8'))
 
         self.assertEqual(schema, expected_schema)
+
+    def test_get_schema_with_related_resource_not_in_urls(self):
+        """
+        Test case for #1439. Need to handle schemas for related resources that
+        aren't in any urlconfs.
+        """
+        class GhostResource(Resource):
+            foo = fields.CharField()
+
+            class Meta:
+                object_class = object
+
+        class CustomRelatedNoteResource(RelatedNoteResource):
+            ghost = fields.ToOneField(GhostResource, 'ghost')
+
+            Meta = RelatedNoteResource.Meta
+
+        resource = CustomRelatedNoteResource()
+
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+
+        # Patch the ``created/updated`` defaults for testability.
+        with patch.object(resource.fields['created'], '_default', new=aware_datetime(2011, 9, 24, 0, 2)):
+            resp = resource.get_schema(request)
+
+        self.assertEqual(resp.status_code, 200)
+
+        expected_schema = {
+            "allowed_detail_http_methods": ["get", "post", "put", "delete", "patch"],
+            "allowed_list_http_methods": ["get", "post", "put", "delete", "patch"],
+            "default_format": "application/json",
+            "default_limit": 20,
+            "fields": {
+                "content": {
+                    "blank": True,
+                    "default": "",
+                    "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "verbose_name": 'content',
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "string",
+                    "unique": False,
+                    "primary_key": False
+                },
+                "created": {
+                    "blank": False,
+                    "default": "2011-09-24T00:02:00",
+                    "help_text": "A date & time as a string. Ex: \"2010-11-10T03:07:43\"",
+                    "verbose_name": 'created',
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "datetime",
+                    "unique": False,
+                    "primary_key": False
+                },
+                "is_active": {
+                    "blank": True,
+                    "default": True,
+                    "help_text": "Boolean data. Ex: True",
+                    "verbose_name": 'is active',
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "boolean",
+                    "unique": False,
+                    "primary_key": False
+                },
+                "resource_uri": {
+                    "blank": False,
+                    "default": "No default provided.",
+                    "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "verbose_name": 'resource uri',
+                    "nullable": False,
+                    "readonly": True,
+                    "type": "string",
+                    "unique": False,
+                    "primary_key": False
+                },
+                "slug": {
+                    "blank": False,
+                    "default": "No default provided.",
+                    "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "verbose_name": 'slug',
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "string",
+                    "unique": False,
+                    "primary_key": False
+                },
+                "title": {
+                    "blank": False,
+                    "default": "No default provided.",
+                    "help_text": "Unicode string data. Ex: \"Hello World\"",
+                    "verbose_name": 'The Title',
+                    "nullable": False,
+                    "readonly": False,
+                    "type": "string",
+                    "unique": False,
+                    "primary_key": False
+                },
+                'ghost': {
+                    "blank": False,
+                    "default": "No default provided.",
+                    "help_text": 'A single related resource. Can be either a URI or set of nested resource data.',
+                    "verbose_name": 'ghost',
+                    "readonly": False,
+                    "nullable": False,
+                    "type": 'related',
+                    "unique": False,
+                    "primary_key": False,
+                    "related_schema": '',
+                    "related_type": 'to_one'
+                }
+            },
+            'default_format': 'application/json',
+            'filtering': {
+                'author': ALL,
+                'subjects': ALL_WITH_RELATIONS,
+            },
+        }
+
+        schema = json.loads(resp.content.decode('utf-8'))
+
+        self.assertEqual(schema['fields'], expected_schema['fields'])
 
     def test_get_multiple(self):
         resource = NoteResource()

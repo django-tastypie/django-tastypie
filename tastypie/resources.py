@@ -1038,10 +1038,13 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 else:
                     related_type = 'to_one'
                 data['fields'][field_name]['related_type'] = related_type
-                uri = reverse('api_get_schema', kwargs={
-                    'api_name': self._meta.api_name,
-                    'resource_name': field_object.to_class()._meta.resource_name
-                })
+                try:
+                    uri = reverse('api_get_schema', kwargs={
+                        'api_name': self._meta.api_name,
+                        'resource_name': field_object.to_class()._meta.resource_name
+                    })
+                except NoReverseMatch:
+                    uri = ''
                 data['fields'][field_name]['related_schema'] = uri
 
         return data
