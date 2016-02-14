@@ -744,6 +744,19 @@ class ToOneField(RelatedField):
             full_detail=full_detail
         )
 
+    def contribute_to_class(self, cls, name):
+        super(ToOneField, self).contribute_to_class(cls, name)
+        if not self.related_name:
+            related_field = getattr(self._resource._meta.object_class, self.attribute, None)
+            if isinstance(related_field, ReverseOneToOneDescriptor):
+                # This is the case when we are writing to a reverse one to one field.
+                # Enable related name to make this work fantastically.
+                # see https://code.djangoproject.com/ticket/18638 (bug; closed; worksforme)
+                # and https://github.com/django-tastypie/django-tastypie/issues/566
+
+                # this gets the related_name of the one to one field of our model
+                self.related_name = related_field.related.field.name
+
     def dehydrate(self, bundle, for_list=True):
         foreign_obj = None
 
@@ -777,15 +790,6 @@ class ToOneField(RelatedField):
 
         if value is None:
             return value
-
-        if bundle.obj and isinstance(getattr(bundle.obj.__class__, self.attribute), ReverseOneToOneDescriptor):
-            # This is the case when we are writing to a reverse one to one field.
-            # Enable related name to make this work fantastically.
-            # see https://code.djangoproject.com/ticket/18638 (bug; closed; worksforme)
-            # and https://github.com/django-tastypie/django-tastypie/issues/566
-
-            # this gets the related_name of the one to one field of our model
-            self.related_name = getattr(bundle.obj.__class__, self.attribute).related.field.name
 
         return self.build_related_resource(value, request=bundle.request)
 
