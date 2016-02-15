@@ -13,9 +13,10 @@ from tastypie.exceptions import ApiFieldError, NotFound
 from core.models import Note, MediaBit
 from core.tests.mocks import MockRequest
 
-from related_resource.api.resources import CategoryResource, ForumResource,\
-    FreshNoteResource, JobResource, NoteResource, OrderResource,\
-    NoteWithUpdatableUserResource, PersonResource, TagResource, UserResource
+from related_resource.api.resources import AddressResource, CategoryResource,\
+    ForumResource, FreshNoteResource, JobResource, NoteResource,\
+    OrderResource, NoteWithUpdatableUserResource, PersonResource, TagResource,\
+    UserResource
 from related_resource.api.urls import api
 from related_resource.models import Category, Label, Tag, Taggable,\
     TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product,\
@@ -1151,3 +1152,14 @@ class OneToOneTestCase(TestCase):
 
         self.assertEqual(resp.status_code, 202)
         self.assertEqual(Tag.objects.get(pk=tag2.pk).name, "new_tag_name")
+
+    def test_toonefield_spanning_a_relationship(self):
+        """
+        #1446
+        """
+        # just need to be able to add this to a class
+        class CustomPersonResource(PersonResource):
+            company_address = fields.ToOneField(AddressResource,
+                'company__address', null=True, full=True)
+        resource = CustomPersonResource()
+        resource.fields['company_address']
