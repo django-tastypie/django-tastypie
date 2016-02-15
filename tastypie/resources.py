@@ -720,7 +720,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             via_uri=via_uri
         )
 
-    def build_filters(self, filters=None):
+    def build_filters(self, filters=None, ignore_bad_filters=False):
         """
         Allows for the filtering of applicable objects.
 
@@ -1969,7 +1969,7 @@ class BaseModelResource(Resource):
 
         return value
 
-    def build_filters(self, filters=None):
+    def build_filters(self, filters=None, ignore_bad_filters=False):
         """
         Given a dictionary of filters, create the necessary ORM-level filters.
 
@@ -2013,7 +2013,13 @@ class BaseModelResource(Resource):
             if len(filter_bits) and filter_bits[-1] in query_terms:
                 filter_type = filter_bits.pop()
 
-            lookup_bits = self.check_filtering(field_name, filter_type, filter_bits)
+            try:
+                lookup_bits = self.check_filtering(field_name, filter_type, filter_bits)
+            except InvalidFilterError:
+                if ignore_bad_filters:
+                    continue
+                else:
+                    raise
             value = self.filter_value_to_python(value, field_name, filters, filter_expr, filter_type)
 
             db_field_name = LOOKUP_SEP.join(lookup_bits)
@@ -2125,12 +2131,13 @@ class BaseModelResource(Resource):
         Takes optional ``kwargs``, which are used to narrow the query to find
         the instance.
         """
-        # prevents FieldError when looking up nested resources containing extra data
-        field_names = self._meta.object_class._meta.get_all_field_names()
-        field_names.append('pk')
-
-        kwargs = {k: v for k, v in kwargs.items() if k.split(LOOKUP_SEP)[0] in field_names}
-        applicable_filters = kwargs
+        # Use ignore_bad_filters=True. `obj_get_list` filters based on
+        # request.GET, but `obj_get` usually filters based on `detail_uri_name`
+        # or data from a related field, so we don't want to raise errors if
+        # something doesn't explicitly match a configured filter.
+        applicable_filters = self.build_filters(filters=kwargs, ignore_bad_filters=True)
+        if self._meta.detail_uri_name in kwargs:
+            applicable_filters[self._meta.detail_uri_name] = kwargs[self._meta.detail_uri_name]
 
         try:
             object_list = self.apply_filters(bundle.request, applicable_filters)
