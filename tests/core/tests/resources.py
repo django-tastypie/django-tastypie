@@ -30,8 +30,8 @@ from tastypie.exceptions import (
 from tastypie import fields, http
 from tastypie.paginator import Paginator
 from tastypie.resources import (
-    Resource, ModelResource, ALL, ALL_WITH_RELATIONS, convert_post_to_put,
-    convert_post_to_patch,
+    ALL, ALL_WITH_RELATIONS, convert_post_to_put, convert_post_to_patch,
+    Resource, ModelResource,
 )
 from tastypie.serializers import Serializer
 from tastypie.throttle import CacheThrottle
@@ -1030,6 +1030,10 @@ class UserResource(ModelResource):
     class Meta:
         queryset = User.objects.all()
         authorization = Authorization()
+        filtering = {
+            'id': ALL,
+            'username': ALL,
+        }
 
     def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
         if bundle_or_obj is None:
@@ -3251,6 +3255,25 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(related_obj.author.username, u'johndoe')
         self.assertEqual(related_obj.title, u'First Post!')
         self.assertEqual(list(related_obj.subjects.values_list('id', flat=True)), [1, 2])
+
+    def test_obj_get_across_related(self):
+        new_user = User.objects.create(username='foo')
+        new_note = Note.objects.create(author=new_user)
+
+        class RelatedFilterNoteResource(NoteResource):
+            author = fields.ToOneField(UserResource, 'author')
+
+            class Meta(NoteResource.Meta):
+                filtering = {
+                    'author': ALL_WITH_RELATIONS,
+                }
+
+        resource = RelatedFilterNoteResource()
+        base_bundle = Bundle()
+
+        obj = resource.obj_get(base_bundle, author__username=new_user.username)
+        self.assertTrue(isinstance(obj, Note))
+        self.assertEqual(obj, new_note)
 
     def test_uri_fields(self):
         with_abs_url = WithAbsoluteURLNoteResource()

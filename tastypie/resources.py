@@ -2100,8 +2100,7 @@ class BaseModelResource(Resource):
         """
         A ORM-specific implementation of ``obj_get_list``.
 
-        Takes an optional ``request`` object, whose ``GET`` dictionary can be
-        used to narrow the query.
+        ``GET`` dictionary of bundle.request can be used to narrow the query.
         """
         filters = {}
 
@@ -2130,11 +2129,12 @@ class BaseModelResource(Resource):
         field_names = self._meta.object_class._meta.get_all_field_names()
         field_names.append('pk')
 
-        kwargs = {k: v for k, v in kwargs.items() if k in field_names}
+        kwargs = {k: v for k, v in kwargs.items() if k.split(LOOKUP_SEP)[0] in field_names}
+        applicable_filters = kwargs
 
         try:
-            object_list = self.get_object_list(bundle.request).filter(**kwargs)
-            stringified_kwargs = ', '.join(["%s=%s" % (k, v) for k, v in kwargs.items()])
+            object_list = self.apply_filters(bundle.request, applicable_filters)
+            stringified_kwargs = ', '.join(["%s=%s" % (k, v) for k, v in applicable_filters.items()])
 
             if len(object_list) <= 0:
                 raise self._meta.object_class.DoesNotExist("Couldn't find an instance of '%s' which matched '%s'." % (self._meta.object_class.__name__, stringified_kwargs))

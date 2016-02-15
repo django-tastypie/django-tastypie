@@ -8,6 +8,7 @@ Bugfixes
 --------
 
 * Fix in `Resource.save_related`: `related_obj` can  be empty in patch requests (introduced in #1378). (Fixes #1436)
+* Fixed bug that prevented fitlering on related resources. `apply_filters` hook now used in obj_get. (Fixes #1435, Fixes #1443)
 * Updated DjangoAuthorization to disallow read unless a user has `change` permission. (#1407, PR #1409)
 * Authorization classes now handle usernames containing spaces. Closes #966.
 * Cleaned up old, unneeded code. (closes PR #1433)

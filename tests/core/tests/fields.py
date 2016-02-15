@@ -12,7 +12,7 @@ from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.fields import NOT_PROVIDED, ApiField, BooleanField, CharField,\
     DateField, DateTimeField, DecimalField, DictField, FileField, FloatField,\
     IntegerField, ListField, TimeField, ToOneField, ToManyField
-from tastypie.resources import ModelResource
+from tastypie.resources import ALL, ModelResource
 from tastypie.utils import aware_datetime
 
 from core.models import Note, Subject, MediaBit
@@ -618,6 +618,10 @@ class UserResource(ModelResource):
     class Meta:
         resource_name = 'users'
         queryset = User.objects.all()
+        filtering = {
+            'id': ALL,
+            'username': ALL,
+        }
 
     def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
         if bundle_or_obj is None:
