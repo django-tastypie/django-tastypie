@@ -25,6 +25,12 @@ try:
 except (ImproperlyConfigured, ImportError):
     GeometryField = None
 from django.db.models.constants import LOOKUP_SEP
+try:
+    from django.db.models.fields.related import\
+        SingleRelatedObjectDescriptor as ReverseOneToOneDescriptor
+except ImportError:
+    from django.db.models.fields.related_descriptors import\
+        ReverseOneToOneDescriptor
 from django.db.models.sql.constants import QUERY_TERMS
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.utils import six
@@ -944,10 +950,12 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                                 setattr(bundle.obj, field_object.attribute, value.obj)
                             except (ValueError, ObjectDoesNotExist):
                                 bundle.related_objects_to_save[field_object.attribute] = value.obj
+                        elif field_object.null:
+                            if not isinstance(getattr(bundle.obj.__class__, field_object.attribute, None), ReverseOneToOneDescriptor):
+                                # only update if not a reverse one to one field
+                                setattr(bundle.obj, field_object.attribute, value)
                         elif field_object.blank:
                             continue
-                        elif field_object.null:
-                            setattr(bundle.obj, field_object.attribute, value)
 
         return bundle
 

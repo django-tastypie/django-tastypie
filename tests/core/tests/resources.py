@@ -542,6 +542,37 @@ class ResourceTestCase(TestCase):
 
         self.assertEquals(hydrated.obj.name, "Daniel")
 
+    def test_full_hydrate__can_put_null_to_clear_related_value(self):
+        class RelatedBasicResource(BasicResource):
+            parent = fields.ToOneField(BasicResource, 'parent', null=True, blank=True)
+        basic = RelatedBasicResource()
+        basic_bundle_1 = Bundle(data={
+            'name': 'Daniel',
+            'view_count': 6,
+            'date_joined': None,
+            'parent': None
+        })
+        basic_bundle_1.obj = Mock()
+        basic_bundle_1.obj.date_joined = aware_datetime(2010, 2, 15, 12, 0, 0)
+        basic_bundle_1.obj.parent = Mock()
+
+        self.assertEqual(basic_bundle_1.data['date_joined'], None)
+        self.assertEqual(basic_bundle_1.data['parent'], None)
+        self.assertNotEqual(basic_bundle_1.obj.date_joined, None)
+        self.assertNotEqual(basic_bundle_1.obj.parent, None)
+
+        # Now load up the data.
+        hydrated = basic.full_hydrate(basic_bundle_1)
+
+        self.assertEqual(hydrated.data['name'], 'Daniel')
+        self.assertEqual(hydrated.data['view_count'], 6)
+        self.assertEqual(hydrated.data['date_joined'], None)
+        self.assertEqual(hydrated.data['parent'], None)
+        self.assertEqual(hydrated.obj.name, 'Daniel')
+        self.assertEqual(hydrated.obj.view_count, 6)
+        self.assertEqual(hydrated.obj.date_joined, None)
+        self.assertEqual(hydrated.obj.parent, None)
+
     def test_obj_get_list(self):
         basic = BasicResource()
         bundle = Bundle()

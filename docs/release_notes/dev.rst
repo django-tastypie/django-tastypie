@@ -7,4 +7,4 @@ copied to the release notes for the next release.
 Bugfixes
 --------
 
-* list of issues/PRs
+* Permit changing existing value on a ToOneField to None. (Closes #1449)
