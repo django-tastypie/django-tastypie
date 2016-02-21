@@ -278,6 +278,16 @@ Example::
             queryset = Author.objects.all()
             resource_name = 'author'
 
+``pk_only``
+~~~~~~~~~~~
+
+.. attribute:: RelatedField.pk_only
+
+Sometimes you don't want for the RelatedField to return the URI of object but only the primary
+key of the object. If you set the pk_only option, the object will be serialized as the primary
+key when ``full`` is ``False``. Also, when making a POST, PUT or any other request, you will
+only need to put the primary key in the data, not the whole URI.
+
 
 Field Types
 -----------

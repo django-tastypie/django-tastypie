@@ -7,4 +7,5 @@ copied to the release notes for the next release.
 Bugfixes
 --------
 
-* list of changes
+* Added ``pk_only`` option to RelatedFields - serializing object as the primary key only when set to ``True`` instead
+  of the resource URI.
