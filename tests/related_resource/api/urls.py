@@ -6,7 +6,8 @@ from related_resource.api.resources import NoteResource, UserResource,\
     ForumResource, CompanyResource, ProductResource, AddressResource,\
     PersonResource, DogResource, DogHouseResource, BoneResource,\
     LabelResource, PostResource, OrderResource, OrderItemResource,\
-    NoteWithUpdatableUserResource, ContactResource, ContactGroupResource
+    NoteWithUpdatableUserResource, ContactResource, ContactGroupResource, \
+    ContributorResource, ProjectResource
 
 
 api = Api(api_name='v1')
@@ -34,5 +35,7 @@ api.register(OrderResource(), canonical=True)
 api.register(OrderItemResource(), canonical=True)
 api.register(ContactResource(), canonical=True)
 api.register(ContactGroupResource(), canonical=True)
+api.register(ContributorResource(), canonical=True)
+api.register(ProjectResource(), canonical=True)
 
 urlpatterns = api.urls

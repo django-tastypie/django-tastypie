@@ -16,11 +16,12 @@ from core.tests.mocks import MockRequest
 from related_resource.api.resources import AddressResource, CategoryResource,\
     ForumResource, FreshNoteResource, JobResource, NoteResource,\
     OrderResource, NoteWithUpdatableUserResource, PersonResource, TagResource,\
-    UserResource
+    UserResource, ProjectResource
 from related_resource.api.urls import api
 from related_resource.models import Category, Label, Tag, Taggable,\
     TaggableTag, ExtraData, Company, Person, Dog, DogHouse, Bone, Product,\
-    Address, Job, Payment, Forum, Order, OrderItem, Contact, ContactGroup
+    Address, Job, Payment, Forum, Order, OrderItem, Contact, ContactGroup,\
+    Contributor, Project
 from testcases import TestCaseWithFixture
 
 
@@ -1163,3 +1164,78 @@ class OneToOneTestCase(TestCase):
                 'company__address', null=True, full=True)
         resource = CustomPersonResource()
         resource.fields['company_address']
+
+
+class PKOnlyTestCase(TestCase):
+    urls = 'related_resource.api.urls'
+
+    def setUp(self):
+        self.first = Contributor.objects.create(name="First Developer")
+        self.second = Contributor.objects.create(name="Second Developer")
+        self.third = Contributor.objects.create(name="Third Developer")
+
+        self.project = Project.objects.create(name="First Project", created_by=self.first)
+        self.project.contributors.add(self.second, self.third)
+        self.project.save()
+
+    def tearDown(self):
+        Contributor.objects.all().delete()
+        Project.objects.all().delete()
+
+    def test_get_list(self):
+        resource = ProjectResource()
+
+        data = self.client.get(resource.get_resource_uri()).content
+
+        data = json.loads(data)
+
+        assert data["objects"][0]["created_by"] == self.first.pk
+        assert self.second.pk in data["objects"][0]["contributors"]
+        assert self.third.pk in data["objects"][0]["contributors"]
+
+    def test_get_detail(self):
+        resource = ProjectResource()
+
+        data = self.client.get(resource.get_resource_uri(self.project)).content
+
+        data = json.loads(data)
+
+        assert data["created_by"] == self.first.pk
+        assert self.second.pk in data["contributors"]
+        assert self.third.pk in data["contributors"]
+
+    def test_post(self):
+        resource = ProjectResource()
+
+        data = self.client.post(resource.get_resource_uri(), content_type="application/json",
+                                data=json.dumps(dict(
+                                    name="Second Project",
+                                    created_by=self.first.pk,
+                                    contributors=[self.second.pk, self.third.pk]
+                                )))
+
+        assert data.status_code == 201
+
+        assert Project.objects.filter(name="Second Project").exists()
+        project = Project.objects.filter(name="Second Project").get()
+        assert project.created_by == self.first
+        assert self.second in project.contributors.all()
+        assert self.third in project.contributors.all()
+
+    def test_put(self):
+        resource = ProjectResource()
+
+        data = self.client.put(resource.get_resource_uri(self.project), content_type="application/json",
+                               data=json.dumps(dict(
+                                   name="First Project",
+                                   created_by=self.second.pk,
+                                   contributors=[self.first.pk, self.third.pk]
+                               )))
+
+        assert data.status_code == 204
+        # reload the saved state in database
+        project = Project.objects.get(pk=self.project.pk)
+
+        assert project.created_by == self.second
+        assert self.first in project.contributors.all()
+        assert self.third in project.contributors.all()
