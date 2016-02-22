@@ -592,6 +592,9 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Keys should be the fieldnames as strings while values should be a list of
   accepted filter types.
 
+  This also restricts what fields can be filtered on when manually
+  calling ``obj_get`` and ``obj_get_list``.
+
 ``ordering``
 ------------
 

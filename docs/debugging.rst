@@ -29,6 +29,14 @@ Tastypie always respects this override first, before it falls back to the
 ``Accept`` header.
 
 
+Querying using Tastypie's methods isn't working/returning multiple objects
+==========================================================================
+
+When calling ``obj_get`` (or another method that uses it, such as
+``dispatch_detail``), mke sure the fields you're querying with are either
+``Meta.detail_uri_name`` or a field which appears in ``Meta.filtering``
+
+
 "What's the format for a POST or PUT?"
 ======================================
 
