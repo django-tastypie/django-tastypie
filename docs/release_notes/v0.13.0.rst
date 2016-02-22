@@ -28,7 +28,7 @@ Bugfixes
 * Fixed Resource.deserialize() to honor format parameter (#1354 #1356, #1358)
 * Raise ValueError when trying to register a Resource class instead of a Resource instance. (#1361)
 * Fix hydrating/saving of related resources. (#1363)
-* Use Tastypie DateField for DateField on the model. (SHA: b248e7f)
+* Use Tastypie DateField for DateField on the model. (b248e7f)
 * ApiFieldError on empty non-null field (#1208)
 * Full schema (all schemas in a single request) (#1207)
 * Added verbose_name to API schema. (#1370)

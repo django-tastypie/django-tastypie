@@ -34,6 +34,9 @@ doctest_path = [os.path.join(docs_path, 'code'), os.path.join(docs_path, '..')]
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'sphinx.ext.doctest',
+    'sphinx.ext.extlinks',
+    'sphinx.ext.linkcode',
+    'gitext',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -224,3 +227,24 @@ texinfo_documents = [(
     master_doc, "django-tastypie", "", "", "Tastypie",
     "Documentation of the Tastypie framework", "Web development", False
 )]
+
+extlinks = {
+    'issue': (
+        'https://github.com/django-tastypie/django-tastypie/issues/%s',
+        '#'
+    ),
+    'sha': (
+        'https://github.com/django-tastypie/django-tastypie/commit/%s',
+        ''
+    ),
+}
+
+code_url = "https://github.com/django-tastypie/django-tastypie/blob/%s/%s.py"
+
+def linkcode_resolve(domain, info):
+    if domain != 'py':
+        return None
+    if not info['module']:
+        return None
+    filename = info['module'].replace('.', '/')
+    return code_url % (release, filename,)
