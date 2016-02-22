@@ -270,7 +270,13 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         return wrapper
 
     def _handle_500(self, request, exception):
-        the_trace = '\n'.join(traceback.format_exception(*(sys.exc_info())))
+        the_trace = traceback.format_exception(*sys.exc_info())
+        if six.PY2:
+            the_trace = [
+                six.text_type(line, 'utf-8')
+                for line in the_trace
+            ]
+        the_trace = u'\n'.join(the_trace)
         response_class = http.HttpApplicationError
         response_code = 500
 

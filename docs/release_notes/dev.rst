@@ -8,4 +8,4 @@ Bugfixes
 --------
 
 * Change OAuthAuthentication to use storage method to get user. (Closes #657)
-
+* Fixed UnicodeDecodeError in _handle_500(). (Fixes #1190)
