@@ -1187,7 +1187,7 @@ class PKOnlyTestCase(TestCase):
 
         data = self.client.get(resource.get_resource_uri()).content
 
-        data = json.loads(data)
+        data = json.loads(data.decode("utf-8"))
 
         self.assertEqual(data["objects"][0]["created_by"], self.first.pk)
         self.assertTrue(self.second.pk in data["objects"][0]["contributors"])
@@ -1198,7 +1198,7 @@ class PKOnlyTestCase(TestCase):
 
         data = self.client.get(resource.get_resource_uri(self.project)).content
 
-        data = json.loads(data)
+        data = json.loads(data.decode("utf-8"))
 
         self.assertEqual(data["created_by"], self.first.pk)
         self.assertTrue(self.second.pk in data["contributors"])
@@ -1230,7 +1230,7 @@ class PKOnlyTestCase(TestCase):
                                    "name": u"First Project",
                                    "created_by": self.second.pk,
                                    "contributors": [self.first.pk, self.third.pk]
-                                }))
+                               }))
 
         self.assertEqual(data.status_code, 204)
         # reloed state in database
