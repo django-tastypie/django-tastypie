@@ -1170,11 +1170,11 @@ class PKOnlyTestCase(TestCase):
     urls = 'related_resource.api.urls'
 
     def setUp(self):
-        self.first = Contributor.objects.create(name="First Developer")
-        self.second = Contributor.objects.create(name="Second Developer")
-        self.third = Contributor.objects.create(name="Third Developer")
+        self.first = Contributor.objects.create(name=u"First Developer")
+        self.second = Contributor.objects.create(name=u"Second Developer")
+        self.third = Contributor.objects.create(name=u"Third Developer")
 
-        self.project = Project.objects.create(name="First Project", created_by=self.first)
+        self.project = Project.objects.create(name=u"First Project", created_by=self.first)
         self.project.contributors.add(self.second, self.third)
         self.project.save()
 
@@ -1189,9 +1189,9 @@ class PKOnlyTestCase(TestCase):
 
         data = json.loads(data)
 
-        assert data["objects"][0]["created_by"] == self.first.pk
-        assert self.second.pk in data["objects"][0]["contributors"]
-        assert self.third.pk in data["objects"][0]["contributors"]
+        self.assertEqual(data["objects"][0]["created_by"], self.first.pk)
+        self.assertTrue(self.second.pk in data["objects"][0]["contributors"])
+        self.assertTrue(self.third.pk in data["objects"][0]["contributors"])
 
     def test_get_detail(self):
         resource = ProjectResource()
@@ -1200,42 +1200,42 @@ class PKOnlyTestCase(TestCase):
 
         data = json.loads(data)
 
-        assert data["created_by"] == self.first.pk
-        assert self.second.pk in data["contributors"]
-        assert self.third.pk in data["contributors"]
+        self.assertEqual(data["created_by"], self.first.pk)
+        self.assertTrue(self.second.pk in data["contributors"])
+        self.assertTrue(self.third.pk in data["contributors"])
 
     def test_post(self):
         resource = ProjectResource()
 
         data = self.client.post(resource.get_resource_uri(), content_type="application/json",
-                                data=json.dumps(dict(
-                                    name="Second Project",
-                                    created_by=self.first.pk,
-                                    contributors=[self.second.pk, self.third.pk]
-                                )))
+                                data=json.dumps({
+                                    "name": u"Second Project",
+                                    "created_by": self.first.pk,
+                                    "contributors": [self.second.pk, self.third.pk]
+                                }))
 
-        assert data.status_code == 201
+        self.assertEqual(data.status_code, 201)
 
-        assert Project.objects.filter(name="Second Project").exists()
+        self.assertTrue(Project.objects.filter(name="Second Project").exists())
         project = Project.objects.filter(name="Second Project").get()
-        assert project.created_by == self.first
-        assert self.second in project.contributors.all()
-        assert self.third in project.contributors.all()
+        self.assertEqual(project.created_by, self.first)
+        self.assertTrue(self.second in project.contributors.all())
+        self.assertTrue(self.third in project.contributors.all())
 
     def test_put(self):
         resource = ProjectResource()
 
         data = self.client.put(resource.get_resource_uri(self.project), content_type="application/json",
-                               data=json.dumps(dict(
-                                   name="First Project",
-                                   created_by=self.second.pk,
-                                   contributors=[self.first.pk, self.third.pk]
-                               )))
+                               data=json.dumps({
+                                   "name": u"First Project",
+                                   "created_by": self.second.pk,
+                                   "contributors": [self.first.pk, self.third.pk]
+                                }))
 
-        assert data.status_code == 204
-        # reload the saved state in database
+        self.assertEqual(data.status_code, 204)
+        # reloed state in database
         project = Project.objects.get(pk=self.project.pk)
 
-        assert project.created_by == self.second
-        assert self.first in project.contributors.all()
-        assert self.third in project.contributors.all()
+        self.assertEqual(project.created_by, self.second)
+        self.assertTrue(self.first in project.contributors.all())
+        self.assertTrue(self.third in project.contributors.all())
