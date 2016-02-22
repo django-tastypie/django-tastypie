@@ -69,6 +69,17 @@ if yaml is not None:
             Resolver.__init__(self)
 
 
+def _get_default_formats():
+    formats = ['json']
+    if lxml:
+        formats.append('xml')
+    if yaml:
+        formats.append('yaml')
+    if biplist:
+        formats.append('plist')
+    return formats
+
+
 _NUM = 0
 _DICT = 1
 _LIST = 2
@@ -114,7 +125,7 @@ class Serializer(object):
     ``formats/content_types`` options or by altering the other hook methods.
     """
 
-    formats = ['json', 'xml', 'yaml', 'plist']
+    formats = _get_default_formats()
 
     content_types = {
         'json': 'application/json',
