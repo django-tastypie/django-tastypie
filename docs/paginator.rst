@@ -112,7 +112,7 @@ for details::
             # to return a url. Setting it to an unreasonably large value, so that
             # the parent method will always return the url.
             count = 2 ** 64
-            return super(NoTotalCountPaginator, self).get_next(limit, offset, count)
+            return super(EstimatedCountPaginator, self).get_next(limit, offset, count)
 
         def get_count(self):
             return None
@@ -160,6 +160,6 @@ for details::
             return rows
 
         def page(self):
-            data = super(NoTotalCountPaginator, self).page()
+            data = super(EstimatedCountPaginator, self).page()
             data['meta']['estimated_count'] = self.get_estimated_count()
             return data
