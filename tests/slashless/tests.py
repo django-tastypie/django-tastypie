@@ -1,22 +1,12 @@
 import json
 
-from django.conf import settings
+from django.test.utils import override_settings
 
 from testcases import TestCaseWithFixture
 
 
+@override_settings(ROOT_URLCONF='slashless.api.urls', DEBUG=True)
 class ViewsWithoutSlashesTestCase(TestCaseWithFixture):
-    urls = 'slashless.api.urls'
-
-    def setUp(self):
-        super(ViewsWithoutSlashesTestCase, self).setUp()
-        self.old_debug = settings.DEBUG
-        settings.DEBUG = True
-
-    def tearDown(self):
-        settings.DEBUG = self.old_debug
-        super(ViewsWithoutSlashesTestCase, self).tearDown()
-
     def test_gets_without_trailing_slash(self):
         resp = self.client.get('/api/v1', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)

@@ -3,10 +3,13 @@ import json
 from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.test import TestCase
+from django.test.utils import override_settings
+
 from tastypie.api import Api
 from tastypie.exceptions import NotRegistered, BadRequest
 from tastypie.resources import ModelResource
 from tastypie.serializers import Serializer
+
 from core.models import Note
 from core.utils import adjust_schema
 
@@ -23,9 +26,8 @@ class UserResource(ModelResource):
         queryset = User.objects.all()
 
 
+@override_settings(ROOT_URLCONF='core.tests.api_urls')
 class ApiTestCase(TestCase):
-    urls = 'core.tests.api_urls'
-
     def test_register(self):
         # NOTE: these have all been registered in core.tests.api_urls
         api = Api()

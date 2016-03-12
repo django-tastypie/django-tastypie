@@ -1,10 +1,11 @@
 from django.core.urlresolvers import reverse, NoReverseMatch
+from django.test.utils import override_settings
+
 from testcases import TestCaseWithFixture
 
 
+@override_settings(ROOT_URLCONF='namespaced.api.urls')
 class NamespacedViewsTestCase(TestCaseWithFixture):
-    urls = 'namespaced.api.urls'
-
     def test_urls(self):
         from namespaced.api.urls import api
         patterns = api.urls
