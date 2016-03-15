@@ -170,3 +170,13 @@ class Contact(models.Model):
 
     def __unicode__(self):
         return u'%s' % self.name
+
+
+class Contributor(models.Model):
+    name = models.CharField(max_length=255)
+
+
+class Project(models.Model):
+    name = models.CharField(max_length=255)
+    created_by = models.ForeignKey(Contributor)
+    contributors = models.ManyToManyField(Contributor, related_name="contributing_to", blank=True)

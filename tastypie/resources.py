@@ -867,7 +867,17 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
 
         bundle = self.build_bundle(request=request)
+
         return self.obj_get(bundle=bundle, **self.remove_api_resource_names(kwargs))
+
+    def get_via_key(self, key, request=None):
+        """
+        Populates the resource via a ``obj_get``.
+
+        Optionally accepts a ``request``.
+        """
+        bundle = self.build_bundle(request=request)
+        return self.obj_get(bundle=bundle, pk=key)
 
     # Data preparation.
 

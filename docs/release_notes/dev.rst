@@ -11,3 +11,5 @@ Bugfixes
 * Fixed UnicodeDecodeError in _handle_500(). (Fixes #1190)
 * Fix get_via_uri not working for alphabetic ids that contain the resource name (Fixes #1239, Closes #1240)
 * Don't enable unsupported formats by default. (Fixes #1451)
+* Added ``pk_only`` option to RelatedFields - serializing object as the primary key only when set to ``True`` instead
+  of the resource URI.

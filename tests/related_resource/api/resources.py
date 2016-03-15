@@ -8,7 +8,8 @@ from core.models import Note, MediaBit
 
 from related_resource.models import Bone, Category, Contact, ContactGroup,\
     ExtraData, Person, Company, Product, Address, Dog, DogHouse, Forum,\
-    Job, Label, Order, OrderItem, Payment, Post, Tag, Taggable, TaggableTag
+    Job, Label, Order, OrderItem, Payment, Post, Tag, Taggable, TaggableTag, \
+    Contributor, Project
 
 
 class UserResource(ModelResource):
@@ -277,4 +278,21 @@ class ContactResource(ModelResource):
     class Meta:
         queryset = Contact.objects.prefetch_related('groups')
         resource_name = 'contact'
+        authorization = Authorization()
+
+
+class ContributorResource(ModelResource):
+
+    class Meta:
+        queryset = Contributor.objects.all()
+        authorization = Authorization()
+
+
+class ProjectResource(ModelResource):
+
+    created_by = fields.ForeignKey(ContributorResource, "created_by", pk_only=True)
+    contributors = fields.ManyToManyField(ContributorResource, "contributors", blank=True, pk_only=True)
+
+    class Meta:
+        queryset = Project.objects.all()
         authorization = Authorization()
