@@ -11,3 +11,4 @@ Bugfixes
 * Fixed UnicodeDecodeError in _handle_500(). (Fixes #1190)
 * Fix get_via_uri not working for alphabetic ids that contain the resource name (Fixes #1239, Closes #1240)
 * Don't enable unsupported formats by default. (Fixes #1451)
+* Gave ApiKey a __str__ implementation that works in Python 2 and 3. (Fixes #1459, Closes #1460)
