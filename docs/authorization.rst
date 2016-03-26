@@ -58,10 +58,44 @@ class and the safe option.
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 The most advanced form of authorization, this checks the permission a user
-has granted to them (via ``django.contrib.auth.models.Permission``). In
+has granted to them on the resource's model (via ``django.contrib.auth.models.Permission``). In
 conjunction with the admin, this is a very effective means of control.
 
+The permissions required using ``DjangoAuthorization`` follow Django Admin's implementation and are as follows:
 
++---------------------------------+------------------+-----------------------------------------------+----------------------+
+| HTTP + URI                      | Method           | User’s permissions required to grant access   | Includes check for   |
++=================================+==================+===============================================+======================+
+| ``POST <resource>/``            | create\_list     | ``add``                                       |                      |
++---------------------------------+------------------+-----------------------------------------------+----------------------+
+| ``POST <resource>/<id>`` (\*)   | create\_detail   | ``add``                                       |                      |
++---------------------------------+------------------+-----------------------------------------------+----------------------+
+| ``GET <resource>/``             | read\_list       | ``change``                                    |                      |
++---------------------------------+------------------+-----------------------------------------------+----------------------+
+| ``GET <resouce>/<id>``          | read\_detail     | ``change``                                    |                      |
++---------------------------------+------------------+-----------------------------------------------+----------------------+
+| ``PUT <resource>/``             | update\_list     | ``change``                                    | ``read_list``        |
++---------------------------------+------------------+-----------------------------------------------+----------------------+
+| ``PUT <resource>/<id>``         | update\_detail   | ``change``                                    | ``read_detail``      |
++---------------------------------+------------------+-----------------------------------------------+----------------------+
+| ``DELETE <resource>/``          | delete\_list     | ``delete``                                    | ``read_list``        |
++---------------------------------+------------------+-----------------------------------------------+----------------------+
+| ``DELETE <resource>/``          | delete\_detail   | ``delete``                                    | ``read_detail``      |
++---------------------------------+------------------+-----------------------------------------------+----------------------+
+
+(*) The permission check for ``create_detail`` is implemented in ``DjangoAuthorization``, however ModelResource does not provide an implementation and raises HttpNotImplemented.
+
+
+Notes:
+
+* The actual permission checked is `<app_label>.<permission>_<model>` where app_label is derived from the resource's model (e.g. `myapp.change_foomodel`)
+* `PUT` may revert to `POST` behavior and create new object(s) if the object(s) are not found. In this case the respective `create` permissions are required, instead of the usual `update` permissions.
+* Requiring `change` for both read and update is such to keep consistent with Django Admin. To override this behavior and require a custom permission, override DjangoAuthorization as follows::
+
+    class CustomDjangoAuthorization(DjangoAuthorization):
+        READ_PERM_CODE = 'view` # matching respective Permission.codename
+    
+    
 The ``Authorization`` API
 =========================
 
