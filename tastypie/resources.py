@@ -1058,7 +1058,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                     related_type = 'to_one'
                 data['fields'][field_name]['related_type'] = related_type
                 try:
-                    uri = reverse('api_get_schema', kwargs={
+                    uri = self._build_reverse_url('api_get_schema', kwargs={
                         'api_name': self._meta.api_name,
                         'resource_name': field_object.to_class()._meta.resource_name
                     })
