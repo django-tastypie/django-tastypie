@@ -227,6 +227,11 @@ In order to handle our ``user`` relation, we'll need to create a
 
 
     class EntryResource(ModelResource):
+        # Maps `Entry.user` to a Tastypie `ForeignKey` field named `user`,
+        # which gets serialized using `UserResource`. The first appearance of
+        # 'user' on the next line of code is the Tastypie field name, the 2nd
+        # appearance tells the `ForeignKey` it maps to the `user` attribute of
+        # `Entry`. Field names and model attributes don't have to be the same.
         user = fields.ForeignKey(UserResource, 'user')
 
         class Meta:
