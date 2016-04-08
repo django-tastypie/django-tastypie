@@ -775,6 +775,14 @@ Note that if ``BadRequest`` or an exception with a ``response`` attr are seen,
 there is special handling to either present a message back to the user or
 return the response traveling with the exception.
 
+``get_response_class_for_exception``
+------------------------------------
+
+.. method:: Resource.get_response_class_for_exception(self, request, exception)
+
+Can be overridden to customize response classes used for uncaught exceptions.
+Should always return a subclass of``django.http.HttpResponse``.
+
 ``base_urls``
 -------------
 

@@ -15,3 +15,4 @@ Bugfixes
 * Improved admin UI for API Keys (Closes #1262)
 * Avoid double query on `the_m2ms` in `ToManyField.dehydrate`. (Closes #433)
 * Allow `ModelResource.Meta.fields = []` to disable introspection. `ModelResource.Meta.fields = None` or omitting `ModelResource.Meta.fields` allows introspection as usual. (Fixes #793)
+* Added `Resource.get_response_class_for_exception` hook. (Closes #1154)

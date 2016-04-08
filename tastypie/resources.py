@@ -269,6 +269,19 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
         return wrapper
 
+    def get_response_class_for_exception(self, request, exception):
+        """
+        Can be overridden to customize response classes used for uncaught
+        exceptions. Should always return a subclass of
+        ``django.http.HttpResponse``.
+        """
+        if isinstance(exception, (NotFound, ObjectDoesNotExist, Http404)):
+            return HttpResponseNotFound
+        elif isinstance(exception, UnsupportedFormat):
+            return http.HttpBadRequest
+
+        return http.HttpApplicationError
+
     def _handle_500(self, request, exception):
         the_trace = traceback.format_exception(*sys.exc_info())
         if six.PY2:
@@ -277,41 +290,27 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 for line in the_trace
             ]
         the_trace = u'\n'.join(the_trace)
-        response_class = http.HttpApplicationError
-        response_code = 500
 
-        NOT_FOUND_EXCEPTIONS = (NotFound, ObjectDoesNotExist, Http404)
-
-        if isinstance(exception, NOT_FOUND_EXCEPTIONS):
-            response_class = HttpResponseNotFound
-            response_code = 404
-
-        elif isinstance(exception, UnsupportedFormat):
-            response_class = http.HttpBadRequest
-            response_code = 400
+        response_class = self.get_response_class_for_exception(request, exception)
 
         if settings.DEBUG:
             data = {
                 "error_message": sanitize(six.text_type(exception)),
                 "traceback": the_trace,
             }
-            return self.error_response(request, data, response_class=response_class)
+        else:
+            data = {
+                "error_message": getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later."),
+            }
 
-        # When DEBUG is False, send an error message to the admins (unless it's
-        # a 404, in which case we check the setting).
-
-        if not response_code == 404:
+        if response_class.status_code >= 500:
             log = logging.getLogger('django.request.tastypie')
             log.error('Internal Server Error: %s' % request.path, exc_info=True,
-                      extra={'status_code': response_code, 'request': request})
+                      extra={'status_code': response_class.status_code, 'request': request})
 
         # Send the signal so other apps are aware of the exception.
         got_request_exception.send(self.__class__, request=request)
 
-        # Prep the data going out.
-        data = {
-            "error_message": getattr(settings, 'TASTYPIE_CANNED_ERROR', "Sorry, this request could not be processed. Please try again later."),
-        }
         return self.error_response(request, data, response_class=response_class)
 
     def _build_reverse_url(self, name, args=None, kwargs=None):
