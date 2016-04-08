@@ -38,7 +38,7 @@ class Unauthorized(TastypieError):
 
 class ApiFieldError(TastypieError):
     """
-    Raised when there is a configuration error with a ``ApiField``.
+    Raised when there is a validation error with an ``ApiField``.
     """
     pass
 
@@ -66,7 +66,7 @@ class BlueberryFillingFound(TastypieError):
 
 class InvalidFilterError(BadRequest):
     """
-    Raised when the end user attempts to use a filter that has not be
+    Raised when the end user attempts to use a filter that has not been
     explicitly allowed.
     """
     pass
@@ -74,7 +74,7 @@ class InvalidFilterError(BadRequest):
 
 class InvalidSortError(BadRequest):
     """
-    Raised when the end user attempts to sort on a field that has not be
+    Raised when the end user attempts to sort on a field that has not been
     explicitly allowed.
     """
     pass

@@ -844,15 +844,16 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
         # We know that we are dealing with a "detail" URI
         # Look for the beginning of object key (last meaningful part of the URI)
-        end_of_resource_name = chomped_uri.rstrip("/").rfind("/")
+        end_of_resource_name = chomped_uri.rstrip('/').rfind('/')
         if end_of_resource_name == -1:
             raise NotFound("An incorrect URL was provided '%s' for the '%s' resource." % (uri, self.__class__.__name__))
         # We mangle the path a bit further & run URL resolution against *only*
         # the current class (but up to detail key). This ought to prevent bad
         # URLs from resolving to incorrect data.
-        found_at = chomped_uri.rfind(self._meta.resource_name, 0, end_of_resource_name)
-        if found_at == -1:
+        split_url = chomped_uri.rstrip('/').rsplit('/', 1)[0]
+        if not split_url.endswith('/' + self._meta.resource_name):
             raise NotFound("An incorrect URL was provided '%s' for the '%s' resource." % (uri, self.__class__.__name__))
+        found_at = chomped_uri.rfind(self._meta.resource_name, 0, end_of_resource_name)
         chomped_uri = chomped_uri[found_at:]
         try:
             for url_resolver in getattr(self, 'urls', []):

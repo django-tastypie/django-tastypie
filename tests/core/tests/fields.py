@@ -780,6 +780,12 @@ class ToOneFieldTestCase(TestCase):
         # Wrong resource URI.
         field_3 = ToOneField(UserResource, 'author')
         field_3.instance_name = 'fk'
+        bundle.data['fk'] = '/api/v1/users/123/'
+        self.assertRaises(ApiFieldError, field_3.hydrate, bundle)
+
+        # Wrong resource URI pk type.
+        field_3 = ToOneField(UserResource, 'author')
+        field_3.instance_name = 'fk'
         bundle.data['fk'] = '/api/v1/users/abc/'
         self.assertRaises(NotFound, field_3.hydrate, bundle)
 
@@ -1271,6 +1277,12 @@ class ToManyFieldTestCase(TestCase):
         self.assertEqual(field_3.hydrate_m2m(bundle_3), [])
 
         # Wrong resource URI.
+        field_4 = ToManyField(SubjectResource, 'subjects')
+        field_4.instance_name = 'm2m'
+        bundle_4 = Bundle(data={'m2m': ['/api/v1/subjects/123/']})
+        self.assertRaises(ApiFieldError, field_4.hydrate_m2m, bundle_4)
+
+        # Wrong resource URI pk type.
         field_4 = ToManyField(SubjectResource, 'subjects')
         field_4.instance_name = 'm2m'
         bundle_4 = Bundle(data={'m2m': ['/api/v1/subjects/abc/']})
