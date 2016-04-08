@@ -14,3 +14,4 @@ Bugfixes
 * Gave ApiKey a __str__ implementation that works in Python 2 and 3. (Fixes #1459, Closes #1460)
 * Improved admin UI for API Keys (Closes #1262)
 * Avoid double query on `the_m2ms` in `ToManyField.dehydrate`. (Closes #433)
+* Allow `ModelResource.Meta.fields = []` to disable introspection. `ModelResource.Meta.fields = None` or omitting `ModelResource.Meta.fields` allows introspection as usual. (Fixes #793)

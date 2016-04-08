@@ -94,7 +94,7 @@ class ResourceOptions(object):
     ordering = []
     object_class = None
     queryset = None
-    fields = []
+    fields = None
     excludes = []
     include_resource_uri = True
     include_absolute_url = False
@@ -1781,18 +1781,26 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
             setattr(meta, 'object_class', meta.queryset.model)
 
         new_class = super(ModelDeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
-        include_fields = getattr(new_class._meta, 'fields', [])
+        specified_fields = getattr(new_class._meta, 'fields', None)
         excludes = getattr(new_class._meta, 'excludes', [])
         field_names = list(new_class.base_fields.keys())
+
+        include_fields = specified_fields
+
+        if include_fields is None:
+            if meta and meta.object_class:
+                include_fields = [f.name for f in meta.object_class._meta.fields]
+            else:
+                include_fields = []
 
         for field_name in field_names:
             if field_name == 'resource_uri':
                 continue
             if field_name in new_class.declared_fields:
                 continue
-            if len(include_fields) and field_name not in include_fields:
+            if specified_fields is not None and field_name not in include_fields:
                 del(new_class.base_fields[field_name])
-            if len(excludes) and field_name in excludes:
+            if field_name in excludes:
                 del(new_class.base_fields[field_name])
 
         # Add in the new fields.
@@ -1883,11 +1891,11 @@ class BaseModelResource(Resource):
                 continue
 
             # If field is not present in explicit field listing, skip
-            if fields and f.name not in fields:
+            if f.name not in fields:
                 continue
 
             # If field is in exclude list, skip
-            if excludes and f.name in excludes:
+            if f.name in excludes:
                 continue
 
             if cls.should_skip_field(f):
