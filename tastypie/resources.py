@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from copy import deepcopy
+from copy import copy, deepcopy
 from datetime import datetime
 import logging
 import sys
@@ -193,12 +193,14 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         # TypeError: object.__new__(method-wrapper) is not safe, use method-wrapper.__new__()
         # when trying to copy a generator used as a default. Wrap call to
         # generator in lambda to get around this error.
-        self.fields = deepcopy(self.base_fields)
+        self.fields = {k: copy(v) for k, v in self.base_fields.items()}
 
         if api_name is not None:
             self._meta.api_name = api_name
 
     def __getattr__(self, name):
+        if name == '__setstate__':
+            raise AttributeError(name)
         try:
             return self.fields[name]
         except KeyError:
