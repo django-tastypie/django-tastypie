@@ -16,3 +16,4 @@ Bugfixes
 * Avoid double query on `the_m2ms` in `ToManyField.dehydrate`. (Closes #433)
 * Allow `ModelResource.Meta.fields = []` to disable introspection. `ModelResource.Meta.fields = None` or omitting `ModelResource.Meta.fields` allows introspection as usual. (Fixes #793)
 * Added `Resource.get_response_class_for_exception` hook. (Closes #1154)
+* Added UnsupportedSerializationFormat and UnsupportedDeserializationFormat exceptions, which are caught and result in HttpNotAcceptable and HttpUnsupportedMediaType responses, respectively.

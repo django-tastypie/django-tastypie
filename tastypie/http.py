@@ -59,12 +59,20 @@ class HttpMethodNotAllowed(HttpResponse):
     status_code = 405
 
 
+class HttpNotAcceptable(HttpResponse):
+    status_code = 406
+
+
 class HttpConflict(HttpResponse):
     status_code = 409
 
 
 class HttpGone(HttpResponse):
     status_code = 410
+
+
+class HttpUnsupportedMediaType(HttpResponse):
+    status_code = 415
 
 
 class HttpUnprocessableEntity(HttpResponse):

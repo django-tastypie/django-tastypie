@@ -45,9 +45,29 @@ class ApiFieldError(TastypieError):
 
 class UnsupportedFormat(TastypieError):
     """
+    Raised when an unsupported serialization/deserialization format is requested.
+    Two more specific subclasses are provided, ``UnsupportedSerializationFormat``
+    and ``UnsupportedDeserializationFormat``.
+    """
+    _msg_template = '%s'
+
+    def __init__(self, msg, *args, **kwargs):
+        msg = self._msg_template % msg
+        super(UnsupportedFormat, self).__init__(msg, *args, **kwargs)
+
+
+class UnsupportedSerializationFormat(UnsupportedFormat):
+    """
     Raised when an unsupported serialization format is requested.
     """
-    pass
+    _msg_template = "The format indicated '%s' had no available serialization method. Please check your ``formats`` and ``content_types`` on your Serializer."
+
+
+class UnsupportedDeserializationFormat(UnsupportedFormat):
+    """
+    Raised when an unsupported deserialization format is requested.
+    """
+    _msg_template = "The format indicated '%s' had no available deserialization method. Please check your ``formats`` and ``content_types`` on your Serializer."
 
 
 class BadRequest(TastypieError):

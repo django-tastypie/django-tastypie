@@ -11,7 +11,8 @@ from django.utils.encoding import force_text, smart_bytes
 from django.core.serializers import json as djangojson
 
 from tastypie.bundle import Bundle
-from tastypie.exceptions import BadRequest, UnsupportedFormat
+from tastypie.exceptions import BadRequest, UnsupportedSerializationFormat,\
+    UnsupportedDeserializationFormat
 from tastypie.utils import format_datetime, format_date, format_time,\
     make_naive
 
@@ -259,7 +260,7 @@ class Serializer(object):
         method = self._to_methods.get(format)
 
         if method is None:
-            raise UnsupportedFormat("The format indicated '%s' had no available serialization method. Please check your ``formats`` and ``content_types`` on your Serializer." % format)
+            raise UnsupportedSerializationFormat(format)
 
         return method(bundle, options)
 
@@ -275,7 +276,7 @@ class Serializer(object):
         method = self._from_methods.get(format)
 
         if method is None:
-            raise UnsupportedFormat("The format indicated '%s' had no available deserialization method. Please check your ``formats`` and ``content_types`` on your Serializer." % format)
+            raise UnsupportedDeserializationFormat(format)
 
         if isinstance(content, six.binary_type):
             content = force_text(content)

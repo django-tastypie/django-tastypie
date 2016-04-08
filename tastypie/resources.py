@@ -46,6 +46,7 @@ from tastypie.constants import ALL, ALL_WITH_RELATIONS
 from tastypie.exceptions import (
     NotFound, BadRequest, InvalidFilterError, HydrationError, InvalidSortError,
     ImmediateHttpResponse, Unauthorized, UnsupportedFormat,
+    UnsupportedSerializationFormat, UnsupportedDeserializationFormat,
 )
 from tastypie import fields
 from tastypie import http
@@ -277,6 +278,10 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         """
         if isinstance(exception, (NotFound, ObjectDoesNotExist, Http404)):
             return HttpResponseNotFound
+        elif isinstance(exception, UnsupportedSerializationFormat):
+            return http.HttpNotAcceptable
+        elif isinstance(exception, UnsupportedDeserializationFormat):
+            return http.HttpUnsupportedMediaType
         elif isinstance(exception, UnsupportedFormat):
             return http.HttpBadRequest
 
