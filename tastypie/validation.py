@@ -4,6 +4,7 @@ from django.forms import ModelForm
 from django.forms.models import model_to_dict
 from django.db.models.fields.related import RelatedField
 
+
 class Validation(object):
     """
     A basic validation stub that does no validation.
@@ -48,7 +49,7 @@ class FormValidation(Validation):
         '''
         Use the model data to generate the form arguments to be used for
         validation.  In the case of fields that had to be hydrated (such as
-        FK relationships), be sure to use the hydrated value (comes from 
+        FK relationships), be sure to use the hydrated value (comes from
         model_to_dict()) rather than the value in bundle.data, since the latter
         would likely not validate as the form won't expect a URI.
         '''
@@ -67,12 +68,12 @@ class FormValidation(Validation):
             # iterate over the fields in the object and find those that are
             # related fields - FK, M2M, O2M, etc.  In those cases, we need
             # to *not* use the data in the bundle, since it is a URI to a
-            # resource.  Instead, use the output of model_to_dict for 
+            # resource.  Instead, use the output of model_to_dict for
             # validation, since that is already properly hydrated.
             for field in bundle.obj._meta.fields:
-                if field.name in bundle.data: 
+                if field.name in bundle.data:
                     if not isinstance(field, RelatedField):
-                        kwargs['data'][field.name]=bundle.data[field.name]
+                        kwargs['data'][field.name] = bundle.data[field.name]
         else:
             kwargs['data'].update(data)
         return kwargs
