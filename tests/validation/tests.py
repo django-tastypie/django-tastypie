@@ -1,6 +1,7 @@
 import json
 
 from django.test.utils import override_settings
+from tastypie.exceptions import NotFound
 
 from basic.models import Note
 from testcases import TestCaseWithFixture
@@ -24,6 +25,40 @@ class FilteringErrorsTestCase(TestCaseWithFixture):
             'created__gte': 'foo-baz-bar'
         })
         self.assertEqual(resp.status_code, 400)
+
+
+@override_settings(ROOT_URLCONF='validation.api.urls')
+class PostRelatedUrlValidationTestCase(TestCaseWithFixture):
+    def test_valid_url(self):
+        data_with_pk = json.dumps({
+            'title': 'Test title related pk',
+            'slug': 'test-slug-related-pk',
+            'content': 'This is the content',
+            'user': {'pk': 1},
+        })
+        data_with_url = json.dumps({
+            'title': 'Test title related url',
+            'slug': 'test-slug-related-url',
+            'content': 'This is the content',
+            'user': '/api/v1/users/1/',
+        })
+        resp_with_pk = self.client.post('/api/v1/notes/', data=data_with_pk, content_type='application/json')
+        self.assertEqual(resp_with_pk.status_code, 201)
+        note_posted_with_pk = json.loads(self.client.get(resp_with_pk['location']).content.decode('utf-8'))
+        resp_with_url = self.client.post('/api/v1/notes/', data=data_with_url, content_type='application/json')
+        self.assertEqual(resp_with_url.status_code, 201)
+        note_posted_with_url = json.loads(self.client.get(resp_with_url['location']).content.decode('utf-8'))
+        self.assertEqual(note_posted_with_pk['user'], note_posted_with_url['user'])
+
+    def test_invalid_url(self):
+        data = json.dumps({
+            'title': 'Test title related url',
+            'slug': 'test-slug-related-url',
+            'content': 'This is the content',
+            'user': 'invalid-url',
+        })
+        with self.assertRaises(NotFound):
+            self.client.post('/api/v1/notes/', data=data, content_type='application/json')
 
 
 @override_settings(ROOT_URLCONF='validation.api.urls')
