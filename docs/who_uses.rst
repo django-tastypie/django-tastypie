@@ -3,9 +3,9 @@
 Sites Using Tastypie
 ====================
 
-The following sites are a partial list of people using Tastypie. I'm always
-interested in adding more sites, so please find me (``daniellindsley``) via
-IRC or start a mailing list thread.
+The following sites are a partial list of sites using Tastypie. We're always
+interested in adding more sites, so please open a GitHub Issue or Pull Request
+for this page and we'll add you to the list.
 
 
 LJWorld Marketplace
