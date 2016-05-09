@@ -32,11 +32,11 @@ setup(
     zip_safe=False,
     requires=[
         'mimeparse',
-        'dateutil(>=1.5, <=2.0)',
+        'dateutil(>=1.5, < 2.0)',
     ],
     install_requires=[
         'mimeparse',
-        'python_dateutil >= 1.5, <= 2.0',
+        'python_dateutil >= 1.5, < 2.0',
     ],
     tests_require=['mock'],
     classifiers=[
