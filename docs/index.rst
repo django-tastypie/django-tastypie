@@ -119,7 +119,7 @@ common reasons for tastypie.
 Reference Material
 ==================
 
-* https://django-tastypie.readthedocs.org/en/latest/
+* https://django-tastypie.readthedocs.io/en/latest/
 * https://github.com/django-tastypie/django-tastypie/tree/master/tests/basic shows
   basic usage of tastypie
 * http://en.wikipedia.org/wiki/REST
