@@ -3,7 +3,7 @@ django-tastypie
 ===============
 
 .. image:: https://readthedocs.org/projects/django-tastypie/badge/
-    :target: https://django-tastypie.readthedocs.org/
+    :target: https://django-tastypie.readthedocs.io/
     :alt: Docs
 
 .. image:: https://travis-ci.org/django-tastypie/django-tastypie.svg
@@ -88,7 +88,7 @@ supports all CRUD operations in a RESTful way. JSON/XML/YAML support is already
 there, and it's easy to add related data/authentication/caching.
 
 You can find more in the documentation at
-http://django-tastypie.readthedocs.org/.
+https://django-tastypie.readthedocs.io/.
 
 
 Why Tastypie?
@@ -110,7 +110,7 @@ common reasons for tastypie.
 Reference Material
 ==================
 
-* https://django-tastypie.readthedocs.org/en/latest/
+* https://django-tastypie.readthedocs.io/en/latest/
 * https://github.com/django-tastypie/django-tastypie/tree/master/tests/basic shows
   basic usage of tastypie
 * http://en.wikipedia.org/wiki/REST

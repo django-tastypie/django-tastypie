@@ -20,12 +20,12 @@ Security hardening improvements
   restrict the set of supported formats
   (closes `#833 <https://github.com/django-tastypie/django-tastypie/pull/833>`_):
 
-  http://django-tastypie.readthedocs.org/en/v0.9.14/settings.html#tastypie-default-formats
+  https://django-tastypie.readthedocs.io/en/v0.9.14/settings.html#tastypie-default-formats
 * Content negotiation will return an error for malformed accept headers (closes `#832 <https://github.com/django-tastypie/django-tastypie/pull/832>`_)
 * The Api class itself now allows a custom serializer (closes `#817 <https://github.com/django-tastypie/django-tastypie/pull/817>`_)
 * The serialization documentation has been upgraded with security advice:
 
-    http://django-tastypie.readthedocs.org/en/v0.9.14/serialization.html#serialization-security
+    https://django-tastypie.readthedocs.io/en/v0.9.14/serialization.html#serialization-security
 
 Upgrade notes:
 
