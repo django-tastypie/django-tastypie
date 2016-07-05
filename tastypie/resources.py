@@ -2522,6 +2522,9 @@ def convert_post_to_VERB(request, verb):
     Force Django to process the VERB.
     """
     if request.method == verb:
+        if not hasattr(request, '_read_started'):
+            request._read_started = False
+
         if hasattr(request, '_post'):
             del request._post
             del request._files
