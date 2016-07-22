@@ -171,7 +171,7 @@ class ApiTestCase(TestCase):
 
     def test_top_level_jsonp(self):
         api = Api()
-        api.serializer.formats=['jsonp']
+        api.serializer.formats = ['jsonp']
         api.register(NoteResource())
         api.register(UserResource())
         request = HttpRequest()
