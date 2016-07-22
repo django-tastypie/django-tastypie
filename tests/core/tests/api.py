@@ -170,7 +170,8 @@ class ApiTestCase(TestCase):
         self.assertEqual(content['users']['schema'], user_schema)
 
     def test_top_level_jsonp(self):
-        api = Api(serializer_class=Serializer(formats=['jsonp']))
+        api = Api()
+        api.serializer.formats=['jsonp']
         api.register(NoteResource())
         api.register(UserResource())
         request = HttpRequest()
