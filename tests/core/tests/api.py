@@ -170,7 +170,7 @@ class ApiTestCase(TestCase):
         self.assertEqual(content['users']['schema'], user_schema)
 
     def test_top_level_jsonp(self):
-        api = Api()
+        api = Api(serializer_class=Serializer(formats=['jsonp']))
         api.register(NoteResource())
         api.register(UserResource())
         request = HttpRequest()
@@ -190,6 +190,19 @@ class ApiTestCase(TestCase):
         #             be an import error.
         with self.assertRaises(BadRequest):
             api.top_level(request)
+
+    def test_jsonp_not_on_by_default(self):
+        api = Api()
+        api.register(NoteResource())
+        api.register(UserResource())
+        request = HttpRequest()
+        request.META = {'HTTP_ACCEPT': 'text/javascript'}
+        request.GET = {'callback': 'foo'}
+
+        resp = api.top_level(request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['content-type'].split(';')[0], 'application/json')
+        self.assertFalse("foo" in resp.content.decode('utf-8'))
 
     def test_custom_api_serializer(self):
         """Confirm that an Api can use a custom serializer"""
