@@ -614,10 +614,10 @@ class DateTimeFieldTestCase(TestCase):
         self.assertEqual(api_field, DateTimeField)
 
     def test_convert_with_T(self):
-        self.assertEqual(DateTimeField().convert("2010-11-10T03:07:43"), aware_datetime(2010, 11, 10, 03, 07, 43))
+        self.assertEqual(DateTimeField().convert("2010-11-10T03:07:43"), aware_datetime(2010, 11, 10, 03, 7, 43))
 
     def test_convert_with_space(self):
-        self.assertEqual(DateTimeField().convert("2010-11-10 03:07:43"), aware_datetime(2010, 11, 10, 03, 07, 43))
+        self.assertEqual(DateTimeField().convert("2010-11-10 03:07:43"), aware_datetime(2010, 11, 10, 03, 7, 43))
 
 
 class UserResource(ModelResource):
