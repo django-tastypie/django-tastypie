@@ -568,9 +568,13 @@ class DateTimeFieldTestCase(TestCase):
         field_2 = DateTimeField(default=aware_datetime(2010, 4, 1, 1, 7))
         self.assertEqual(field_2.dehydrate(bundle), aware_datetime(2010, 4, 1, 1, 7))
 
-        note.created_string = '2010-04-02 01:11:00'
         field_3 = DateTimeField(attribute='created_string')
-        self.assertEqual(field_3.dehydrate(bundle), aware_datetime(2010, 4, 2, 1, 11))
+
+        note.created_string = '2010-04-02T01:11:01'
+        self.assertEqual(field_3.dehydrate(bundle), aware_datetime(2010, 4, 2, 1, 11, 1))
+
+        note.created_string = '2010-04-02 01:11:02'
+        self.assertEqual(field_3.dehydrate(bundle), aware_datetime(2010, 4, 2, 1, 11, 2))
 
     def test_hydrate(self):
         bundle_1 = Bundle(data={

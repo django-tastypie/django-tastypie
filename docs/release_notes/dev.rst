@@ -17,3 +17,4 @@ Bugfixes
 * Allow `ModelResource.Meta.fields = []` to disable introspection. `ModelResource.Meta.fields = None` or omitting `ModelResource.Meta.fields` allows introspection as usual. (Fixes #793)
 * Added `Resource.get_response_class_for_exception` hook. (Closes #1154)
 * Added UnsupportedSerializationFormat and UnsupportedDeserializationFormat exceptions, which are caught and result in HttpNotAcceptable (406 status) and HttpUnsupportedMediaType (415 status) responses, respectively. Previously these same types of errors woud have appeared as 400 BadRequest errors.
+* Fix for datetime parsing error. (#1478)
