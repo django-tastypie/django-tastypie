@@ -5190,3 +5190,39 @@ class Handle500TestCase(TestCase):
 
         args, kwargs = self.resource.error_response.call_args
         self.assertEqual(kwargs['response_class'], http.HttpApplicationError)
+
+
+class ModelDeclarativeMetaclassTestCase(TestCase):
+    """
+    Regression tests for #1475
+    """
+
+    def test__fields_and_queryset_specified__object_class_set(self):
+        class MyResource(ModelResource):
+            class Meta:
+                queryset = Note.objects.all()
+                fields = ['title']
+
+        resource = MyResource()
+        resource._meta.object_class = Note
+
+    def test__queryset_but_no_fields_specified__object_class_set(self):
+        class MyResource(ModelResource):
+            class Meta:
+                queryset = Note.objects.all()
+
+        resource = MyResource()
+        resource._meta.object_class = Note
+
+    def test__1475_example_resource(self):
+        class MyResource(ModelResource):
+            class Meta:
+                queryset = Note.objects.all()
+                fields = ['title']
+                allowed_methods = ['get']
+                resource_name = 'my_resource'
+                authentication = BasicAuthentication()
+                include_resource_uri = False
+
+        resource = MyResource()
+        resource._meta.object_class = Note
