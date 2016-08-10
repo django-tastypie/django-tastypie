@@ -4,6 +4,7 @@ from hashlib import sha1
 import hmac
 import time
 import uuid
+import warnings
 
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -12,7 +13,7 @@ from django.middleware.csrf import _sanitize_token, constant_time_compare
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import ugettext as _
 
-from tastypie.compat import get_user_model, get_username_field
+from tastypie.compat import get_user_model, get_username_field, unsalt_token
 from tastypie.http import HttpUnauthorized
 
 try:
@@ -169,11 +170,14 @@ class BasicAuthentication(Authentication):
                 password=password
             )
         else:
+            if not self.require_active and 'django.contrib.auth.backends.ModelBackend' in settings.AUTHENTICATION_BACKENDS:
+                warnings.warn("Authenticating inactive users via ModelUserBackend not supported for Django >= 1.10")
             user = authenticate(username=username, password=password)
 
         if user is None:
             return self._unauthorized()
 
+        # Kept for backwards-compatibility with Django < 1.10
         if not self.check_active(user):
             return False
 
@@ -317,8 +321,10 @@ class SessionAuthentication(Authentication):
                 return False
 
         request_csrf_token = request.META.get('HTTP_X_CSRFTOKEN', '')
+        request_csrf_token = _sanitize_token(request_csrf_token)
 
-        if not constant_time_compare(request_csrf_token, csrf_token):
+        if not constant_time_compare(unsalt_token(request_csrf_token),
+                                     unsalt_token(csrf_token)):
             return False
 
         return request.user.is_authenticated()
