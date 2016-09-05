@@ -632,15 +632,15 @@ If we request that resource, we get a 404 to show it's no longer there::
 
     curl --dump-header - http://localhost:8000/api/v1/entry/4/
 
-    HTTP/1.0 404 GONE
+    HTTP/1.0 404 Not Found
     Date: Fri, 20 May 2011 07:29:02 GMT
     Server: WSGIServer/0.1 Python/2.7
     Content-Type: text/html; charset=utf-8
 
 Additionally, if we try to run the ``DELETE`` again (using the same original
-command), we get the "Gone" response again::
+command), we get the "Not Found" response again::
 
-    HTTP/1.0 404 GONE
+    HTTP/1.0 404 Not Found
     Date: Fri, 20 May 2011 07:30:00 GMT
     Server: WSGIServer/0.1 Python/2.7
     Content-Type: text/html; charset=utf-8
