@@ -5,7 +5,8 @@ from tastypie.utils import now
 
 
 class GeoNote(models.Model):
-    user = models.ForeignKey(User, related_name='notes')
+    user = models.ForeignKey(User, related_name='notes',
+                             on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     slug = models.SlugField()
     content = models.TextField()

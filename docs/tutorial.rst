@@ -32,7 +32,7 @@ Here is ``myapp/models.py``::
 
 
     class Entry(models.Model):
-        user = models.ForeignKey(User)
+        user = models.ForeignKey(User, on_delete=models.CASCADE)
         pub_date = models.DateTimeField(default=now)
         title = models.CharField(max_length=200)
         slug = models.SlugField(null=True, blank=True)

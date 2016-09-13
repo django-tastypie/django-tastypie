@@ -4,7 +4,8 @@ from tastypie.utils import now, aware_datetime
 
 
 class Note(models.Model):
-    author = models.ForeignKey(User, blank=True, null=True)
+    author = models.ForeignKey(User, blank=True, null=True,
+                               on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     slug = models.SlugField()
     content = models.TextField(blank=True)
