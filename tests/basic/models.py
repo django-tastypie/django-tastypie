@@ -23,7 +23,8 @@ class Note(models.Model):
 
 
 class AnnotatedNote(models.Model):
-    note = models.OneToOneField(Note, related_name='annotated')
+    note = models.OneToOneField(Note, related_name='annotated',
+                                on_delete=models.CASCADE)
     annotations = models.TextField()
 
     def __unicode__(self):

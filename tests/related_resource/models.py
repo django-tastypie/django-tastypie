@@ -54,7 +54,9 @@ class ExtraData(models.Model):
     tag = models.OneToOneField(
         'Tag',
         related_name='extradata',
-        null=True, blank=True,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
 
     def __unicode__(self):
@@ -136,7 +138,8 @@ class Job(models.Model):
 
 class Payment(models.Model):
     scheduled = models.DateTimeField()
-    job = models.OneToOneField(Job, related_name="payment", null=True)
+    job = models.OneToOneField(Job, related_name="payment", null=True,
+                               on_delete=models.CASCADE)
 
 
 class Post(models.Model):

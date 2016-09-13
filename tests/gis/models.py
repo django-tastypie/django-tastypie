@@ -29,7 +29,8 @@ class GeoNote(models.Model):
 
 
 class AnnotatedGeoNote(models.Model):
-    note = models.OneToOneField(GeoNote, related_name='annotated', null=True)
+    note = models.OneToOneField(GeoNote, related_name='annotated', null=True,
+                                on_delete=models.CASCADE)
     annotations = models.TextField()
 
     def __unicode__(self):
