@@ -16,8 +16,8 @@
             "slug": "first-post",
             "content": "This is my very first post using my shiny new API. Pretty sweet, huh?",
             "is_active": true,
-            "created": "2010-03-30 20:05:00",
-            "updated": "2010-03-30 20:05:00"
+            "created": "2010-03-31 01:05:00.000Z",
+            "updated": "2010-03-31 01:05:00.000Z"
         },
         "model": "basic.note",
         "pk": 1
@@ -29,8 +29,8 @@
             "slug": "another-post",
             "content": "The dog ate my cat today. He looks seriously uncomfortable.",
             "is_active": true,
-            "created": "2010-03-31 20:05:00",
-            "updated": "2010-03-31 20:05:00"
+            "created": "2010-04-01 01:05:00.000Z",
+            "updated": "2010-04-01 01:05:00.000Z"
         },
         "model": "basic.note",
         "pk": 2
