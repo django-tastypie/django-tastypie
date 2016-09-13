@@ -40,7 +40,7 @@ INSTALLED_APPS = (
     'tastypie',
 )
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

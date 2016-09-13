@@ -62,7 +62,7 @@ TASTYPIE_FULL_DEBUG = False
 
 USE_TZ = True
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
