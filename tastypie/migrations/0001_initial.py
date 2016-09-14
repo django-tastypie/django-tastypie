@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('key', models.CharField(default='', max_length=128, db_index=True, blank=True)),
                 ('created', models.DateTimeField(default=tastypie.utils.timezone.now)),
-                ('user', models.OneToOneField(related_name='api_key', to=settings.AUTH_USER_MODEL)),
+                ('user', models.OneToOneField(related_name='api_key', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,
