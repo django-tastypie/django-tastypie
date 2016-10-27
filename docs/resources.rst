@@ -316,7 +316,7 @@ This method should return a ``bundle``, whether it modifies the existing one or 
 The Hydrate Cycle
 -------------------
 
-Tastypie uses a "hydrate" cycle to take serializated data from the client
+Tastypie uses a "hydrate" cycle to take serialized data from the client
 and turn it into something the data model can use. This is the reverse process
 from the ``dehydrate`` cycle. In fact, by default, Tastypie's serialized data
 should be "round-trip-able", meaning the data that comes out should be able to
