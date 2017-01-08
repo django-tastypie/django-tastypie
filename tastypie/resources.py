@@ -22,7 +22,7 @@ from django.core.signals import got_request_exception
 from django.core.exceptions import ImproperlyConfigured
 try:
     from django.contrib.gis.db.models.fields import GeometryField
-except (ImproperlyConfigured, ImportError):
+except (ImproperlyConfigured, ImportError, AttributeError):
     GeometryField = None
 from django.db.models.constants import LOOKUP_SEP
 try:
