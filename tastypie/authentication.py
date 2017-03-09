@@ -525,7 +525,9 @@ class OAuthAuthentication(Authentication):
         according to OAuth spec) or fall back to ``GET/POST``.
         """
         auth_params = request.META.get("HTTP_AUTHORIZATION", [])
-        return self.is_in(auth_params) or self.is_in(request.REQUEST)
+        return (self.is_in(auth_params) or
+                self.is_in(request.POST) or
+                self.is_in(request.GET))
 
     def validate_token(self, request, consumer, token):
         oauth_server, oauth_request = oauth_provider.utils.initialize_server_request(request)
