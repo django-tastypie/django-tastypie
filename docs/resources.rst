@@ -638,6 +638,10 @@ The inner ``Meta`` class allows for class-level configuration of how the
   introspected. In order to specify that no fields should be introspected,
   use ``[]``
 
+  The default value of ``[]`` means that all django fields should be 
+  introspected. In order to specify that no fields should be introspected,
+  use ``['']``
+
 ``excludes``
 ------------
 
