@@ -4885,7 +4885,7 @@ class BasicAuthResourceTestCase(TestCase):
 
 # Test out the 500 behavior.
 class YouFail(Exception):
-    pass
+    response = None
 
 
 class YouFailWithResponseAttr(Exception):
