@@ -315,6 +315,8 @@ handle the children:
 
     from tastypie.utils import trailing_slash
 
+    from tastypie.utils import trailing_slash
+
     class ParentResource(ModelResource):
         children = fields.ToManyField(ChildResource, 'children')
 
