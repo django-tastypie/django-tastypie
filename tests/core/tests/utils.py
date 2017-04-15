@@ -5,7 +5,7 @@ from pytz.reference import Pacific
 from django.http import HttpRequest
 from django.test import TestCase
 
-from tastypie.exceptions import BadRequest
+from tastypie.exceptions import BadRequest, ImmediateHttpResponse
 from tastypie.serializers import Serializer
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.utils.urls import trailing_slash
@@ -68,6 +68,9 @@ class MimeTestCase(TestCase):
 
         # Again, disabled by default.
         request.META = {'HTTP_ACCEPT': 'text/javascript'}
+        self.assertRaises(ImmediateHttpResponse, determine_format, request, serializer)
+
+        request.META = {'HTTP_ACCEPT': 'text/javascript,application/json'}
         self.assertEqual(determine_format(request, serializer), 'application/json')
 
         # Again, explicitly enabled.

@@ -36,6 +36,35 @@ class ViewsTestCase(TestCaseWithFixture):
         self.assertEqual(len(deserialized['objects']), 2)
         self.assertEqual([obj['title'] for obj in deserialized['objects']], [u'Another Post', u'First Post!'])
 
+    def _check_path_conneg(self, path):
+        # Helper so we can have specific tests for different views without a loop which would hide details
+        # from failure messages
+        resp = self.client.get(path)
+        self.assertEqual(resp.status_code, 200, msg="Requests without Accept should use the default format")
+        self.assertEqual(resp['content-type'], 'application/json')
+
+        resp = self.client.get(path, HTTP_ACCEPT='application/json')
+        self.assertEqual(resp.status_code, 200, msg='Requests which Accept a supported format should return 200')
+        self.assertEqual(resp['content-type'], 'application/json')
+
+        resp = self.client.get(path, HTTP_ACCEPT='text/bogus')
+        self.assertEqual(resp.status_code, 406, msg="Requests which Accept only unsupported formats should return 406")
+
+        resp = self.client.get(path, HTTP_ACCEPT='text/bogus;q=1.0,application/xml;q=0.1')
+        self.assertEqual(resp.status_code, 200, msg="Content negotiation should fail down to a supported format")
+
+        resp = self.client.get("%s?format=json" % path, HTTP_ACCEPT='application/foobar')
+        self.assertEqual(resp.status_code, 200, msg="Explicit format selection should overrule the Accept header")
+
+    def test_top_level_content_negotiation(self):
+        self._check_path_conneg('/api/v1/')
+
+    def test_resource_list_content_negotiation(self):
+        self._check_path_conneg('/api/v1/notes/')
+
+    def test_resource_detail_content_negotiation(self):
+        self._check_path_conneg('/api/v1/notes/1/')
+
     def test_get_test_client_error(self):
         # The test server should re-raise exceptions to make debugging easier.
         self.assertRaises(Exception, self.client.get, '/api/v2/busted/', data={'format': 'json'})

@@ -4,7 +4,7 @@ from django.conf.urls import url, include
 from django.core.exceptions import ImproperlyConfigured
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseBadRequest
-from tastypie.exceptions import NotRegistered, BadRequest
+from tastypie.exceptions import NotRegistered, BadRequest, ImmediateHttpResponse
 from tastypie.serializers import Serializer
 from tastypie.utils import is_valid_jsonp_callback_value, string_to_python, trailing_slash
 from tastypie.utils.mime import determine_format, build_content_type
@@ -80,6 +80,8 @@ class Api(object):
         def wrapper(request, *args, **kwargs):
             try:
                 return getattr(self, view)(request, *args, **kwargs)
+            except ImmediateHttpResponse, e:
+                return e.response
             except BadRequest:
                 return HttpResponseBadRequest()
         return wrapper
