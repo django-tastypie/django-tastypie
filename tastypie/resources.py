@@ -2386,6 +2386,9 @@ class BaseModelResource(Resource):
 
             if field_object.blank and field_name not in bundle.data:
                 continue
+              
+            if field_object.readonly:
+                continue
 
             # Get the object.
             try:
