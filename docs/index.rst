@@ -151,6 +151,9 @@ The easiest way to get setup to run Tastypie's tests looks like::
   $ virtualenv env
   $ . env/bin/activate
   $ ./env/bin/pip install -U -r requirements.txt
+  # You also need to install the Django version you want to test
+  against
+  $ pip install django==X.Y.Z
 
 Then running the tests is as simple as::
 
