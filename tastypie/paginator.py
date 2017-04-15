@@ -113,6 +113,7 @@ class Paginator(object):
         """
         Slices the result set to the specified ``limit`` & ``offset``.
         """
+        # If it's zero, return everything.
         if limit == 0:
             return self.objects[offset:]
 
