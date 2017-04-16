@@ -880,7 +880,9 @@ class ToManyField(RelatedField):
             return None
 
         if bundle.data.get(self.instance_name) is None:
-            if self.blank:
+            if bundle.request.META.get('REQUEST_METHOD') == 'PATCH':
+                return None
+            elif self.blank:
                 return []
             if self.null:
                 return []

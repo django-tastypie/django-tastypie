@@ -2464,6 +2464,9 @@ class BaseModelResource(Resource):
             if field_object.readonly:
                 continue
 
+            if bundle.data.get(field_name) is None:
+                continue
+
             # Get the manager.
             related_mngr = None
 
