@@ -441,6 +441,34 @@ resulting code will look something like:
 
     ...
 
+Using read-only resources as foreign keys
+-----------------------------------------
+
+One might want to allow users to use a resource as a foreign key without
+allowing those users to modify that resource.  For instance,  we want an
+``ArticleResource`` which has ``allowed_methods = ['get']`` so users can only
+read an article.  We also want a ``CommentResource`` users can modify, which
+has an ``ArticleResource`` as a foreign key.  If we try just using
+``fields.ForeignKey(ArticleResource, 'article')``, creating/modifying a comment
+will fail, as we are not authorized to modify the article.
+
+To work around this, we can create a read-only subclass of ``ArticleResource``
+which has ``can_update`` always return ``False``.  For example::
+
+    # myapp/api/resources.py
+    class SafeArticleResource(ArticleResource):
+        class Meta:
+            queryset = Article.objects.all()
+            allowed_methods = ['get']
+            authorization = Authorization()
+            resource_name = 'article'
+        def can_update(self):
+            return False
+
+    class CommentResource(ModelResource):
+        article = fields.ForeignKey(SafeArticleResource, 'article')
+        ...
+
 camelCase JSON Serialization
 ----------------------------
 
