@@ -505,7 +505,7 @@ class Serializer(object):
             raise ImproperlyConfigured(
                 "Usage of the YAML aspects requires yaml.")
 
-        return yaml.load(content, Loader=TastypieLoader)
+        return yaml.safe_load(content, Loader=TastypieLoader)
 
     def to_plist(self, data, options=None):
         """
