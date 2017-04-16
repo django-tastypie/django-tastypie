@@ -17,14 +17,10 @@ class ApiAccess(models.Model):
     identifier = models.CharField(max_length=255)
     url = models.CharField(max_length=255, blank=True, default='')
     request_method = models.CharField(max_length=10, blank=True, default='')
-    accessed = models.PositiveIntegerField()
+    accessed = models.PositiveIntegerField(default=lambda: int(time.time()))
 
     def __str__(self):
         return "%s @ %s" % (self.identifier, self.accessed)
-
-    def save(self, *args, **kwargs):
-        self.accessed = int(time.time())
-        return super(ApiAccess, self).save(*args, **kwargs)
 
 
 if 'django.contrib.auth' in settings.INSTALLED_APPS:
