@@ -700,6 +700,12 @@ The Accepted response means the server has accepted the request, but gives no de
 
 For detailed information on the format of a bulk request, see :ref:`patch-list`.
 
+Other data formats
+===============
+The Tastypie API outputs data in either JSON, XML or YAML.  Some third party tools can be used to derive other data formats.
+
+  * CSV format can be obtained by converting JSON to CSV with https://json-csv.com
+
 
 You Did It!
 ===========
