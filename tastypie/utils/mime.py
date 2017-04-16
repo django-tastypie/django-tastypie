@@ -21,6 +21,10 @@ def determine_format(request, serializer, default_format='application/json'):
     NOTE: callers *must* be prepared to handle BadRequest exceptions due to
           malformed HTTP request headers!
     """
+    # Zeroeth, check to see if we have a request to play with.
+    # Otherwise, just use the default format
+    if not request: return default_format
+
     # First, check if they forced the format.
     format = request.GET.get('format')
     if format:
