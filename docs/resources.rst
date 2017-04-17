@@ -658,7 +658,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
   ``False``.
 
 ``always_return_data``
-------------------------
+----------------------
 
   Specifies all HTTP methods (except ``DELETE``) should return a serialized form
   of the data. Default is ``False``.
