@@ -156,7 +156,7 @@ non-relational datastore looks like::
             pass
 
 This represents a full, working, Riak-powered API endpoint. All REST-style
-actions (GET/POST/PUT/DELETE) all work correctly. The only shortcut taken in
+actions (GET/POST/PUT/DELETE) work correctly. The only shortcut taken in
 this example was skipping filter-abilty, as adding in the MapReduce bits would
 have decreased readability.
 
