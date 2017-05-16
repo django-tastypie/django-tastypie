@@ -18,3 +18,4 @@ Bugfixes
 * Added `Resource.get_response_class_for_exception` hook. (Closes #1154)
 * Added UnsupportedSerializationFormat and UnsupportedDeserializationFormat exceptions, which are caught and result in HttpNotAcceptable (406 status) and HttpUnsupportedMediaType (415 status) responses, respectively. Previously these same types of errors woud have appeared as 400 BadRequest errors.
 * Fix for datetime parsing error. (#1478)
+* Gets rid of RemovedInDjango20Warning warning in Django 1.9 (Closes #1507)
