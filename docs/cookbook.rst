@@ -355,7 +355,7 @@ at ``/api/v1/notes/search/``::
     from django.http import Http404
     from haystack.query import SearchQuerySet
     from tastypie.resources import ModelResource
-    from tastypie.utils import trailing_slash
+    from tastypie.utils import trailing_slash, custom_api
     from notes.models import Note
 
 
@@ -369,10 +369,8 @@ at ``/api/v1/notes/search/``::
                 url(r"^(?P<resource_name>%s)/search%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_search'), name="api_get_search"),
             ]
 
+        @custom_api(allowed=['get'])
         def get_search(self, request, **kwargs):
-            self.method_check(request, allowed=['get'])
-            self.is_authenticated(request)
-            self.throttle_check(request)
 
             # Do the query.
             sqs = SearchQuerySet().models(Note).load_all().auto_query(request.GET.get('q', ''))
@@ -390,12 +388,7 @@ at ``/api/v1/notes/search/``::
                 bundle = self.full_dehydrate(bundle)
                 objects.append(bundle)
 
-            object_list = {
-                'objects': objects,
-            }
-
-            self.log_throttled_access(request)
-            return self.create_response(request, object_list)
+            return {'objects': objects}
 
 .. _Haystack: http://haystacksearch.org/
 
