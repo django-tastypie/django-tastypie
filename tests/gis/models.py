@@ -5,7 +5,8 @@ from tastypie.utils import now
 
 
 class GeoNote(models.Model):
-    user = models.ForeignKey(User, related_name='notes')
+    user = models.ForeignKey(User, related_name='notes',
+                             on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     slug = models.SlugField()
     content = models.TextField()
@@ -28,7 +29,8 @@ class GeoNote(models.Model):
 
 
 class AnnotatedGeoNote(models.Model):
-    note = models.OneToOneField(GeoNote, related_name='annotated', null=True)
+    note = models.OneToOneField(GeoNote, related_name='annotated', null=True,
+                                on_delete=models.CASCADE)
     annotations = models.TextField()
 
     def __unicode__(self):

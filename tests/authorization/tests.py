@@ -3,7 +3,8 @@ import mock
 
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
-from tastypie.test import ResourceTestCase
+from django.test import TestCase
+from tastypie.test import ResourceTestCaseMixin
 from .models import AuthorProfile, Article
 from .api.resources import PerUserAuthorization
 
@@ -15,7 +16,7 @@ def ret_false(*args):
     return False
 
 
-class PerUserAuthorizationTestCase(ResourceTestCase):
+class PerUserAuthorizationTestCase(ResourceTestCaseMixin, TestCase):
     def setUp(self):
         super(PerUserAuthorizationTestCase, self).setUp()
 

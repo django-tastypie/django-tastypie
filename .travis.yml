@@ -5,12 +5,12 @@ language: python
 python:
   - "2.7"
   - "3.4"
+  - "3.5"
 
 env:
   - MODE=flake8
   - MODE=flake8-strict
   - MODE=docs
-  - DJANGO_VERSION=dj17
   - DJANGO_VERSION=dj18
   - DJANGO_VERSION=dj19
   - DJANGO_VERSION=dj110

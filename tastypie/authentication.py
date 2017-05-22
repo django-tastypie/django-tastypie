@@ -6,6 +6,7 @@ import time
 import uuid
 import warnings
 
+import django
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.exceptions import ImproperlyConfigured
@@ -301,11 +302,16 @@ class SessionAuthentication(Authentication):
         # wrong.
         # We also can't risk accessing ``request.POST``, which will break with
         # the serialized bodies.
+
+        def is_authed(request):
+            authed = request.user.is_authenticated
+            return bool(authed() if django.VERSION < (1, 10) else authed)
+
         if request.method in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
-            return request.user.is_authenticated()
+            return is_authed(request)
 
         if getattr(request, '_dont_enforce_csrf_checks', False):
-            return request.user.is_authenticated()
+            return is_authed(request)
 
         csrf_token = _sanitize_token(request.COOKIES.get(settings.CSRF_COOKIE_NAME, ''))
 
@@ -327,7 +333,7 @@ class SessionAuthentication(Authentication):
                                      unsalt_token(csrf_token)):
             return False
 
-        return request.user.is_authenticated()
+        return is_authed(request)
 
     def get_identifier(self, request):
         """

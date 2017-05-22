@@ -15,9 +15,14 @@ from django.conf.urls import url
 from django.core.exceptions import (
     ObjectDoesNotExist, MultipleObjectsReturned, ValidationError,
 )
-from django.core.urlresolvers import (
-    NoReverseMatch, reverse, Resolver404, get_script_prefix
-)
+try:
+    from django.urls import (
+        NoReverseMatch, reverse, Resolver404, get_script_prefix
+    )
+except ImportError:
+    from django.core.urlresolvers import (
+        NoReverseMatch, reverse, Resolver404, get_script_prefix
+    )
 from django.core.signals import got_request_exception
 from django.core.exceptions import ImproperlyConfigured
 try:
@@ -1838,7 +1843,10 @@ class BaseModelResource(Resource):
         contributed ApiFields.
         """
         # Ignore certain fields (related fields).
-        if getattr(field, 'rel'):
+        if hasattr(field, 'remote_field'):
+            if field.remote_field:
+                return True
+        elif getattr(field, 'rel'):
             return True
 
         return False

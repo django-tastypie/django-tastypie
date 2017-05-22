@@ -35,7 +35,7 @@ Core
 ----
 
 * Python 2.7+ or Python 3.4+
-* Django 1.7 through Django 1.9
+* Django 1.8 through Django 1.9
 * dateutil (http://labix.org/python-dateutil) >= 2.1
 
 Format Support

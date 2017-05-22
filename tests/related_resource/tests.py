@@ -3,7 +3,10 @@ import json
 
 import django
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
+try:
+    from django.urls import reverse
+except ImportError:
+    from django.core.urlresolvers import reverse
 from django.db.models.signals import pre_save
 from django.test.testcases import TestCase
 from django.test.utils import override_settings

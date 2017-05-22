@@ -14,7 +14,8 @@ class DateRecord(models.Model):
 
 
 class Note(models.Model):
-    author = models.ForeignKey(User, related_name='notes', blank=True, null=True)
+    author = models.ForeignKey(User, related_name='notes', blank=True,
+                               null=True, on_delete=models.CASCADE)
     title = models.CharField("The Title", max_length=100)
     slug = models.SlugField()
     content = models.TextField(blank=True)
@@ -41,7 +42,8 @@ class Note(models.Model):
 
 
 class NoteWithEditor(Note):
-    editor = models.ForeignKey(User, related_name='notes_edited')
+    editor = models.ForeignKey(User, related_name='notes_edited',
+                               on_delete=models.CASCADE)
 
 
 class Subject(models.Model):
@@ -55,7 +57,8 @@ class Subject(models.Model):
 
 
 class MediaBit(models.Model):
-    note = models.ForeignKey(Note, related_name='media_bits')
+    note = models.ForeignKey(Note, related_name='media_bits',
+                             on_delete=models.CASCADE)
     title = models.CharField(max_length=32)
     image = models.FileField(blank=True, null=True, upload_to='bits/')
 

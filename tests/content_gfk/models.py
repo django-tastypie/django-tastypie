@@ -22,6 +22,6 @@ class Rating(models.Model):
     RATINGS = [(x, x) for x in range(1, 6)]
 
     rating = models.PositiveIntegerField(choices=RATINGS, default=3)
-    content_type = models.ForeignKey(ContentType)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
