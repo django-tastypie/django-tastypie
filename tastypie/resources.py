@@ -1892,10 +1892,6 @@ class BaseModelResource(Resource):
             return final_fields
 
         for f in cls._meta.object_class._meta.fields:
-            # If the field name is already present, skip
-            if f.name in cls.base_fields:
-                continue
-
             # If field is not present in explicit field listing, skip
             if f.name not in fields:
                 continue
@@ -1905,6 +1901,10 @@ class BaseModelResource(Resource):
                 continue
 
             if cls.should_skip_field(f):
+                if hasattr(f, 'rel') and f.name in cls.base_fields:
+                    # At least let's inherit in the help_text
+                    if 'help_text' not in vars(cls.base_fields[f.name]):
+                        cls.base_fields[f.name].help_text = f.help_text
                 continue
 
             api_field_class = cls.api_field_from_django_field(f)
@@ -1929,6 +1929,15 @@ class BaseModelResource(Resource):
 
             if f.has_default():
                 kwargs['default'] = f.default
+                
+            # If the field name is already present, override with its original
+            # values
+            if f.name in cls.base_fields:
+                fieldvars = vars(cls.base_fields[f.name])
+                for attr in ['attribute', 'help_text', 'null', 'unique', 'default']:
+                    if attr in fieldvars:
+                        kwargs[attr] = fieldvars[attr]
+                
 
             if getattr(f, 'auto_now', False):
                 kwargs['default'] = f.auto_now
