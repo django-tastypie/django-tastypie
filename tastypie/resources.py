@@ -1057,6 +1057,12 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 'primary_key': True if field_name == pk_field_name else False,
                 'verbose_name': field_object.verbose_name or field_name.replace("_", " "),
             }
+            if field_object.dehydrated_type == 'related':
+                if getattr(field_object, 'is_m2m', False):
+                    related_type = 'to_many'
+                else:
+                    related_type = 'to_one'
+                data['fields'][field_name]['related_type'] = related_type
 
             if field_object.dehydrated_type == 'related':
                 if field_object.is_m2m:
