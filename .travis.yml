@@ -23,6 +23,8 @@ matrix:
       env: MODE=flake8
     - python: "3.4"
       env: MODE=flake8-strict
+    - python: "2.7"
+      env: DJANGO_VERSION=djdev
 
 addons:
   apt:

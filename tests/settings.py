@@ -3,7 +3,11 @@ import sys
 
 from distutils.version import StrictVersion
 import django
-DJANGO_VERSION = StrictVersion(django.get_version())
+django_version_string = django.get_version()
+if django_version_string.startswith('2.0.dev'):
+    DJANGO_VERSION = StrictVersion('2.0')
+else:
+    DJANGO_VERSION = StrictVersion(django.get_version())
 DJANGO_11 = StrictVersion('1.11')
 DJANGO_18 = StrictVersion('1.8')
 
