@@ -1,12 +1,11 @@
 from itertools import count
 import uuid
 
-from django.contrib.auth import get_user_model
 from django.db import models
 
 from tastypie.utils import now, aware_datetime
+from tastypie.compat import AUTH_USER_MODEL
 
-User = get_user_model()
 
 class DateRecord(models.Model):
     date = models.DateField()
@@ -18,7 +17,7 @@ class DateRecord(models.Model):
 
 
 class Note(models.Model):
-    author = models.ForeignKey(User, related_name='notes', blank=True, null=True)
+    author = models.ForeignKey(AUTH_USER_MODEL, related_name='notes', blank=True, null=True)
     title = models.CharField("The Title", max_length=100)
     slug = models.SlugField()
     content = models.TextField(blank=True)
@@ -48,7 +47,7 @@ class Note(models.Model):
 
 
 class NoteWithEditor(Note):
-    editor = models.ForeignKey(User, related_name='notes_edited')
+    editor = models.ForeignKey(AUTH_USER_MODEL, related_name='notes_edited')
 
     class Meta:
         app_label = 'core'
