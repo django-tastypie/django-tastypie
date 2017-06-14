@@ -41,6 +41,7 @@ for pytestpath in $PYTESTPATHS; do
         spatialite tastypie-spatialite.db "SELECT InitSpatialMetaData();"
     fi
     
-    ./manage_$type.py test $test_name.tests --traceback
+    echo "./manage_$type.py test $test_name.tests --traceback -t $test_name"
+    ./manage_$type.py test $test_name.tests --traceback -t $test_name
     echo; echo
 done
