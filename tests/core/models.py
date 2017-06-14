@@ -1,16 +1,20 @@
 from itertools import count
 import uuid
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.db import models
 
 from tastypie.utils import now, aware_datetime
 
+User = get_user_model()
 
 class DateRecord(models.Model):
     date = models.DateField()
     username = models.CharField(max_length=20)
     message = models.CharField(max_length=20)
+
+    class Meta:
+        app_label = 'core'
 
 
 class Note(models.Model):
@@ -39,9 +43,15 @@ class Note(models.Model):
     def my_property(self):
         return 'my_property'
 
+    class Meta:
+        app_label = 'core'
+
 
 class NoteWithEditor(Note):
     editor = models.ForeignKey(User, related_name='notes_edited')
+
+    class Meta:
+        app_label = 'core'
 
 
 class Subject(models.Model):
@@ -53,6 +63,9 @@ class Subject(models.Model):
     def __unicode__(self):
         return self.name
 
+    class Meta:
+        app_label = 'core'
+
 
 class MediaBit(models.Model):
     note = models.ForeignKey(Note, related_name='media_bits')
@@ -61,6 +74,9 @@ class MediaBit(models.Model):
 
     def __unicode__(self):
         return self.title
+
+    class Meta:
+        app_label = 'core'
 
 
 class AutoNowNote(models.Model):
@@ -75,6 +91,9 @@ class AutoNowNote(models.Model):
     def __unicode__(self):
         return self.title
 
+    class Meta:
+        app_label = 'core'
+
 
 class Counter(models.Model):
     name = models.CharField(max_length=30)
@@ -84,6 +103,9 @@ class Counter(models.Model):
     def __unicode__(self):
         return self.name
 
+    class Meta:
+        app_label = 'core'
+
 
 int_source = count(1)
 
@@ -91,6 +113,9 @@ int_source = count(1)
 class MyDefaultPKModel(models.Model):
     id = models.IntegerField(primary_key=True, default=lambda: next(int_source), editable=False)
     content = models.TextField(blank=True, default='')
+
+    class Meta:
+        app_label = 'core'
 
 
 if hasattr(models, 'UUIDField'):
@@ -102,10 +127,15 @@ if hasattr(models, 'UUIDField'):
 
         class Meta:
             ordering = ('order',)
+            app_label = 'core'
 
     class MyRelatedUUIDModel(models.Model):
         myuuidmodels = models.ManyToManyField(MyUUIDModel)
         content = models.TextField(blank=True, default='')
+
+        class Meta:
+            app_label = 'core'
+
 else:
     MyUUIDModel = None
     MyRelatedUUIDModel = None

@@ -14,7 +14,7 @@ from unittest import skipIf
 
 import django
 from django import forms
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.exceptions import FieldError, MultipleObjectsReturned, ObjectDoesNotExist
 from django.core import mail
@@ -50,6 +50,8 @@ from core.models import (
 )
 from core.tests.mocks import MockRequest
 from core.utils import adjust_schema, SimpleHandler
+
+User = get_user_model()
 
 
 class CustomSerializer(Serializer):
