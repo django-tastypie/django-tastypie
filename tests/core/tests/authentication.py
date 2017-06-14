@@ -355,6 +355,7 @@ class DigestAuthenticationTestCase(TestCase):
 
 
 @skipIf(not oauth2 or not oauth_provider, "oauth provider not installed")
+@skipIf(settings.DJANGO_VERSION >= settings.DJANGO_11, 'oauth-plus not compatible with django 1.11')
 class OAuthAuthenticationTestCase(TestCase):
     fixtures = ['note_testdata.json']
 

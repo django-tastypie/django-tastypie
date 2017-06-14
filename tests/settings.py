@@ -1,6 +1,12 @@
 import os
 import sys
 
+from distutils.version import StrictVersion
+import django
+DJANGO_VERSION = StrictVersion(django.get_version())
+DJANGO_11 = StrictVersion('1.11')
+DJANGO_18 = StrictVersion('1.8')
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 ADMINS = (
