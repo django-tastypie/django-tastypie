@@ -117,24 +117,20 @@ class MyDefaultPKModel(models.Model):
         app_label = 'core'
 
 
-if hasattr(models, 'UUIDField'):
-    class MyUUIDModel(models.Model):
-        id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-        anotheruuid = models.UUIDField(default=uuid.uuid4)
-        content = models.TextField(blank=True, default='')
-        order = models.IntegerField(default=0, blank=True)
+class MyUUIDModel(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    anotheruuid = models.UUIDField(default=uuid.uuid4)
+    content = models.TextField(blank=True, default='')
+    order = models.IntegerField(default=0, blank=True)
 
-        class Meta:
-            ordering = ('order',)
-            app_label = 'core'
+    class Meta:
+        ordering = ('order',)
+        app_label = 'core'
 
-    class MyRelatedUUIDModel(models.Model):
-        myuuidmodels = models.ManyToManyField(MyUUIDModel)
-        content = models.TextField(blank=True, default='')
 
-        class Meta:
-            app_label = 'core'
+class MyRelatedUUIDModel(models.Model):
+    myuuidmodels = models.ManyToManyField(MyUUIDModel)
+    content = models.TextField(blank=True, default='')
 
-else:
-    MyUUIDModel = None
-    MyRelatedUUIDModel = None
+    class Meta:
+        app_label = 'core'
