@@ -376,26 +376,16 @@ at ``/api/v1/notes/search/``::
 
             # Do the query.
             sqs = SearchQuerySet().models(Note).load_all().auto_query(request.GET.get('q', ''))
-            paginator = Paginator(sqs, 20)
+            paginator = self._meta.paginator_class(request.GET, sqs,
+                resource_uri=self.get_resource_uri(), limit=self._meta.limit,
+                max_limit=self._meta.max_limit, collection_name=self._meta.collection_name)
 
-            try:
-                page = paginator.page(int(request.GET.get('page', 1)))
-            except InvalidPage:
-                raise Http404("Sorry, no results on that page.")
+            to_be_serialized = paginator.page()
 
-            objects = []
-
-            for result in page.object_list:
-                bundle = self.build_bundle(obj=result.object, request=request)
-                bundle = self.full_dehydrate(bundle)
-                objects.append(bundle)
-
-            object_list = {
-                'objects': objects,
-            }
-
-            self.log_throttled_access(request)
-            return self.create_response(request, object_list)
+            bundles = [self.build_bundle(obj=result.object, request=request) for result in to_be_serialized['objects']]
+            to_be_serialized['objects'] = [self.full_dehydrate(bundle) for bundle in bundles]
+            to_be_serialized = self.alter_list_data_to_serialize(request, to_be_serialized)
+            return self.create_response(request, to_be_serialized)
 
 .. _Haystack: http://haystacksearch.org/
 
