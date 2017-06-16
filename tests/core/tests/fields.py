@@ -932,6 +932,16 @@ class ToOneFieldTestCase(TestCase):
         self.assertEqual(fk_bundle.related_obj, 'Foo')
         self.assertEqual(fk_bundle.related_name, 'Bar')
 
+    def test_resource_from_unique_keys_data(self):
+        user = User.objects.get(pk=1)
+        ur = UserResource()
+        field_1 = ToOneField(UserResource, 'author')
+
+        fk_bundle = field_1.resource_from_data(ur, {'pk': user.pk}, related_obj='Foo', related_name='Bar')
+        self.assertEqual(fk_bundle.related_obj, None)
+        self.assertEqual(fk_bundle.related_name, None)
+        self.assertEqual(fk_bundle.obj, user)
+
     def test_resource_from_pk(self):
         user = User.objects.get(pk=1)
         ur = UserResource()
