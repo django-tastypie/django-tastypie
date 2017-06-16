@@ -113,7 +113,7 @@ An example::
 
     TASTYPIE_DEFAULT_FORMATS = ['json', 'xml']
 
-Defaults to ``['json', 'xml', 'yaml', 'html', 'plist']``.
+Defaults to ``['json', 'xml', 'yaml', 'plist']``.
 
 
 ``TASTYPIE_ABSTRACT_APIKEY``

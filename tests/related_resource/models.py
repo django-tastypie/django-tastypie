@@ -19,14 +19,14 @@ class Taggable(models.Model):
 # Explicit intermediary 'through' table
 class TaggableTag(models.Model):
     tag = models.ForeignKey(
-            'Tag',
-            related_name='taggabletags',
-            null=True, blank=True,  # needed at creation time
-        )
+        'Tag',
+        related_name='taggabletags',
+        null=True, blank=True,  # needed at creation time
+    )
     taggable = models.ForeignKey(
-            'Taggable',
-            related_name='taggabletags',
-            null=True, blank=True,  # needed at creation time
+        'Taggable',
+        related_name='taggabletags',
+        null=True, blank=True,  # needed at creation time
     )
     extra = models.IntegerField(default=0)  # extra data about the relationship
 
@@ -134,3 +134,39 @@ class Post(models.Model):
     name = models.CharField(max_length=200)
     label = models.ManyToManyField(Label, null=True)
 
+
+class Order(models.Model):
+    name = models.CharField(max_length=200)
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, related_name="items")
+    product = models.CharField(max_length=200)
+
+
+class ContactGroup(models.Model):
+    name = models.CharField(max_length=75, blank=True,
+        help_text="Contact first name.")
+
+    class Meta:
+        ordering = ['id']
+
+    def __unicode__(self):
+        return u'%s' % self.name
+
+
+class Contact(models.Model):
+    name = models.CharField(max_length=255)
+    groups = models.ManyToManyField(
+        ContactGroup,
+        related_name='members',
+        null=True,
+        blank=True,
+        help_text="The Contact Groups this Contact belongs to."
+    )
+
+    class Meta:
+        ordering = ['id']
+
+    def __unicode__(self):
+        return u'%s' % self.name

@@ -1,6 +1,6 @@
+# -*- coding: utf-8 -*-
 from django.contrib.auth.models import User
 from django.http import HttpRequest
-from tastypie.bundle import Bundle
 from tastypie.fields import ToOneField, ToManyField
 from tastypie.resources import ModelResource
 from basic.api.resources import SlugBasedNoteResource
@@ -67,17 +67,11 @@ class NoteModelResourceTestCase(TestCaseWithFixture):
         self.assertEqual(nplur.notes.to, 'FooResource')
         self.assertEqual(lur.notes.to, 'basic.tests.resources.NoteResource')
 
-        try:
+        with self.assertRaises(ImportError):
             ilur.notes.to_class()
-            self.fail("to_class on InvalidLazyUserResource should fail!")
-        except ImportError:
-            pass
 
-        try:
+        with self.assertRaises(ImportError):
             nplur.notes.to_class()
-            self.fail("to_class on NoPathLazyUserResource should fail!")
-        except ImportError:
-            pass
 
         to_class = lur.notes.to_class()
         self.assertTrue(isinstance(to_class, NoteResource))
@@ -96,7 +90,7 @@ class AnnotatedNoteModelResourceTestCase(TestCaseWithFixture):
 
         resource_1 = NoteWithAnnotationsResource()
         n1_bundle = resource_1.build_bundle(obj=n1)
-        dehydrated = resource_1.full_dehydrate(n1_bundle)
+        resource_1.full_dehydrate(n1_bundle)
 
 
 class DetailURIKwargsResourceTestCase(TestCaseWithFixture):
@@ -186,3 +180,19 @@ class SlugBasedResourceTestCase(TestCaseWithFixture):
         # Make sure it's gone.
         self.assertRaises(SlugBasedNote.DoesNotExist, SlugBasedNote.objects.get, pk='first-post')
 
+
+class BundleTestCase(TestCaseWithFixture):
+    def test_bundle_repr(self):
+        # __repr__ should return string type (str in PY2 or unicode in PY3)
+        n = Note.objects.get(pk=1)
+
+        resource = NoteWithAnnotationsResource()
+        n1_bundle = resource.build_bundle(obj=n)
+        self.assertTrue(isinstance(repr(n1_bundle), str))
+
+        data_dict = {
+            u'∆ключ∆': 1,
+            'привет©®': 2
+        }
+        n2_bundle = resource.build_bundle(obj=n, data=data_dict)
+        self.assertTrue(isinstance(repr(n2_bundle), str))

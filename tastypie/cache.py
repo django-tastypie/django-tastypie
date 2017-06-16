@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
-from django.core.cache import get_cache
+from django.core.cache import caches
 
 
 class NoCache(object):
@@ -59,8 +59,8 @@ class SimpleCache(NoCache):
         Defaults to ``60`` seconds.
         """
         super(SimpleCache, self).__init__(*args, **kwargs)
-        self.cache = get_cache(cache_name)
-        self.timeout = timeout or self.cache.default_timeout
+        self.cache = caches[cache_name]
+        self.timeout = timeout if timeout is not None else self.cache.default_timeout
         self.public = public
         self.private = private
 

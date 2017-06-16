@@ -22,6 +22,10 @@ class HttpAccepted(HttpResponse):
 class HttpNoContent(HttpResponse):
     status_code = 204
 
+    def __init__(self, *args, **kwargs):
+        super(HttpNoContent, self).__init__(*args, **kwargs)
+        del self['Content-Type']
+
 
 class HttpMultipleChoices(HttpResponse):
     status_code = 300
@@ -55,12 +59,20 @@ class HttpMethodNotAllowed(HttpResponse):
     status_code = 405
 
 
+class HttpNotAcceptable(HttpResponse):
+    status_code = 406
+
+
 class HttpConflict(HttpResponse):
     status_code = 409
 
 
 class HttpGone(HttpResponse):
     status_code = 410
+
+
+class HttpUnsupportedMediaType(HttpResponse):
+    status_code = 415
 
 
 class HttpUnprocessableEntity(HttpResponse):
@@ -77,4 +89,3 @@ class HttpApplicationError(HttpResponse):
 
 class HttpNotImplemented(HttpResponse):
     status_code = 501
-

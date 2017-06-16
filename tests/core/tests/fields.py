@@ -1,17 +1,23 @@
 import datetime
-from dateutil.tz import *
+from dateutil.tz import tzoffset
+from decimal import Decimal
+
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.http import HttpRequest
+
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
-from tastypie.fields import *
-from tastypie.resources import ModelResource
+from tastypie.fields import NOT_PROVIDED, ApiField, BooleanField, CharField,\
+    DateField, DateTimeField, DecimalField, DictField, FileField, FloatField,\
+    IntegerField, ListField, TimeField, ToOneField, ToManyField
+from tastypie.resources import ALL, ModelResource
+from tastypie.utils import aware_datetime
+
 from core.models import Note, Subject, MediaBit
 from core.tests.mocks import MockRequest
-
-from tastypie.utils import aware_datetime, aware_date
+User = get_user_model()
 
 
 class ApiFieldTestCase(TestCase):
@@ -23,7 +29,6 @@ class ApiFieldTestCase(TestCase):
         self.assertEqual(field_1.attribute, None)
         self.assertEqual(field_1._default, NOT_PROVIDED)
         self.assertEqual(field_1.null, False)
-        self.assertEqual(field_1.value, None)
         self.assertEqual(field_1.help_text, '')
         self.assertEqual(field_1.use_in, 'all')
 
@@ -32,7 +37,6 @@ class ApiFieldTestCase(TestCase):
         self.assertEqual(field_2.attribute, 'foo')
         self.assertEqual(field_2._default, True)
         self.assertEqual(field_2.null, True)
-        self.assertEqual(field_2.value, None)
         self.assertEqual(field_2.readonly, True)
         self.assertEqual(field_2.help_text, 'Foo.')
         self.assertEqual(field_1.use_in, 'all')
@@ -43,7 +47,8 @@ class ApiFieldTestCase(TestCase):
         field_4 = ApiField(use_in="detail")
         self.assertEqual(field_4.use_in, 'detail')
 
-        use_in_callable = lambda x: True
+        def use_in_callable(x):
+            return True
         field_5 = ApiField(use_in=use_in_callable)
         self.assertTrue(field_5.use_in is use_in_callable)
 
@@ -92,6 +97,19 @@ class ApiFieldTestCase(TestCase):
         # Correct callable attribute.
         field_6 = ApiField(attribute='what_time_is_it', default=True)
         self.assertEqual(field_6.dehydrate(bundle), aware_datetime(2010, 4, 1, 0, 48))
+
+        # Wrong attribute with default and null=True should yield null
+        field_7 = ApiField(attribute='foo', null=True, default='bar')
+        self.assertEqual(field_7.dehydrate(bundle), None)
+
+        # Correct attribute with value of None, a default, and null=True
+        # should yield null
+        original_author = note.author
+        note.author = None
+        note.save()
+        field_8 = ApiField(attribute='author', null=True,
+                           default=original_author)
+        self.assertEqual(field_8.dehydrate(bundle), None)
 
     def test_convert(self):
         field_1 = ApiField()
@@ -308,6 +326,9 @@ class DecimalFieldTestCase(TestCase):
         field_2 = DecimalField(default='18.5')
         self.assertEqual(field_2.dehydrate(bundle), Decimal('18.5'))
 
+        field_3 = DecimalField(default=21.5)
+        self.assertEqual(field_3.dehydrate(bundle), Decimal('21.5'))
+
     def test_hydrate(self):
         bundle = Bundle(data={
             'decimal-y': '18.50',
@@ -318,6 +339,16 @@ class DecimalFieldTestCase(TestCase):
 
         field_2 = DecimalField(default='18.5')
         self.assertEqual(field_2.hydrate(bundle), Decimal('18.5'))
+
+        bundle = Bundle(data={'foo': '1.5'})
+        field_3 = DecimalField()
+        field_3.instance_name = 'foo'
+        self.assertEqual(field_3.hydrate(bundle), Decimal('1.5'))
+
+        bundle = Bundle(data={'foo': 'xxx'})
+        field_4 = DecimalField(attribute='foo')
+        field_4.instance_name = 'foo'
+        self.assertRaises(ApiFieldError, field_4.hydrate, bundle)
 
     def test_model_resource_correct_association(self):
         api_field = ModelResource.api_field_from_django_field(models.DecimalField())
@@ -489,8 +520,6 @@ class DateFieldTestCase(TestCase):
         self.assertEqual(field_3.dehydrate(bundle), datetime.date(2010, 4, 2))
 
     def test_hydrate(self):
-        note = Note.objects.get(pk=1)
-
         bundle_1 = Bundle(data={
             'date': '2010-05-12',
         })
@@ -524,6 +553,10 @@ class DateFieldTestCase(TestCase):
         field_5.instance_name = 'date'
         self.assertEqual(field_5.hydrate(bundle_5), None)
 
+    def test_model_resource_correct_association(self):
+        api_field = ModelResource.api_field_from_django_field(models.DateField())
+        self.assertEqual(api_field, DateField)
+
 
 class DateTimeFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
@@ -549,13 +582,15 @@ class DateTimeFieldTestCase(TestCase):
         field_2 = DateTimeField(default=aware_datetime(2010, 4, 1, 1, 7))
         self.assertEqual(field_2.dehydrate(bundle), aware_datetime(2010, 4, 1, 1, 7))
 
-        note.created_string = '2010-04-02 01:11:00'
         field_3 = DateTimeField(attribute='created_string')
-        self.assertEqual(field_3.dehydrate(bundle), aware_datetime(2010, 4, 2, 1, 11))
+
+        note.created_string = '2010-04-02T01:11:01'
+        self.assertEqual(field_3.dehydrate(bundle), aware_datetime(2010, 4, 2, 1, 11, 1))
+
+        note.created_string = '2010-04-02 01:11:02'
+        self.assertEqual(field_3.dehydrate(bundle), aware_datetime(2010, 4, 2, 1, 11, 2))
 
     def test_hydrate(self):
-        note = Note.objects.get(pk=1)
-
         bundle_1 = Bundle(data={
             'datetime': '2010-05-12 10:36:28',
         })
@@ -592,11 +627,19 @@ class DateTimeFieldTestCase(TestCase):
         field_6.instance_name = 'datetime'
         self.assertRaises(ApiFieldError, field_6.hydrate, bundle_6)
 
+    def test_model_resource_correct_association(self):
+        api_field = ModelResource.api_field_from_django_field(models.DateTimeField())
+        self.assertEqual(api_field, DateTimeField)
+
 
 class UserResource(ModelResource):
     class Meta:
         resource_name = 'users'
         queryset = User.objects.all()
+        filtering = {
+            'id': ALL,
+            'username': ALL,
+        }
 
     def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
         if bundle_or_obj is None:
@@ -657,7 +700,8 @@ class ToOneFieldTestCase(TestCase):
         field_6 = ToOneField(UserResource, 'author', default=1, null=True, readonly=True, help_text="Points to a User.", use_in="detail")
         self.assertEqual(field_6.use_in, 'detail')
 
-        use_in_callable = lambda x: True
+        def use_in_callable(x):
+            return True
         field_7 = ToOneField(UserResource, 'author', default=1, null=True, readonly=True, help_text="Points to a User.", use_in=use_in_callable)
         self.assertTrue(field_7.use_in is use_in_callable)
 
@@ -716,7 +760,7 @@ class ToOneFieldTestCase(TestCase):
         field_2 = ToManyField(UserResource, lambda bundle: User.objects.filter(pk=1))
         self.assertEqual(field_2.dehydrate(bundle), ['/api/v1/users/1/'])
 
-        field_3 = ToOneField(UserResource, lambda bundle:None)
+        field_3 = ToOneField(UserResource, lambda bundle: None)
         self.assertRaises(ApiFieldError, field_3.dehydrate, bundle)
 
     def test_dehydrate_full_detail_list(self):
@@ -724,12 +768,12 @@ class ToOneFieldTestCase(TestCase):
         request = MockRequest()
         bundle = Bundle(obj=note, request=request)
 
-        #details path with full_list=False
+        # details path with full_list=False
         request.path = "/api/v1/notes/"
         field_1 = ToOneField(UserResource, 'author', full=True, full_list=False)
         self.assertEqual(field_1.dehydrate(bundle), '/api/v1/users/1/')
 
-        #list path with full_detail=False
+        # list path with full_detail=False
         request.path = "/api/v1/notes/1/"
         field_1 = ToOneField(UserResource, 'author', full=True, full_detail=False)
         self.assertEqual(field_1.dehydrate(bundle, for_list=False), '/api/v1/users/1/')
@@ -752,6 +796,12 @@ class ToOneFieldTestCase(TestCase):
         self.assertEqual(field_2.hydrate(bundle), None)
 
         # Wrong resource URI.
+        field_3 = ToOneField(UserResource, 'author')
+        field_3.instance_name = 'fk'
+        bundle.data['fk'] = '/api/v1/users/123/'
+        self.assertRaises(ApiFieldError, field_3.hydrate, bundle)
+
+        # Wrong resource URI pk type.
         field_3 = ToOneField(UserResource, 'author')
         field_3.instance_name = 'fk'
         bundle.data['fk'] = '/api/v1/users/abc/'
@@ -814,12 +864,6 @@ class ToOneFieldTestCase(TestCase):
         fk_bundle = field_8.hydrate(bundle)
         self.assertEqual(field_8.hydrate(bundle), None)
         # Then use an unsaved object in the bundle also with ``null=True``.
-        new_note = Note(
-            title='Biplanes for all!',
-            slug='biplanes-for-all',
-            content='Somewhere, east of Manhattan, will lie the mythical land of planes with more one wing...'
-        )
-        new_bundle = Bundle(obj=new_note)
         field_9 = ToOneField(UserResource, 'author', null=True)
         field_9.instance_name = 'author'
         self.assertEqual(field_9.hydrate(bundle), None)
@@ -938,7 +982,6 @@ class MediaBitResource(ModelResource):
 
 class ToManyFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
-    urls = 'core.tests.field_urls'
 
     def setUp(self):
         self.note_1 = Note.objects.get(pk=1)
@@ -1012,7 +1055,8 @@ class ToManyFieldTestCase(TestCase):
         field_6 = ToManyField(SubjectResource, 'author', default=1, null=True, readonly=True, help_text="Points to a User.", use_in="detail")
         self.assertEqual(field_6.use_in, 'detail')
 
-        use_in_callable = lambda x: True
+        def use_in_callable(x):
+            return True
         field_7 = ToManyField(SubjectResource, 'author', default=1, null=True, readonly=True, help_text="Points to a User.", use_in=use_in_callable)
         self.assertTrue(field_7.use_in is use_in_callable)
 
@@ -1043,12 +1087,8 @@ class ToManyFieldTestCase(TestCase):
         field_1 = ToManyField(SubjectResource, 'subjects')
         field_1.instance_name = 'm2m'
 
-        try:
-            # self.assertRaises isn't cooperating here. Do it the hard way.
+        with self.assertRaises(ApiFieldError):
             field_1.dehydrate(bundle_1)
-            self.fail()
-        except ApiFieldError:
-            pass
 
         field_2 = ToManyField(SubjectResource, 'subjects', null=True)
         field_2.instance_name = 'm2m'
@@ -1087,18 +1127,17 @@ class ToManyFieldTestCase(TestCase):
         bundle_6 = Bundle(obj=self.note_3)
         self.assertEqual(field_6.dehydrate(bundle_6), [])
 
-        try:
-            # Regression for missing variable initialization.
-            field_7 = ToManyField(SubjectResource, None)
-            field_7.instance_name = 'm2m'
-            bundle_7 = Bundle(obj=self.note_3)
+        # Regression for missing variable initialization.
+        field_7 = ToManyField(SubjectResource, None)
+        field_7.instance_name = 'm2m'
+        bundle_7 = Bundle(obj=self.note_3)
+
+        with self.assertRaises(ApiFieldError):
+            # ToManyField requires an attribute of some type.
             field_7.dehydrate(bundle_7)
-            self.fail('ToManyField requires an attribute of some type.')
-        except ApiFieldError:
-            pass
 
     def test_dehydrate_full_detail_list(self):
-        #details path with full_detail=False
+        # details path with full_detail=False
         field_1 = ToManyField(SubjectResource, 'subjects', full=True, full_detail=False)
         field_1.instance_name = 'm2m'
         request = MockRequest()
@@ -1106,7 +1145,7 @@ class ToManyFieldTestCase(TestCase):
         bundle_1 = Bundle(obj=self.note_1, request=request)
         self.assertEqual(field_1.dehydrate(bundle_1, for_list=False), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
 
-        #list path with full_detail=False
+        # list path with full_detail=False
         field_2 = ToManyField(SubjectResource, 'subjects', full=True, full_detail=False)
         field_2.instance_name = 'm2m'
         request = MockRequest()
@@ -1125,7 +1164,7 @@ class ToManyFieldTestCase(TestCase):
         self.assertEqual(subject_bundle_list[1].obj.name, u'Photos')
         self.assertEqual(subject_bundle_list[1].obj.url, u'/photos/')
 
-        #list path with full_list=False
+        # list path with full_list=False
         field_3 = ToManyField(SubjectResource, 'subjects', full=True, full_list=False)
         field_3.instance_name = 'm2m'
         request = MockRequest()
@@ -1133,7 +1172,7 @@ class ToManyFieldTestCase(TestCase):
         bundle_3 = Bundle(obj=self.note_1, request=request)
         self.assertEqual(field_3.dehydrate(bundle_3), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
 
-        #detail path with full_list=False
+        # detail path with full_list=False
         field_4 = ToManyField(SubjectResource, 'subjects', full=True, full_list=False)
         field_4.instance_name = 'm2m'
         request = MockRequest()
@@ -1152,7 +1191,7 @@ class ToManyFieldTestCase(TestCase):
         self.assertEqual(subject_bundle_list[1].obj.name, u'Photos')
         self.assertEqual(subject_bundle_list[1].obj.url, u'/photos/')
 
-        #list url with callable returning True
+        # list url with callable returning True
         field_5 = ToManyField(SubjectResource, 'subjects', full=True, full_list=lambda x: True)
         field_5.instance_name = 'm2m'
         request = MockRequest()
@@ -1171,7 +1210,7 @@ class ToManyFieldTestCase(TestCase):
         self.assertEqual(subject_bundle_list[1].obj.name, u'Photos')
         self.assertEqual(subject_bundle_list[1].obj.url, u'/photos/')
 
-        #list url with callable returning False
+        # list url with callable returning False
         field_6 = ToManyField(SubjectResource, 'subjects', full=True, full_list=lambda x: False)
         field_6.instance_name = 'm2m'
         request = MockRequest()
@@ -1179,7 +1218,7 @@ class ToManyFieldTestCase(TestCase):
         bundle_6 = Bundle(obj=self.note_1, request=request)
         self.assertEqual(field_6.dehydrate(bundle_6), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
 
-        #detail url with callable returning True
+        # detail url with callable returning True
         field_7 = ToManyField(SubjectResource, 'subjects', full=True, full_detail=lambda x: True)
         field_7.instance_name = 'm2m'
         request = MockRequest()
@@ -1198,7 +1237,7 @@ class ToManyFieldTestCase(TestCase):
         self.assertEqual(subject_bundle_list[1].obj.name, u'Photos')
         self.assertEqual(subject_bundle_list[1].obj.url, u'/photos/')
 
-        #detail url with callable returning False
+        # detail url with callable returning False
         field_8 = ToManyField(SubjectResource, 'subjects', full=True, full_detail=lambda x: False)
         field_8.instance_name = 'm2m'
         request = MockRequest()
@@ -1206,7 +1245,7 @@ class ToManyFieldTestCase(TestCase):
         bundle_8 = Bundle(obj=self.note_1, request=request)
         self.assertEqual(field_8.dehydrate(bundle_8, for_list=False), ['/api/v1/subjects/1/', '/api/v1/subjects/2/'])
 
-        #detail url with full_detail=True and get parameters
+        # detail url with full_detail=True and get parameters
         field_9 = ToManyField(SubjectResource, 'subjects', full=True, full_detail=True)
         field_9.instance_name = 'm2m'
         request = HttpRequest()
@@ -1229,7 +1268,6 @@ class ToManyFieldTestCase(TestCase):
         self.assertEqual(subject_bundle_list[1].obj.url, u'/photos/')
 
     def test_dehydrate_with_callable(self):
-        note = Note()
         bundle_1 = Bundle(obj=self.note_2)
         field_1 = ToManyField(SubjectResource, attribute=lambda bundle: Subject.objects.filter(notes=bundle.obj, name__startswith='Personal'))
         field_1.instance_name = 'm2m'
@@ -1257,6 +1295,12 @@ class ToManyFieldTestCase(TestCase):
         self.assertEqual(field_3.hydrate_m2m(bundle_3), [])
 
         # Wrong resource URI.
+        field_4 = ToManyField(SubjectResource, 'subjects')
+        field_4.instance_name = 'm2m'
+        bundle_4 = Bundle(data={'m2m': ['/api/v1/subjects/123/']})
+        self.assertRaises(ApiFieldError, field_4.hydrate_m2m, bundle_4)
+
+        # Wrong resource URI pk type.
         field_4 = ToManyField(SubjectResource, 'subjects')
         field_4.instance_name = 'm2m'
         bundle_4 = Bundle(data={'m2m': ['/api/v1/subjects/abc/']})

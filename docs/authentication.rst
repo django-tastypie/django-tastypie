@@ -94,10 +94,10 @@ Tastypie includes a signal function you can use to auto-create ``ApiKey``
 objects. Hooking it up looks like::
 
     from django.contrib.auth.models import User
-    from django.db import models
+    from django.db.models import signals
     from tastypie.models import create_api_key
 
-    models.signals.post_save.connect(create_api_key, sender=User)
+    signals.post_save.connect(create_api_key, sender=User)
 
 .. warning::
 
@@ -114,7 +114,7 @@ objects. Hooking it up looks like::
 
 .. _`this post`: http://www.nerdydork.com/basic-authentication-on-mod_wsgi.html
 .. _`abstract base class`: https://docs.djangoproject.com/en/dev/topics/db/models/#abstract-base-classes
-.. _`the documentation for this setting`: http://django-tastypie.readthedocs.org/en/latest/settings.html#tastypie-abstract-apikey
+.. _`the documentation for this setting`: https://django-tastypie.readthedocs.io/en/latest/settings.html#tastypie-abstract-apikey
 
 ``SessionAuthentication``
 ~~~~~~~~~~~~~~~~~~~~~~~~~

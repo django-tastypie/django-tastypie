@@ -1,5 +1,2 @@
 python-dateutil>=2.1
-
-# Because the official 0.1.4 release (that added Py3 support) HAS NO FILES.
-# mimeparse>=0.1.3
 python-mimeparse>=0.1.4

@@ -1,0 +1,27 @@
+v0.13.2
+=======
+
+:date: 2016-02-14
+
+Bugfixes
+--------
+
+* Fix in `Resource.save_related`: `related_obj` can  be empty in patch requests (introduced in #1378). (Fixes #1436)
+* Fixed bug that prevented fitlering on related resources. `apply_filters` hook now used in obj_get. (Fixes #1435, Fixes #1443)
+* Use `build_filters` in `obj_get`. (Fixes #1444)
+* Updated DjangoAuthorization to disallow read unless a user has `change` permission. (#1407, PR #1409)
+* Authorization classes now handle usernames containing spaces. Closes #966.
+* Cleaned up old, unneeded code. (closes PR #1433)
+    * Reuse Django test `Client.patch()`. (@SeanHayes, closes #1442)
+    * Just a typo fix in the testing docs (by @bezidejni, closes #810)
+    * Removed references to patterns() (by @SeanHayes, closes #1437)
+    * Removed deprecated methods `Resource.apply_authorization_limits` and `Authorization.apply_limits` from code and documentation. (by @SeanHayes, closes #1383, #1045, #1284, #837)
+    * Updates docs/cookbook.rst to make sure it's clear which `url` to import. (by @yuvadm, closes #716)
+    * Updated docs/tutorial.rst. Without "null=True, blank=True" parameters in Slugfield, expecting "automatic slug generation" in save method is pointless. (by @orges, closes #753)
+    * Cleaned up Riak docs. (by @SeanHayes, closes #275)
+    * Include import statement for trailing_slash. (by @ljosa, closes #770)
+    * Fix docs: `Meta.filtering` is actually a dict. (by @georgedorn, closes #807)
+    * Fix load data command. (by @blite, closes #357, #358)
+* Related schemas no longer raise error when not URL accessible. (Fixes PR #1439)
+* Avoid modifying Field instances during request/response cycle. (closes #1415)
+* Removing the Manager dependency in ToManyField.dehydrate(). (Closes #537)

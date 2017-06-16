@@ -86,6 +86,24 @@ Contributors:
 * Steven Davidson (damycra) for a documentation patch.
 * Harish Srinivas for a minor bug fix that raises an exception if a given related resource is none.
 * Miguel Carranza (MiguelCarranza) for patching 'filter_value_to_python' to support __in filters in kwargs.
+* Renjith Thankachan for a patch that fixes `django.utils.importlib` error in Django 1.9+ release.
+* Sean Hayes (SeanHayes) for test suite and CI enhancements, various patches
+* Michael Thornhill (mthornhill) for strict dict checking bugfix
+* Fedor Baart (siggyf) for an update on the serializer
+* Alexey Kotlyarov (koterpillar) - fixing DateField/DateTimeField.
+* Yuri Govorushchenko (metametadata) for documentation fixes.
+* Guilhem Saurel (Nim65s) for a minor issue with Django 1.9
+* Jack Cushman (jcushman) for converting ResourceTestCase to ResourceTestCaseMixin.
+* John Lucas (jlucas91) for an improvement to the response for requests with invalid JSON.
+* Judit Novak (juditnovak) for related schema updates
+* Mike Bryant (mikebryant) for unit tests
+* Maxim Filipenko (prokaktus) for changing repr value to str in Python 2
+* Thomas Yip (thomasyip) PR #1409
+* Sam Thompson(georgedorn) for fixing some docs and tests.
+* Matt Cooper (vtbassmatt) for making ApiKey better in Python 3
+* Nick Sullivan (gorillamania) for admin improvements.
+* Danny Roberts (dannyroberts) for very small change addressing noisy RemovedInDjango20Warning warnings
+
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 

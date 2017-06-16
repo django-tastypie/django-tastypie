@@ -1,20 +1,17 @@
-try:
-    from django.conf.urls import *
-except ImportError: # Django < 1.4
-    from django.conf.urls.defaults import *
-
 from tastypie.api import Api
 
-from related_resource.api.resources import NoteResource, UserResource, \
-        CategoryResource, TagResource, TaggableTagResource, TaggableResource, \
-        ExtraDataResource, FreshNoteResource, FreshMediaBitResource, \
-        ForumResource, CompanyResource, ProductResource, AddressResource, \
-        PersonResource, DogResource, DogHouseResource, BoneResource
+from related_resource.api.resources import NoteResource, UserResource,\
+    CategoryResource, TagResource, TaggableTagResource, TaggableResource,\
+    ExtraDataResource, FreshNoteResource, FreshMediaBitResource,\
+    ForumResource, CompanyResource, ProductResource, AddressResource,\
+    PersonResource, DogResource, DogHouseResource, BoneResource,\
+    LabelResource, PostResource, OrderResource, OrderItemResource,\
+    NoteWithUpdatableUserResource, ContactResource, ContactGroupResource
 
-from tests.related_resource.api.resources import LabelResource, PostResource
 
 api = Api(api_name='v1')
 api.register(NoteResource(), canonical=True)
+api.register(NoteWithUpdatableUserResource(), canonical=True)
 api.register(UserResource(), canonical=True)
 api.register(CategoryResource(), canonical=True)
 api.register(TagResource(), canonical=True)
@@ -33,5 +30,9 @@ api.register(DogHouseResource(), canonical=True)
 api.register(BoneResource(), canonical=True)
 api.register(PostResource(), canonical=True)
 api.register(LabelResource(), canonical=True)
+api.register(OrderResource(), canonical=True)
+api.register(OrderItemResource(), canonical=True)
+api.register(ContactResource(), canonical=True)
+api.register(ContactGroupResource(), canonical=True)
 
 urlpatterns = api.urls

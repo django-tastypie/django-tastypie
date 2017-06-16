@@ -8,17 +8,7 @@ arrIN=(${VERSION//./ })
 major=${arrIN[0]}
 minor=${arrIN[1]}
 
-#Don't run customuser tests if django's version is less than 1.5.
-if [ $major -lt '2' -a $minor -lt '5' ]; then
-  ALL="core basic alphanumeric slashless namespaced related validation gis content_gfk authorization"
-else
-  ALL="core customuser basic alphanumeric slashless namespaced related validation gis content_gfk authorization"
-fi
-
-test_module='.tests'
-if [ $major -lt '2' -a $minor -lt '6' ]; then
-  test_module=''
-fi
+ALL="core customuser basic alphanumeric slashless namespaced related validation gis gis_spatialite content_gfk authorization"
 
 if [ $# -eq 0 ]; then
     PYTESTPATHS=$ALL
@@ -33,19 +23,25 @@ for pytestpath in $PYTESTPATHS; do
     
     echo "** $type **"
     module_name=$type
-
+    
     if [ $type == 'related' ]; then
         module_name=${module_name}_resource
-    elif [ $type == 'gis' ]; then
-        createdb -T template_postgis tastypie.db
-        spatialite tastypie-spatialite.db "SELECT InitSpatialMetaData();"
+    elif [ $type == 'gis_spatialite' ]; then
+        module_name='gis'
     fi
     
     test_name=$module_name
     if [ -n "$type_remainder" ]; then
         test_name=$test_name.$type_remainder
     fi
-
-    ./manage_$type.py test $test_name$test_module --traceback
+    
+    if [ $type == 'gis' ]; then
+        createdb -T template_postgis tastypie.db
+    elif [ $type == 'gis_spatialite' ]; then
+        spatialite tastypie-spatialite.db "SELECT InitSpatialMetaData();"
+    fi
+    
+    echo "./manage_$type.py test $test_name.tests --traceback -t $test_name"
+    ./manage_$type.py test $test_name.tests --traceback -t $test_name
     echo; echo
 done

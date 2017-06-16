@@ -69,7 +69,7 @@ Here is what it looks like::
 drest
 -----
 
-http://drest.rtfd.org/
+https://drest.readthedocs.io/
 
 drest is another small Python library. It focuses on extensibility & can also
 work with many different API, with an emphasis on Tastypie.

@@ -1,0 +1,14 @@
+v0.12.2
+=======
+
+:date: 2015-07-16
+
+Dropped Python 2.6 support, added Django 1.8.
+
+
+Bugfixes
+--------
+
+* Dropped support for Python 2.6
+* Added support for Django 1.8
+* Fix stale data caused by prefetch_related cache (SHA: b78661d)

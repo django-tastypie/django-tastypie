@@ -1,11 +1,9 @@
-from __future__ import with_statement
-
 from django.test import TestCase
+
 from tastypie.contrib.contenttypes.fields import GenericForeignKeyField
-from tastypie.bundle import Bundle
-from content_gfk.models import Note, Quote, Rating, Definition
-from content_gfk.api.resources import NoteResource, DefinitionResource, \
-    QuoteResource, RatingResource
+
+from content_gfk.models import Note, Quote, Definition
+from content_gfk.api.resources import NoteResource, QuoteResource
 
 
 class ContentTypeFieldTestCase(TestCase):

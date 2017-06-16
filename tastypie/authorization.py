@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
-from tastypie.exceptions import TastypieError, Unauthorized
+
+from tastypie.exceptions import Unauthorized
 from tastypie.compat import get_module_name
+
 
 class Authorization(object):
     """
@@ -14,14 +16,6 @@ class Authorization(object):
         """
         self.resource_meta = instance
         return self
-
-    def apply_limits(self, request, object_list):
-        """
-        Deprecated.
-
-        FIXME: REMOVE BEFORE 1.0
-        """
-        raise TastypieError("Authorization classes no longer support `apply_limits`. Please update to using `read_list`.")
 
     def read_list(self, object_list, bundle):
         """
@@ -137,6 +131,12 @@ class DjangoAuthorization(Authorization):
     Both the list & detail variants simply check the model they're based
     on, as that's all the more granular Django's permission setup gets.
     """
+
+    # By default, following `ModelAdmin` "convention", `app.change_model` is used
+    # `django.contrib.auth.models.Permission` as perm code for viewing and updating.
+    # https://docs.djangoproject.com/es/1.9/topics/auth/default/#permissions-and-authorization
+    READ_PERM_CODE = 'change'
+
     def base_checks(self, request, model_klass):
         # If it doesn't look like a model, we can't check permissions.
         if not model_klass or not getattr(model_klass, '_meta', None):
@@ -148,98 +148,61 @@ class DjangoAuthorization(Authorization):
 
         return model_klass
 
-    def read_list(self, object_list, bundle):
-        klass = self.base_checks(bundle.request, object_list.model)
+    def check_user_perm(self, user, permission, obj_or_list):
+        return user.has_perm(permission)
 
+    def perm_list_checks(self, request, code, obj_list):
+        klass = self.base_checks(request, obj_list.model)
         if klass is False:
             return []
 
-        # GET-style methods are always allowed.
-        return object_list
+        permission = '%s.%s_%s' % (
+            klass._meta.app_label,
+            code,
+            get_module_name(klass._meta)
+        )
+
+        if self.check_user_perm(request.user, permission, obj_list):
+            return obj_list
+
+        return obj_list.none()
+
+    def perm_obj_checks(self, request, code, obj):
+        klass = self.base_checks(request, obj.__class__)
+        if klass is False:
+            raise Unauthorized("You are not allowed to access that resource.")
+
+        permission = '%s.%s_%s' % (
+            klass._meta.app_label,
+            code,
+            get_module_name(klass._meta)
+        )
+
+        if self.check_user_perm(request.user, permission, obj):
+            return True
+
+        raise Unauthorized("You are not allowed to access that resource.")
+
+    def read_list(self, object_list, bundle):
+        return self.perm_list_checks(bundle.request, self.READ_PERM_CODE, object_list)
 
     def read_detail(self, object_list, bundle):
-        klass = self.base_checks(bundle.request, bundle.obj.__class__)
-
-        if klass is False:
-            raise Unauthorized("You are not allowed to access that resource.")
-
-        # GET-style methods are always allowed.
-        return True
+        return self.perm_obj_checks(bundle.request, self.READ_PERM_CODE, bundle.obj)
 
     def create_list(self, object_list, bundle):
-        klass = self.base_checks(bundle.request, object_list.model)
-
-        if klass is False:
-            return []
-
-        permission = '%s.add_%s' % (klass._meta.app_label, get_module_name(klass._meta))
-
-        if not bundle.request.user.has_perm(permission):
-            return []
-
-        return object_list
+        return self.perm_list_checks(bundle.request, 'add', object_list)
 
     def create_detail(self, object_list, bundle):
-        klass = self.base_checks(bundle.request, bundle.obj.__class__)
-
-        if klass is False:
-            raise Unauthorized("You are not allowed to access that resource.")
-
-        permission = '%s.add_%s' % (klass._meta.app_label, get_module_name(klass._meta))
-
-        if not bundle.request.user.has_perm(permission):
-            raise Unauthorized("You are not allowed to access that resource.")
-
-        return True
+        return self.perm_obj_checks(bundle.request, 'add', bundle.obj)
 
     def update_list(self, object_list, bundle):
-        klass = self.base_checks(bundle.request, object_list.model)
-
-        if klass is False:
-            return []
-
-        permission = '%s.change_%s' % (klass._meta.app_label, get_module_name(klass._meta))
-
-        if not bundle.request.user.has_perm(permission):
-            return []
-
-        return object_list
+        return self.perm_list_checks(bundle.request, 'change', object_list)
 
     def update_detail(self, object_list, bundle):
-        klass = self.base_checks(bundle.request, bundle.obj.__class__)
-
-        if klass is False:
-            raise Unauthorized("You are not allowed to access that resource.")
-
-        permission = '%s.change_%s' % (klass._meta.app_label, get_module_name(klass._meta))
-
-        if not bundle.request.user.has_perm(permission):
-            raise Unauthorized("You are not allowed to access that resource.")
-
-        return True
+        return self.perm_obj_checks(bundle.request, 'change', bundle.obj)
 
     def delete_list(self, object_list, bundle):
-        klass = self.base_checks(bundle.request, object_list.model)
-
-        if klass is False:
-            return []
-
-        permission = '%s.delete_%s' % (klass._meta.app_label, get_module_name(klass._meta))
-
-        if not bundle.request.user.has_perm(permission):
-            return []
-
-        return object_list
+        return self.perm_list_checks(bundle.request, 'delete', object_list)
 
     def delete_detail(self, object_list, bundle):
-        klass = self.base_checks(bundle.request, bundle.obj.__class__)
-
-        if klass is False:
-            raise Unauthorized("You are not allowed to access that resource.")
-
-        permission = '%s.delete_%s' % (klass._meta.app_label, get_module_name(klass._meta))
-
-        if not bundle.request.user.has_perm(permission):
-            raise Unauthorized("You are not allowed to access that resource.")
-
-        return True
+        return self.perm_obj_checks(bundle.request, 'delete', bundle.obj)

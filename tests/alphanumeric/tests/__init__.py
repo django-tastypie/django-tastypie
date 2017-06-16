@@ -1,2 +1,1 @@
-from alphanumeric.tests.views import *
-from alphanumeric.tests.http import *
+from alphanumeric.tests.views import *  # flake8: noqa

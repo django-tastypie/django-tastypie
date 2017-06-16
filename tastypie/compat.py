@@ -1,31 +1,32 @@
 from __future__ import unicode_literals
-from django.conf import settings
+
 import django
+from django.conf import settings
+from django.contrib.auth import get_user_model  # flake8: noqa
 
 __all__ = ['get_user_model', 'get_username_field', 'AUTH_USER_MODEL']
 
-AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
-# Django 1.5+ compatibility
-if django.VERSION >= (1, 5):
-    def get_user_model():
-        from django.contrib.auth import get_user_model as django_get_user_model
+AUTH_USER_MODEL = settings.AUTH_USER_MODEL
 
-        return django_get_user_model()
 
-    def get_username_field():
-        return get_user_model().USERNAME_FIELD
-else:
-    def get_user_model():
-        from django.contrib.auth.models import User
+def get_username_field():
+    return get_user_model().USERNAME_FIELD
 
-        return User
-
-    def get_username_field():
-        return 'username'
 
 def get_module_name(meta):
-    return getattr(meta, 'model_name', None) or getattr(meta, 'module_name')
+    return meta.model_name
 
-# commit_on_success replaced by atomic in Django >=1.8
-atomic_decorator = getattr(django.db.transaction, 'atomic', None) or getattr(django.db.transaction, 'commit_on_success')
+
+atomic_decorator = django.db.transaction.atomic
+
+# Compatability for salted vs unsalted CSRF tokens;
+# Django 1.10's _sanitize_token also hashes it, so it can't be compared directly.
+# Solution is to call _sanitize_token on both tokens, then unsalt or noop both
+try:
+    from django.middleware.csrf import _unsalt_cipher_token
+    def unsalt_token(token):
+        return _unsalt_cipher_token(token)
+except ImportError:
+    def unsalt_token(token):
+        return token

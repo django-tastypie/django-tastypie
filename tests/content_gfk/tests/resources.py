@@ -9,11 +9,9 @@ class GenericResourceTestCase(TestCase):
     def setUp(self):
         self.resource = GenericResource([NoteResource, DefinitionResource])
 
-
     def test_bad_uri(self):
         bad_uri = '/bad_uri/'
         self.assertRaises(NotFound, self.resource.get_via_uri, bad_uri)
-
 
     def test_resource_not_registered(self):
         bad_uri = '/api/v1/quotes/1/'

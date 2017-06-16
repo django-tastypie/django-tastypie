@@ -24,15 +24,16 @@ class NoteForm(forms.Form):
 
 
 class ValidationTestCase(TestCase):
-    def test_init(self):
+    def test_init_no_args(self):
         try:
-            valid = Validation()
-        except Exception as e:
+            Validation()
+        except Exception:
             self.fail("Initialization failed when it should have succeeded.")
 
+    def test_init_form_class_provided(self):
         try:
-            valid = Validation(form_class='foo')
-        except Exception as e:
+            Validation(form_class='foo')
+        except Exception:
             self.fail("Initialization failed when it should have succeeded again.")
 
     def test_is_valid(self):
@@ -50,12 +51,13 @@ class ValidationTestCase(TestCase):
 
 
 class FormValidationTestCase(TestCase):
-    def test_init(self):
+    def test_init_no_args(self):
         self.assertRaises(ImproperlyConfigured, FormValidation)
 
+    def test_init_form_class_provided(self):
         try:
-            valid = FormValidation(form_class=NoteForm)
-        except Exception as e:
+            FormValidation(form_class=NoteForm)
+        except Exception:
             self.fail("Initialization failed when it should have succeeded.")
 
     def test_is_valid(self):
@@ -101,12 +103,13 @@ class FormValidationTestCase(TestCase):
 
 
 class CleanedDataFormValidationTestCase(TestCase):
-    def test_init(self):
+    def test_init_no_args(self):
         self.assertRaises(ImproperlyConfigured, CleanedDataFormValidation)
 
+    def test_init_form_class_provided(self):
         try:
-            valid = CleanedDataFormValidation(form_class=NoteForm)
-        except Exception as e:
+            CleanedDataFormValidation(form_class=NoteForm)
+        except Exception:
             self.fail("Initialization failed when it should have succeeded.")
 
     def test_is_valid(self):

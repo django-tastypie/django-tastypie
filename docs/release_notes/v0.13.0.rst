@@ -1,0 +1,41 @@
+v0.13.0
+=======
+
+:date: 2016-01-12
+
+Dropped Django 1.5-1.6 support, added Django 1.9.
+
+
+Bugfixes
+--------
+
+* Various performance improvements (#1330, #1335, #1337, #1363)
+* More descriptive error messages (#1201)
+* Throttled requests now include Retry-After header. (#1204)
+* In DecimalField.hydrate, catch decimal.InvalidOperation and raise ApiFieldError (#862)
+* Add 'primary_key' Field To Schema (#1141)
+* ContentTypes: Remove 'return' in __init__; remove redundant parentheses (#1090)
+* Allow callable strings for ToOneField.attribute (#1193)
+* Ensure Tastypie doesn't return extra data it received (#1169)
+* In DecimalField.hydrate, catch decimal.InvalidOperation and raise ApiFieldError (#862)
+* Fixed tastypie's losing received microseconds. (#1126)
+* Data leakage fix (#1203)
+* Ignore extra related data (#1336)
+* Suppress Content-Type header on HTTP 204 (see #111) (#1054)
+* Allow creation of related resources that have an 'items' related_name (supercedes #1000) (#1340)
+* Serializers: remove unimplemented to_html/from_html (#1343)
+* If GEOS is not installed then exclude geos related calls. (#1348)
+* Fixed Resource.deserialize() to honor format parameter (#1354 #1356, #1358)
+* Raise ValueError when trying to register a Resource class instead of a Resource instance. (#1361)
+* Fix hydrating/saving of related resources. (#1363)
+* Use Tastypie DateField for DateField on the model. (SHA: b248e7f)
+* ApiFieldError on empty non-null field (#1208)
+* Full schema (all schemas in a single request) (#1207)
+* Added verbose_name to API schema. (#1370)
+* Fixes Reverse One to One Relationships (Replaces #568) (#1378)
+* Fixed "GIS importerror vs improperlyconfigured" (#1384)
+* Fixed bug which occurs when detail_uri_name field has a default value (Issue #1323) (#1387)
+* Fixed disabling cache using timeout=0, fixes #1213, #1212 (#1399)
+* Removed Django 1.5-1.6 support, added 1.9 support. (#1400)
+* stop using django.conf.urls.patterns (#1402)
+* Fix for saving related items when resource_uri is provided but other unique data is not. (#1394) (#1410)

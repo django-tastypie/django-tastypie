@@ -14,7 +14,7 @@ class UserResource(ModelResource):
 
 class NoteResource(ModelResource):
     user = fields.ForeignKey(UserResource, 'user')
-    
+
     class Meta:
         resource_name = 'notes'
         queryset = Note.objects.all()

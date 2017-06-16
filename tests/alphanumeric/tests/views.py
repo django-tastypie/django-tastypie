@@ -1,17 +1,12 @@
-import django
-from django.http import HttpRequest
 import json
+
+from django.http import HttpRequest
+from django.test.utils import override_settings
+
 from testcases import TestCaseWithFixture
 
 
 class ViewsTestCase(TestCaseWithFixture):
-    def setUp(self):
-        if django.VERSION >= (1, 4):
-            self.body_attr = "body"
-        else:
-            self.body_attr = "raw_post_data"
-        super(ViewsTestCase, self).setUp()
-
     def test_gets(self):
         resp = self.client.get('/api/v1/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
@@ -26,7 +21,7 @@ class ViewsTestCase(TestCaseWithFixture):
         self.assertEqual(deserialized['meta']['limit'], 20)
         self.assertEqual(len(deserialized['objects']), 7)
         self.assertEqual([obj['name'] for obj in deserialized['objects']],
-                         [u'Skateboardrampe', u'Bigwheel', u'Trampolin', u'Laufrad', u'Bigwheel', u'Human Hamsterball', u'Ant Farm'])
+            [u'Skateboardrampe', u'Bigwheel', u'Trampolin', u'Laufrad', u'Bigwheel', u'Human Hamsterball', u'Ant Farm'])
 
         resp = self.client.get('/api/v1/products/11111/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
@@ -88,8 +83,8 @@ class ViewsTestCase(TestCaseWithFixture):
         deserialized = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(len(deserialized), 5)
         self.assertEqual(deserialized['name'], u'Ant Farm')
-        
-        #slashes, and more dots
+
+        # slashes, and more dots
         resp = self.client.get('/api/v1/products/set/76123/01;WS77.86/', data={'format': 'json'})
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content.decode('utf-8'))
@@ -97,16 +92,14 @@ class ViewsTestCase(TestCaseWithFixture):
         self.assertEqual(len(deserialized['objects']), 2)
         self.assertEqual([obj['name'] for obj in deserialized['objects']], [u'Bigwheel', u'Ant Farm'])
 
-
-
     def test_posts(self):
         request = HttpRequest()
         post_data = '{"name": "Ball", "artnr": "12345"}'
-        setattr(request, "_" + self.body_attr, post_data)
+        request._body = post_data
 
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp['location'], 'http://testserver/api/v1/products/12345/')
+        self.assertTrue(resp['location'].endswith('/api/v1/products/12345/'))
 
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/12345/', data={'format': 'json'})
@@ -118,11 +111,11 @@ class ViewsTestCase(TestCaseWithFixture):
         # With appended characters
         request = HttpRequest()
         post_data = '{"name": "Ball 2", "artnr": "12345ABC"}'
-        setattr(request, "_" + self.body_attr, post_data)
+        request._body = post_data
 
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp['location'], 'http://testserver/api/v1/products/12345ABC/')
+        self.assertTrue(resp['location'].endswith('/api/v1/products/12345ABC/'))
 
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/12345ABC/', data={'format': 'json'})
@@ -134,11 +127,11 @@ class ViewsTestCase(TestCaseWithFixture):
         # With prepended characters
         request = HttpRequest()
         post_data = '{"name": "Ball 3", "artnr": "WK12345"}'
-        setattr(request, "_" + self.body_attr, post_data)
+        request._body = post_data
 
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp['location'], 'http://testserver/api/v1/products/WK12345/')
+        self.assertTrue(resp['location'].endswith('/api/v1/products/WK12345/'))
 
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/WK12345/', data={'format': 'json'})
@@ -150,11 +143,11 @@ class ViewsTestCase(TestCaseWithFixture):
         # Now Primary Keys with Slashes
         request = HttpRequest()
         post_data = '{"name": "Bigwheel", "artnr": "76123/03"}'
-        setattr(request, "_" + self.body_attr, post_data)
+        request._body = post_data
 
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp['location'], 'http://testserver/api/v1/products/76123/03/')
+        self.assertTrue(resp['location'].endswith('/api/v1/products/76123/03/'))
 
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/76123/03/', data={'format': 'json'})
@@ -165,11 +158,11 @@ class ViewsTestCase(TestCaseWithFixture):
 
         request = HttpRequest()
         post_data = '{"name": "Trampolin", "artnr": "WS65150/02"}'
-        setattr(request, "_" + self.body_attr, post_data)
+        request._body = post_data
 
         resp = self.client.post('/api/v1/products/', data=post_data, content_type='application/json')
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp['location'], 'http://testserver/api/v1/products/WS65150/02/')
+        self.assertTrue(resp['location'].endswith('/api/v1/products/WS65150/02/'))
 
         # make sure posted object exists
         resp = self.client.get('/api/v1/products/WS65150/02/', data={'format': 'json'})
@@ -177,3 +170,108 @@ class ViewsTestCase(TestCaseWithFixture):
         obj = json.loads(resp.content.decode('utf-8'))
         self.assertEqual(obj['name'], 'Trampolin')
         self.assertEqual(obj['artnr'], 'WS65150/02')
+
+
+@override_settings(DEBUG=True)
+class MoreViewsTestCase(TestCaseWithFixture):
+    def test_get_apis_json(self):
+        response = self.client.get('/api/v1/', HTTP_ACCEPT='application/json')
+        data = response.content.decode('utf-8')
+        self.assertEqual(response.status_code, 200, data)
+        self.assertEqual(data, '{"products": {"list_endpoint": "/api/v1/products/", "schema": "/api/v1/products/schema/"}}')
+
+    def test_get_apis_xml(self):
+        response = self.client.get('/api/v1/', HTTP_ACCEPT='application/xml')
+        data = response.content.decode('utf-8')
+        self.assertEqual(response.status_code, 200, data)
+        self.assertEqual(data, '<?xml version=\'1.0\' encoding=\'utf-8\'?>\n<response><products type="hash"><list_endpoint>/api/v1/products/</list_endpoint><schema>/api/v1/products/schema/</schema></products></response>')
+
+    def test_get_list(self):
+        response = self.client.get('/api/v1/products/', HTTP_ACCEPT='application/json')
+        data = response.content.decode('utf-8')
+        self.assertEqual(response.status_code, 200, data)
+        expected = {
+            'meta': {
+                'previous': None,
+                'total_count': 7,
+                'offset': 0,
+                'limit': 20,
+                'next': None
+            },
+            'objects': [
+                {
+                    'updated': '2010-03-30T20:05:00',
+                    'resource_uri': '/api/v1/products/11111/',
+                    'name': 'Skateboardrampe',
+                    'artnr': '11111',
+                    'created': '2010-03-30T20:05:00'
+                },
+                {
+                    'updated': '2010-05-04T20:05:00',
+                    'resource_uri': '/api/v1/products/76123/',
+                    'name': 'Bigwheel',
+                    'artnr': '76123',
+                    'created': '2010-05-04T20:05:00'
+                },
+                {
+                    'updated': '2010-05-04T20:05:00',
+                    'resource_uri': '/api/v1/products/WS65150-01/',
+                    'name': 'Trampolin',
+                    'artnr': 'WS65150-01',
+                    'created': '2010-05-04T20:05:00'
+                },
+                {
+                    'updated': '2010-05-04T20:05:00',
+                    'resource_uri': '/api/v1/products/65100A-01/',
+                    'name': 'Laufrad',
+                    'artnr': '65100A-01',
+                    'created': '2010-05-04T20:05:00'
+                },
+                {
+                    'updated': '2010-05-04T20:05:00',
+                    'resource_uri': '/api/v1/products/76123/01/',
+                    'name': 'Bigwheel',
+                    'artnr': '76123/01',
+                    'created': '2010-05-04T20:05:00'
+                },
+                {
+                    'updated': '2010-05-04T20:05:00',
+                    'resource_uri': '/api/v1/products/WS65150/01-01/',
+                    'name': 'Human Hamsterball',
+                    'artnr': 'WS65150/01-01',
+                    'created': '2010-05-04T20:05:00'
+                },
+                {
+                    'updated': '2010-05-04T20:05:00',
+                    'resource_uri': '/api/v1/products/WS77.86/',
+                    'name': 'Ant Farm',
+                    'artnr': 'WS77.86',
+                    'created': '2010-05-04T20:05:00'
+                }
+            ]
+        }
+
+        resp = json.loads(data)
+
+        # testing separately to help locate issues
+        self.assertEqual(resp['meta'], expected['meta'])
+        self.assertEqual(resp['objects'], expected['objects'])
+
+    def test_post_object(self):
+        post_data = '{"artnr": "A76124/03", "name": "Bigwheel XXL"}'
+        response = self.client.post('/api/v1/products/', data=post_data, HTTP_ACCEPT='application/json', content_type='application/json')
+        data = response.content.decode('utf-8')
+        self.assertEqual(response.status_code, 201, data)
+        location = response['Location']
+        self.assertTrue(location.endswith('/api/v1/products/A76124/03/'))
+
+        # make sure posted object exists
+        response = self.client.get('/api/v1/products/A76124/03/', HTTP_ACCEPT='application/json')
+
+        data = response.content.decode('utf-8')
+        self.assertEqual(response.status_code, 200, data)
+
+        obj = json.loads(data)
+
+        self.assertEqual(obj['name'], 'Bigwheel XXL')
+        self.assertEqual(obj['artnr'], 'A76124/03')

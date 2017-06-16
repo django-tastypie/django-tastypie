@@ -45,7 +45,7 @@ We'll assume that we're interacting with the following Tastypie code::
 
 
     # urls.py
-    from django.conf.urls.defaults import *
+    from django.conf.urls import url, include
     from tastypie.api import Api
     from myapp.api.resources import EntryResource, UserResource
 
@@ -53,11 +53,11 @@ We'll assume that we're interacting with the following Tastypie code::
     v1_api.register(UserResource())
     v1_api.register(EntryResource())
 
-    urlpatterns = patterns('',
+    urlpatterns = [
         # The normal jazz here...
-        (r'^blog/', include('myapp.urls')),
-        (r'^api/', include(v1_api.urls)),
-    )
+        url(r'^blog/', include('myapp.urls')),
+        url(r'^api/', include(v1_api.urls)),
+    ]
 
 Let's fire up a shell & start exploring the API!
 
@@ -139,6 +139,34 @@ To which you'd receive::
 We'll stick to JSON for the rest of this document, but using XML should be OK
 to do at any time.
 
+It's also possible to get all schemas (`Inspecting The Resource's Schema`_) in a single request::
+
+    curl http://localhost:8000/api/v1/?fullschema=true
+
+You'll get back something like::
+
+    {
+        "entry": {
+            "list_endpoint": "/api/v1/entry/",
+            "schema": {
+                "default_format": "application/json",
+                "fields": {
+                    "body": {
+                        "help_text": "Unicode string data. Ex: \"Hello World\"",
+                        "nullable": false,
+                        "readonly": false,
+                        "type": "string"
+                    },
+                    ...
+                },
+                "filtering": {
+                    "pub_date": ["exact", "lt", "lte", "gte", "gt"],
+                    "user": 2
+                }
+            }
+        },
+    }
+
 
 .. _schema-inspection:
 
@@ -196,6 +224,8 @@ This time, we get back a lot more data::
                 "nullable": false,
                 "readonly": false,
                 "type": "related"
+                "related_type": "to_one"
+                "related_schema": "/api/v1/user/schema/"
             }
         },
         "filtering": {
@@ -528,7 +558,7 @@ presumably did not change.
 
 .. note::
 
-    A ``PUT`` request requires that the entire resource representation be enclosed. Missing fields may cause errors, or be filled in by default values. 
+    A ``PUT`` request requires that the entire resource representation be enclosed. Missing fields may cause errors, or be filled in by default values.
 
 
 Partially Updating An Existing Resource (PATCH)
@@ -598,11 +628,11 @@ Once again, we get back the "Accepted" response of a 204::
     Content-Length: 0
     Content-Type: text/html; charset=utf-8
 
-If we request that resource, we get a 410 to show it's no longer there::
+If we request that resource, we get a 404 to show it's no longer there::
 
     curl --dump-header - http://localhost:8000/api/v1/entry/4/
 
-    HTTP/1.0 410 GONE
+    HTTP/1.0 404 GONE
     Date: Fri, 20 May 2011 07:29:02 GMT
     Server: WSGIServer/0.1 Python/2.7
     Content-Type: text/html; charset=utf-8
@@ -610,7 +640,7 @@ If we request that resource, we get a 410 to show it's no longer there::
 Additionally, if we try to run the ``DELETE`` again (using the same original
 command), we get the "Gone" response again::
 
-    HTTP/1.0 410 GONE
+    HTTP/1.0 404 GONE
     Date: Fri, 20 May 2011 07:30:00 GMT
     Server: WSGIServer/0.1 Python/2.7
     Content-Type: text/html; charset=utf-8
@@ -666,7 +696,7 @@ We should get back::
     Content-Length: 0
     Content-Type: text/html; charset=utf-8
 
-The Accepted response means the server has accepted the request, but gives no details on the result. In order to see any created resources, we would need to do a get ``GET`` on the list endpoint. 
+The Accepted response means the server has accepted the request, but gives no details on the result. In order to see any created resources, we would need to do a get ``GET`` on the list endpoint.
 
 For detailed information on the format of a bulk request, see :ref:`patch-list`.
 

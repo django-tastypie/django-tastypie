@@ -29,7 +29,7 @@ class PerUserAuthorization(Authorization):
     def update_detail(self, object_list, bundle):
         if getattr(bundle.obj, 'pk', None):
             try:
-                obj = object_list.get(pk=bundle.obj.pk)
+                object_list.get(pk=bundle.obj.pk)
 
                 for profile in bundle.obj.authors.all():
                     if bundle.request.user.pk == profile.user.pk:

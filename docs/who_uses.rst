@@ -3,9 +3,9 @@
 Sites Using Tastypie
 ====================
 
-The following sites are a partial list of people using Tastypie. I'm always
-interested in adding more sites, so please find me (``daniellindsley``) via
-IRC or start a mailing list thread.
+The following sites are a partial list of sites using Tastypie. We're always
+interested in adding more sites, so please open a GitHub Issue or Pull Request
+for this page and we'll add you to the list.
 
 
 LJWorld Marketplace
@@ -39,7 +39,7 @@ Luzme
 An e-book search site that lets you fetch pricing information.
 
 * http://luzme.com/
-* http://luzme.readthedocs.org/en/latest/
+* https://luzme.readthedocs.io/en/latest/
 
 
 Politifact
@@ -57,7 +57,7 @@ LocalWiki
 geographic communities. It's using Tastypie to provide an geospatially-aware
 REST API.
 
-* http://localwiki.readthedocs.org/en/latest/api.html
+* https://localwiki.readthedocs.io/en/latest/api.html
 * http://localwiki.org/blog/2012/aug/31/localwiki-api-released/
 
 

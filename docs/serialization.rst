@@ -41,7 +41,6 @@ The default ``Serializer`` supports the following formats:
 * jsonp (Disabled by default)
 * xml
 * yaml
-* html
 * plist (see http://explorapp.com/biplist/)
 
 Not everyone wants to install or support all the serialization options. If you
@@ -77,7 +76,7 @@ Enabling the built-in (but disabled by default) JSONP support looks like::
             queryset = User.objects.all()
             resource_name = 'auth/user'
             excludes = ['email', 'password', 'is_superuser']
-            serializer = Serializer(formats=['json', 'jsonp', 'xml', 'yaml', 'html', 'plist'])
+            serializer = Serializer(formats=['json', 'jsonp', 'xml', 'yaml', 'plist'])
 
 
 Serialization Security
@@ -157,26 +156,27 @@ like::
 
 
     class CSVSerializer(Serializer):
-        formats = ['json', 'jsonp', 'xml', 'yaml', 'html', 'plist', 'csv']
-        content_types = {
-            'json': 'application/json',
-            'jsonp': 'text/javascript',
-            'xml': 'application/xml',
-            'yaml': 'text/yaml',
-            'html': 'text/html',
-            'plist': 'application/x-plist',
-            'csv': 'text/csv',
-        }
+        formats = Serializer.formats + ['csv']
+
+        content_types = dict(
+            Serializer.content_types.items() +
+            [('csv', 'text/csv')])
 
         def to_csv(self, data, options=None):
             options = options or {}
             data = self.to_simple(data, options)
             raw_data = StringIO.StringIO()
-            # Untested, so this might not work exactly right.
-            for item in data:
-                writer = csv.DictWriter(raw_data, item.keys(), extrasaction='ignore')
-                writer.write(item)
-            return raw_data
+            if data['objects']:
+                fields = data['objects'][0].keys()
+                writer = csv.DictWriter(raw_data, fields,
+                                        dialect="excel",
+                                        extrasaction='ignore')
+                header = dict(zip(fields, fields))
+                writer.writerow(header)  # In Python 2.7: `writer.writeheader()`
+                for item in data['objects']:
+                    writer.writerow(item)
+
+            return raw_data.getvalue()
 
         def from_csv(self, content):
             raw_data = StringIO.StringIO(content)
@@ -198,7 +198,6 @@ This handles most types of data as well as the following output formats::
     * jsonp
     * xml
     * yaml
-    * html
     * plist
 
 It was designed to make changing behavior easy, either by overridding the
@@ -360,24 +359,3 @@ Given some Python data, produces binary plist output.
 
 Given some binary plist data, returns a Python dictionary of the decoded data.
 
-``to_html``
-~~~~~~~~~~~
-
-.. method:: Serializer.to_html(self, data, options=None):
-
-Reserved for future usage.
-
-The desire is to provide HTML output of a resource, making an API
-available to a browser. This is on the TODO list but not currently
-implemented.
-
-``from_html``
-~~~~~~~~~~~~~
-
-.. method:: Serializer.from_html(self, content):
-
-Reserved for future usage.
-
-The desire is to handle form-based (maybe Javascript?) input, making an
-API available to a browser. This is on the TODO list but not currently
-implemented.
