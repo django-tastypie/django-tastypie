@@ -98,6 +98,19 @@ class ApiFieldTestCase(TestCase):
         field_6 = ApiField(attribute='what_time_is_it', default=True)
         self.assertEqual(field_6.dehydrate(bundle), aware_datetime(2010, 4, 1, 0, 48))
 
+        # Wrong attribute with default and null=True should yield null
+        field_7 = ApiField(attribute='foo', null=True, default='bar')
+        self.assertEqual(field_7.dehydrate(bundle), None)
+
+        # Correct attribute with value of None, a default, and null=True
+        # should yield null
+        original_author = note.author
+        note.author = None
+        note.save()
+        field_8 = ApiField(attribute='author', null=True,
+                           default=original_author)
+        self.assertEqual(field_8.dehydrate(bundle), None)
+
     def test_convert(self):
         field_1 = ApiField()
         self.assertEqual(field_1.convert('foo'), 'foo')
