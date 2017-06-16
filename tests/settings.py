@@ -1,11 +1,23 @@
 import os
 import sys
 
+from distutils.version import StrictVersion
+import django
+django_version_string = django.get_version()
+if django_version_string.startswith('2.0.dev'):
+    DJANGO_VERSION = StrictVersion('2.0')
+else:
+    DJANGO_VERSION = StrictVersion(django.get_version())
+DJANGO_11 = StrictVersion('1.11')
+DJANGO_18 = StrictVersion('1.8')
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 ADMINS = (
     ('test@example.com', 'Mr. Test'),
 )
+
+ALLOWED_HOSTS = [u'example.com']
 
 SITE_ID = 1
 

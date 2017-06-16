@@ -3,7 +3,7 @@ from dateutil.tz import tzoffset
 from decimal import Decimal
 
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.http import HttpRequest
 
@@ -17,6 +17,7 @@ from tastypie.utils import aware_datetime
 
 from core.models import Note, Subject, MediaBit
 from core.tests.mocks import MockRequest
+User = get_user_model()
 
 
 class ApiFieldTestCase(TestCase):

@@ -1,6 +1,6 @@
 import json
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.http import HttpRequest
 from django.test import TestCase
 from django.test.utils import override_settings
@@ -12,6 +12,7 @@ from tastypie.serializers import Serializer
 
 from core.models import Note
 from core.utils import adjust_schema
+User = get_user_model()
 
 
 class NoteResource(ModelResource):

@@ -2,11 +2,13 @@ from settings import *  # flake8: noqa
 INSTALLED_APPS.append('django.contrib.sessions')
 INSTALLED_APPS.append('core')
 
-try:
-    import oauth_provider  # flake8: noqa
-    INSTALLED_APPS.append('oauth_provider')
-except ImportError:
-    pass
+
+if DJANGO_VERSION < DJANGO_11:
+    try:
+        import oauth_provider  # flake8: noqa
+        INSTALLED_APPS.append('oauth_provider')
+    except ImportError:
+        pass
 
 ROOT_URLCONF = 'core.tests.api_urls'
 MEDIA_URL = 'http://localhost:8080/media/'
