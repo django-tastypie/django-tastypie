@@ -15,7 +15,6 @@ from django.conf.urls import url
 from django.core.exceptions import (
     ObjectDoesNotExist, MultipleObjectsReturned, ValidationError,
 )
-from django.urls import NoReverseMatch, reverse, Resolver404, get_script_prefix
 from django.core.signals import got_request_exception
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.fields.related import ForeignKey
@@ -41,6 +40,7 @@ from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.bundle import Bundle
 from tastypie.cache import NoCache
+from tastypie.compat import NoReverseMatch, reverse, Resolver404, get_script_prefix
 from tastypie.constants import ALL, ALL_WITH_RELATIONS
 from tastypie.exceptions import (
     NotFound, BadRequest, InvalidFilterError, HydrationError, InvalidSortError,
