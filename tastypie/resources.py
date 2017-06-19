@@ -15,11 +15,10 @@ from django.conf.urls import url
 from django.core.exceptions import (
     ObjectDoesNotExist, MultipleObjectsReturned, ValidationError,
 )
-from django.core.urlresolvers import (
-    NoReverseMatch, reverse, Resolver404, get_script_prefix
-)
+from django.urls import NoReverseMatch, reverse, Resolver404, get_script_prefix
 from django.core.signals import got_request_exception
 from django.core.exceptions import ImproperlyConfigured
+from django.db.models.fields.related import ForeignKey
 try:
     from django.contrib.gis.db.models.fields import GeometryField
 except (ImproperlyConfigured, ImportError):
@@ -1837,6 +1836,8 @@ class BaseModelResource(Resource):
         Given a Django model field, return if it should be included in the
         contributed ApiFields.
         """
+        if isinstance(field, ForeignKey):
+            return True
         # Ignore certain fields (related fields).
         if getattr(field, 'rel'):
             return True

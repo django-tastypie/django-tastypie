@@ -1,9 +1,7 @@
 from __future__ import unicode_literals
 import time
-import warnings
 
 from django.conf import settings
-from django.test import TestCase
 from django.test.client import Client
 from django.utils.encoding import force_text
 
@@ -557,16 +555,3 @@ class ResourceTestCaseMixin(object):
         changes.
         """
         self.assertEqual(sorted(data.keys()), sorted(expected))
-
-
-class ResourceTestCase(ResourceTestCaseMixin, TestCase):
-    """
-    This class exists for backwards compatibility, from before ResourceTestCaseMixin was added.
-    It throws a deprecation warning.
-    """
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "'ResourceTestCase' is deprecated & will be removed by v1.0.0. "
-            "Please use ``ResourceTestCaseMixin`` instead. "
-            "For example: ``class MyTest(ResourceTestCaseMixin, django.test.TestCase):``.")
-        super(ResourceTestCase, self).__init__(*args, **kwargs)
