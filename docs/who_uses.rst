@@ -23,6 +23,14 @@ Read-only API access to recipes.
 * http://forkinit.com/api/v1/?format=json
 
 
+Teachoo
+--------
+
+Teachoo uses tastypie for its API
+
+* https://www.teachoo.com
+
+
 Read The Docs
 -------------
 
