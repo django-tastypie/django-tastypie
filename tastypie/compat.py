@@ -18,10 +18,9 @@ def is_authenticated(user):
     Django is changing User.is_authenticated into a property.  Calling it
     will be deprecated by Django 2.0 and a warning in 1.10+.
     """
-    auth = user.is_authenticated
     if django.VERSION < (1, 10):
-        return auth()
-    return auth
+        return bool(user.is_authenticated())
+    return bool(user.is_authenticated)
 
 def get_username_field():
     return get_user_model().USERNAME_FIELD
