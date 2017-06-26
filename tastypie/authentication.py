@@ -6,6 +6,7 @@ import time
 import uuid
 import warnings
 
+import django
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.exceptions import ImproperlyConfigured

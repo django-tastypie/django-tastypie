@@ -71,8 +71,8 @@
             "slug": "first-post",
             "content": "This is my very first post using my shiny new API. Pretty sweet, huh?",
             "is_active": true,
-            "created": "2010-03-30 20:05:00",
-            "updated": "2010-03-30 20:05:00"
+            "created": "2010-03-31 01:05:00.000Z",
+            "updated": "2010-03-31 01:05:00.000Z"
         },
         "model": "core.note",
         "pk": 1
@@ -84,8 +84,8 @@
             "slug": "another-post",
             "content": "The dog ate my cat today. He looks seriously uncomfortable.",
             "is_active": true,
-            "created": "2010-03-31 20:05:00",
-            "updated": "2010-03-31 20:05:00"
+            "created": "2010-04-01 01:05:00.000Z",
+            "updated": "2010-04-01 01:05:00.000Z"
         },
         "model": "core.note",
         "pk": 2
@@ -97,8 +97,8 @@
             "slug": "hello-world",
             "content": "On second though, not sure if I'm ready to share this with the world.",
             "is_active": false,
-            "created": "2010-03-30 20:05:00",
-            "updated": "2010-03-30 20:05:00"
+            "created": "2010-03-31 01:05:00.000Z",
+            "updated": "2010-03-31 01:05:00.000Z"
         },
         "model": "core.note",
         "pk": 3
@@ -110,8 +110,8 @@
             "slug": "recent-volcanic-activity",
             "content": "My neighborhood's been kinda weird lately, especially after the lava flow took out the corner store. Granny can hardly outrun the magma with her walker.",
             "is_active": true,
-            "created": "2010-04-01 20:05:00",
-            "updated": "2010-04-01 20:05:00"
+            "created": "2010-04-02 01:05:00.000Z",
+            "updated": "2010-04-02 01:05:00.000Z"
         },
         "model": "core.note",
         "pk": 4
@@ -123,8 +123,8 @@
             "slug": "my-favorite-new-show",
             "content": "I found an awesome new show on TV. It's about vampires and pancakes and the strong love between them that the wagon is trying to break up.",
             "is_active": false,
-            "created": "2010-03-30 20:05:00",
-            "updated": "2010-03-30 20:05:00"
+            "created": "2010-03-31 01:05:00.000Z",
+            "updated": "2010-03-31 01:05:00.000Z"
         },
         "model": "core.note",
         "pk": 5
@@ -136,8 +136,8 @@
             "slug": "grannys-gone",
             "content": "Man, the second eruption came on fast. Granny didn't have a chance. On the upshot, I was able to save her walker and I got a cool shawl out of the deal!",
             "is_active": true,
-            "created": "2010-04-02 10:05:00",
-            "updated": "2010-04-02 10:05:00"
+            "created": "2010-04-02 15:05:00.000Z",
+            "updated": "2010-04-02 15:05:00.000Z"
         },
         "model": "core.note",
         "pk": 6

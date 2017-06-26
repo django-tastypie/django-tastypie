@@ -32,7 +32,7 @@ Here is ``myapp/models.py``::
 
 
     class Entry(models.Model):
-        user = models.ForeignKey(User)
+        user = models.ForeignKey(User, on_delete=models.CASCADE)
         pub_date = models.DateTimeField(default=now)
         title = models.CharField(max_length=200)
         slug = models.SlugField(null=True, blank=True)
@@ -60,7 +60,7 @@ your project or ``PYTHONPATH``.
   1. Download the dependencies:
 
     * Python 2.7+ or Python 3.4+
-    * Django 1.7+
+    * Django 1.8+
     * ``python-mimeparse`` 0.1.4+ (http://pypi.python.org/pypi/python-mimeparse)
     * ``dateutil`` (http://labix.org/python-dateutil)
     * **OPTIONAL** - ``lxml`` (http://lxml.de/) and ``defusedxml``  (https://pypi.python.org/pypi/defusedxml) if using the XML serializer
