@@ -5,5 +5,3 @@ from settings_gis import *  # flake8: noqa
 # "InitSpatiaMetaData ()error:"table spatial_ref_sys already exists" can be ignored.
 DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.spatialite'
 DATABASES['default']['NAME'] = 'tastypie-spatialite.db'
-
-USE_TZ = False
