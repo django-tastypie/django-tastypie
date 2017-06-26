@@ -21,7 +21,7 @@ def is_authenticated(user):
     auth = user.is_authenticated
     if django.VERSION < (1, 10):
         return auth()
-    return auth()
+    return auth
 
 def get_username_field():
     return get_user_model().USERNAME_FIELD
