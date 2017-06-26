@@ -1839,7 +1839,7 @@ class BaseModelResource(Resource):
         if isinstance(field, ForeignKey):
             return True
         # Ignore certain fields (related fields).
-        if getattr(field, 'rel'):
+        if getattr(field, 'remote_field'):
             return True
 
         return False

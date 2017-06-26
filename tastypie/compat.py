@@ -9,8 +9,19 @@ try:
 except ImportError:  # 1.8 backwards compat
     from django.core.urlresolvers import NoReverseMatch, reverse, Resolver404, get_script_prefix  # flake8: noqa
 
+
 AUTH_USER_MODEL = settings.AUTH_USER_MODEL
 
+
+def is_authenticated(user):
+    """
+    Django is changing User.is_authenticated into a property.  Calling it
+    will be deprecated by Django 2.0 and a warning in 1.10+.
+    """
+    auth = user.is_authenticated
+    if django.VERSION < (1, 10):
+        return auth()
+    return auth()
 
 def get_username_field():
     return get_user_model().USERNAME_FIELD
