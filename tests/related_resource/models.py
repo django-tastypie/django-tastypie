@@ -132,7 +132,7 @@ class Payment(models.Model):
 
 class Post(models.Model):
     name = models.CharField(max_length=200)
-    label = models.ManyToManyField(Label, null=True)
+    label = models.ManyToManyField(Label)
 
 
 class Order(models.Model):
@@ -160,7 +160,6 @@ class Contact(models.Model):
     groups = models.ManyToManyField(
         ContactGroup,
         related_name='members',
-        null=True,
         blank=True,
         help_text="The Contact Groups this Contact belongs to."
     )

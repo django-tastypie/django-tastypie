@@ -13,7 +13,9 @@ from django.middleware.csrf import _sanitize_token, constant_time_compare
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import ugettext as _
 
-from tastypie.compat import get_user_model, get_username_field, unsalt_token
+from tastypie.compat import (
+    get_user_model, get_username_field, unsalt_token, is_authenticated
+)
 from tastypie.http import HttpUnauthorized
 
 try:
@@ -301,11 +303,12 @@ class SessionAuthentication(Authentication):
         # wrong.
         # We also can't risk accessing ``request.POST``, which will break with
         # the serialized bodies.
+
         if request.method in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
-            return request.user.is_authenticated()
+            return is_authenticated(request.user)
 
         if getattr(request, '_dont_enforce_csrf_checks', False):
-            return request.user.is_authenticated()
+            return is_authenticated(request.user)
 
         csrf_token = _sanitize_token(request.COOKIES.get(settings.CSRF_COOKIE_NAME, ''))
 
@@ -327,7 +330,7 @@ class SessionAuthentication(Authentication):
                                      unsalt_token(csrf_token)):
             return False
 
-        return request.user.is_authenticated()
+        return is_authenticated(request.user)
 
     def get_identifier(self, request):
         """
