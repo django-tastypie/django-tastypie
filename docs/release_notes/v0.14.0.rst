@@ -5,6 +5,11 @@ v0.14.0
 
 Dropped support for all non-LTS versions of Django.  Specifically supports Django 1.8 and 1.11.
 
+Deprecations
+------------
+
+* Removed `ResourceTestCase` and added `ResourceTestCaseMixin`.
+
 Bugfixes
 --------
 
