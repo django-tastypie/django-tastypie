@@ -10,11 +10,6 @@ from tastypie.utils import is_valid_jsonp_callback_value, string_to_python, trai
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.resources import Resource
 
-try:
-    from django.urls import reverse
-except ImportError:
-    from django.core.urlresolvers import reverse
-
 
 class Api(object):
     """
