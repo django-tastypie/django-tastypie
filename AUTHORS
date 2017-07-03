@@ -98,10 +98,10 @@ Contributors:
 * Mike Bryant (mikebryant) for unit tests
 * Maxim Filipenko (prokaktus) for changing repr value to str in Python 2
 * Thomas Yip (thomasyip) PR #1409
-* Sam Thompson(georgedorn) for fixing some docs and tests.
 * Matt Cooper (vtbassmatt) for making ApiKey better in Python 3
 * Nick Sullivan (gorillamania) for admin improvements.
 * Danny Roberts (dannyroberts) for very small change addressing noisy RemovedInDjango20Warning warnings
+* Sam Thompson (georgedorn) for ongoing maintenance and release management.
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
