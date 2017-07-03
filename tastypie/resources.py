@@ -15,11 +15,9 @@ from django.conf.urls import url
 from django.core.exceptions import (
     ObjectDoesNotExist, MultipleObjectsReturned, ValidationError,
 )
-from django.core.urlresolvers import (
-    NoReverseMatch, reverse, Resolver404, get_script_prefix
-)
 from django.core.signals import got_request_exception
 from django.core.exceptions import ImproperlyConfigured
+from django.db.models.fields.related import ForeignKey
 try:
     from django.contrib.gis.db.models.fields import GeometryField
 except (ImproperlyConfigured, ImportError):
@@ -42,6 +40,7 @@ from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.bundle import Bundle
 from tastypie.cache import NoCache
+from tastypie.compat import NoReverseMatch, reverse, Resolver404, get_script_prefix
 from tastypie.constants import ALL, ALL_WITH_RELATIONS
 from tastypie.exceptions import (
     NotFound, BadRequest, InvalidFilterError, HydrationError, InvalidSortError,
@@ -1837,8 +1836,13 @@ class BaseModelResource(Resource):
         Given a Django model field, return if it should be included in the
         contributed ApiFields.
         """
+        if isinstance(field, ForeignKey):
+            return True
         # Ignore certain fields (related fields).
-        if getattr(field, 'rel'):
+        if hasattr(field, 'remote_field'):
+            if field.remote_field:
+                return True
+        elif getattr(field, 'rel'):
             return True
 
         return False

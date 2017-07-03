@@ -4,7 +4,7 @@ from django.db import models
 
 # A self-referrential model to test regressions.
 class Category(models.Model):
-    parent = models.ForeignKey('self', null=True)
+    parent = models.ForeignKey('self', null=True, on_delete=models.CASCADE)
     name = models.CharField(max_length=32)
 
     def __unicode__(self):
@@ -21,12 +21,16 @@ class TaggableTag(models.Model):
     tag = models.ForeignKey(
         'Tag',
         related_name='taggabletags',
-        null=True, blank=True,  # needed at creation time
+        null=True,
+        blank=True,  # needed at creation time
+        on_delete=models.CASCADE,
     )
     taggable = models.ForeignKey(
         'Taggable',
         related_name='taggabletags',
-        null=True, blank=True,  # needed at creation time
+        null=True,
+        blank=True,  # needed at creation time
+        on_delete=models.CASCADE,
     )
     extra = models.IntegerField(default=0)  # extra data about the relationship
 
@@ -50,7 +54,9 @@ class ExtraData(models.Model):
     tag = models.OneToOneField(
         'Tag',
         related_name='extradata',
-        null=True, blank=True,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
 
     def __unicode__(self):
@@ -66,7 +72,7 @@ class Address(models.Model):
 
 class Company(models.Model):
     name = models.CharField(max_length=32)
-    address = models.ForeignKey(Address, null=True)
+    address = models.ForeignKey(Address, null=True, on_delete=models.CASCADE)
 
     def __unicode__(self):
         return u"%s" % (self.name)
@@ -74,7 +80,8 @@ class Company(models.Model):
 
 class Product(models.Model):
     name = models.CharField(max_length=32)
-    producer = models.ForeignKey(Company, related_name="products")
+    producer = models.ForeignKey(Company, related_name="products",
+                                 on_delete=models.CASCADE)
 
     def __unicode__(self):
         return u"%s" % (self.name)
@@ -82,7 +89,8 @@ class Product(models.Model):
 
 class Person(models.Model):
     name = models.CharField(max_length=32)
-    company = models.ForeignKey(Company, related_name="employees", null=True)
+    company = models.ForeignKey(Company, related_name="employees", null=True,
+                                on_delete=models.CASCADE)
 
     def __unicode__(self):
         return u"%s" % (self.name)
@@ -97,15 +105,18 @@ class DogHouse(models.Model):
 
 class Dog(models.Model):
     name = models.CharField(max_length=32)
-    owner = models.ForeignKey(Person, related_name="dogs")
-    house = models.ForeignKey(DogHouse, related_name="dogs", null=True)
+    owner = models.ForeignKey(Person, related_name="dogs",
+                              on_delete=models.CASCADE)
+    house = models.ForeignKey(DogHouse, related_name="dogs", null=True,
+                              on_delete=models.CASCADE)
 
     def __unicode__(self):
         return u"%s" % (self.name)
 
 
 class Bone(models.Model):
-    dog = models.ForeignKey(Dog, related_name='bones', null=True)
+    dog = models.ForeignKey(Dog, related_name='bones', null=True,
+                            on_delete=models.CASCADE)
     color = models.CharField(max_length=32)
 
     def __unicode__(self):
@@ -127,12 +138,13 @@ class Job(models.Model):
 
 class Payment(models.Model):
     scheduled = models.DateTimeField()
-    job = models.OneToOneField(Job, related_name="payment", null=True)
+    job = models.OneToOneField(Job, related_name="payment", null=True,
+                               on_delete=models.CASCADE)
 
 
 class Post(models.Model):
     name = models.CharField(max_length=200)
-    label = models.ManyToManyField(Label, null=True)
+    label = models.ManyToManyField(Label)
 
 
 class Order(models.Model):
@@ -140,7 +152,8 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, related_name="items")
+    order = models.ForeignKey(Order, related_name="items",
+                              on_delete=models.CASCADE)
     product = models.CharField(max_length=200)
 
 
@@ -160,7 +173,6 @@ class Contact(models.Model):
     groups = models.ManyToManyField(
         ContactGroup,
         related_name='members',
-        null=True,
         blank=True,
         help_text="The Contact Groups this Contact belongs to."
     )

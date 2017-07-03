@@ -4,11 +4,23 @@ import django
 from django.conf import settings
 from django.contrib.auth import get_user_model  # flake8: noqa
 
-__all__ = ['get_user_model', 'get_username_field', 'AUTH_USER_MODEL']
+try:
+    from django.urls import NoReverseMatch, reverse, Resolver404, get_script_prefix  # flake8: noqa
+except ImportError:  # 1.8 backwards compat
+    from django.core.urlresolvers import NoReverseMatch, reverse, Resolver404, get_script_prefix  # flake8: noqa
 
 
 AUTH_USER_MODEL = settings.AUTH_USER_MODEL
 
+
+def is_authenticated(user):
+    """
+    Django is changing User.is_authenticated into a property.  Calling it
+    will be deprecated by Django 2.0 and a warning in 1.10+.
+    """
+    if django.VERSION < (1, 10):
+        return bool(user.is_authenticated())
+    return bool(user.is_authenticated)
 
 def get_username_field():
     return get_user_model().USERNAME_FIELD
