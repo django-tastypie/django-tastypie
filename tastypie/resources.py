@@ -154,6 +154,8 @@ class DeclarativeMetaclass(type):
         attrs['declared_fields'] = declared_fields
         new_class = super(DeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
         opts = getattr(new_class, 'Meta', None)
+        if getattr(opts, 'abstract', False):
+            return new_class
         new_class._meta = ResourceOptions(opts)
 
         if not getattr(new_class._meta, 'resource_name', None):
@@ -1781,6 +1783,10 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 class ModelDeclarativeMetaclass(DeclarativeMetaclass):
     def __new__(cls, name, bases, attrs):
         meta = attrs.get('Meta')
+        if getattr(meta, 'abstract', False):
+            # abstract resources do nothing on declaration
+            return super(ModelDeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
+        
         # Sanity check: ModelResource needs either a queryset or object_class:
         if meta and not hasattr(meta, 'queryset') and not hasattr(meta, 'object_class'):
             msg = "ModelResource (%s) requires Meta.object_class or Meta.queryset"

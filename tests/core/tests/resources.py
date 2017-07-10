@@ -1620,6 +1620,20 @@ class ModelResourceTestCase(TestCase):
                     resource_name = 'invalidnotes'
         self.assertTrue('InvalidNoteResource' in str(exception_context.exception))
 
+    def test_abstract_model_resource(self):
+        """
+        Abstract ModelResource classes don't require object_class or queryset,
+        should skip populating fields and url details.
+        """
+        class AbstractNoteResource(ModelResource):
+            class Meta:
+                abstract = True
+        # AbstractNoteResource should have none of the dynamic attributes generated on declaration
+        print AbstractNoteResource.base_fields
+        for attr in ('object_class', 'queryset', 'fields', 'base_fields', 'absolute_url'):
+            self.assertFalse(getattr(AbstractNoteResource, attr, False),
+                             "AbstractNoteResource has non-falsey %s" % attr)
+
     def test_fields__empty_list(self):
         class EmptyFieldsNoteResource(ModelResource):
             class Meta:
