@@ -16,7 +16,7 @@ import django
 from django import forms
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
-from django.core.exceptions import FieldError, MultipleObjectsReturned, ObjectDoesNotExist
+from django.core.exceptions import FieldError, MultipleObjectsReturned, ObjectDoesNotExist, ImproperlyConfigured
 from django.core import mail
 try:
     from django.urls import reverse
@@ -1609,6 +1609,16 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['updated'].readonly, False)
         self.assertEqual(annr.fields['updated'].unique, False)
 
+    def test_invalid_model_resource(self):
+        """
+        Test error message regarding ModelResource lacking object_class and queryset.
+        """
+        with self.assertRaises(ImproperlyConfigured) as exception_context:
+            class InvalidNoteResource(ModelResource):
+                class Meta:
+                    resource_name = 'invalidnotes'
+        self.assertTrue('InvalidNoteResource' in str(exception_context.exception))
+
     def test_fields__empty_list(self):
         class EmptyFieldsNoteResource(ModelResource):
             class Meta:
@@ -1627,7 +1637,7 @@ class ModelResourceTestCase(TestCase):
                 object_class = Note
 
         class EmptyFieldsNoteResource(FieldsNotSpecifiedNoteResource):
-            class Meta:
+            class Meta(FieldsNotSpecifiedNoteResource.Meta):
                 resource_name = 'emptyfieldsnotes'
                 fields = []
 

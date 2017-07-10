@@ -1781,8 +1781,12 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 class ModelDeclarativeMetaclass(DeclarativeMetaclass):
     def __new__(cls, name, bases, attrs):
         meta = attrs.get('Meta')
+        # Sanity check: ModelResource needs either a queryset or object_class:
+        if meta and not hasattr(meta, 'queryset') and not hasattr(meta, 'object_class'):
+            msg = "ModelResource (%s) requires Meta.object_class or Meta.queryset"
+            raise ImproperlyConfigured(msg % name)
 
-        if meta and hasattr(meta, 'queryset'):
+        if hasattr(meta, 'queryset') and not hasattr(meta, 'object_class'):
             setattr(meta, 'object_class', meta.queryset.model)
 
         new_class = super(ModelDeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
