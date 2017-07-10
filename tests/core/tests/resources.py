@@ -1640,7 +1640,6 @@ class ModelResourceTestCase(TestCase):
             class Meta(FieldsNotSpecifiedNoteResource.Meta):
                 resource_name = 'emptyfieldsnotes'
                 fields = []
-                
 
         resource = EmptyFieldsNoteResource(api_name='v1')
 
