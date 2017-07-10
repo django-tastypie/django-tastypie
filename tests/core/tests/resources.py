@@ -1617,7 +1617,7 @@ class ModelResourceTestCase(TestCase):
             class InvalidNoteResource(ModelResource):
                 class Meta:
                     resource_name = 'invalidnotes'
-        self.assertTrue('InvalidNoteResource' in exception_context.exception.message)
+        self.assertTrue('InvalidNoteResource' in str(exception_context.exception))
 
     def test_fields__empty_list(self):
         class EmptyFieldsNoteResource(ModelResource):
