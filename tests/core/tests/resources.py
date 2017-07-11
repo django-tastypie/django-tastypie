@@ -37,6 +37,7 @@ from tastypie.exceptions import (
     UnsupportedSerializationFormat, UnsupportedDeserializationFormat,
 )
 from tastypie import fields, http
+from tastypie.compat import is_authenticated
 from tastypie.paginator import Paginator
 from tastypie.resources import (
     ALL, ALL_WITH_RELATIONS, convert_post_to_put, convert_post_to_patch,
@@ -1293,7 +1294,7 @@ class TestOptionsResource(ModelResource):
 class PerUserAuthorization(Authorization):
     def read_list(self, object_list, bundle):
         if bundle.request and hasattr(bundle.request, 'user'):
-            if bundle.request.user.is_authenticated():
+            if is_authenticated(bundle.request.user):
                 object_list = object_list.filter(author=bundle.request.user)
             else:
                 object_list = object_list.none()
