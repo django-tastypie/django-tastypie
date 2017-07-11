@@ -9,6 +9,7 @@ if settings.DJANGO_VERSION >= settings.DJANGO_20:
 else:
     GeoManager = models.GeoManager
 
+
 class GeoNote(models.Model):
     user = models.ForeignKey(User, related_name='notes',
                              on_delete=models.CASCADE)
