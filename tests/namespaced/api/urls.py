@@ -8,5 +8,5 @@ api.register(NamespacedNoteResource(), canonical=True)
 api.register(NamespacedUserResource(), canonical=True)
 
 urlpatterns = [
-    url(r'^api/', include(api.urls, namespace='special', app_name='special')),
+    url(r'^api/', include((api.urls, 'special', 'special')),
 ]
