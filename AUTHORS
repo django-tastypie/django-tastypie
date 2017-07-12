@@ -102,6 +102,7 @@ Contributors:
 * Nick Sullivan (gorillamania) for admin improvements.
 * Danny Roberts (dannyroberts) for very small change addressing noisy RemovedInDjango20Warning warnings
 * Sam Thompson (georgedorn) for ongoing maintenance and release management.
+* Matt Briançon (mattbriancon) for various patches
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.

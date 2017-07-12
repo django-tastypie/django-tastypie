@@ -2035,13 +2035,9 @@ class BaseModelResource(Resource):
 
         qs_filters = {}
 
-        if getattr(self._meta, 'queryset', None) is not None:
-            # Get the possible query terms from the current QuerySet.
-            query_terms = self._meta.queryset.query.query_terms
-        else:
-            query_terms = QUERY_TERMS
+        query_terms = QUERY_TERMS
         if django.VERSION >= (1, 8) and GeometryField:
-            query_terms = query_terms | set(GeometryField.class_lookups.keys())
+            query_terms |= set(GeometryField.class_lookups.keys())
 
         for filter_expr, value in filters.items():
             filter_bits = filter_expr.split(LOOKUP_SEP)

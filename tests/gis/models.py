@@ -1,7 +1,13 @@
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
 
 from tastypie.utils import now
+
+if settings.DJANGO_VERSION >= settings.DJANGO_20:
+    GeoManager = models.Manager
+else:
+    GeoManager = models.GeoManager
 
 
 class GeoNote(models.Model):
@@ -18,7 +24,7 @@ class GeoNote(models.Model):
     lines = models.MultiLineStringField(null=True, blank=True)
     polys = models.MultiPolygonField(null=True, blank=True)
 
-    objects = models.GeoManager()
+    objects = GeoManager()
 
     def __unicode__(self):
         return self.title
