@@ -1628,8 +1628,8 @@ class ModelResourceTestCase(TestCase):
         class AbstractNoteResource(ModelResource):
             class Meta:
                 abstract = True
+
         # AbstractNoteResource should have none of the dynamic attributes generated on declaration
-        print AbstractNoteResource.base_fields
         for attr in ('object_class', 'queryset', 'fields', 'base_fields', 'absolute_url'):
             self.assertFalse(getattr(AbstractNoteResource, attr, False),
                              "AbstractNoteResource has non-falsey %s" % attr)

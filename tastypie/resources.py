@@ -154,9 +154,8 @@ class DeclarativeMetaclass(type):
         attrs['declared_fields'] = declared_fields
         new_class = super(DeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
         opts = getattr(new_class, 'Meta', None)
-        if getattr(opts, 'abstract', False):
-            return new_class
         new_class._meta = ResourceOptions(opts)
+        abstract = getattr(new_class._meta, 'abstract', False)
 
         if not getattr(new_class._meta, 'resource_name', None):
             # No ``resource_name`` provided. Attempt to auto-name the resource.
@@ -166,9 +165,13 @@ class DeclarativeMetaclass(type):
             new_class._meta.resource_name = resource_name
 
         if getattr(new_class._meta, 'include_resource_uri', True):
-            if 'resource_uri' not in new_class.base_fields:
+            if 'resource_uri' not in new_class.base_fields and not abstract:
                 new_class.base_fields['resource_uri'] = fields.CharField(readonly=True, verbose_name="resource uri")
         elif 'resource_uri' in new_class.base_fields and 'resource_uri' not in attrs:
+            del(new_class.base_fields['resource_uri'])
+
+        if abstract and 'resource_uri' not in attrs:
+            # abstract classes don't have resource_uris unless explicitly provided
             del(new_class.base_fields['resource_uri'])
 
         for field_name, field_object in new_class.base_fields.items():
@@ -1784,9 +1787,10 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
     def __new__(cls, name, bases, attrs):
         meta = attrs.get('Meta')
         if getattr(meta, 'abstract', False):
-            # abstract resources do nothing on declaration
-            return super(ModelDeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
-        
+            # abstract base classes do nothing on declaration
+            new_class = super(ModelDeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
+            return new_class
+
         # Sanity check: ModelResource needs either a queryset or object_class:
         if meta and not hasattr(meta, 'queryset') and not hasattr(meta, 'object_class'):
             msg = "ModelResource (%s) requires Meta.object_class or Meta.queryset"
