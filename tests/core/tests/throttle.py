@@ -140,6 +140,16 @@ class CacheDBThrottleTestCase(TestCase):
         self.assertEqual(ApiAccess.objects.count(), 7)
         self.assertEqual(ApiAccess.objects.filter(identifier='daniel').count(), 4)
 
+    def test_long_url(self, mocked_time):
+        # This test does nothing on SQLite - max length of a varchar is not enforced
+        # The test is here as an example, or for a future where we run tests on
+        # another database engine.
+        url = 'https://testserver/api/resource?' + 'longurlparams' * 100
+        throttle_1 = CacheDBThrottle(throttle_at=2, timeframe=5, expiration=2)
+        throttle_1.accessed(identifier='accessor', url=url)
+        access = ApiAccess.objects.filter(identifier='accessor').first()
+        self.assertEqual(access.url, url)
+
 
 class ModelTestCase(TestCase):
     def test_unicode(self):
