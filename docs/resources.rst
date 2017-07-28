@@ -160,7 +160,7 @@ consequences of each approach.
 Accessing The Current Request
 =============================
 
-Being able to change behavior based on the current request is a very commmon
+Being able to change behavior based on the current request is a very common
 need. Virtually anywhere within ``Resource/ModelResource``, if a ``bundle`` is
 available, you can access it using ``bundle.request``. This is useful for
 altering querysets, ensuring headers are present, etc.
