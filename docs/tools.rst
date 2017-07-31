@@ -46,7 +46,8 @@ Python
 Slumber
 -------
 
-http://slumber.in/
+https://pypi.python.org/pypi/slumber/
+https://github.com/samgiles/slumber
 
 Slumber is a small Python library that makes it easy to access & work with
 APIs. It works for many others, but works especially well with Tastypie.
