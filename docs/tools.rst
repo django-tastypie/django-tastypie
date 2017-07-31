@@ -43,14 +43,6 @@ Adds MsgPack_ support to Tastypie's serializer.
 Python
 ======
 
-Slumber
--------
-
-http://slumber.in/
-
-Slumber is a small Python library that makes it easy to access & work with
-APIs. It works for many others, but works especially well with Tastypie.
-
 Hammock
 -------
 
