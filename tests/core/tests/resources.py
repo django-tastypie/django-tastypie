@@ -2040,11 +2040,11 @@ class ModelResourceTestCase(TestCase):
             def build_filters(self, filters=None, **kwargs):
                 if filters is None:
                     filters = {}
-    
+
                 orm_filters = super(MyResource, self).build_filters(filters, **kwargs)
                 if 'title' in filters:
                     orm_filters['pk__in'] = Note.objects.filter(title=filters['title']).values_list('pk', flat=True)
-    
+
                 return orm_filters
 
         resource = MyResource()
