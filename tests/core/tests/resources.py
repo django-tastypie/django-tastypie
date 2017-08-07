@@ -2030,6 +2030,28 @@ class ModelResourceTestCase(TestCase):
         resource = NoQuerysetNoteResource()
         self.assertEqual(resource.build_filters(), {})
 
+    def test_custom_build_filters(self):
+        """
+        A test derived from an example in the documentation (under Advanced Filtering).
+        Mostly exists to exercise build_filters - if this test fails due to underlying
+        framework changes, both this test and docs/resources.rst will need to be updated.
+        """
+        class MyResource(NoteResource):
+            def build_filters(self, filters=None, **kwargs):
+                if filters is None:
+                    filters = {}
+
+                orm_filters = super(MyResource, self).build_filters(filters, **kwargs)
+                if 'title' in filters:
+                    orm_filters['pk__in'] = Note.objects.filter(title=filters['title']).values_list('pk', flat=True)
+
+                return orm_filters
+
+        resource = MyResource()
+        first_note = Note.objects.first()
+        note = resource.obj_get(resource.build_bundle(), title=first_note.title)
+        self.assertEqual(note, first_note)
+
     def test_xss_regressions(self):
         # Make sure the body is JSON & the content-type is right.
         resource = RelatedNoteResource()

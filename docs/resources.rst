@@ -726,11 +726,11 @@ filter the queryset before processing a request::
     from haystack.query import SearchQuerySet
 
     class MyResource(Resource):
-        def build_filters(self, filters=None):
+        def build_filters(self, filters=None, **kwargs):
             if filters is None:
                 filters = {}
 
-            orm_filters = super(MyResource, self).build_filters(filters)
+            orm_filters = super(MyResource, self).build_filters(filters, **kwargs)
 
             if "q" in filters:
                 sqs = SearchQuerySet().auto_query(filters['q'])
