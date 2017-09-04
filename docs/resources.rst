@@ -631,10 +631,10 @@ The inner ``Meta`` class allows for class-level configuration of how the
 ``abstract``
 ------------
 
-  In concrete ``Resource`` and ``ModelResource`` instances, ``object_class`` or
-  ``queryset`` are required parameters.  If you wish to build an abstract base
-  ``Resource`` class, you can bypass this requirement by setting ``abstract``
-  to ``True``.
+  In concrete ``Resource`` and ``ModelResource`` instances, either 
+  ``object_class`` or ``queryset`` is required.
+  If you wish to build an abstract base ``Resource`` class, you can bypass 
+  this requirement by setting ``abstract`` to ``True``.
 
 ``fields``
 ----------
