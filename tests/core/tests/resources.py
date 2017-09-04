@@ -1620,6 +1620,57 @@ class ModelResourceTestCase(TestCase):
                     resource_name = 'invalidnotes'
         self.assertTrue('InvalidNoteResource' in str(exception_context.exception))
 
+    def test_abstract_model_resource(self):
+        """
+        Abstract ModelResource classes don't require object_class or queryset,
+        should skip populating fields and url details.
+        """
+        class AbstractNoteResource(ModelResource):
+            class Meta:
+                abstract = True
+
+        # AbstractNoteResource should have none of the dynamic attributes generated on declaration
+        for attr in ('object_class', 'queryset', 'fields', 'base_fields', 'absolute_url'):
+            self.assertFalse(getattr(AbstractNoteResource, attr, False),
+                             "AbstractNoteResource has non-falsey %s" % attr)
+
+    def test_abstract_resource_subclass_good(self):
+        """
+        Subclassing an abstract base resource should work as expected.
+        """
+        class AbstractNoteResource(ModelResource):
+            class Meta:
+                abstract = True
+
+        class ConcreteNoteResource(AbstractNoteResource):
+            class Meta:
+                queryset = Note.objects.all()
+        resource = ConcreteNoteResource(api_name='v1')
+        resource_fields = set(resource.fields.keys())
+        self.assertEqual(resource_fields, {
+            'updated',
+            'title',
+            'created',
+            'is_active',
+            'id',
+            'content',
+            'slug',
+            'resource_uri',
+        })
+
+    def test_abstract_resource_subclass_bad(self):
+        """
+        Subclassing an abstract base resource requires model_class or queryset.
+        """
+        class AbstractNoteResource(ModelResource):
+            class Meta:
+                abstract = True
+
+        with self.assertRaises(ImproperlyConfigured):
+            class ConcreteNoteResource(AbstractNoteResource):
+                class Meta:
+                    fields = []
+
     def test_fields__empty_list(self):
         class EmptyFieldsNoteResource(ModelResource):
             class Meta:

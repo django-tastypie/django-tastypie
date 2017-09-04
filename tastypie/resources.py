@@ -155,6 +155,7 @@ class DeclarativeMetaclass(type):
         new_class = super(DeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
         opts = getattr(new_class, 'Meta', None)
         new_class._meta = ResourceOptions(opts)
+        abstract = getattr(new_class._meta, 'abstract', False)
 
         if not getattr(new_class._meta, 'resource_name', None):
             # No ``resource_name`` provided. Attempt to auto-name the resource.
@@ -168,6 +169,11 @@ class DeclarativeMetaclass(type):
                 new_class.base_fields['resource_uri'] = fields.CharField(readonly=True, verbose_name="resource uri")
         elif 'resource_uri' in new_class.base_fields and 'resource_uri' not in attrs:
             del(new_class.base_fields['resource_uri'])
+
+        if abstract and 'resource_uri' not in attrs:
+            # abstract classes don't have resource_uris unless explicitly provided
+            if 'resource_uri' in new_class.base_fields:
+                del(new_class.base_fields['resource_uri'])
 
         for field_name, field_object in new_class.base_fields.items():
             if hasattr(field_object, 'contribute_to_class'):
@@ -1781,6 +1787,11 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 class ModelDeclarativeMetaclass(DeclarativeMetaclass):
     def __new__(cls, name, bases, attrs):
         meta = attrs.get('Meta')
+        if getattr(meta, 'abstract', False):
+            # abstract base classes do nothing on declaration
+            new_class = super(ModelDeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
+            return new_class
+
         # Sanity check: ModelResource needs either a queryset or object_class:
         if meta and not hasattr(meta, 'queryset') and not hasattr(meta, 'object_class'):
             msg = "ModelResource (%s) requires Meta.object_class or Meta.queryset"
