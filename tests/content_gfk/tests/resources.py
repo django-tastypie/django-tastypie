@@ -2,7 +2,9 @@ from django.test import TestCase
 from tastypie.exceptions import NotFound
 from tastypie.contrib.contenttypes.resources import GenericResource
 
-from content_gfk.api.resources import NoteResource, DefinitionResource
+from content_gfk.api.resources import NoteResource, DefinitionResource, RatingResource
+from content_gfk.models import Rating, Note
+from core.tests.mocks import MockRequest
 
 
 class GenericResourceTestCase(TestCase):
@@ -16,3 +18,10 @@ class GenericResourceTestCase(TestCase):
     def test_resource_not_registered(self):
         bad_uri = '/api/v1/quotes/1/'
         self.assertRaises(NotFound, self.resource.get_via_uri, bad_uri)
+
+    def test_put_detail_related(self):
+        resource = RatingResource()
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        import IPython; IPython.embed()
