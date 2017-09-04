@@ -2753,7 +2753,16 @@ class ModelResourceTestCase(TestCase):
         request.method = 'PUT'
 
         self.assertEqual(Note.objects.count(), 6)
-        request.set_body('{"objects": [{"content": "The cat is back. The dog coughed him up out back.", "created": "2010-04-03 20:05:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2010-04-03 20:05:00"}]}')
+        body = {"objects":
+                [{"content": "The cat is back. The dog coughed him up out back.",
+                  "created": "2010-04-03 20:05:00",
+                  "is_active": True,
+                  "slug": "cat-is-back-again",
+                  "title": "The Cat Is Back",
+                  "updated": "2010-04-03 20:05:00"}
+                 ]
+                }
+        request.set_body(body)
 
         resp = resource.put_list(request)
         self.assertEqual(resp.status_code, 204)
@@ -2839,6 +2848,33 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(Note.objects.count(), 7)
         new_note = Note.objects.get(slug='cat-is-back')
         self.assertEqual(new_note.author, None)
+
+    def test_put_detail_exactly_one_existing(self):
+        """
+        Regression test for PUT to the detail URL when there is exactly one object in the database;
+        this should create a new object, not update the existing object.
+        """
+        resource = NoteResource()
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+
+        Note.objects.all().delete()
+        note = Note.objects.create(content='Singleton Note')
+        body = {"objects":
+                [{"content": "The cat is back. The dog coughed him up out back.",
+                  "created": "2010-04-03 20:05:00",
+                  "is_active": True,
+                  "slug": "cat-is-back-again",
+                  "title": "The Cat Is Back",
+                  "updated": "2010-04-03 20:05:00"
+                }]
+               }
+        request.set_body(body)
+
+        resp = resource.put_detail(request)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(Note.objects.count(), 2)
 
     def test_put_detail_with_use_in(self):
         new_note = Note.objects.get(slug='another-post')
@@ -3068,6 +3104,33 @@ class ModelResourceTestCase(TestCase):
         self.assertTrue("resource_uri" in data)
         self.assertTrue("title" in data)
         self.assertTrue("is_active" in data)
+
+    def test_post_list_exactly_one_existing(self):
+        """
+        Regression test for POST to the list URL when there is exactly one object in the database;
+        this should create a new object, not update the existing object.
+        """
+        resource = NoteResource()
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'POST'
+
+        Note.objects.all().delete()
+        Note.objects.create(content='Singleton Note')
+        body = {"objects":
+                [{"content": "The cat is back. The dog coughed him up out back.",
+                  "created": "2010-04-03 20:05:00",
+                  "is_active": True,
+                  "slug": "cat-is-back-again",
+                  "title": "The Cat Is Back",
+                  "updated": "2010-04-03 20:05:00"
+                }]
+               }
+        request.set_body(body)
+
+        resp = resource.post_list(request)
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(Note.objects.count(), 2)
 
     def test_post_detail(self):
         resource = NoteResource()

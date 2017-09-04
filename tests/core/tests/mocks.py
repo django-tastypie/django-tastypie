@@ -1,3 +1,5 @@
+import json
+import six
 class MockRequest(object):
     def __init__(self):
         self.GET = {}
@@ -18,4 +20,6 @@ class MockRequest(object):
         return self.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'
 
     def set_body(self, content):
+        if not isinstance(content, six.string_types):
+            content = json.dumps(content)
         self.body = content
