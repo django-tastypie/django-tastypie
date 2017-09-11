@@ -144,7 +144,7 @@ class ApiTestCase(TestCase):
 
         resp = api.top_level(request)  # This doesn't work - default Api() already registered in tests.core.api_urls
         self.assertEqual(resp.status_code, 200)
-        import IPython; IPython.embed()
+        # import IPython; IPython.embed()
         # reverse('api_3.0_top_level')
 
     def test_top_level(self):
