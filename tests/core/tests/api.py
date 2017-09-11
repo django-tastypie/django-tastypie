@@ -12,6 +12,7 @@ from tastypie.serializers import Serializer
 
 from core.models import Note
 from core.utils import adjust_schema
+from django.urls.base import reverse
 User = get_user_model()
 
 
@@ -127,6 +128,24 @@ class ApiTestCase(TestCase):
         self.assertEqual(len(patterns), 3)
         self.assertEqual(sorted([pattern.name for pattern in patterns if hasattr(pattern, 'name')]), ['api_v2_top_level'])
         self.assertEqual([[pattern.name for pattern in include.url_patterns if hasattr(pattern, 'name')] for include in patterns if hasattr(include, 'reverse_dict')], [['api_dispatch_list', 'api_get_schema', 'api_get_multiple', 'api_dispatch_detail'], ['api_dispatch_list', 'api_get_schema', 'api_get_multiple', 'api_dispatch_detail']])
+
+    def test_url_special_chars(self):
+        """
+        Regression test to ensure "invalid" characters are properly escaped in urls.
+        """
+        api = Api(api_name="v3.0")
+        note_resource = NoteResource()
+        user_resource = UserResource()
+
+        api.register(note_resource)
+        api.register(user_resource)
+        request = HttpRequest()
+        request.GET = {'fullschema': 'true'}
+
+        resp = api.top_level(request)  # This doesn't work - default Api() already registered in tests.core.api_urls
+        self.assertEqual(resp.status_code, 200)
+        import IPython; IPython.embed()
+        # reverse('api_3.0_top_level')
 
     def test_top_level(self):
         api = Api()
