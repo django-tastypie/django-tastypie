@@ -1488,8 +1488,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         ``Meta.always_return_data = False`` (default), return ``HttpNoContent``
         (204 No Content).
         If an existing resource is modified and
-        ``Meta.always_return_data = True``, return ``HttpAccepted`` (200
-        OK).
+        ``Meta.always_return_data = True``, return Http 200 OK.
         """
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
