@@ -1770,7 +1770,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 bundle = self.build_bundle(obj=obj, request=request)
                 bundle = self.full_dehydrate(bundle, for_list=True)
                 objects.append(bundle)
-            except (ObjectDoesNotExist, Unauthorized):
+            except (ObjectDoesNotExist, Unauthorized, ImmediateHttpResponse):
                 not_found.append(identifier)
 
         object_list = {
