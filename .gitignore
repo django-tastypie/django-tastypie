@@ -11,3 +11,4 @@ tests/tastypie.db
 .tox
 env
 env3
+.idea
