@@ -76,7 +76,7 @@ class Authentication(object):
 
         try:
             auth_type, data = authorization.split(' ', 1)
-        except:
+        except ValueError:
             raise ValueError('Authorization header must have a space separating auth_type and data.')
 
         if auth_type.lower() != self.auth_type:

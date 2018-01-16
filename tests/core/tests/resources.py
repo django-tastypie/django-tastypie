@@ -827,7 +827,7 @@ class ResourceTestCase(TestCase):
         # Allowed (single).
         try:
             basic.is_authenticated(request)
-        except:
+        except ImmediateHttpResponse:
             self.fail()
 
     def test_create_response(self):
@@ -4501,10 +4501,8 @@ class ModelResourceTestCase(TestCase):
         note = NoteResource()
         bundle = Bundle(data={})
 
-        try:
-            note.is_valid(bundle)
-        except:
-            self.fail("Stock 'is_valid' should pass without exception.")
+        note_is_valid = note.is_valid(bundle)
+        self.assertTrue(note_is_valid, "Stock 'is_valid' should return True.")
 
         # An actual form.
         class NoteForm(forms.Form):
