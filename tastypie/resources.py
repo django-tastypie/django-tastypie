@@ -973,12 +973,13 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                                 setattr(bundle.obj, field_object.attribute, value.obj)
                             except (ValueError, ObjectDoesNotExist):
                                 bundle.related_objects_to_save[field_object.attribute] = value.obj
+                        # not required, not sent
+                        elif field_object.blank and field_name not in bundle.data:
+                            continue
                         elif field_object.null:
                             if not isinstance(getattr(bundle.obj.__class__, field_object.attribute, None), ReverseOneToOneDescriptor):
                                 # only update if not a reverse one to one field
                                 setattr(bundle.obj, field_object.attribute, value)
-                        elif field_object.blank:
-                            continue
 
         return bundle
 

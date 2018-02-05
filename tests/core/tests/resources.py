@@ -586,6 +586,28 @@ class ResourceTestCase(TestCase):
         self.assertEqual(hydrated.obj.date_joined, None)
         self.assertEqual(hydrated.obj.parent, None)
 
+    def test_full_hydrate__does_not_overwrite_related_value_if_not_put(self):
+        class RelatedBasicResource(BasicResource):
+            parent = fields.ToOneField(BasicResource, 'parent', null=True, blank=True)
+        basic = RelatedBasicResource()
+        basic_bundle_1 = Bundle(data={
+            'name': 'Daniel',
+            'date_joined': None,
+        })
+        basic_bundle_1.obj = Mock()
+        basic_bundle_1.obj.date_joined = aware_datetime(2010, 2, 15, 12, 0, 0)
+        basic_bundle_1.obj.view_count = 3
+        basic_bundle_1.obj.parent = Mock()
+
+        self.assertNotEqual(basic_bundle_1.obj.view_count, None)
+        self.assertNotEqual(basic_bundle_1.obj.parent, None)
+
+        # Now load up the data.
+        hydrated = basic.full_hydrate(basic_bundle_1)
+
+        self.assertNotEqual(hydrated.obj.view_count, None)
+        self.assertNotEqual(hydrated.obj.parent, None)
+
     def test_obj_get_list(self):
         basic = BasicResource()
         bundle = Bundle()
@@ -1240,6 +1262,11 @@ class YetAnotherRelatedNoteResource(ModelResource):
 
 class NullableRelatedNoteResource(AnotherRelatedNoteResource):
     author = fields.ForeignKey(UserResource, 'author', null=True)
+    subjects = fields.ManyToManyField(SubjectResource, 'subjects', null=True)
+
+
+class NullableBlankRelatedNoteResource(AnotherRelatedNoteResource):
+    author = fields.ForeignKey(UserResource, 'author', null=True, blank=True)
     subjects = fields.ManyToManyField(SubjectResource, 'subjects', null=True)
 
 
@@ -2839,6 +2866,23 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(Note.objects.count(), 7)
         new_note = Note.objects.get(slug='cat-is-back')
         self.assertEqual(new_note.author, None)
+
+        # Test for issue 1489, if blank=True, PUT would clobber existing values if field not sent
+        new_note = Note.objects.create(slug='cat-is-back-again')
+        author = User.objects.create(username='johndoer')
+        new_note.author = author
+        new_note.save()
+        nullable_resource = NullableBlankRelatedNoteResource()
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.set_body('{"content": "The cat is back. The dog coughed him up out back.", "created": "2016-12-12 14:10:00", "is_active": true, "slug": "cat-is-back-again", "title": "The Cat Is Back", "updated": "2016-12-12 14:10:00"}')
+
+        resp = nullable_resource.put_detail(request, pk=new_note.pk)
+        self.assertEqual(resp.status_code, 204)
+        self.assertNotIn('Content-Type', resp)
+        new_note = Note.objects.get(slug='cat-is-back-again')
+        self.assertEqual(new_note.author, author)
 
     def test_put_detail_with_use_in(self):
         new_note = Note.objects.get(slug='another-post')
