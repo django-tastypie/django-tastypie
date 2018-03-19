@@ -4,8 +4,8 @@ import sys
 from distutils.version import StrictVersion
 import django
 django_version_string = django.get_version()
-if django_version_string.startswith('2.0.dev'):
-    DJANGO_VERSION = StrictVersion('2.0')
+if django_version_string.startswith('2.1.dev'):
+    DJANGO_VERSION = StrictVersion('2.1')
 else:
     DJANGO_VERSION = StrictVersion(django.get_version())
 DJANGO_20 = StrictVersion('2.0')

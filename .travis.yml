@@ -6,6 +6,7 @@ python:
   - "2.7"
   - "3.4"
   - "3.5"
+  - "3.6"
 
 env:
   - MODE=flake8
@@ -13,6 +14,7 @@ env:
   - MODE=docs
   - DJANGO_VERSION=dj18
   - DJANGO_VERSION=dj111
+  - DJANGO_VERSION=dj20
   - DJANGO_VERSION=djdev
 
 matrix:
@@ -24,8 +26,12 @@ matrix:
       env: MODE=flake8
     - python: "3.4"
       env: MODE=flake8-strict
+    - python: "3.4"
+      env: DJANGO_VERSION=djdev
     - python: "2.7"
       env: DJANGO_VERSION=djdev
+    - python: "2.7"
+      env: DJANGO_VERSION=dj20
 
 addons:
   apt:
