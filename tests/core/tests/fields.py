@@ -648,6 +648,19 @@ class UserResource(ModelResource):
         return '/api/v1/users/%s/' % bundle_or_obj.obj.id
 
 
+class NoteResource(ModelResource):
+    class Meta:
+        queryset = Note.objects.all()
+
+
+class UserWithNotesResource(ModelResource):
+    class Meta:
+        resource_name = 'users_with_notes'
+        queryset = User.objects.all()
+
+    notes = ToManyField(NoteResource, 'notes')
+
+
 class ToOneFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
 
@@ -1005,6 +1018,7 @@ class ToManyFieldTestCase(TestCase):
         self.note_1.subjects.add(self.subject_2)
         self.note_2.subjects.add(self.subject_1)
         self.note_2.subjects.add(self.subject_3)
+        self.user_1 = User.objects.create_user('foo', 'pass')
 
     def test_init(self):
         field_1 = ToManyField(SubjectResource, 'subjects')
@@ -1387,3 +1401,10 @@ class ToManyFieldTestCase(TestCase):
         field_2 = ToOneField(SubjectResource, 'fakefield__subjects')
         field_2.instance_name = 'm2m'
         self.assertRaises(ApiFieldError, field_2.hydrate, bundle)
+
+    def test_wrong_attribute_name(self):
+        request = MockRequest()
+        request.path = "/api/v1/userswithnotes/"
+        field_1 = ToManyField(NoteResource, 'notes_with_wrong_name', null=True)
+        bundle_1 = Bundle(obj=self.user_1, request=request)
+        self.assertRaises(ApiFieldError, field_1.dehydrate, bundle_1)
