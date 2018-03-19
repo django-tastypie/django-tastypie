@@ -763,6 +763,10 @@ class ToOneFieldTestCase(TestCase):
         field_3 = ToOneField(UserResource, lambda bundle: None)
         self.assertRaises(ApiFieldError, field_3.dehydrate, bundle)
 
+        # Regression: dehydrating a field with no related data and null=True should not yield exception
+        field_4 = ToManyField(UserResource, null=True, attribute=lambda bundle: None)
+        self.assertEqual(field_4.dehydrate(bundle), [])
+
     def test_dehydrate_full_detail_list(self):
         note = Note.objects.get(pk=1)
         request = MockRequest()
