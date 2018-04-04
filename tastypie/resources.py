@@ -1749,8 +1749,11 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         Returns a serialized list of resources based on the identifiers
         from the URL.
 
-        Calls ``obj_get`` to fetch only the objects requested. This method
-        only responds to HTTP GET.
+        Calls ``obj_get_list`` to fetch only the objects requests in
+        a single query. This method only responds to HTTP GET.
+
+        For backward compatibility the method ``obj_get`` is used if
+        ``obj_get_list`` is not implemented.
 
         Should return a HttpResponse (200 OK).
         """
@@ -1765,14 +1768,34 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         not_found = []
         base_bundle = self.build_bundle(request=request)
 
-        for identifier in obj_identifiers:
-            try:
-                obj = self.obj_get(bundle=base_bundle, **{self._meta.detail_uri_name: identifier})
-                bundle = self.build_bundle(obj=obj, request=request)
-                bundle = self.full_dehydrate(bundle, for_list=True)
-                objects.append(bundle)
-            except (ObjectDoesNotExist, Unauthorized):
-                not_found.append(identifier)
+        # Create a list of objects.
+        raw_objects  = []
+
+        # Try to fetch the objects using a single query,
+        # if ``obj_get_list`` is not implemented use ``obj_get``.
+        try:
+            queryset = self.obj_get_list(bundle=base_bundle, **{self._meta.detail_uri_name + '__in': obj_identifiers})
+            for obj in queryset:
+                raw_objects.append(obj)
+        except NotImplementedError:
+            for identifier in obj_identifiers:
+                try:
+                    obj = self.obj_get(bundle=base_bundle, **{self._meta.detail_uri_name: identifier})
+                    raw_objects.append(obj)
+                except (ObjectDoesNotExist, Unauthorized):
+                    pass
+
+        # We got these identifiers.
+        got_identifiers = [getattr(obj, self._meta.detail_uri_name) for obj in raw_objects if hasattr(obj, self._meta.detail_uri_name)]
+
+        # Compute the not_found list.
+        not_found = list(set(obj_identifiers) - set(got_identifiers))
+
+        # Process the list of objects.
+        for obj in raw_objects:
+            bundle = self.build_bundle(obj=obj, request=request)
+            bundle = self.full_dehydrate(bundle, for_list=True)
+            objects.append(bundle)
 
         object_list = {
             self._meta.collection_name: objects,
