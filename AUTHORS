@@ -36,7 +36,7 @@ Contributors:
 * Ed Summers (edsu) for a setup.py patch.
 * Sébastien Fievet (zyegfryed) for the initial OAuth implementation.
 * Jacob Kaplan-Moss (jacobkm) for the PATCH patch.
-* jorgeecardona for a patch in renaming the ``objects`` name of the response.
+* Jorge E. Cardona (jorgeecardona) for a patch in renaming the ``objects`` name of the response, and get_multiple in one query.
 * vbabiy for a patch on improved use of ``bundle.request`` & related resource validation.
 * philipn (Philip Neustrom) for GeoDjango integration.
 * dgerzo (Daniel Gerzo) for GeoDjango integration, work on PATCH and related fields, improving the ``run_all_tests.sh`` script & several smaller patches..
