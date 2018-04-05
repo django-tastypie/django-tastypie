@@ -1772,7 +1772,8 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         queryset = None
 
         try:
-            queryset = self.obj_get_list(bundle=base_bundle, **{self._meta.detail_uri_name + '__in': obj_identifiers})
+            queryset = self.obj_get_list(bundle=base_bundle).filter(
+                **{self._meta.detail_uri_name + '__in': obj_identifiers})
         except NotImplementedError:
             pass
 
