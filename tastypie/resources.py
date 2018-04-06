@@ -1778,16 +1778,19 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             pass
 
         if queryset is not None:
-            # Fetch the objects from the queryset.
-            not_found = set(obj_identifiers)
+            # Fetch the objects from the queryset to a dictionary.
+            objects_dict = {}
             for obj in queryset:
-                not_found.discard(str(getattr(obj, self._meta.detail_uri_name)))
-                bundle = self.build_bundle(obj=obj, request=request)
-                bundle = self.full_dehydrate(bundle, for_list=True)
-                objects.append(bundle)
+                objects_dict[str(getattr(obj, self._meta.detail_uri_name))] = obj
 
-            # Turn not_found into a list.
-            not_found = list(not_found)
+            # Walk the list of identifiers in order and get the objects or feed the not_found list.
+            for identifier in obj_identifiers:
+                if identifier in objects_dict:
+                    bundle = self.build_bundle(obj=objects_dict[identifier], request=request)
+                    bundle = self.full_dehydrate(bundle, for_list=True)
+                    objects.append(bundle)
+                else:
+                    not_found.append(identifier)
         else:
             # Use the old way.
             for identifier in obj_identifiers:
