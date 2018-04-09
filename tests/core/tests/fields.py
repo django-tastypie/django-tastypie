@@ -782,6 +782,13 @@ class ToOneFieldTestCase(TestCase):
         field_1 = ToOneField(UserResource, 'author', full=True, full_detail=False)
         self.assertEqual(field_1.dehydrate(bundle, for_list=False), '/api/v1/users/1/')
 
+    def test_dehydrate_bad_attribute(self):
+        note = Note.objects.get(pk=1)
+        bundle = Bundle(obj=note)
+        field_1 = ToManyField(UserResource, 'bad_attribute_name')
+        with self.assertRaises(ApiFieldError):
+            field_1.dehydrate(bundle)
+
     def test_hydrate(self):
         note = Note()
         bundle = Bundle(obj=note)
