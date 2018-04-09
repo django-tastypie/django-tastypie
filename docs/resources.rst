@@ -878,7 +878,7 @@ sent. Occurs after any dehydration has by applied.
 As such this is a useful place to apply modifications which affect many
 list elements.
 
-Example:
+Example::
 
     def alter_list_data_to_serialize(self, request, data):
         bar = some_expensive_call()
