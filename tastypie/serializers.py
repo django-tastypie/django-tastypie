@@ -119,7 +119,7 @@ class Serializer(object):
         * jsonp (Disabled by default)
         * xml
         * yaml
-        * plist (see http://explorapp.com/biplist/)
+        * plist (see https://bitbucket.org/wooster/biplist)
 
     It was designed to make changing behavior easy, either by overridding the
     various format methods (i.e. ``to_json``), by changing the
