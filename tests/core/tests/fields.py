@@ -763,6 +763,10 @@ class ToOneFieldTestCase(TestCase):
         field_3 = ToOneField(UserResource, lambda bundle: None)
         self.assertRaises(ApiFieldError, field_3.dehydrate, bundle)
 
+        # Regression: dehydrating a field with no related data and null=True should not yield exception
+        field_4 = ToManyField(UserResource, null=True, attribute=lambda bundle: None)
+        self.assertEqual(field_4.dehydrate(bundle), [])
+
     def test_dehydrate_full_detail_list(self):
         note = Note.objects.get(pk=1)
         request = MockRequest()
@@ -777,6 +781,13 @@ class ToOneFieldTestCase(TestCase):
         request.path = "/api/v1/notes/1/"
         field_1 = ToOneField(UserResource, 'author', full=True, full_detail=False)
         self.assertEqual(field_1.dehydrate(bundle, for_list=False), '/api/v1/users/1/')
+
+    def test_dehydrate_bad_attribute(self):
+        note = Note.objects.get(pk=1)
+        bundle = Bundle(obj=note)
+        field_1 = ToManyField(UserResource, 'bad_attribute_name')
+        with self.assertRaises(ApiFieldError):
+            field_1.dehydrate(bundle)
 
     def test_hydrate(self):
         note = Note()
