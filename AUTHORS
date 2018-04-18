@@ -36,7 +36,7 @@ Contributors:
 * Ed Summers (edsu) for a setup.py patch.
 * Sébastien Fievet (zyegfryed) for the initial OAuth implementation.
 * Jacob Kaplan-Moss (jacobkm) for the PATCH patch.
-* jorgeecardona for a patch in renaming the ``objects`` name of the response.
+* Jorge E. Cardona (jorgeecardona) for a patch in renaming the ``objects`` name of the response, and get_multiple in one query.
 * vbabiy for a patch on improved use of ``bundle.request`` & related resource validation.
 * philipn (Philip Neustrom) for GeoDjango integration.
 * dgerzo (Daniel Gerzo) for GeoDjango integration, work on PATCH and related fields, improving the ``run_all_tests.sh`` script & several smaller patches..
@@ -94,6 +94,16 @@ Contributors:
 * Guilhem Saurel (Nim65s) for a minor issue with Django 1.9
 * Jack Cushman (jcushman) for converting ResourceTestCase to ResourceTestCaseMixin.
 * John Lucas (jlucas91) for an improvement to the response for requests with invalid JSON.
+* Judit Novak (juditnovak) for related schema updates
+* Mike Bryant (mikebryant) for unit tests
+* Maxim Filipenko (prokaktus) for changing repr value to str in Python 2
+* Thomas Yip (thomasyip) PR #1409
+* Matt Cooper (vtbassmatt) for making ApiKey better in Python 3
+* Nick Sullivan (gorillamania) for admin improvements.
+* Danny Roberts (dannyroberts) for very small change addressing noisy RemovedInDjango20Warning warnings
+* Sam Thompson (georgedorn) for ongoing maintenance and release management.
+* Matt Briançon (mattbriancon) for various patches
+
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 

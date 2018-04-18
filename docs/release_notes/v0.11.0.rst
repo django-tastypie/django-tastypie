@@ -11,7 +11,7 @@ This release is also the first to be released as a `Python wheel`_ as well. Ex::
     pip install wheel
     pip install --use-wheel django-tastypie
 
-.. _`Python wheel`: http://wheel.readthedocs.org/
+.. _`Python wheel`: https://wheel.readthedocs.io/
 
 
 Bugfixes

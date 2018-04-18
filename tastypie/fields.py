@@ -7,6 +7,7 @@ from decimal import Decimal
 import importlib
 
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
+from django.db import models
 try:
     from django.db.models.fields.related import\
         SingleRelatedObjectDescriptor as ReverseOneToOneDescriptor
@@ -127,13 +128,12 @@ class ApiField(object):
                 current_object = getattr(current_object, attr, None)
 
                 if current_object is None:
-                    if self.has_default():
-                        current_object = self._default
+                    if self.null:
                         # Fall out of the loop, given any further attempts at
                         # accesses will fail miserably.
                         break
-                    elif self.null:
-                        current_object = None
+                    elif self.has_default():
+                        current_object = self._default
                         # Fall out of the loop, given any further attempts at
                         # accesses will fail miserably.
                         break
@@ -389,7 +389,7 @@ class DateTimeField(ApiField):
         if isinstance(value, six.string_types):
             try:
                 year, month, day = value[:10].split('-')
-                hour, minute, second = value[10:18].split(':')
+                hour, minute, second = value[11:19].split(':')
 
                 return make_aware(datetime_safe.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second)))
             except ValueError:
@@ -432,7 +432,6 @@ class RelatedField(ApiField):
     """
     dehydrated_type = 'related'
     is_related = True
-    self_referential = False
     help_text = 'A related resource. Can be either a URI or set of nested resource data.'
 
     def __init__(self, to, attribute, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None, use_in='all', verbose_name=None, full_list=True, full_detail=True):
@@ -507,18 +506,6 @@ class RelatedField(ApiField):
         self.api_name = None
         self.resource_name = None
 
-        if self.to == 'self':
-            self.self_referential = True
-
-    def contribute_to_class(self, cls, name):
-        super(RelatedField, self).contribute_to_class(cls, name)
-
-        # Check if we're self-referential and hook it up.
-        # We can't do this quite like Django because there's no ``AppCache``
-        # here (which I think we should avoid as long as possible).
-        if self.self_referential or self.to == 'self':
-            self._to_class = cls
-
     def get_related_resource(self, related_instance):
         """
         Instaniates the related resource.
@@ -548,6 +535,13 @@ class RelatedField(ApiField):
 
         if not isinstance(self.to, six.string_types):
             self._to_class = self.to
+            return self._to_class
+
+        # Check if we're self-referential and hook it up.
+        # We can't do this quite like Django because there's no ``AppCache``
+        # here (which I think we should avoid as long as possible).
+        if self.to == 'self':
+            self._to_class = self._resource
             return self._to_class
 
         # It's a string. Let's figure it out.
@@ -646,11 +640,11 @@ class RelatedField(ApiField):
         # We also need to check to see if updates are allowed on the FK resource.
         if not obj and unique_keys:
             try:
-                fk_resource.obj_get(fk_bundle, skip_errors=True, **data)
+                fk_resource.obj_get(fk_bundle, **data)
             except (ObjectDoesNotExist, NotFound, TypeError):
                 try:
                     # Attempt lookup by primary key
-                    fk_resource.obj_get(fk_bundle, skip_errors=True, **unique_keys)
+                    fk_resource.obj_get(fk_bundle, **unique_keys)
                 except (ObjectDoesNotExist, NotFound):
                     pass
             except MultipleObjectsReturned:
@@ -744,6 +738,19 @@ class ToOneField(RelatedField):
             full_detail=full_detail
         )
 
+    def contribute_to_class(self, cls, name):
+        super(ToOneField, self).contribute_to_class(cls, name)
+        if not self.related_name:
+            related_field = getattr(self._resource._meta.object_class, self.attribute, None)
+            if isinstance(related_field, ReverseOneToOneDescriptor):
+                # This is the case when we are writing to a reverse one to one field.
+                # Enable related name to make this work fantastically.
+                # see https://code.djangoproject.com/ticket/18638 (bug; closed; worksforme)
+                # and https://github.com/django-tastypie/django-tastypie/issues/566
+
+                # this gets the related_name of the one to one field of our model
+                self.related_name = related_field.related.field.name
+
     def dehydrate(self, bundle, for_list=True):
         foreign_obj = None
 
@@ -777,15 +784,6 @@ class ToOneField(RelatedField):
 
         if value is None:
             return value
-
-        if bundle.obj and isinstance(getattr(bundle.obj.__class__, self.attribute), ReverseOneToOneDescriptor):
-            # This is the case when we are writing to a reverse one to one field.
-            # Enable related name to make this work fantastically.
-            # see https://code.djangoproject.com/ticket/18638 (bug; closed; worksforme)
-            # and https://github.com/django-tastypie/django-tastypie/issues/566
-
-            # this gets the related_name of the one to one field of our model
-            self.related_name = getattr(bundle.obj.__class__, self.attribute).related.field.name
 
         return self.build_related_resource(value, request=bundle.request)
 
@@ -852,24 +850,24 @@ class ToManyField(RelatedField):
                 except ObjectDoesNotExist:
                     the_m2ms = None
 
-                if not the_m2ms:
+                if the_m2ms is None:
                     break
 
-        if not the_m2ms:
+        if the_m2ms is None:
             if not self.null:
                 raise ApiFieldError("The model '%r' has an empty attribute '%s' and doesn't allow a null value." % (previous_obj, attr))
-
             return []
 
-        # TODO: Also model-specific and leaky. Relies on there being a
-        #       ``Manager`` there.
+        if isinstance(the_m2ms, models.Manager):
+            the_m2ms = the_m2ms.all()
+
         m2m_dehydrated = [
             self.dehydrate_related(
                 Bundle(obj=m2m, request=bundle.request),
                 self.get_related_resource(m2m),
                 for_list=for_list
             )
-            for m2m in the_m2ms.all()
+            for m2m in the_m2ms
         ]
 
         return m2m_dehydrated

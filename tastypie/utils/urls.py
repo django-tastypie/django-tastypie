@@ -12,4 +12,5 @@ class CallableUnicode(six.text_type):
     def __call__(self):
         return self
 
+
 trailing_slash = CallableUnicode(_trailing_slash)

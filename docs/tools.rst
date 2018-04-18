@@ -46,7 +46,8 @@ Python
 Slumber
 -------
 
-http://slumber.in/
+https://pypi.python.org/pypi/slumber/
+https://github.com/samgiles/slumber
 
 Slumber is a small Python library that makes it easy to access & work with
 APIs. It works for many others, but works especially well with Tastypie.
@@ -69,7 +70,7 @@ Here is what it looks like::
 drest
 -----
 
-http://drest.rtfd.org/
+https://drest.readthedocs.io/
 
 drest is another small Python library. It focuses on extensibility & can also
 work with many different API, with an emphasis on Tastypie.

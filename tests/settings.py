@@ -1,11 +1,25 @@
 import os
 import sys
 
+from distutils.version import StrictVersion
+import django
+django_version_string = django.get_version()
+if django_version_string.startswith('2.1.dev'):
+    DJANGO_VERSION = StrictVersion('2.1')
+else:
+    DJANGO_VERSION = StrictVersion(django.get_version())
+DJANGO_20 = StrictVersion('2.0')
+DJANGO_11 = StrictVersion('1.11')
+DJANGO_19 = StrictVersion('1.9')
+DJANGO_18 = StrictVersion('1.8')
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 ADMINS = (
     ('test@example.com', 'Mr. Test'),
 )
+
+ALLOWED_HOSTS = [u'example.com']
 
 SITE_ID = 1
 
@@ -22,10 +36,13 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.%s' % DATABASE_ENGINE,
         'NAME': DATABASE_NAME,
-        'TEST_NAME': TEST_DATABASE_NAME,
+        'TEST': {
+            'NAME': TEST_DATABASE_NAME,
+        },
     }
 }
 
+ALLOWED_HOSTS = ['example.com']
 
 INSTALLED_APPS = [
     'django.contrib.auth',
@@ -62,11 +79,18 @@ TASTYPIE_FULL_DEBUG = False
 
 USE_TZ = True
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-)
+]
+
+if DJANGO_VERSION < DJANGO_11:
+    MIDDLEWARE_CLASSES = MIDDLEWARE
+
+if DJANGO_VERSION >= DJANGO_20:
+    MIDDLEWARE.remove('django.contrib.auth.middleware.SessionAuthenticationMiddleware')

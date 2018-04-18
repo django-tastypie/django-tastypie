@@ -1,20 +1,21 @@
 import json
 
+from django.test.utils import override_settings
+
 from basic.models import Note
 from testcases import TestCaseWithFixture
 
 
+@override_settings(ROOT_URLCONF='validation.api.urls')
 class FilteringErrorsTestCase(TestCaseWithFixture):
-    urls = 'validation.api.urls'
-
     def test_valid_date(self):
         resp = self.client.get('/api/v1/notes/', data={
             'format': 'json',
-            'created__gte': '2010-03-31'
+            'created__gte': '2010-03-31 00:00:00Z'
         })
         self.assertEqual(resp.status_code, 200)
         deserialized = json.loads(resp.content.decode('utf-8'))
-        self.assertEqual(len(deserialized['objects']), Note.objects.filter(created__gte='2010-03-31').count())
+        self.assertEqual(len(deserialized['objects']), Note.objects.filter(created__gte='2010-03-31 00:00:00Z').count())
 
     def test_invalid_date(self):
         resp = self.client.get('/api/v1/notes/', data={
@@ -24,9 +25,8 @@ class FilteringErrorsTestCase(TestCaseWithFixture):
         self.assertEqual(resp.status_code, 400)
 
 
+@override_settings(ROOT_URLCONF='validation.api.urls')
 class PostNestResouceValidationTestCase(TestCaseWithFixture):
-    urls = 'validation.api.urls'
-
     def test_valid_data(self):
         data = json.dumps({
             'title': 'Test Title',
@@ -62,9 +62,8 @@ class PostNestResouceValidationTestCase(TestCaseWithFixture):
         })
 
 
+@override_settings(ROOT_URLCONF='validation.api.urls')
 class PutDetailNestResouceValidationTestCase(TestCaseWithFixture):
-    urls = 'validation.api.urls'
-
     def test_valid_data(self):
         data = json.dumps({
             'title': 'Test Title',
@@ -100,9 +99,8 @@ class PutDetailNestResouceValidationTestCase(TestCaseWithFixture):
         })
 
 
+@override_settings(ROOT_URLCONF='validation.api.urls')
 class PutListNestResouceValidationTestCase(TestCaseWithFixture):
-    urls = 'validation.api.urls'
-
     def test_valid_data(self):
         data = json.dumps({'objects': [
             {

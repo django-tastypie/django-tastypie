@@ -27,6 +27,7 @@ To define a resource that takes advantage of the geospatial features,
 we use ``tastypie.contrib.gis.resources.ModelResource``::
 
     from tastypie.contrib.gis.resources import ModelResource
+    from tastypie.resources import ALL
 
     class GeoNoteResource(ModelResource):
         class Meta:

@@ -2,8 +2,8 @@ from __future__ import unicode_literals
 import warnings
 from django.conf.urls import url, include
 from django.core.exceptions import ImproperlyConfigured
-from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseBadRequest
+from tastypie.compat import reverse
 from tastypie.exceptions import NotRegistered, BadRequest
 from tastypie.serializers import Serializer
 from tastypie.utils import is_valid_jsonp_callback_value, string_to_python, trailing_slash

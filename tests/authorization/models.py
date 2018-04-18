@@ -6,7 +6,8 @@ from tastypie.utils.timezone import now
 
 
 class AuthorProfile(models.Model):
-    user = models.OneToOneField(User, related_name='author_profile')
+    user = models.OneToOneField(User, related_name='author_profile',
+                                on_delete=models.CASCADE)
     short_bio = models.CharField(max_length=255, blank=True, default='')
     bio = models.TextField(blank=True, default='')
     # We'll use the ``sites`` the author is assigned to as a way to control

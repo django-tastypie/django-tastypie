@@ -38,16 +38,36 @@ class Unauthorized(TastypieError):
 
 class ApiFieldError(TastypieError):
     """
-    Raised when there is a configuration error with a ``ApiField``.
+    Raised when there is a validation error with an ``ApiField``.
     """
     pass
 
 
 class UnsupportedFormat(TastypieError):
     """
+    Raised when an unsupported serialization/deserialization format is requested.
+    Two more specific subclasses are provided, ``UnsupportedSerializationFormat``
+    and ``UnsupportedDeserializationFormat``.
+    """
+    _msg_template = '%s'
+
+    def __init__(self, msg, *args, **kwargs):
+        msg = self._msg_template % msg
+        super(UnsupportedFormat, self).__init__(msg, *args, **kwargs)
+
+
+class UnsupportedSerializationFormat(UnsupportedFormat):
+    """
     Raised when an unsupported serialization format is requested.
     """
-    pass
+    _msg_template = "The format indicated '%s' had no available serialization method. Please check your ``formats`` and ``content_types`` on your Serializer."
+
+
+class UnsupportedDeserializationFormat(UnsupportedFormat):
+    """
+    Raised when an unsupported deserialization format is requested.
+    """
+    _msg_template = "The format indicated '%s' had no available deserialization method. Please check your ``formats`` and ``content_types`` on your Serializer."
 
 
 class BadRequest(TastypieError):
@@ -66,7 +86,7 @@ class BlueberryFillingFound(TastypieError):
 
 class InvalidFilterError(BadRequest):
     """
-    Raised when the end user attempts to use a filter that has not be
+    Raised when the end user attempts to use a filter that has not been
     explicitly allowed.
     """
     pass
@@ -74,7 +94,7 @@ class InvalidFilterError(BadRequest):
 
 class InvalidSortError(BadRequest):
     """
-    Raised when the end user attempts to sort on a field that has not be
+    Raised when the end user attempts to sort on a field that has not been
     explicitly allowed.
     """
     pass

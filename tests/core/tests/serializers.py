@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 from decimal import Decimal
+import mock
 from unittest import skipIf
 import yaml
 
@@ -10,7 +11,7 @@ from django.test import TestCase
 from tastypie.bundle import Bundle
 from tastypie import fields
 from tastypie.exceptions import BadRequest
-from tastypie.serializers import Serializer
+from tastypie.serializers import _get_default_formats, Serializer
 from tastypie.resources import ModelResource
 
 from core.models import Note
@@ -48,6 +49,20 @@ class AnotherNoteResource(ModelResource):
         bundle.data['meta'] = {'threat': 'high'}
         bundle.data['owed'] = Decimal('102.57')
         return bundle
+
+
+class GetDefaultFormatsTestCase(TestCase):
+    @mock.patch.multiple('tastypie.serializers', lxml=True, yaml=True, biplist=True)
+    def test_all(self):
+        formats = _get_default_formats()
+
+        self.assertEqual(formats, ['json', 'xml', 'yaml', 'plist'])
+
+    @mock.patch.multiple('tastypie.serializers', lxml=False, yaml=False, biplist=False)
+    def test_json_only(self):
+        formats = _get_default_formats()
+
+        self.assertEqual(formats, ['json'])
 
 
 class SerializerTestCase(TestCase):

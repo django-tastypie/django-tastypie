@@ -41,7 +41,7 @@ The default ``Serializer`` supports the following formats:
 * jsonp (Disabled by default)
 * xml
 * yaml
-* plist (see http://explorapp.com/biplist/)
+* plist (see https://bitbucket.org/wooster/biplist)
 
 Not everyone wants to install or support all the serialization options. If you
 would like to customize the list of supported formats for your entire site

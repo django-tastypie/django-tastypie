@@ -8,16 +8,16 @@ For various reasons you might want to deploy your API under a namespaced URL pat
 
 A sample definition of your API in this case would be something like::
 
-    from django.conf.urls.defaults import *
+    from django.conf.urls import url, include
     from tastypie.api import NamespacedApi
     from my_application.api.resources import NamespacedUserResource
 
     api = NamespacedApi(api_name='v1', urlconf_namespace='special')
     api.register(NamespacedUserResource())
 
-    urlpatterns = patterns('',
+    urlpatterns = [
         url(r'^api/', include(api.urls, namespace='special')),
-    )
+    ]
 
 And your model resource::
 

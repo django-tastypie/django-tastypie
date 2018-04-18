@@ -3,7 +3,7 @@ from dateutil.tz import tzoffset
 from decimal import Decimal
 
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.http import HttpRequest
 
@@ -12,11 +12,12 @@ from tastypie.exceptions import ApiFieldError, NotFound
 from tastypie.fields import NOT_PROVIDED, ApiField, BooleanField, CharField,\
     DateField, DateTimeField, DecimalField, DictField, FileField, FloatField,\
     IntegerField, ListField, TimeField, ToOneField, ToManyField
-from tastypie.resources import ModelResource
+from tastypie.resources import ALL, ModelResource
 from tastypie.utils import aware_datetime
 
 from core.models import Note, Subject, MediaBit
 from core.tests.mocks import MockRequest
+User = get_user_model()
 
 
 class ApiFieldTestCase(TestCase):
@@ -96,6 +97,19 @@ class ApiFieldTestCase(TestCase):
         # Correct callable attribute.
         field_6 = ApiField(attribute='what_time_is_it', default=True)
         self.assertEqual(field_6.dehydrate(bundle), aware_datetime(2010, 4, 1, 0, 48))
+
+        # Wrong attribute with default and null=True should yield null
+        field_7 = ApiField(attribute='foo', null=True, default='bar')
+        self.assertEqual(field_7.dehydrate(bundle), None)
+
+        # Correct attribute with value of None, a default, and null=True
+        # should yield null
+        original_author = note.author
+        note.author = None
+        note.save()
+        field_8 = ApiField(attribute='author', null=True,
+                           default=original_author)
+        self.assertEqual(field_8.dehydrate(bundle), None)
 
     def test_convert(self):
         field_1 = ApiField()
@@ -568,9 +582,13 @@ class DateTimeFieldTestCase(TestCase):
         field_2 = DateTimeField(default=aware_datetime(2010, 4, 1, 1, 7))
         self.assertEqual(field_2.dehydrate(bundle), aware_datetime(2010, 4, 1, 1, 7))
 
-        note.created_string = '2010-04-02 01:11:00'
         field_3 = DateTimeField(attribute='created_string')
-        self.assertEqual(field_3.dehydrate(bundle), aware_datetime(2010, 4, 2, 1, 11))
+
+        note.created_string = '2010-04-02T01:11:01'
+        self.assertEqual(field_3.dehydrate(bundle), aware_datetime(2010, 4, 2, 1, 11, 1))
+
+        note.created_string = '2010-04-02 01:11:02'
+        self.assertEqual(field_3.dehydrate(bundle), aware_datetime(2010, 4, 2, 1, 11, 2))
 
     def test_hydrate(self):
         bundle_1 = Bundle(data={
@@ -618,6 +636,10 @@ class UserResource(ModelResource):
     class Meta:
         resource_name = 'users'
         queryset = User.objects.all()
+        filtering = {
+            'id': ALL,
+            'username': ALL,
+        }
 
     def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
         if bundle_or_obj is None:
@@ -741,6 +763,10 @@ class ToOneFieldTestCase(TestCase):
         field_3 = ToOneField(UserResource, lambda bundle: None)
         self.assertRaises(ApiFieldError, field_3.dehydrate, bundle)
 
+        # Regression: dehydrating a field with no related data and null=True should not yield exception
+        field_4 = ToManyField(UserResource, null=True, attribute=lambda bundle: None)
+        self.assertEqual(field_4.dehydrate(bundle), [])
+
     def test_dehydrate_full_detail_list(self):
         note = Note.objects.get(pk=1)
         request = MockRequest()
@@ -755,6 +781,13 @@ class ToOneFieldTestCase(TestCase):
         request.path = "/api/v1/notes/1/"
         field_1 = ToOneField(UserResource, 'author', full=True, full_detail=False)
         self.assertEqual(field_1.dehydrate(bundle, for_list=False), '/api/v1/users/1/')
+
+    def test_dehydrate_bad_attribute(self):
+        note = Note.objects.get(pk=1)
+        bundle = Bundle(obj=note)
+        field_1 = ToManyField(UserResource, 'bad_attribute_name')
+        with self.assertRaises(ApiFieldError):
+            field_1.dehydrate(bundle)
 
     def test_hydrate(self):
         note = Note()
@@ -774,6 +807,12 @@ class ToOneFieldTestCase(TestCase):
         self.assertEqual(field_2.hydrate(bundle), None)
 
         # Wrong resource URI.
+        field_3 = ToOneField(UserResource, 'author')
+        field_3.instance_name = 'fk'
+        bundle.data['fk'] = '/api/v1/users/123/'
+        self.assertRaises(ApiFieldError, field_3.hydrate, bundle)
+
+        # Wrong resource URI pk type.
         field_3 = ToOneField(UserResource, 'author')
         field_3.instance_name = 'fk'
         bundle.data['fk'] = '/api/v1/users/abc/'
@@ -954,7 +993,6 @@ class MediaBitResource(ModelResource):
 
 class ToManyFieldTestCase(TestCase):
     fixtures = ['note_testdata.json']
-    urls = 'core.tests.field_urls'
 
     def setUp(self):
         self.note_1 = Note.objects.get(pk=1)
@@ -1268,6 +1306,12 @@ class ToManyFieldTestCase(TestCase):
         self.assertEqual(field_3.hydrate_m2m(bundle_3), [])
 
         # Wrong resource URI.
+        field_4 = ToManyField(SubjectResource, 'subjects')
+        field_4.instance_name = 'm2m'
+        bundle_4 = Bundle(data={'m2m': ['/api/v1/subjects/123/']})
+        self.assertRaises(ApiFieldError, field_4.hydrate_m2m, bundle_4)
+
+        # Wrong resource URI pk type.
         field_4 = ToManyField(SubjectResource, 'subjects')
         field_4.instance_name = 'm2m'
         bundle_4 = Bundle(data={'m2m': ['/api/v1/subjects/abc/']})

@@ -5,7 +5,8 @@ from tastypie.utils import now
 
 
 class Note(models.Model):
-    user = models.ForeignKey(User, related_name='notes')
+    user = models.ForeignKey(User, related_name='notes',
+                             on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     slug = models.SlugField()
     content = models.TextField()
@@ -22,7 +23,8 @@ class Note(models.Model):
 
 
 class AnnotatedNote(models.Model):
-    note = models.OneToOneField(Note, related_name='annotated')
+    note = models.OneToOneField(Note, related_name='annotated',
+                                on_delete=models.CASCADE)
     annotations = models.TextField()
 
     def __unicode__(self):

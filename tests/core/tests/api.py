@@ -1,14 +1,18 @@
 import json
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.http import HttpRequest
 from django.test import TestCase
+from django.test.utils import override_settings
+
 from tastypie.api import Api
 from tastypie.exceptions import NotRegistered, BadRequest
 from tastypie.resources import ModelResource
 from tastypie.serializers import Serializer
+
 from core.models import Note
 from core.utils import adjust_schema
+User = get_user_model()
 
 
 class NoteResource(ModelResource):
@@ -23,9 +27,8 @@ class UserResource(ModelResource):
         queryset = User.objects.all()
 
 
+@override_settings(ROOT_URLCONF='core.tests.api_urls')
 class ApiTestCase(TestCase):
-    urls = 'core.tests.api_urls'
-
     def test_register(self):
         # NOTE: these have all been registered in core.tests.api_urls
         api = Api()
@@ -169,6 +172,7 @@ class ApiTestCase(TestCase):
 
     def test_top_level_jsonp(self):
         api = Api()
+        api.serializer.formats = ['jsonp']
         api.register(NoteResource())
         api.register(UserResource())
         request = HttpRequest()
@@ -188,6 +192,19 @@ class ApiTestCase(TestCase):
         #             be an import error.
         with self.assertRaises(BadRequest):
             api.top_level(request)
+
+    def test_jsonp_not_on_by_default(self):
+        api = Api()
+        api.register(NoteResource())
+        api.register(UserResource())
+        request = HttpRequest()
+        request.META = {'HTTP_ACCEPT': 'text/javascript'}
+        request.GET = {'callback': 'foo'}
+
+        resp = api.top_level(request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['content-type'].split(';')[0], 'application/json')
+        self.assertFalse("foo" in resp.content.decode('utf-8'))
 
     def test_custom_api_serializer(self):
         """Confirm that an Api can use a custom serializer"""

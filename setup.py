@@ -34,11 +34,11 @@ setup(
     },
     zip_safe=False,
     requires=[
-        'python_mimeparse(>=0.1.4)',
+        'python_mimeparse(>=0.1.4, !=1.5)',
         'dateutil(>=1.5, !=2.0)',
     ],
     install_requires=[
-        'python-mimeparse >= 0.1.4',
+        'python-mimeparse >= 0.1.4, != 1.5',
         'python-dateutil >= 1.5, != 2.0',
     ],
     tests_require=['mock', 'PyYAML', 'lxml', 'defusedxml'],

@@ -1,10 +1,10 @@
 from itertools import count
 import uuid
 
-from django.contrib.auth.models import User
 from django.db import models
 
 from tastypie.utils import now, aware_datetime
+from tastypie.compat import AUTH_USER_MODEL
 
 
 class DateRecord(models.Model):
@@ -12,9 +12,13 @@ class DateRecord(models.Model):
     username = models.CharField(max_length=20)
     message = models.CharField(max_length=20)
 
+    class Meta:
+        app_label = 'core'
+
 
 class Note(models.Model):
-    author = models.ForeignKey(User, related_name='notes', blank=True, null=True)
+    author = models.ForeignKey(AUTH_USER_MODEL, related_name='notes', blank=True,
+                               null=True, on_delete=models.CASCADE)
     title = models.CharField("The Title", max_length=100)
     slug = models.SlugField()
     content = models.TextField(blank=True)
@@ -39,9 +43,16 @@ class Note(models.Model):
     def my_property(self):
         return 'my_property'
 
+    class Meta:
+        app_label = 'core'
+
 
 class NoteWithEditor(Note):
-    editor = models.ForeignKey(User, related_name='notes_edited')
+    editor = models.ForeignKey(AUTH_USER_MODEL, related_name='notes_edited',
+                               on_delete=models.CASCADE)
+
+    class Meta:
+        app_label = 'core'
 
 
 class Subject(models.Model):
@@ -53,14 +64,21 @@ class Subject(models.Model):
     def __unicode__(self):
         return self.name
 
+    class Meta:
+        app_label = 'core'
+
 
 class MediaBit(models.Model):
-    note = models.ForeignKey(Note, related_name='media_bits')
+    note = models.ForeignKey(Note, related_name='media_bits',
+                             on_delete=models.CASCADE)
     title = models.CharField(max_length=32)
     image = models.FileField(blank=True, null=True, upload_to='bits/')
 
     def __unicode__(self):
         return self.title
+
+    class Meta:
+        app_label = 'core'
 
 
 class AutoNowNote(models.Model):
@@ -75,6 +93,9 @@ class AutoNowNote(models.Model):
     def __unicode__(self):
         return self.title
 
+    class Meta:
+        app_label = 'core'
+
 
 class Counter(models.Model):
     name = models.CharField(max_length=30)
@@ -84,6 +105,9 @@ class Counter(models.Model):
     def __unicode__(self):
         return self.name
 
+    class Meta:
+        app_label = 'core'
+
 
 int_source = count(1)
 
@@ -92,20 +116,24 @@ class MyDefaultPKModel(models.Model):
     id = models.IntegerField(primary_key=True, default=lambda: next(int_source), editable=False)
     content = models.TextField(blank=True, default='')
 
+    class Meta:
+        app_label = 'core'
 
-if hasattr(models, 'UUIDField'):
-    class MyUUIDModel(models.Model):
-        id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-        anotheruuid = models.UUIDField(default=uuid.uuid4)
-        content = models.TextField(blank=True, default='')
-        order = models.IntegerField(default=0, blank=True)
 
-        class Meta:
-            ordering = ('order',)
+class MyUUIDModel(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    anotheruuid = models.UUIDField(default=uuid.uuid4)
+    content = models.TextField(blank=True, default='')
+    order = models.IntegerField(default=0, blank=True)
 
-    class MyRelatedUUIDModel(models.Model):
-        myuuidmodels = models.ManyToManyField(MyUUIDModel)
-        content = models.TextField(blank=True, default='')
-else:
-    MyUUIDModel = None
-    MyRelatedUUIDModel = None
+    class Meta:
+        ordering = ('order',)
+        app_label = 'core'
+
+
+class MyRelatedUUIDModel(models.Model):
+    myuuidmodels = models.ManyToManyField(MyUUIDModel)
+    content = models.TextField(blank=True, default='')
+
+    class Meta:
+        app_label = 'core'

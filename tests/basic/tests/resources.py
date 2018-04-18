@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from django.contrib.auth.models import User
 from django.http import HttpRequest
 from tastypie.fields import ToOneField, ToManyField
@@ -178,3 +179,20 @@ class SlugBasedResourceTestCase(TestCaseWithFixture):
 
         # Make sure it's gone.
         self.assertRaises(SlugBasedNote.DoesNotExist, SlugBasedNote.objects.get, pk='first-post')
+
+
+class BundleTestCase(TestCaseWithFixture):
+    def test_bundle_repr(self):
+        # __repr__ should return string type (str in PY2 or unicode in PY3)
+        n = Note.objects.get(pk=1)
+
+        resource = NoteWithAnnotationsResource()
+        n1_bundle = resource.build_bundle(obj=n)
+        self.assertTrue(isinstance(repr(n1_bundle), str))
+
+        data_dict = {
+            u'∆ключ∆': 1,
+            'привет©®': 2
+        }
+        n2_bundle = resource.build_bundle(obj=n, data=data_dict)
+        self.assertTrue(isinstance(repr(n2_bundle), str))
