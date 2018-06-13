@@ -33,7 +33,7 @@ Querying using Tastypie's methods isn't working/returning multiple objects
 ==========================================================================
 
 When calling ``obj_get`` (or another method that uses it, such as
-``dispatch_detail``), mke sure the fields you're querying with are either
+``dispatch_detail``), make sure the fields you're querying with are either
 ``Meta.detail_uri_name`` or a field which appears in ``Meta.filtering``
 
 
