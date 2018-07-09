@@ -8,7 +8,7 @@ import warnings
 
 from django.conf import settings
 from django.contrib.auth import authenticate
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, FieldError
 from django.middleware.csrf import _sanitize_token, constant_time_compare
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import ugettext as _
@@ -243,7 +243,12 @@ class ApiKeyAuthentication(Authentication):
 
         lookup_kwargs = {username_field: username}
         try:
-            user = User.objects.select_related('api_key').get(**lookup_kwargs)
+            try:
+                user = User.objects.select_related('api_key').get(
+                    **lookup_kwargs)
+            except FieldError:
+                user = User.objects.prefetch_related('api_key').get(
+                    **lookup_kwargs)
         except (User.DoesNotExist, User.MultipleObjectsReturned):
             return self._unauthorized()
 
