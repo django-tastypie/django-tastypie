@@ -15,6 +15,7 @@ env:
   - DJANGO_VERSION=dj18
   - DJANGO_VERSION=dj111
   - DJANGO_VERSION=dj20
+  - DJANGO_VERSION=dj21
   - DJANGO_VERSION=djdev
 
 matrix:
@@ -32,6 +33,8 @@ matrix:
       env: DJANGO_VERSION=djdev
     - python: "2.7"
       env: DJANGO_VERSION=dj20
+    - python: "2.7"
+      env: DJANGO_VERSION=dj21
 
 addons:
   apt:
