@@ -554,4 +554,4 @@ class ResourceTestCaseMixin(object):
         fragile than testing the full structure, which can be prone to data
         changes.
         """
-        self.assertEqual(sorted(data.keys()), sorted(expected))
+        self.assertItemsEqual(data.keys(), expected)
