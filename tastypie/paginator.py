@@ -159,11 +159,10 @@ class Paginator(object):
                 del request_params['limit']
             if 'offset' in request_params:
                 del request_params['offset']
-            request_params.update({'limit': limit, 'offset': offset})
+            request_params.update({'limit': str(limit), 'offset': str(offset)})
             encoded_params = request_params.urlencode()
         except AttributeError:
             request_params = {}
-
             for k, v in self.request_data.items():
                 if isinstance(v, six.text_type):
                     request_params[k] = v.encode('utf-8')
