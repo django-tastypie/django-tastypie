@@ -268,7 +268,7 @@ class PaginatorTestCase(TestCase):
     def test_multiple(self):
         request = QueryDict('a=1&a=2')
         paginator = Paginator(request, self.data_set,
-            resource_uri='/api/v1/notes/', limit=2, offset=2)
+            resource_uri='/api/v1/notes/', limit='2', offset='2')
         meta = paginator.page()['meta']
         self.assertEqual(meta['limit'], 2)
         self.assertEqual(meta['offset'], 2)
