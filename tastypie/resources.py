@@ -2019,7 +2019,6 @@ class BaseModelResource(Resource):
         # Check to see if it's a relational lookup and if that's allowed.
         if len(filter_bits):
             if not getattr(self.fields[field_name], 'is_related', False):
-                print(field_name, filter_type, filter_bits)
                 raise InvalidFilterError("The '%s' field does not support relations." % field_name)
 
             if not self._meta.filtering[field_name] == ALL_WITH_RELATIONS:
