@@ -2019,6 +2019,7 @@ class BaseModelResource(Resource):
         # Check to see if it's a relational lookup and if that's allowed.
         if len(filter_bits):
             if not getattr(self.fields[field_name], 'is_related', False):
+                print(field_name, filter_type, filter_bits)
                 raise InvalidFilterError("The '%s' field does not support relations." % field_name)
 
             if not self._meta.filtering[field_name] == ALL_WITH_RELATIONS:
@@ -2085,7 +2086,7 @@ class BaseModelResource(Resource):
                 # It's not a field we know about. Move along citizen.
                 continue
 
-            # First-pass validation that filter could work on this field
+            # Validate filter types other than 'exact' that are supported by the field type
             try:
                 django_field_name = self.fields[field_name].attribute
                 django_field = self._meta.object_class._meta.get_field(django_field_name)
@@ -2094,8 +2095,7 @@ class BaseModelResource(Resource):
             except FieldDoesNotExist:
                 raise InvalidFilterError("The '%s' field is not a valid field name" % field_name)
 
-            query_terms = django_field.class_lookups.keys()
-
+            query_terms = django_field.get_lookups().keys()
             if len(filter_bits) and filter_bits[-1] in query_terms:
                 filter_type = filter_bits.pop()
 
