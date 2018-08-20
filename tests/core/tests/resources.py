@@ -2114,7 +2114,6 @@ class ModelResourceTestCase(TestCase):
         # Make sure that fields that don't have attributes can't be filtered on.
         self.assertRaises(InvalidFilterError, resource.build_filters, filters={'notes__hello_world': 'News'})
 
-
     def test_custom_build_filters(self):
         """
         A test derived from an example in the documentation (under Advanced Filtering).
