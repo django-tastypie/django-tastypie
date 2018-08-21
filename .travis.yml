@@ -28,6 +28,8 @@ matrix:
       env: MODE=flake8-strict
     - python: "3.4"
       env: DJANGO_VERSION=djdev
+    - python: "3.4"
+      env: DJANGO_VERSION=dj21
     - python: "2.7"
       env: DJANGO_VERSION=djdev
     - python: "2.7"
