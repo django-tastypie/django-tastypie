@@ -18,7 +18,7 @@ django-tastypie
     :target: https://pypi.python.org/pypi/django-tastypie
     :alt: Version
 
-.. image:: https://img.shields.io/pypi/dm/django-tastypie.svg
+.. image:: https://pypi-badges.global.ssl.fastly.net/svg?package=django-tastypie&timeframe=monthly
     :target: https://pypi.python.org/pypi/django-tastypie
     :alt: Downloads
 
