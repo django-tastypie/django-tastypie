@@ -4,6 +4,7 @@ from django.test.utils import override_settings
 
 from basic.models import Note
 from testcases import TestCaseWithFixture
+from django.test.testcases import SimpleTestCase
 
 
 @override_settings(ROOT_URLCONF='validation.api.urls')
@@ -156,3 +157,13 @@ class PutListNestResouceValidationTestCase(TestCaseWithFixture):
                 'annotations': ['This field is required.']
             }
         })
+
+
+class TestJSONPValidation(SimpleTestCase):
+    """
+    Explicitly run the doctests for tastypie.utils.validate_jsonp
+    """
+    def test_jsonp(self):
+        import tastypie.utils.validate_jsonp
+        import doctest
+        doctest.testmod(tastypie.utils.validate_jsonp)
