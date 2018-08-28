@@ -2102,12 +2102,17 @@ class ModelResourceTestCase(TestCase):
         resource_4 = AnotherSubjectResource()
         self.assertEqual(resource_4.build_filters(filters={'notes__user__startswith': 'Daniel'}), {'notes__author__startswith': 'Daniel'})
 
-        # Make sure that fields that don't have attributes can't be filtered on.
-        self.assertRaises(InvalidFilterError, resource_4.build_filters, filters={'notes__hello_world': 'News'})
-
         # Make sure build_filters works even on resources without queryset
         resource = NoQuerysetNoteResource()
         self.assertEqual(resource.build_filters(), {})
+
+    def test_build_filters_bad(self):
+        """
+        Test that a nonsensical filter fails validation.
+        """
+        resource = AnotherSubjectResource()
+        # Make sure that fields that don't have attributes can't be filtered on.
+        self.assertRaises(InvalidFilterError, resource.build_filters, filters={'notes__hello_world': 'News'})
 
     def test_custom_build_filters(self):
         """

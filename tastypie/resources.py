@@ -13,11 +13,12 @@ import django
 from django.conf import settings
 from django.conf.urls import url
 from django.core.exceptions import (
-    ObjectDoesNotExist, MultipleObjectsReturned, ValidationError,
+    ObjectDoesNotExist, MultipleObjectsReturned, ValidationError, FieldDoesNotExist
 )
 from django.core.signals import got_request_exception
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.fields.related import ForeignKey
+from django.db import models
 try:
     from django.contrib.gis.db.models.fields import GeometryField
 except (ImproperlyConfigured, ImportError):
@@ -29,7 +30,7 @@ try:
 except ImportError:
     from django.db.models.fields.related_descriptors import\
         ReverseOneToOneDescriptor
-from django.db.models.sql.constants import QUERY_TERMS
+
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.utils import six
 from django.utils.cache import patch_cache_control, patch_vary_headers
@@ -2075,10 +2076,6 @@ class BaseModelResource(Resource):
 
         qs_filters = {}
 
-        query_terms = QUERY_TERMS
-        if django.VERSION >= (1, 8) and GeometryField:
-            query_terms |= set(GeometryField.class_lookups.keys())
-
         for filter_expr, value in filters.items():
             filter_bits = filter_expr.split(LOOKUP_SEP)
             field_name = filter_bits.pop(0)
@@ -2088,6 +2085,16 @@ class BaseModelResource(Resource):
                 # It's not a field we know about. Move along citizen.
                 continue
 
+            # Validate filter types other than 'exact' that are supported by the field type
+            try:
+                django_field_name = self.fields[field_name].attribute
+                django_field = self._meta.object_class._meta.get_field(django_field_name)
+                if hasattr(django_field, 'field'):
+                    django_field = django_field.field  # related field
+            except FieldDoesNotExist:
+                raise InvalidFilterError("The '%s' field is not a valid field name" % field_name)
+
+            query_terms = django_field.get_lookups().keys()
             if len(filter_bits) and filter_bits[-1] in query_terms:
                 filter_type = filter_bits.pop()
 
