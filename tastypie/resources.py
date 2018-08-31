@@ -92,6 +92,7 @@ class ResourceOptions(object):
     urlconf_namespace = None
     default_format = 'application/json'
     filtering = {}
+    filter_aliases = {}
     ordering = []
     object_class = None
     queryset = None
@@ -1856,6 +1857,7 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
         # Add in the new fields.
         new_class.base_fields.update(new_class.get_fields(include_fields, excludes))
 
+
         if getattr(new_class._meta, 'include_absolute_url', True):
             if 'absolute_url' not in new_class.base_fields:
                 new_class.base_fields['absolute_url'] = fields.CharField(attribute='get_absolute_url', readonly=True)
@@ -2076,6 +2078,8 @@ class BaseModelResource(Resource):
 
         qs_filters = {}
 
+        self._map_filter_aliases(filters)
+
         for filter_expr, value in filters.items():
             filter_bits = filter_expr.split(LOOKUP_SEP)
             field_name = filter_bits.pop(0)
@@ -2112,6 +2116,12 @@ class BaseModelResource(Resource):
             qs_filters[qs_filter] = value
 
         return dict_strip_unicode_keys(qs_filters)
+
+    def _map_filter_aliases(self, filters):
+        for alias_filter, mapped_filter in self._meta.filter_aliases.items():
+            if filters.get(alias_filter, None) is not None:
+                filters[mapped_filter] = filters[alias_filter]
+                del filters[alias_filter]
 
     def apply_sorting(self, obj_list, options=None):
         """
