@@ -2140,7 +2140,6 @@ class ModelResourceTestCase(TestCase):
         resource_2 = AnotherSubjectResource()
         self.assertEqual(resource_2.build_filters(filters={alias_filter_name: 'Daniel'}), {actual_filter_name: 'Daniel'})
 
-
     def test_custom_build_filters(self):
         """
         A test derived from an example in the documentation (under Advanced Filtering).
