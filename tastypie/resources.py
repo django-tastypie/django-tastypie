@@ -2063,6 +2063,9 @@ class BaseModelResource(Resource):
         Valid values are either a list of Django filter types (i.e.
         ``['startswith', 'exact', 'lte']``), the ``ALL`` constant or the
         ``ALL_WITH_RELATIONS`` constant.
+
+        If aliases exist for the filters in the request in 'filter_aliases', it will be replaced with the filter mapped
+        to the alias.
         """
         # At the declarative level:
         #     filtering = {
