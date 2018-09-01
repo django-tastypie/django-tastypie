@@ -103,6 +103,7 @@ Contributors:
 * Danny Roberts (dannyroberts) for very small change addressing noisy RemovedInDjango20Warning warnings
 * Sam Thompson (georgedorn) for ongoing maintenance and release management.
 * Matt Briançon (mattbriancon) for various patches
+* Jay Patel (jaypatel11) for introducing 'filter_aliases' to help create readable filter params not exposing Django models
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
