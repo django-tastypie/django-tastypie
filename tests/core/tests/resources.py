@@ -1232,7 +1232,7 @@ class AnotherSubjectResource(ModelResource):
             'notes': ALL_WITH_RELATIONS,
         }
         filter_aliases = {
-            'author_prefix' : 'notes__user__startswith'
+            'author_prefix': 'notes__user__startswith'
         }
         authorization = Authorization()
 
