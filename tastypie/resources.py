@@ -2078,9 +2078,9 @@ class BaseModelResource(Resource):
 
         qs_filters = {}
 
-        self._map_filter_aliases(filters)
-
         for filter_expr, value in filters.items():
+
+            filter_expr = self._meta.filter_aliases.get(filter_expr, filter_expr)
             filter_bits = filter_expr.split(LOOKUP_SEP)
             field_name = filter_bits.pop(0)
             filter_type = 'exact'
@@ -2116,12 +2116,6 @@ class BaseModelResource(Resource):
             qs_filters[qs_filter] = value
 
         return dict_strip_unicode_keys(qs_filters)
-
-    def _map_filter_aliases(self, filters):
-        for alias_filter, mapped_filter in self._meta.filter_aliases.items():
-            if filters.get(alias_filter, None) is not None:
-                filters[mapped_filter] = filters[alias_filter]
-                del filters[alias_filter]
 
     def apply_sorting(self, obj_list, options=None):
         """
