@@ -1,0 +1,7 @@
+v0.14.2
+=======
+
+:date: 2018-08-20
+
+Added support for Django 2.1; minor bugs and regressions fixed.
+Drops support for Django 1.8 LTS.

@@ -1,0 +1,17 @@
+v0.14.1
+=======
+
+:date: 2018-04-09
+
+Added support for Django 2.0; minor bugs and regressions fixed.
+Adds abstract base classes for Resources - see documentation.
+Adds optimization for getting multiple objects by id in a single query.
+
+Bugfixes
+--------
+
+* Add explicit error when ModelResource lacks object_class and queryset
+* Update urls to slumber and biplist
+* Alter length of URL field in ApiAccess model (to open-ended TextField)
+* Fix Advanced Filtering example in documentation (with unit test)
+* Fix regression in ToManyField.dehydrate with a null value. (#1544)
