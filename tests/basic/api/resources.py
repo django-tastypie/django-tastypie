@@ -1,10 +1,14 @@
 from django.contrib.auth.models import User
+from django.conf.urls import url
 from tastypie.cache import SimpleCache
 from tastypie import fields
 from tastypie.resources import ModelResource
 from tastypie.authentication import SessionAuthentication
 from tastypie.authorization import Authorization
 from basic.models import Note, AnnotatedNote, SlugBasedNote
+
+from tastypie.utils import trailing_slash
+from tastypie.constants import ALL
 
 
 class UserResource(ModelResource):
@@ -53,6 +57,18 @@ class NoteResource(ModelResource):
         resource_name = 'notes'
         queryset = Note.objects.all()
         authorization = Authorization()
+        filtering = {"id": ALL}
+
+    def override_urls(self):
+        return [url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/filterin%s$" %
+                (self._meta.resource_name, trailing_slash()),
+                self.wrap_view('get_filterin'), name="api_get_filterin"),]
+
+    def get_filterin(self, request, **kwargs):
+        note_resource = NoteResource()
+        # ids can actually be generated in a different way
+        ids = ["1", "2"]
+        return note_resource.get_list(request, id__in=ids)
 
 
 class BustedResource(ModelResource):

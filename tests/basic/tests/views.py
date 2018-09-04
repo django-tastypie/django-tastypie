@@ -258,3 +258,8 @@ class MoreViewsTestCase(TestCaseWithFixture):
 
         self.assertEqual(cache_control, set(["s-maxage=3600", "max-age=3600", "private"]))
         self.assertTrue('"johndoe"' in response.content.decode('utf-8'))
+
+    def test_filter_in(self):
+        response = self.client.get('/api/v1/notes/1/filterin/', HTTP_ACCEPT='application/json')
+        self.assertEqual(response.status_code, 200)
+
