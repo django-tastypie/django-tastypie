@@ -397,8 +397,8 @@ One might want to create an API which will require every user to authenticate
 and every user will be working only with objects associated with them. Let's see
 how to implement it for two basic operations: listing and creation of an object.
 
-For listing we want to list only objects for which 'user' field matches
-'request.user'. This could be done by applying a filter in the
+For listing we want to list only objects for which ``user`` field matches
+``request.user``. This could be done by applying a filter in the
 ``authorized_read_list`` method of your resource.
 
 For creating we'd have to wrap ``obj_create`` method of ``ModelResource``. Then the
@@ -466,9 +466,9 @@ values in camelCase instead:
                         new_key = re.sub(r"[a-z]_[a-z]", underscoreToCamel, key)
                         new_dict[new_key] = camelize(value)
                     return new_dict
-                if isinstance(data, (list, tuple)):
-                    for i in range(len(data)):
-                        data[i] = camelize(data[i])
+                if isinstance(data, list):
+                    for i, v in enumerate(data):
+                        data[i] = camelize(v)
                     return data
                 return data
 
@@ -490,9 +490,9 @@ values in camelCase instead:
                         new_key = re.sub(r"[a-z][A-Z]", camelToUnderscore, key)
                         new_dict[new_key] = underscorize(value)
                     return new_dict
-                if isinstance(data, (list, tuple)):
-                    for i in range(len(data)):
-                        data[i] = underscorize(data[i])
+                if isinstance(data, list):
+                    for i, v in enumerate(data):
+                        data[i] = underscorize(v)
                     return data
                 return data
 
