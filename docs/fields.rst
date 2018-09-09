@@ -51,7 +51,7 @@ All ``ApiField`` objects accept the following options.
 .. attribute:: ApiField.attribute
 
 A string naming an instance attribute of the object wrapped by the Resource. The
-attribute will be accessed during the ``dehydrate`` or or written during the ``hydrate``.
+attribute will be accessed during the ``dehydrate`` or written during the ``hydrate``.
 
 Defaults to ``None``, meaning data will be manually accessed.
 
@@ -235,7 +235,7 @@ Indicates how the related ``Resource`` will appear post-``dehydrate`` when reque
 list of resources. The value is one of ``True``, ``False`` or a callable that accepts a
 bundle and returns ``True`` or ``False``. If ``False``, the related ``Resource`` will appear
 as a URL to the endpoint of that resource if accessing a list of resources.  If ``True`` and ``full``
-is also ``True``, the result of thesub-resource's ``dehydrate`` will be included in
+is also ``True``, the result of the sub-resource's ``dehydrate`` will be included in
 full. Default is ``True``
 
 ``full_detail``
@@ -247,7 +247,7 @@ Indicates how the related ``Resource`` will appear post-``dehydrate`` when reque
 single resource. The value is one of ``True``, ``False`` or a callable that accepts a
 bundle and returns ``True`` or ``False``. If ``False``, the related ``Resource`` will appear
 as a URL to the endpoint of that resource if accessing a specific resources. If ``True`` and ``full``
-is also ``True``, the result of thesub-resource's ``dehydrate`` will be included
+is also ``True``, the result of the sub-resource's ``dehydrate`` will be included
 in full. Default is ``True``
 
 ``related_name``

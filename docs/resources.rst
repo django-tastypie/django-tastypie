@@ -232,7 +232,7 @@ in data or massage whatever the field generated.
   The ``FOO`` here is not literal. Instead, it is a placeholder that should be
   replaced with the fieldname in question.
 
-Defining these methods is especially common when denormalizing related data,
+Defining these methods is especially common when deserializing related data,
 providing statistics or filling in unrelated data.
 
 A simple example::
@@ -631,9 +631,9 @@ The inner ``Meta`` class allows for class-level configuration of how the
 ``abstract``
 ------------
 
-  In concrete ``Resource`` and ``ModelResource`` instances, either 
+  In concrete ``Resource`` and ``ModelResource`` instances, either
   ``object_class`` or ``queryset`` is required.
-  If you wish to build an abstract base ``Resource`` class, you can bypass 
+  If you wish to build an abstract base ``Resource`` class, you can bypass
   this requirement by setting ``abstract`` to ``True``.
 
 ``fields``
@@ -642,7 +642,7 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Controls what introspected fields the ``Resource`` should include.
   A whitelist of fields. Default is ``None``.
 
-  The default value of ``None`` means that all Django fields will be 
+  The default value of ``None`` means that all Django fields will be
   introspected. In order to specify that no fields should be introspected,
   use ``[]``
 
