@@ -2256,6 +2256,11 @@ class BaseModelResource(Resource):
         lookup parameters that can find them in the DB
         """
         lookup_kwargs = {}
+
+        # Handle detail_uri_name specially
+        if self._meta.detail_uri_name in kwargs:
+            lookup_kwargs[self._meta.detail_uri_name] = kwargs.pop(self._meta.detail_uri_name)
+
         bundle.obj = self.get_object_list(bundle.request).model()
         # Override data values, we rely on uri identifiers
         bundle.data.update(kwargs)
@@ -2265,10 +2270,6 @@ class BaseModelResource(Resource):
         bundle = self.hydrate(bundle)
 
         for identifier in kwargs:
-            if identifier == self._meta.detail_uri_name:
-                lookup_kwargs[identifier] = kwargs[identifier]
-                continue
-
             field_object = self.fields[identifier]
 
             # Skip readonly or related fields.
