@@ -2293,7 +2293,7 @@ class BaseModelResource(Resource):
         A ORM-specific implementation of ``obj_update``.
         """
         bundle_detail_data = self.get_bundle_detail_data(bundle)
-        arg_detail_data = kwargs.get(self._meta.detail_uri_name)
+        arg_detail_data = kwargs.pop(self._meta.detail_uri_name)
 
         if bundle_detail_data is None or (arg_detail_data is not None and str(bundle_detail_data) != str(arg_detail_data)):
             try:
