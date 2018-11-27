@@ -1,2 +1,9 @@
-__author__ = 'Daniel Lindsley, Cody Soyland, Matt Croydon, Josh Bohde & Issac Kelly'
-__version__ = (0, 9, 13, 'beta')
+from __future__ import unicode_literals
+
+
+__author__ = 'Daniel Lindsley & the Tastypie core team'
+
+VERSION = (0, 14, 2)
+
+__short_version__ = '.'.join(map(str, VERSION[0:2]))
+__version__ = ''.join(['.'.join(map(str, VERSION[0:3])), ''.join(VERSION[3:])])

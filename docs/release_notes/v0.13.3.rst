@@ -1,0 +1,11 @@
+v0.13.3
+=======
+
+:date: 2016-02-17
+
+This is the final release of Tastypie that is compatible with Django 1.9.
+
+Bugfixes
+--------
+
+* Permit changing existing value on a ToOneField to None. (Closes #1449)

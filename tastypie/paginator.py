@@ -1,6 +1,14 @@
+from __future__ import unicode_literals
+
 from django.conf import settings
+from django.utils import six
+
 from tastypie.exceptions import BadRequest
-from urllib import urlencode
+
+try:
+    from urllib.parse import urlencode
+except ImportError:
+    from urllib import urlencode
 
 
 class Paginator(object):
@@ -81,7 +89,7 @@ class Paginator(object):
         """
         Determines the proper starting offset of results to return.
 
-        It attempst to use the user-provided ``offset`` from the GET parameters,
+        It attempts to use the user-provided ``offset`` from the GET parameters,
         if specified. Otherwise, it falls back to the object-level ``offset``.
 
         Default is 0.
@@ -128,7 +136,7 @@ class Paginator(object):
         if offset - limit < 0:
             return None
 
-        return self._generate_uri(limit, offset-limit)
+        return self._generate_uri(limit, offset - limit)
 
     def get_next(self, limit, offset, count):
         """
@@ -138,7 +146,7 @@ class Paginator(object):
         if offset + limit >= count:
             return None
 
-        return self._generate_uri(limit, offset+limit)
+        return self._generate_uri(limit, offset + limit)
 
     def _generate_uri(self, limit, offset):
         if self.resource_uri is None:
@@ -151,13 +159,12 @@ class Paginator(object):
                 del request_params['limit']
             if 'offset' in request_params:
                 del request_params['offset']
-            request_params.update({'limit': limit, 'offset': offset})
+            request_params.update({'limit': str(limit), 'offset': str(offset)})
             encoded_params = request_params.urlencode()
         except AttributeError:
             request_params = {}
-
             for k, v in self.request_data.items():
-                if isinstance(v, unicode):
+                if isinstance(v, six.text_type):
                     request_params[k] = v.encode('utf-8')
                 else:
                     request_params[k] = v

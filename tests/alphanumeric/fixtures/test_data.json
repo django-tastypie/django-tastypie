@@ -1,0 +1,65 @@
+[
+    {
+        "fields": {
+            "name": "Skateboardrampe",
+            "created": "2010-03-31 01:05:00.000Z",
+            "updated": "2010-03-31 01:05:00.000Z"
+        },
+        "model": "alphanumeric.product",
+        "pk": "11111"
+    },
+    {
+        "fields": {
+            "name": "Bigwheel",
+            "created": "2010-05-05 01:05:00.000Z",
+            "updated": "2010-05-05 01:05:00.000Z"
+        },
+        "model": "alphanumeric.product",
+        "pk": "76123"
+    },
+    {
+        "fields": {
+            "name": "Trampolin",
+            "created": "2010-05-05 01:05:00.000Z",
+            "updated": "2010-05-05 01:05:00.000Z"
+        },
+        "model": "alphanumeric.product",
+        "pk": "WS65150-01"
+    },
+    {
+        "fields": {
+            "name": "Laufrad",
+            "created": "2010-05-05 01:05:00.000Z",
+            "updated": "2010-05-05 01:05:00.000Z"
+        },
+        "model": "alphanumeric.product",
+        "pk": "65100A-01"
+    },
+    {
+        "fields": {
+            "name": "Bigwheel",
+            "created": "2010-05-05 01:05:00.000Z",
+            "updated": "2010-05-05 01:05:00.000Z"
+        },
+        "model": "alphanumeric.product",
+        "pk": "76123/01"
+    },
+    {
+        "fields": {
+            "name": "Human Hamsterball",
+            "created": "2010-05-05 01:05:00.000Z",
+            "updated": "2010-05-05 01:05:00.000Z"
+        },
+        "model": "alphanumeric.product",
+        "pk": "WS65150/01-01"
+    },
+    {
+        "fields": {
+            "name": "Ant Farm",
+            "created": "2010-05-05 01:05:00.000Z",
+            "updated": "2010-05-05 01:05:00.000Z"
+        },
+        "model": "alphanumeric.product",
+        "pk": "WS77.86"
+    }
+]

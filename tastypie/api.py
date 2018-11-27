@@ -1,12 +1,14 @@
+from __future__ import unicode_literals
 import warnings
-from django.conf.urls.defaults import *
+from django.conf.urls import url, include
 from django.core.exceptions import ImproperlyConfigured
-from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseBadRequest
+from tastypie.compat import reverse
 from tastypie.exceptions import NotRegistered, BadRequest
 from tastypie.serializers import Serializer
-from tastypie.utils import trailing_slash, is_valid_jsonp_callback_value
+from tastypie.utils import is_valid_jsonp_callback_value, string_to_python, trailing_slash
 from tastypie.utils.mime import determine_format, build_content_type
+from tastypie.resources import Resource
 
 
 class Api(object):
@@ -21,10 +23,11 @@ class Api(object):
     this is done with version numbers (i.e. ``v1``, ``v2``, etc.) but can
     be named any string.
     """
-    def __init__(self, api_name="v1"):
+    def __init__(self, api_name="v1", serializer_class=Serializer):
         self.api_name = api_name
         self._registry = {}
         self._canonicals = {}
+        self.serializer = serializer_class()
 
     def register(self, resource, canonical=True):
         """
@@ -35,6 +38,9 @@ class Api(object):
         ``True``.
         """
         resource_name = getattr(resource._meta, 'resource_name', None)
+
+        if not isinstance(resource, Resource):
+            raise ValueError("An instance of ``Resource`` subclass should be passed in for %s" % resource_name)
 
         if resource_name is None:
             raise ImproperlyConfigured("Resource %r must define a 'resource_name'." % resource)
@@ -97,12 +103,12 @@ class Api(object):
         ``Resources`` beneath it.
         """
         pattern_list = [
-            url(r"^(?P<api_name>%s)%s$" % (self.api_name, trailing_slash()), self.wrap_view('top_level'), name="api_%s_top_level" % self.api_name),
+            url(r"^(?P<api_name>%s)%s$" % (self.api_name, trailing_slash), self.wrap_view('top_level'), name="api_%s_top_level" % self.api_name),
         ]
 
         for name in sorted(self._registry.keys()):
             self._registry[name].api_name = self.api_name
-            pattern_list.append((r"^(?P<api_name>%s)/" % self.api_name, include(self._registry[name].urls)))
+            pattern_list.append(url(r"^(?P<api_name>%s)/" % self.api_name, include(self._registry[name].urls)))
 
         urlpatterns = self.prepend_urls()
 
@@ -111,9 +117,7 @@ class Api(object):
             warnings.warn("'override_urls' is a deprecated method & will be removed by v1.0.0. Please rename your method to ``prepend_urls``.")
             urlpatterns += overridden_urls
 
-        urlpatterns += patterns('',
-            *pattern_list
-        )
+        urlpatterns += pattern_list
         return urlpatterns
 
     def top_level(self, request, api_name=None):
@@ -121,25 +125,32 @@ class Api(object):
         A view that returns a serialized list of all resources registers
         to the ``Api``. Useful for discovery.
         """
-        serializer = Serializer()
+        fullschema = request.GET.get('fullschema', False)
+        fullschema = string_to_python(fullschema)
+
         available_resources = {}
 
         if api_name is None:
             api_name = self.api_name
 
-        for name in sorted(self._registry.keys()):
+        for name, resource in self._registry.items():
+            if not fullschema:
+                schema = self._build_reverse_url("api_get_schema", kwargs={
+                    'api_name': api_name,
+                    'resource_name': name,
+                })
+            else:
+                schema = resource.build_schema()
+
             available_resources[name] = {
                 'list_endpoint': self._build_reverse_url("api_dispatch_list", kwargs={
                     'api_name': api_name,
                     'resource_name': name,
                 }),
-                'schema': self._build_reverse_url("api_get_schema", kwargs={
-                    'api_name': api_name,
-                    'resource_name': name,
-                }),
+                'schema': schema,
             }
 
-        desired_format = determine_format(request, serializer)
+        desired_format = determine_format(request, self.serializer)
 
         options = {}
 
@@ -151,7 +162,7 @@ class Api(object):
 
             options['callback'] = callback
 
-        serialized = serializer.serialize(available_resources, desired_format, options)
+        serialized = self.serializer.serialize(available_resources, desired_format, options)
         return HttpResponse(content=serialized, content_type=build_content_type(desired_format))
 
     def _build_reverse_url(self, name, args=None, kwargs=None):
@@ -167,8 +178,8 @@ class NamespacedApi(Api):
     """
     An API subclass that respects Django namespaces.
     """
-    def __init__(self, api_name="v1", urlconf_namespace=None):
-        super(NamespacedApi, self).__init__(api_name=api_name)
+    def __init__(self, api_name="v1", urlconf_namespace=None, **kwargs):
+        super(NamespacedApi, self).__init__(api_name=api_name, **kwargs)
         self.urlconf_namespace = urlconf_namespace
 
     def register(self, resource, canonical=True):

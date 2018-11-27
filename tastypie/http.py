@@ -1,6 +1,7 @@
 """
 The various HTTP responses for use in returning proper HTTP codes.
 """
+from __future__ import unicode_literals
 from django.http import HttpResponse
 
 
@@ -20,6 +21,10 @@ class HttpAccepted(HttpResponse):
 
 class HttpNoContent(HttpResponse):
     status_code = 204
+
+    def __init__(self, *args, **kwargs):
+        super(HttpNoContent, self).__init__(*args, **kwargs)
+        del self['Content-Type']
 
 
 class HttpMultipleChoices(HttpResponse):
@@ -54,12 +59,24 @@ class HttpMethodNotAllowed(HttpResponse):
     status_code = 405
 
 
+class HttpNotAcceptable(HttpResponse):
+    status_code = 406
+
+
 class HttpConflict(HttpResponse):
     status_code = 409
 
 
 class HttpGone(HttpResponse):
     status_code = 410
+
+
+class HttpUnsupportedMediaType(HttpResponse):
+    status_code = 415
+
+
+class HttpUnprocessableEntity(HttpResponse):
+    status_code = 422
 
 
 class HttpTooManyRequests(HttpResponse):
@@ -72,4 +89,3 @@ class HttpApplicationError(HttpResponse):
 
 class HttpNotImplemented(HttpResponse):
     status_code = 501
-

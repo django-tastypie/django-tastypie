@@ -1,0 +1,39 @@
+v0.9.13
+=======
+
+*SECURITY HARDENING*
+
+The latest version of Tastypie includes a number of important security fixes and all users are strongly
+encouraged to upgrade.
+
+Please note that the fixes might cause backwards incompatibility issues, so please check the upgrade notes
+carefully.
+
+Security hardening improvements
+-------------------------------
+
+* XML decoding has been wrapped in the defusedxml library
+* XML requests may no longer include DTDs by default
+* Deserialization will return HTTP 400 for any XML decode errors
+* Don't even use XML and want to disable it? There's a simple
+  :ref:`TASTYPIE_DEFAULT_FORMATS setting <settings.TASTYPIE_DEFAULT_FORMATS>` setting to globally
+  restrict the set of supported formats
+  (closes `#833 <https://github.com/django-tastypie/django-tastypie/pull/833>`_):
+
+  https://django-tastypie.readthedocs.io/en/v0.9.14/settings.html#tastypie-default-formats
+* Content negotiation will return an error for malformed accept headers (closes `#832 <https://github.com/django-tastypie/django-tastypie/pull/832>`_)
+* The Api class itself now allows a custom serializer (closes `#817 <https://github.com/django-tastypie/django-tastypie/pull/817>`_)
+* The serialization documentation has been upgraded with security advice:
+
+    https://django-tastypie.readthedocs.io/en/v0.9.14/serialization.html#serialization-security
+
+Upgrade notes:
+
+* If you use XML serialization (enabled by default):
+    - defusedxml is now required
+    - defusedxml requires lxml 3 or later
+
+    ``pip install defusedxml "lxml>=3"``
+
+* Python 2.5 is no longer officially supported because defusedxml requires Python 2.6 or later. If you cannot
+  upgrade to a newer version of Python please consider disabling XML support entirely.

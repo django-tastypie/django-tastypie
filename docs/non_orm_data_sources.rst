@@ -47,6 +47,12 @@ As an example, we'll take integrating with Riak_ (a Dynamo-like NoSQL store)
 since it has both a simple API and demonstrate what hooking up to a
 non-relational datastore looks like::
 
+    import riak
+
+    from tastypie import fields
+    from tastypie.authorization import Authorization
+    from tastypie.resources import Resource
+
     # We need a generic object to shove data in/get data from.
     # Riak generally just tosses around dictionaries, so we'll lightly
     # wrap that.
@@ -114,16 +120,16 @@ non-relational datastore looks like::
 
             return results
 
-        def obj_get_list(self, request=None, **kwargs):
+        def obj_get_list(self, bundle, **kwargs):
             # Filtering disabled for brevity...
-            return self.get_object_list(request)
+            return self.get_object_list(bundle.request)
 
-        def obj_get(self, request=None, **kwargs):
+        def obj_get(self, bundle, **kwargs):
             bucket = self._bucket()
             message = bucket.get(kwargs['pk'])
             return RiakObject(initial=message.get_data())
 
-        def obj_create(self, bundle, request=None, **kwargs):
+        def obj_create(self, bundle, **kwargs):
             bundle.obj = RiakObject(initial=kwargs)
             bundle = self.full_hydrate(bundle)
             bucket = self._bucket()
@@ -131,17 +137,17 @@ non-relational datastore looks like::
             new_message.store()
             return bundle
 
-        def obj_update(self, bundle, request=None, **kwargs):
-            return self.obj_create(bundle, request, **kwargs)
+        def obj_update(self, bundle, **kwargs):
+            return self.obj_create(bundle, **kwargs)
 
-        def obj_delete_list(self, request=None, **kwargs):
+        def obj_delete_list(self, bundle, **kwargs):
             bucket = self._bucket()
 
             for key in bucket.get_keys():
                 obj = bucket.get(key)
                 obj.delete()
 
-        def obj_delete(self, request=None, **kwargs):
+        def obj_delete(self, bundle, **kwargs):
             bucket = self._bucket()
             obj = bucket.get(kwargs['pk'])
             obj.delete()
@@ -150,11 +156,11 @@ non-relational datastore looks like::
             pass
 
 This represents a full, working, Riak-powered API endpoint. All REST-style
-actions (GET/POST/PUT/DELETE) all work correctly. The only shortcut taken in
+actions (GET/POST/PUT/DELETE) work correctly. The only shortcut taken in
 this example was skipping filter-abilty, as adding in the MapReduce bits would
 have decreased readability.
 
 All said and done, just nine methods needed overriding, eight of which were
 highly specific to how data access is done.
 
-.. _Riak: http://www.basho.com/products_riak_overview.php
+.. _Riak: https://pypi.python.org/pypi/riak

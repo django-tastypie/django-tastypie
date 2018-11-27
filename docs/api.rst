@@ -17,6 +17,7 @@ Quick Start
 A sample api definition might look something like (usually located in a
 URLconf)::
 
+    from django.conf.urls import url, include
     from tastypie.api import Api
     from myapp.api.resources import UserResource, EntryResource
 
@@ -25,10 +26,11 @@ URLconf)::
     v1_api.register(EntryResource())
 
     # Standard bits...
-    urlpatterns = patterns('',
-        (r'^api/', include(v1_api.urls)),
-    )
+    urlpatterns = [
+        url(r'^api/', include(v1_api.urls)),
+    ]
 
+For namespaced urls see :ref:`namespaces`
 
 ``Api`` Methods
 ===============
@@ -83,8 +85,7 @@ Deprecated. Will be removed by v1.0.0. Please use ``Api.prepend_urls`` instead.
 A hook for adding your own URLs or matching before the default URLs. Useful for
 adding custom endpoints or overriding the built-in ones.
 
-Should return a list of individual URLconf lines (**NOT** wrapped in
-``patterns``).
+Should return a list of individual URLconf lines.
 
 ``urls``
 ~~~~~~~~
@@ -103,4 +104,3 @@ Provides URLconf details for the ``Api`` and all registered
 
 A view that returns a serialized list of all resources registers
 to the ``Api``. Useful for discovery.
-

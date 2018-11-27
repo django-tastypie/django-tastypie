@@ -1,11 +1,11 @@
+# -*- coding: utf-8 -*-
 from django.contrib.auth.models import User
 from django.http import HttpRequest
-from django.test import TestCase
-from tastypie.bundle import Bundle
 from tastypie.fields import ToOneField, ToManyField
 from tastypie.resources import ModelResource
 from basic.api.resources import SlugBasedNoteResource
 from basic.models import Note, AnnotatedNote, SlugBasedNote
+from testcases import TestCaseWithFixture
 
 
 class InvalidLazyUserResource(ModelResource):
@@ -47,7 +47,7 @@ class NoteWithAnnotationsResource(ModelResource):
         queryset = Note.objects.all()
 
 
-class NoteModelResourceTestCase(TestCase):
+class NoteModelResourceTestCase(TestCaseWithFixture):
     def test_init(self):
         resource_1 = NoteResource()
         self.assertEqual(len(resource_1.fields), 8)
@@ -67,17 +67,11 @@ class NoteModelResourceTestCase(TestCase):
         self.assertEqual(nplur.notes.to, 'FooResource')
         self.assertEqual(lur.notes.to, 'basic.tests.resources.NoteResource')
 
-        try:
+        with self.assertRaises(ImportError):
             ilur.notes.to_class()
-            self.fail("to_class on InvalidLazyUserResource should fail!")
-        except ImportError:
-            pass
 
-        try:
+        with self.assertRaises(ImportError):
             nplur.notes.to_class()
-            self.fail("to_class on NoPathLazyUserResource should fail!")
-        except ImportError:
-            pass
 
         to_class = lur.notes.to_class()
         self.assertTrue(isinstance(to_class, NoteResource))
@@ -88,7 +82,7 @@ class NoteModelResourceTestCase(TestCase):
         self.assertEqual(related._meta.api_name, 'foo')
 
 
-class AnnotatedNoteModelResourceTestCase(TestCase):
+class AnnotatedNoteModelResourceTestCase(TestCaseWithFixture):
     def test_one_to_one_regression(self):
         # Make sure bits don't completely blow up if the related model
         # is gone.
@@ -96,10 +90,10 @@ class AnnotatedNoteModelResourceTestCase(TestCase):
 
         resource_1 = NoteWithAnnotationsResource()
         n1_bundle = resource_1.build_bundle(obj=n1)
-        dehydrated = resource_1.full_dehydrate(n1_bundle)
+        resource_1.full_dehydrate(n1_bundle)
 
 
-class DetailURIKwargsResourceTestCase(TestCase):
+class DetailURIKwargsResourceTestCase(TestCaseWithFixture):
     def test_correct_detail_uri_model(self):
         n1 = Note.objects.get(pk=1)
 
@@ -135,7 +129,7 @@ class DetailURIKwargsResourceTestCase(TestCase):
         })
 
 
-class SlugBasedResourceTestCase(TestCase):
+class SlugBasedResourceTestCase(TestCaseWithFixture):
     def setUp(self):
         super(SlugBasedResourceTestCase, self).setUp()
         self.n1 = SlugBasedNote.objects.get(pk='first-post')
@@ -186,3 +180,19 @@ class SlugBasedResourceTestCase(TestCase):
         # Make sure it's gone.
         self.assertRaises(SlugBasedNote.DoesNotExist, SlugBasedNote.objects.get, pk='first-post')
 
+
+class BundleTestCase(TestCaseWithFixture):
+    def test_bundle_repr(self):
+        # __repr__ should return string type (str in PY2 or unicode in PY3)
+        n = Note.objects.get(pk=1)
+
+        resource = NoteWithAnnotationsResource()
+        n1_bundle = resource.build_bundle(obj=n)
+        self.assertTrue(isinstance(repr(n1_bundle), str))
+
+        data_dict = {
+            u'∆ключ∆': 1,
+            'привет©®': 2
+        }
+        n2_bundle = resource.build_bundle(obj=n, data=data_dict)
+        self.assertTrue(isinstance(repr(n2_bundle), str))

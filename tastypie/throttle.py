@@ -1,16 +1,21 @@
+from __future__ import unicode_literals
 import time
+
 from django.core.cache import cache
+
+
+_other_allowed_chars = frozenset(['_', '.', '-'])
 
 
 class BaseThrottle(object):
     """
     A simplified, swappable base class for throttling.
-    
+
     Does nothing save for simulating the throttling API and implementing
     some common bits for the subclasses.
-    
+
     Accepts a number of optional kwargs::
-    
+
         * ``throttle_at`` - the number of requests at which the user should
           be throttled. Default is 150 requests.
         * ``timeframe`` - the length of time (in seconds) in which the user
@@ -23,40 +28,43 @@ class BaseThrottle(object):
         self.throttle_at = throttle_at
         # In seconds, please.
         self.timeframe = timeframe
-        
+
         if expiration is None:
             # Expire in a week.
             expiration = 604800
-        
+
         self.expiration = int(expiration)
-    
+
     def convert_identifier_to_key(self, identifier):
         """
         Takes an identifier (like a username or IP address) and converts it
         into a key usable by the cache system.
         """
-        bits = []
-        
-        for char in identifier:
-            if char.isalnum() or char in ['_', '.', '-']:
-                bits.append(char)
-        
-        safe_string = ''.join(bits)
-        return "%s_accesses" % safe_string
-    
+        bits = [
+            char
+            for char in identifier
+            if char.isalnum() or char in _other_allowed_chars
+        ]
+        bits.append('_accesses')
+
+        return ''.join(bits)
+
     def should_be_throttled(self, identifier, **kwargs):
         """
-        Returns whether or not the user has exceeded their throttle limit.
-        
+        Returns whether or not the user has exceeded their throttle limit. If
+        throttled, can return either True, and int specifying the number of
+        seconds to wait, or a datetime object specifying when to retry the
+        request.
+
         Always returns ``False``, as this implementation does not actually
         throttle the user.
         """
         return False
-    
+
     def accessed(self, identifier, **kwargs):
         """
         Handles recording the user's access.
-        
+
         Does nothing in this implementation.
         """
         pass
@@ -68,35 +76,39 @@ class CacheThrottle(BaseThrottle):
     """
     def should_be_throttled(self, identifier, **kwargs):
         """
-        Returns whether or not the user has exceeded their throttle limit.
-        
+        Returns whether or not the user has exceeded their throttle limit. If
+        throttled, can return either True, and int specifying the number of
+        seconds to wait, or a datetime object specifying when to retry the
+        request.
+
         Maintains a list of timestamps when the user accessed the api within
         the cache.
-        
+
         Returns ``False`` if the user should NOT be throttled or ``True`` if
         the user should be throttled.
         """
         key = self.convert_identifier_to_key(identifier)
-        
-        # Make sure something is there.
-        cache.add(key, [])
-        
+
         # Weed out anything older than the timeframe.
-        minimum_time = int(time.time()) - int(self.timeframe)
-        times_accessed = [access for access in cache.get(key) if access >= minimum_time]
+        now = int(time.time())
+        timeframe = int(self.timeframe)
+        throttle_at = int(self.throttle_at)
+
+        minimum_time = now - timeframe
+        times_accessed = [access for access in cache.get(key, []) if access >= minimum_time]
         cache.set(key, times_accessed, self.expiration)
-        
-        if len(times_accessed) >= int(self.throttle_at):
+
+        if len(times_accessed) >= throttle_at:
             # Throttle them.
-            return True
-        
+            return timeframe - (now - times_accessed[-throttle_at])
+
         # Let them through.
         return False
-    
+
     def accessed(self, identifier, **kwargs):
         """
         Handles recording the user's access.
-        
+
         Stores the current timestamp in the "accesses" list within the cache.
         """
         key = self.convert_identifier_to_key(identifier)
@@ -109,14 +121,14 @@ class CacheDBThrottle(CacheThrottle):
     """
     A throttling mechanism that uses the cache for actual throttling but
     writes-through to the database.
-    
+
     This is useful for tracking/aggregating usage through time, to possibly
     build a statistics interface or a billing mechanism.
     """
     def accessed(self, identifier, **kwargs):
         """
         Handles recording the user's access.
-        
+
         Does everything the ``CacheThrottle`` class does, plus logs the
         access within the database using the ``ApiAccess`` model.
         """

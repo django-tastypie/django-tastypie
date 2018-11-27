@@ -1,7 +1,13 @@
-Master (v0.9.13)
+Master (v0.9.16)
 ================
 
-None yet.
+[2012-12-11] abc0bef - Changed response code of PUT with always_return_data=True from 202 to 200
+
+
+v0.9.13
+=======
+
+[2013-03-15] 2dff249 - Authorization methods that were previously expected to raise ``Unauthorized`` must now always return ``True`` if the authorization succeeds
 
 
 v0.9.12
@@ -16,4 +22,4 @@ v0.9.12
 
 
 Backward-incompatible commits were not recorded prior to the release of v0.9.11
-but may be found using ``git grep --oneline ...v0.9.11 | grep "BACKWARD-"``.
+but may be found using ``git log --oneline ...v0.9.11 | grep "BACKWARD-"``.

@@ -1,0 +1,65 @@
+v0.11.1
+=======
+
+:date: 2014-05-22
+
+This release is primarily a security release. The two issues fixed have been
+present but unknown for a long time & **ALL** users are recommended to upgrade
+where possible.
+
+1. Tastypie previously would accept a relation URI & *solely* parse out the
+   identifiers, ignoring if the URI was for the right resource. Where
+   ``'user': '/api/v1/users/1/',`` would be accepted as a ``User`` URI, you
+   could accidentally/intentionally pass something like
+   ``'user': '/api/v1/notes/1/',`` (**notes** rather than **users**), which
+   would assign it to the ``User`` with a ``pk=1``. Tastypie
+   would resolve the URI, but proceed to *only* care about the ``kwargs``, not
+   validating it was for the correct resource.
+
+   Tastypie now checks to ensure the resolving resource has a matching URI,
+   so these cases of mistaken identity can no longer happen (& with quicker
+   lookups). Thanks to Sergey Orshanskiy for the report!
+
+   Fixed in SHA: 6da76c6
+
+2. In some browsers (specifically Firefox), it was possible to construct a URL
+   that would include an XSS attack (specifically around the ``offset/limit``
+   pagination parameters). Firefox seems to evaluate the JSON returned,
+   completing the attack. Safari & Chrome do not appear to be affected.
+
+   Tastypie now escapes all error messages that could be returned to the user
+   to prevent this kind of attack in the future. Thanks to Micah Hausler for
+   the report!
+
+   Fixed in SHA: ae515bd
+
+Should you find a security issue in Tastypie, please report it to
+tastypie-security@googlegroups.com. Please **DO NOT** open GitHub issues or
+post the issues on the main Tastypie mailing list. Thanks!
+
+
+Bugfixes
+--------
+
+* Removed a mutable argument to ``Serializer.serialize``. (SHA: fb7326d)
+* Fixed the ``unquote`` import in ``tastypie.contrib.gis``. (SHA: 1958df0)
+* Enabled testing on Travis for Python 3.4. (SHA: 6596935)
+* Documentation updates:
+
+    * Fixed indentation in v0.9.16 release notes. (SHA: dd3725c)
+    * Updated the v0.10.0 release notes. (SHA: e4c2455)
+    * Fixed a Cookbook example to import ``json`` correctly. (SHA: bc7eb42)
+    * Updated the non-ORM docs to match Resource. (SHA: da6a629)
+    * Fixed grammar in Authorization docs. (SHA: 765ebf3)
+    * Fixed a typo in Authorization docs. (SHA: 4818f08)
+    * Updated the Cookbook to move an alternative approach to the correct place.
+      (SHA: 803d679)
+    * Updated the tutorial to import ``slugify`` from a more modern location.
+      (SHA: 86bb5d9)
+    * Fixed up inheritence in the Tools docs. (SHA: a1a2e64 & SHA: 12aa298)
+    * Added a section about ``httpie`` to the Tools docs. (SHA: 5e49436)
+    * Corrected the URL for ``biplist``. (SHA: 859ce97)
+    * Added Postman to the list of Tools. (SHA: b9f0dec)
+    * Fixed a typo on the docs index. (SHA: 17e5a91)
+    * Fixed incorrect apostrophes. (SHA: 635729c)
+    * Fixed a typo in the Resources docs. (SHA: d789eea)

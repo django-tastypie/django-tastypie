@@ -1,8 +1,8 @@
-django-oauth-plus
-oauth2
-lxml
-python-digest
+-r ../requirements.txt
 biplist
-pyyaml
-mimeparse>=0.1.3
-python-dateutil>=2.1
+coverage
+defusedxml
+lxml
+mock<1.1.0
+pytz==2013b
+PyYAML

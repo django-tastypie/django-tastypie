@@ -1,11 +1,14 @@
-from django.conf.urls.defaults import *
 from tastypie.api import Api
-from basic.api.resources import NoteResource, UserResource, BustedResource, CachedUserResource, PublicCachedUserResource, PrivateCachedUserResource, SlugBasedNoteResource, SessionUserResource
+from basic.api.resources import NoteResource, UserResource, BustedResource,\
+    CachedUserResource, PublicCachedUserResource, PrivateCachedUserResource,\
+    CacheDisabledUserResource, SlugBasedNoteResource, SessionUserResource
+
 
 api = Api(api_name='v1')
 api.register(NoteResource(), canonical=True)
 api.register(UserResource(), canonical=True)
 api.register(CachedUserResource(), canonical=True)
+api.register(CacheDisabledUserResource(), canonical=True)
 api.register(PublicCachedUserResource(), canonical=True)
 api.register(PrivateCachedUserResource(), canonical=True)
 

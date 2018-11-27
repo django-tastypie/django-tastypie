@@ -1,7 +1,16 @@
+from __future__ import unicode_literals
 from tastypie.bundle import Bundle
 from tastypie.resources import ModelResource
 from tastypie.exceptions import NotFound
-from django.core.urlresolvers import resolve, Resolver404, get_script_prefix
+
+try:
+    from django.urls import resolve, Resolver404, get_script_prefix
+except ImportError:
+    from django.core.urlresolvers import (
+        resolve,
+        Resolver404,
+        get_script_prefix,
+    )
 
 
 class GenericResource(ModelResource):
@@ -9,8 +18,8 @@ class GenericResource(ModelResource):
     Provides a stand-in resource for GFK relations.
     """
     def __init__(self, resources, *args, **kwargs):
-        self.resource_mapping = dict((r._meta.resource_name, r) for r in resources)
-        return super(GenericResource, self).__init__(*args, **kwargs)
+        self.resource_mapping = {r._meta.resource_name: r for r in resources}
+        super(GenericResource, self).__init__(*args, **kwargs)
 
     def get_via_uri(self, uri, request=None):
         """
@@ -26,7 +35,7 @@ class GenericResource(ModelResource):
         chomped_uri = uri
 
         if prefix and chomped_uri.startswith(prefix):
-            chomped_uri = chomped_uri[len(prefix)-1:]
+            chomped_uri = chomped_uri[len(prefix) - 1:]
 
         try:
             view, args, kwargs = resolve(chomped_uri)

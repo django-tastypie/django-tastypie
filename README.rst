@@ -2,39 +2,61 @@
 django-tastypie
 ===============
 
+.. image:: https://readthedocs.org/projects/django-tastypie/badge/
+    :target: https://django-tastypie.readthedocs.io/
+    :alt: Docs
+
+.. image:: https://travis-ci.org/django-tastypie/django-tastypie.svg
+    :target: https://travis-ci.org/django-tastypie/django-tastypie
+    :alt: CI
+
+.. image:: https://coveralls.io/repos/django-tastypie/django-tastypie/badge.svg?service=github
+    :target: https://coveralls.io/github/django-tastypie/django-tastypie
+    :alt: Code Coverage
+
+.. image:: https://img.shields.io/pypi/v/django-tastypie.svg
+    :target: https://pypi.python.org/pypi/django-tastypie
+    :alt: Version
+
+.. image:: https://pypi-badges.global.ssl.fastly.net/svg?package=django-tastypie&timeframe=monthly
+    :target: https://pypi.python.org/pypi/django-tastypie
+    :alt: Downloads
+
 Creating delicious APIs for Django apps since 2010.
 
-Currently in beta (v0.9.13) but being used actively in production on several
+Currently in beta (v0.14.2) but being used actively in production on several
 sites.
 
 
 Requirements
 ============
 
-Required
---------
+Core
+----
 
-* Python 2.6+
-* Django 1.3+
-* mimeparse 0.1.3+ (http://code.google.com/p/mimeparse/)
+* Python 2.7+ or Python 3.4+
+* Django - 1.11 (LTS), 2.0 (LTS) or 2.1 - the last two LTS and the last incremental release are supported.
+* dateutil (http://labix.org/python-dateutil) >= 2.1
 
-  * Older versions will work, but their behavior on JSON/JSONP is a touch wonky.
+Format Support
+--------------
 
-* dateutil (http://labix.org/python-dateutil) >= 1.5, < 2.0
+* XML: lxml 3 (http://lxml.de/) and defusedxml (https://pypi.python.org/pypi/defusedxml)
+* YAML: pyyaml (http://pyyaml.org/)
+* binary plist: biplist (https://bitbucket.org/wooster/biplist)
 
 Optional
 --------
 
-* python_digest (https://bitbucket.org/akoha/python-digest/)
-* lxml (http://lxml.de/) if using the XML serializer
-* pyyaml (http://pyyaml.org/) if using the YAML serializer
-* biplist (http://explorapp.com/biplist/) if using the binary plist serializer
+* HTTP Digest authentication: python3-digest (https://bitbucket.org/akoha/python-digest/)
 
 
 What's It Look Like?
 ====================
 
-A basic example looks like::
+A basic example looks like:
+
+.. code:: python
 
     # myapp/api.py
     # ============
@@ -49,30 +71,30 @@ A basic example looks like::
 
     # urls.py
     # =======
-    from django.conf.urls.defaults import *
+    from django.conf.urls import url, include
     from tastypie.api import Api
     from myapp.api import EntryResource
 
     v1_api = Api(api_name='v1')
     v1_api.register(EntryResource())
 
-    urlpatterns = patterns('',
+    urlpatterns = [
         # The normal jazz here then...
-        (r'^api/', include(v1_api.urls)),
-    )
+        url(r'^api/', include(v1_api.urls)),
+    ]
 
 That gets you a fully working, read-write API for the ``Entry`` model that
 supports all CRUD operations in a RESTful way. JSON/XML/YAML support is already
 there, and it's easy to add related data/authentication/caching.
 
 You can find more in the documentation at
-http://django-tastypie.readthedocs.org/.
+https://django-tastypie.readthedocs.io/.
 
 
 Why Tastypie?
 =============
 
-There are other, better known API frameworks out there for Django. You need to
+There are other API frameworks out there for Django. You need to
 assess the options available and decide for yourself. That said, here are some
 common reasons for tastypie.
 
@@ -83,14 +105,13 @@ common reasons for tastypie.
   the problem domain.
 * You want/need XML serialization that is treated equally to JSON (and YAML is
   there too).
-* You want to support my perceived NIH syndrome, which is less about NIH and more
-  about trying to help out friends/coworkers.
 
 
 Reference Material
 ==================
 
-* http://github.com/toastdriven/django-tastypie/tree/master/tests/basic shows
+* https://django-tastypie.readthedocs.io/en/latest/
+* https://github.com/django-tastypie/django-tastypie/tree/master/tests/basic shows
   basic usage of tastypie
 * http://en.wikipedia.org/wiki/REST
 * http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
@@ -98,17 +119,30 @@ Reference Material
 * http://jacobian.org/writing/rest-worst-practices/
 
 
-Commercial Support
-==================
+Getting Help
+============
 
-If you're using Tastypie in a commercial environment, paid support is available
-from `Toast Driven`_. Services offered include:
+There are two primary ways of getting help.
 
-* Advice/help with setup
-* Implementation in your project
-* Bugfixes in Tastypie itself
-* Features in Tastypie itself
+1. Go to `StackOverflow`_ and post a question with the ``tastypie`` tag.
+2. We have an IRC channel (`#tastypie on irc.freenode.net`_) to get help,
+   bounce an idea by us, or generally shoot the breeze.
 
-If you're interested, please contact Daniel Lindsley (daniel@toastdriven.com).
+.. _`StackOverflow`: https://stackoverflow.com/questions/tagged/tastypie
+.. _#tastypie on irc.freenode.net: irc://irc.freenode.net/tastypie
 
-.. _`Toast Driven`: http://toastdriven.com/
+
+Security
+========
+
+Tastypie is committed to providing a flexible and secure API, and was designed
+with many security features and options in mind. Due to the complex nature of
+APIs and the constant discovery of new attack vectors and vulnerabilities,
+no software is immune to security holes. We rely on our community to report
+and help us investigate security issues.
+
+If you come across a security hole **please do not open a Github issue**.
+Instead, **drop us an email** at ``tastypie-security@googlegroups.com``
+
+We'll then work together to investigate and resolve the problem so we can
+announce a solution along with the vulnerability.

@@ -1,4 +1,6 @@
+from __future__ import unicode_literals
 from django.http import HttpRequest
+from django.utils import six
 
 
 # In a separate file to avoid circular imports...
@@ -16,7 +18,10 @@ class Bundle(object):
                  request=None,
                  related_obj=None,
                  related_name=None,
-                 objects_saved=None):
+                 objects_saved=None,
+                 related_objects_to_save=None,
+                 via_uri=False,
+                 ):
         self.obj = obj
         self.data = data or {}
         self.request = request or HttpRequest()
@@ -24,6 +29,11 @@ class Bundle(object):
         self.related_name = related_name
         self.errors = {}
         self.objects_saved = objects_saved or set()
+        self.related_objects_to_save = related_objects_to_save or {}
+        self.via_uri = via_uri
 
     def __repr__(self):
-        return "<Bundle for obj: '%s' and with data: '%s'>" % (self.obj, self.data)
+        repr_string = "<Bundle for obj: '%r' and with data: '%r'>"
+        if six.PY2:
+            repr_string = repr_string.encode('utf-8')
+        return repr_string % (self.obj, self.data)

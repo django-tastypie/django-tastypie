@@ -15,10 +15,10 @@ This is actually not a bug and JSON support is present in your ``Resource``.
 This issue is that Tastypie respects the ``Accept`` header your browser sends.
 Most browsers send something like::
 
-    Accept: application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5
+    Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
 
-Note that ``application/xml`` comes first, which is a format that Tastypie
-handles by default, hence why you receive XML.
+Note that ``application/xml`` is the first format that Tastypie
+handles, hence you receive XML.
 
 If you use ``curl`` from the command line, you should receive JSON by default::
 
@@ -27,6 +27,14 @@ If you use ``curl`` from the command line, you should receive JSON by default::
 If you want JSON in the browser, simply append ``?format=json`` to your URL.
 Tastypie always respects this override first, before it falls back to the
 ``Accept`` header.
+
+
+Querying using Tastypie's methods isn't working/returning multiple objects
+==========================================================================
+
+When calling ``obj_get`` (or another method that uses it, such as
+``dispatch_detail``), make sure the fields you're querying with are either
+``Meta.detail_uri_name`` or a field which appears in ``Meta.filtering``
 
 
 "What's the format for a POST or PUT?"
@@ -70,18 +78,3 @@ You can do this over an entire collection as well::
     curl -H 'Content-Type: application/json' -X PUT --data @- "http://localhost:8000/api/v1/entry/"
 
 .. _Requests: http://python-requests.org
-
-
-"Why is my syncdb with superuser failing with a DatabaseError?"
-===============================================================
-
-More specifically, this specific ``DatabaseError``::
-
-    django.db.utils.DatabaseError: no such table: tastypie_apikey
-
-This is a side effect of the (disabled by default) ``create_api_key`` signal
-as described in the :ref:`authentication` section of the
-documentation when used in conjunction with South.
-
-To work around this issue, you can disable the ``create_api_key`` signal
-until you have completed running ``syncdb --migrate`` for the first time.

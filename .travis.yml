@@ -1,23 +1,68 @@
+sudo: false
+
 language: python
 
 python:
-  - "2.6"
+  - "2.7"
+  - "3.4"
+  - "3.5"
+  - "3.6"
 
 env:
-  - TOXENV=py25-1.3,py25-1.4
-  - TOXENV=py26-1.3,py26-1.4
-  - TOXENV=py27-1.3,py27-1.4
-  - TOXENV=docs
-  - TOXENV=py26-dev,py27-dev
+  - MODE=flake8
+  - MODE=flake8-strict
+  - MODE=docs
+  - DJANGO_VERSION=dj111
+  - DJANGO_VERSION=dj20
+  - DJANGO_VERSION=dj21
+  - DJANGO_VERSION=djdev
 
 matrix:
   allow_failures:
-    - env: TOXENV=py26-dev,py27-dev
+    - env: DJANGO_VERSION=djdev
+    - env: MODE=flake8-strict
+  exclude:
+    - python: "3.4"
+      env: MODE=flake8
+    - python: "3.4"
+      env: MODE=flake8-strict
+    - python: "3.4"
+      env: DJANGO_VERSION=djdev
+    - python: "3.4"
+      env: DJANGO_VERSION=dj21
+    - python: "2.7"
+      env: DJANGO_VERSION=djdev
+    - python: "2.7"
+      env: DJANGO_VERSION=dj20
+    - python: "2.7"
+      env: DJANGO_VERSION=dj21
+
+addons:
+  apt:
+    packages:
+    - binutils
+    - libproj-dev
+    - gdal-bin
+    - spatialite-bin
+    - libspatialite-dev
+
+cache:
+  directories:
+    - $HOME/.cache/pip
+
+before_cache:
+  - rm -f $HOME/.cache/pip/log/debug.log
 
 # command to install dependencies
 install:
-    - pip install tox
+    - pip install -U pip
+    - pip install -U wheel virtualenv
+    - pip install tox coveralls
+
+after_success:
+    - coveralls
 
 # command to run tests
 script:
-    - tox
+    - coverage erase
+    - tox -e py${TRAVIS_PYTHON_VERSION/./}-${DJANGO_VERSION}${MODE}

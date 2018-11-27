@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from functools import partial
 from tastypie import fields
 from tastypie.resources import Resource
@@ -20,7 +21,7 @@ class GenericForeignKeyField(fields.ToOneField):
         if len(to) <= 0:
             raise ValueError('to field must have some values')
 
-        for k, v in to.iteritems():
+        for k, v in to.items():
             if not issubclass(k, models.Model) or not issubclass(v, Resource):
                 raise ValueError('to field must map django models to tastypie resources')
 

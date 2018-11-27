@@ -20,6 +20,12 @@ JSONView
 A plugin (actually two different ones that closely mirror each other) that
 nicely reformats JSON data in the browser.
 
+Postman - Rest Client
+---------------------
+* Chrome - https://chrome.google.com/webstore/detail/fdmmgilgnpjigdojojpjoooidkmcomcm
+
+A feature rich Chrome extension with JSON and XML support
+
 
 Extensions
 ==========
@@ -40,7 +46,8 @@ Python
 Slumber
 -------
 
-http://slumber.in/
+https://pypi.python.org/pypi/slumber/
+https://github.com/samgiles/slumber
 
 Slumber is a small Python library that makes it easy to access & work with
 APIs. It works for many others, but works especially well with Tastypie.
@@ -63,10 +70,27 @@ Here is what it looks like::
 drest
 -----
 
-http://drest.rtfd.org/
+https://drest.readthedocs.io/
 
 drest is another small Python library. It focuses on extensibility & can also
 work with many different API, with an emphasis on Tastypie.
+
+httpie
+------
+
+https://github.com/jkbr/httpie
+
+HTTPie is a command line HTTP client written in Python. Its goal is to make 
+command-line interaction with web services as human-friendly as possible and 
+allows much conciser statements compared with curl.
+
+For example for POSTing a JSON object you simply call:
+
+    $ http localhost:8000/api/v1/entry/ title="Foo" body="Bar" user="/api/v1/user/1/"
+
+Now compare this with curl:
+
+    $ curl --dump-header - -H "Content-Type: application/json" -X POST --data '{"title": "Foo", "body": "Bar", "user": "/api/v1/user/1/"}' http://localhost:8000/api/v1/entry/
 
 
 json.tool
@@ -89,6 +113,42 @@ Will return nicely reformatted data like::
             }
         ]
     }
+
+
+django-permissionsx
+-------------------
+
+https://github.com/thinkingpotato/django-permissionsx
+
+This package allows using one set of rules both for Django class-based views]
+and Tastypie authorization. For example:
+
+**articles/permissions.py**::
+
+    class StaffPermissions(Permissions):
+        permissions = P(profile__is_editor=True) | P(profile__is_administrator=True)
+
+**articles/views.py**::
+
+    class ArticleDeleteView(PermissionsViewMixin, DeleteView):
+        model = Article
+        success_url = reverse_lazy('article_list')
+        permissions = StaffPermissions
+
+**articles/api.py**::
+
+    class StaffOnlyAuthorization(TastypieAuthorization):
+        permissions_class = StaffPermissions
+
+
+django-superbulk
+----------------
+
+https://github.com/thelonecabbage/django-superbulk
+
+This app adds bulk operation support to any Django view-based app, allowing for
+better transactional behavior.
+
 
 
 Javascript

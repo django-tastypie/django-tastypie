@@ -23,7 +23,7 @@ Here's an example model with a GenericForeignKey taken from the Django docs::
 
     class TaggedItem(models.Model):
         tag = models.SlugField()
-        content_type = models.ForeignKey(ContentType)
+        content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
         object_id = models.PositiveIntegerField()
         content_object = generic.GenericForeignKey('content_type', 'object_id')
 
@@ -61,6 +61,10 @@ A simple ModelResource for this model might look like this::
         class Meta:
             resource_name = 'tagged_items'
             queryset = TaggedItem.objects.all()
+
+A ModelResource that is to be used as a relation to a GenericForeignKeyField
+must also be registered to the Api instance defined in your URLconf in order
+to provide a reverse uri for lookups.
 
 Like ToOneField, you must add your GenericForeignKey attribute to your
 ModelResource definition. It will not be added automatically like most other

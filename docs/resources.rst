@@ -95,7 +95,6 @@ As an example, we'll walk through what a GET request to a list endpoint (say
   * the requested HTTP method is in ``allowed_methods`` (``method_check``),
   * the class has a method that can handle the request (``get_list``),
   * the user is authenticated (``is_authenticated``),
-  * the user is authorized (``is_authorized``),
   * & the user has not exceeded their throttle (``throttle_check``).
 
   At this point, ``dispatch`` actually calls the requested method (``get_list``).
@@ -106,7 +105,7 @@ As an example, we'll walk through what a GET request to a list endpoint (say
     of ``ModelResource``, this builds the ORM filters to apply
     (``ModelResource.build_filters``). It then gets the ``QuerySet`` via
     ``ModelResource.get_object_list`` (which performs
-    ``Resource.apply_authorization_limits`` to possibly limit the set the user
+    ``Resource.authorized_read_list`` to possibly limit the set the user
     can work with) and applies the built filters to it.
   * It then sorts the objects based on user input
     (``ModelResource.apply_sorting``).
@@ -161,7 +160,7 @@ consequences of each approach.
 Accessing The Current Request
 =============================
 
-Being able to change behavior based on the current request is a very commmon
+Being able to change behavior based on the current request is a very common
 need. Virtually anywhere within ``Resource/ModelResource``, if a ``bundle`` is
 available, you can access it using ``bundle.request``. This is useful for
 altering querysets, ensuring headers are present, etc.
@@ -178,7 +177,7 @@ isn't there.
 Advanced Data Preparation
 =========================
 
-Not all data can be easily pull off an object/model attribute. And sometimes,
+Not all data can be easily pulled off an object/model attribute. And sometimes,
 you (or the client) may need to send data that doesn't neatly fit back into the
 data model on the server side. For this, Tastypie has the "dehydrate/hydrate"
 cycle.
@@ -263,7 +262,7 @@ A complex example::
 
             # Make sure we don't have to worry about "divide by zero" errors.
             if not bundle.obj.rating_set.count():
-                return rating
+                return total_score
 
             # We'll run over all the ``Rating`` objects & calculate an average.
             for rating in bundle.obj.rating_set.all():
@@ -317,7 +316,7 @@ This method should return a ``bundle``, whether it modifies the existing one or 
 The Hydrate Cycle
 -------------------
 
-Tastypie uses a "hydrate" cycle to take serializated data from the client
+Tastypie uses a "hydrate" cycle to take serialized data from the client
 and turn it into something the data model can use. This is the reverse process
 from the ``dehydrate`` cycle. In fact, by default, Tastypie's serialized data
 should be "round-trip-able", meaning the data that comes out should be able to
@@ -533,7 +532,8 @@ The inner ``Meta`` class allows for class-level configuration of how the
 ------------------------
 
   Controls what list REST methods the ``Resource`` should respond to. Default
-  is ``['get', 'post', 'put', 'delete', 'patch']``.
+  is ``['get', 'post', 'put', 'delete', 'patch']``. Set it to an empty list
+  (i.e. `[]`) to disable all methods.
 
 
 .. _detail-allowed-methods:
@@ -542,7 +542,8 @@ The inner ``Meta`` class allows for class-level configuration of how the
 --------------------------
 
   Controls what detail REST methods the ``Resource`` should respond to. Default
-  is ``['get', 'post', 'put', 'delete', 'patch']``.
+  is ``['get', 'post', 'put', 'delete', 'patch']``. Set it to an empty list
+  (i.e. `[]`) to disable all methods.
 
 ``limit``
 ---------
@@ -585,16 +586,19 @@ The inner ``Meta`` class allows for class-level configuration of how the
 ``filtering``
 -------------
 
-  Provides a list of fields that the ``Resource`` will accept client
-  filtering on. Default is ``{}``.
+  Specifies the fields that the ``Resource`` will accept client filtering on.
+  Default is ``{}``.
 
   Keys should be the fieldnames as strings while values should be a list of
   accepted filter types.
 
+  This also restricts what fields can be filtered on when manually
+  calling ``obj_get`` and ``obj_get_list``.
+
 ``ordering``
 ------------
 
-  Specifies the what fields the ``Resource`` should should allow ordering on.
+  Specifies the what fields the ``Resource`` should allow ordering on.
   Default is ``[]``.
 
   Values should be the fieldnames as strings. When provided to the ``Resource``
@@ -622,13 +626,25 @@ The inner ``Meta`` class allows for class-level configuration of how the
 
   If you place any callables in this, they'll only be evaluated once (when
   the ``Meta`` class is instantiated). This especially affects things that
-  are date/time related. Please see the :ref:cookbook for a way around this.
+  are date/time related. Please see the :doc:`cookbook` for a way around this.
+
+``abstract``
+------------
+
+  In concrete ``Resource`` and ``ModelResource`` instances, either 
+  ``object_class`` or ``queryset`` is required.
+  If you wish to build an abstract base ``Resource`` class, you can bypass 
+  this requirement by setting ``abstract`` to ``True``.
 
 ``fields``
 ----------
 
   Controls what introspected fields the ``Resource`` should include.
-  A whitelist of fields. Default is ``[]``.
+  A whitelist of fields. Default is ``None``.
+
+  The default value of ``None`` means that all Django fields will be 
+  introspected. In order to specify that no fields should be introspected,
+  use ``[]``
 
 ``excludes``
 ------------
@@ -655,11 +671,11 @@ The inner ``Meta`` class allows for class-level configuration of how the
   Specifies all HTTP methods (except ``DELETE``) should return a serialized form
   of the data. Default is ``False``.
 
-  If ``False``, ``HttpNoContent`` (204) is returned on ``POST/PUT``
+  If ``False``, ``HttpNoContent`` (204) is returned on ``PUT``
   with an empty body & a ``Location`` header of where to request the full
   resource.
 
-  If ``True``, ``HttpAccepted`` (202) is returned on ``POST/PUT``
+  If ``True``, ``HttpResponse`` (200) is returned on ``POST/PUT``
   with a body containing all the data in a serialized form.
 
 ``collection_name``
@@ -692,9 +708,11 @@ class::
                 "title": ALL,
             }
 
-Valid filtering values are: Django ORM filters (e.g. ``startswith``,
-``exact``, ``lte``, etc. or the ``ALL`` or ``ALL_WITH_RELATIONS`` constants
+Valid filtering values are: `Django ORM filters`_ (e.g. ``startswith``,
+``exact``, ``lte``, etc.) or the ``ALL`` or ``ALL_WITH_RELATIONS`` constants
 defined in :mod:`tastypie.constants`.
+
+.. _Django ORM filters: https://docs.djangoproject.com/en/dev/ref/models/querysets/#field-lookups
 
 These filters will be extracted from URL query strings using the same
 double-underscore syntax as the Django ORM::
@@ -708,7 +726,7 @@ Advanced Filtering
 
 If you need to filter things other than ORM resources or wish to apply
 additional constraints (e.g. text filtering using `django-haystack
-<http://haystacksearch.org>` rather than simple database queries) your
+<http://haystacksearch.org/>`_ rather than simple database queries) your
 :class:`~tastypie.resources.Resource` may define a custom
 :meth:`~tastypie.resource.Resource.build_filters` method which allows you to
 filter the queryset before processing a request::
@@ -716,11 +734,11 @@ filter the queryset before processing a request::
     from haystack.query import SearchQuerySet
 
     class MyResource(Resource):
-        def build_filters(self, filters=None):
+        def build_filters(self, filters=None, **kwargs):
             if filters is None:
                 filters = {}
 
-            orm_filters = super(MyResource, self).build_filters(filters)
+            orm_filters = super(MyResource, self).build_filters(filters, **kwargs)
 
             if "q" in filters:
                 sqs = SearchQuerySet().auto_query(filters['q'])
@@ -765,6 +783,14 @@ Note that if ``BadRequest`` or an exception with a ``response`` attr are seen,
 there is special handling to either present a message back to the user or
 return the response traveling with the exception.
 
+``get_response_class_for_exception``
+------------------------------------
+
+.. method:: Resource.get_response_class_for_exception(self, request, exception)
+
+Can be overridden to customize response classes used for uncaught exceptions.
+Should always return a subclass of``django.http.HttpResponse``.
+
 ``base_urls``
 -------------
 
@@ -773,8 +799,7 @@ return the response traveling with the exception.
 The standard URLs this ``Resource`` should respond to. These include the
 list, detail, schema & multiple endpoints by default.
 
-Should return a list of individual URLconf lines (**NOT** wrapped in
-``patterns``).
+Should return a list of individual URLconf lines.
 
 ``override_urls``
 -----------------
@@ -792,8 +817,7 @@ instead.
 A hook for adding your own URLs or matching before the default URLs. Useful for
 adding custom endpoints or overriding the built-in ones (from ``base_urls``).
 
-Should return a list of individual URLconf lines (**NOT** wrapped in
-``patterns``).
+Should return a list of individual URLconf lines.
 
 ``urls``
 --------
@@ -948,16 +972,6 @@ HTTP methods to check against. Usually, this looks like::
     # GET.
     self.method_check(request, ['get'])
 
-``is_authorized``
------------------
-
-.. method:: Resource.is_authorized(self, request, object=None)
-
-Handles checking of permissions to see if the user has authorization
-to GET, POST, PUT, or DELETE this resource.  If ``object`` is provided,
-the authorization backend can apply additional row-level permissions
-checking.
-
 ``is_authenticated``
 --------------------
 
@@ -1098,10 +1112,24 @@ simply override this method.
 
 .. method:: Resource.full_dehydrate(self, bundle, for_list=False)
 
-Given a bundle with an object instance, extract the information from it to
-populate the resource.
+Populate the bundle's :attr:`data` attribute.
 
-The for_list flag is used to control which fields are excluded by the ``use_in`` attribute.
+The ``bundle`` parameter will have the data that needs dehydrating in its
+:attr:`obj` attribute.
+
+The ``for_list`` parameter indicates the style of response being prepared:
+    - ``True`` indicates a list of items. Note that :meth:`full_dehydrate` will
+      be called once for each object requested.
+    - ``False`` indicates a response showing the details for an item
+
+This method is responsible for invoking the the :meth:`dehydrate` method of
+all the fields in the resource. Additionally, it calls
+:meth:`Resource.dehydrate`.
+
+Must return a :class:`Bundle` with the desired dehydrated :attr:`data`
+(usually a :class:`dict`). Typically one should modify the bundle passed in
+and return it, but you may also return a completely new bundle.
+
 
 ``dehydrate``
 -------------
@@ -1184,16 +1212,6 @@ A hook to allow making returning the list of available objects.
 
 ``ModelResource`` includes a full working version specific to Django's
 ``Models``.
-
-``apply_authorization_limits``
-------------------------------
-
-.. method:: Resource.apply_authorization_limits(self, request, object_list)
-
-Allows the ``Authorization`` class to further limit the object list.
-Also a hook to customize per ``Resource``.
-
-Calls ``Authorization.apply_limits`` if available.
 
 ``can_create``
 --------------
@@ -1414,7 +1432,7 @@ with the provided the data to create the new collection.
 Return ``HttpNoContent`` (204 No Content) if
 ``Meta.always_return_data = False`` (default).
 
-Return ``HttpAccepted`` (202 Accepted) if
+Return ``HttpAccepted`` (200 OK) if
 ``Meta.always_return_data = True``.
 
 ``put_detail``
@@ -1436,8 +1454,8 @@ If an existing resource is modified and
 ``Meta.always_return_data = False`` (default), return ``HttpNoContent``
 (204 No Content).
 If an existing resource is modified and
-``Meta.always_return_data = True``, return ``HttpAccepted`` (202
-Accepted).
+``Meta.always_return_data = True``, return ``HttpAccepted`` (200
+OK).
 
 ``post_list``
 -------------
@@ -1518,14 +1536,14 @@ For each object in ``objects``:
     considered "new" and is handled like a ``POST`` to the resource list.
 
   * If the dict has a ``resource_uri`` key and the ``resource_uri`` refers
-    to an existing resource then the item is a update; it's treated
+    to an existing resource then the item is an update; it's treated
     like a ``PATCH`` to the corresponding resource detail.
 
   * If the dict has a ``resource_uri`` but the resource *doesn't* exist,
     then this is considered to be a create-via-``PUT``.
 
-Each entry in ``deleted_objects`` referes to a resource URI of an existing
-resource to be deleted; each is handled like a ``DELETE`` to the relevent
+Each entry in ``deleted_objects`` refers to a resource URI of an existing
+resource to be deleted; each is handled like a ``DELETE`` to the relevant
 resource.
 
 In any case:
@@ -1536,7 +1554,7 @@ In any case:
   * ``PATCH`` is all or nothing. If a single sub-operation fails, the
     entire request will fail and all resources will be rolled back.
 
-  * For ``PATCH`` to work, you **must** have ``put`` in your
+  * For ``PATCH`` to work, you **must** have ``patch`` in your
     :ref:`detail-allowed-methods` setting.
 
   * To delete objects via ``deleted_objects`` in a ``PATCH`` request you
@@ -1627,7 +1645,7 @@ additional fields based on the associated model.
 
 .. method:: ModelResource.check_filtering(self, field_name, filter_type='exact', filter_bits=None)
 
-Given a field name, a optional filter type and an optional list of
+Given a field name, an optional filter type and an optional list of
 additional relations, determine if a field can be filtered on.
 
 If a filter does not meet the needed conditions, it should raise an

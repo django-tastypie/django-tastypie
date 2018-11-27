@@ -1,75 +1,79 @@
 # -*- coding: utf-8 -*-
 
 # Placed into the Public Domain by tav <tav@espians.com>
+# Modified for Python 3 compatibility.
 
-"""Validate Javascript Identifiers for use as JSON-P callback parameters."""
-
+"Validate Javascript Identifiers for use as JSON-P callback parameters."
+from __future__ import unicode_literals
 import re
 
 from unicodedata import category
 
-# ------------------------------------------------------------------------------
+from django.utils import six
+
+# -----------------------------------------------------------------------------
 # javascript identifier unicode categories and "exceptional" chars
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 valid_jsid_categories_start = frozenset([
     'Lu', 'Ll', 'Lt', 'Lm', 'Lo', 'Nl'
-    ])
+])
 
 valid_jsid_categories = frozenset([
     'Lu', 'Ll', 'Lt', 'Lm', 'Lo', 'Nl', 'Mn', 'Mc', 'Nd', 'Pc'
-    ])
+])
 
 valid_jsid_chars = ('$', '_')
 
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # regex to find array[index] patterns
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 array_index_regex = re.compile(r'\[[0-9]+\]$')
 
 has_valid_array_index = array_index_regex.search
 replace_array_index = array_index_regex.sub
 
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # javascript reserved words -- including keywords and null/boolean literals
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 is_reserved_js_word = frozenset([
-
     'abstract', 'boolean', 'break', 'byte', 'case', 'catch', 'char', 'class',
     'const', 'continue', 'debugger', 'default', 'delete', 'do', 'double',
     'else', 'enum', 'export', 'extends', 'false', 'final', 'finally', 'float',
-    'for', 'function', 'goto', 'if', 'implements', 'import', 'in', 'instanceof',
-    'int', 'interface', 'long', 'native', 'new', 'null', 'package', 'private',
-    'protected', 'public', 'return', 'short', 'static', 'super', 'switch',
-    'synchronized', 'this', 'throw', 'throws', 'transient', 'true', 'try',
-    'typeof', 'var', 'void', 'volatile', 'while', 'with',
+    'for', 'function', 'goto', 'if', 'implements', 'import', 'in',
+    'instanceof', 'int', 'interface', 'long', 'native', 'new', 'null',
+    'package', 'private', 'protected', 'public', 'return', 'short', 'static',
+    'super', 'switch', 'synchronized', 'this', 'throw', 'throws', 'transient',
+    'true', 'try', 'typeof', 'var', 'void', 'volatile', 'while', 'with',
 
     # potentially reserved in a future version of the ES5 standard
     # 'let', 'yield'
-    
-    ]).__contains__
 
-# ------------------------------------------------------------------------------
+]).__contains__
+
+# -----------------------------------------------------------------------------
 # the core validation functions
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-def is_valid_javascript_identifier(identifier, escape=r'\u', ucd_cat=category):
+
+def is_valid_javascript_identifier(identifier, escape=r'\\u',
+        ucd_cat=category):
     """Return whether the given ``id`` is a valid Javascript identifier."""
 
     if not identifier:
         return False
 
-    if not isinstance(identifier, unicode):
+    if not isinstance(identifier, six.text_type):
         try:
-            identifier = unicode(identifier, 'utf-8')
+            identifier = six.text_type(identifier, 'utf-8')
         except UnicodeDecodeError:
             return False
 
     if escape in identifier:
-
-        new = []; add_char = new.append
+        new = []
+        add_char = new.append
         split_id = identifier.split(escape)
         add_char(split_id.pop(0))
 
@@ -77,11 +81,11 @@ def is_valid_javascript_identifier(identifier, escape=r'\u', ucd_cat=category):
             if len(segment) < 4:
                 return False
             try:
-                add_char(unichr(int('0x' + segment[:4], 16)))
+                add_char(six.unichr(int('0x' + segment[:4], 16)))
             except Exception:
                 return False
             add_char(segment[4:])
-            
+
         identifier = u''.join(new)
 
     if is_reserved_js_word(identifier):
@@ -102,7 +106,7 @@ def is_valid_javascript_identifier(identifier, escape=r'\u', ucd_cat=category):
 
 
 def is_valid_jsonp_callback_value(value):
-    """Return whether the given ``value`` can be used as a JSON-P callback."""
+    "Return whether the given ``value`` can be used as a JSON-P callback."
 
     for identifier in value.split(u'.'):
         while '[' in identifier:
@@ -114,14 +118,15 @@ def is_valid_jsonp_callback_value(value):
 
     return True
 
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # test
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 
 def test():
     """
-    The function ``is_valid_javascript_identifier`` validates a given identifier
-    according to the latest draft of the ECMAScript 5 Specification:
+    The function ``is_valid_javascript_identifier`` validates a given
+    identifier according to the latest draft of the ECMAScript 5 Specification:
 
       >>> is_valid_javascript_identifier('hello')
       True
@@ -146,9 +151,6 @@ def test():
 
       >>> is_valid_javascript_identifier(r'\u0062') # u'b'
       True
-
-      >>> is_valid_javascript_identifier(r'\u62')
-      False
 
       >>> is_valid_javascript_identifier(r'\u0020')
       False
@@ -205,6 +207,7 @@ def test():
     Enjoy!
 
     """
+
 
 if __name__ == '__main__':
     import doctest

@@ -3,3 +3,4 @@ recursive-include tastypie/templates/tastypie *.html
 include AUTHORS
 include LICENSE
 include README.rst
+include VERSION

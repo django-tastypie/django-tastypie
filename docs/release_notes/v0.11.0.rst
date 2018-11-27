@@ -1,0 +1,47 @@
+v0.11.0
+=======
+
+:date: 2013-12-03
+
+This release is a bugfix release. This also fixes installing Tastypie
+on Python 3 (due to the ``python-mimeparse`` dependency change).
+
+This release is also the first to be released as a `Python wheel`_ as well. Ex::
+
+    pip install wheel
+    pip install --use-wheel django-tastypie
+
+.. _`Python wheel`: https://wheel.readthedocs.io/
+
+
+Bugfixes
+--------
+
+* Now raises ``ApiFieldError`` when a datetime can't be parsed. (SHA: b59ac03)
+* Reduced the length of the ``ApiKey.key`` field to 128. (SHA: 1cdf2c4)
+* A bunch of test improvements. (SHA: 4320db4, SHA: f1bc584 & SHA: bd75a92)
+* Updated ``SimpleCache`` to the post-Django 1.3 world. (SHA: 4963d97)
+* Fixed a bug where ``tastypie.utils.timezone.now`` could throw an exception.
+  (SHA: b78175d)
+* Fixed the ``python-mimeparse`` dependency in ``setup.py``. (SHA: 26dc473)
+* Pinned to the beta of ``python3-digest``. (SHA: cc8ef0f)
+* Fixed ``CacheThrottle`` to work with Django's ``DummyCache``. (SHA: 5b8a316)
+* Improved the error message from ``assertHttpAccepted``. (SHA: 7dbed92)
+* Now raises ``BadRequest`` if we fail to decode JSON. (SHA: e9048fd)
+* Removed a duplicate ``if`` check. (SHA: 823d007)
+* Added further exception checking for new versions of ``dateutil``.
+  (SHA: 9739a35 & SHA: a8734cf)
+* Removed ``simplejson``. (SHA: ae58615)
+* Removed old Django 1.4 code. (SHA: 3c7ce47)
+* Documentation updates:
+
+    * Added examples of how to implement throttling. (SHA: a305549)
+    * Added docs on how to disable all list endpoints. (SHA: f4f4df2)
+    * Added docs on GFKs. (SHA: 50189d7)
+    * Added to the Tools docs. (SHA: bdde083 & SHA: 8c59e2c)
+    * Added docs about running tests with ``tox``. (SHA: f0222ea)
+    * Fixed docs on resources. (SHA: d5a290b, SHA: 0c859bf, SHA: bc6defd &
+      SHA: 95be355)
+    * Added ``defusedxml`` to the docs. (SHA: 521a696)
+    * Added to Who Uses. (SHA: dea9bf8)
+

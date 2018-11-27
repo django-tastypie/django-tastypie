@@ -1,0 +1,56 @@
+[
+    {
+        "fields": {
+            "username": "johndoe",
+            "email": "john@doe.com",
+            "password": "this_is_not_a_valid_password_string"
+        },
+        "model": "auth.user",
+        "pk": 1
+    },
+
+    {
+        "fields": {
+            "user": 1,
+            "title": "First Post!",
+            "slug": "first-post",
+            "content": "This is my very first post using my shiny new API. Pretty sweet, huh?",
+            "is_active": true,
+            "created": "2010-03-31 01:05:00.000Z",
+            "updated": "2010-03-31 01:05:00.000Z"
+        },
+        "model": "basic.note",
+        "pk": 1
+    },
+    {
+        "fields": {
+            "user": 1,
+            "title": "Another Post",
+            "slug": "another-post",
+            "content": "The dog ate my cat today. He looks seriously uncomfortable.",
+            "is_active": true,
+            "created": "2010-04-01 01:05:00.000Z",
+            "updated": "2010-04-01 01:05:00.000Z"
+        },
+        "model": "basic.note",
+        "pk": 2
+    },
+    {
+        "fields": {
+            "title": "First Post",
+            "content": "But not before the cat ate the hamster.",
+            "is_active": true
+        },
+        "model": "basic.slugbasednote",
+        "pk": "first-post"
+    },
+    {
+        "fields": {
+            "title": "Another First Post",
+            "content": "So it's a hamster-in-a-cat-in-a-dog kinda situation.",
+            "is_active": true
+        },
+        "model": "basic.slugbasednote",
+        "pk": "another-first-post"
+    }
+]

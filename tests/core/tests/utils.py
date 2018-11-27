@@ -1,9 +1,23 @@
+import datetime
+import mock
+from pytz.reference import Pacific
+
 from django.http import HttpRequest
 from django.test import TestCase
 
 from tastypie.exceptions import BadRequest
 from tastypie.serializers import Serializer
 from tastypie.utils.mime import determine_format, build_content_type
+from tastypie.utils.urls import trailing_slash
+from tastypie.utils.timezone import now
+
+
+class TrailingSlashTestCase(TestCase):
+    def test(self):
+        self.assertEqual(trailing_slash, '/')
+
+    def test_callable(self):
+        self.assertEqual(trailing_slash(), '/')
 
 
 class MimeTestCase(TestCase):
@@ -18,7 +32,7 @@ class MimeTestCase(TestCase):
 
     def test_determine_format(self):
         serializer = Serializer()
-        full_serializer = Serializer(formats=['json', 'jsonp', 'xml', 'yaml', 'html', 'plist'])
+        full_serializer = Serializer(formats=['json', 'jsonp', 'xml', 'yaml', 'plist'])
         request = HttpRequest()
 
         # Default.
@@ -69,8 +83,13 @@ class MimeTestCase(TestCase):
         request.META = {'HTTP_ACCEPT': 'application/x-plist'}
         self.assertEqual(determine_format(request, serializer), 'application/x-plist')
 
+        # unsupported text/html
         request.META = {'HTTP_ACCEPT': 'text/html'}
-        self.assertEqual(determine_format(request, serializer), 'text/html')
+        self.assertEqual(determine_format(request, serializer), 'application/json')
+
+        # unsupported binary
+        request.META = {'HTTP_ACCEPT': 'application/octet-stream'}
+        self.assertEqual(determine_format(request, serializer), 'application/json')
 
         request.META = {'HTTP_ACCEPT': '*/*'}
         self.assertEqual(determine_format(request, serializer), 'application/json')
@@ -89,3 +108,19 @@ class MimeTestCase(TestCase):
 
         request.META = {'HTTP_ACCEPT': 'bogon'}
         self.assertRaises(BadRequest, determine_format, request, serializer)
+
+        # typical browser (firefox, chrome)
+        request.META = {'HTTP_ACCEPT': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'}
+        self.assertEqual(determine_format(request, serializer), 'application/xml')
+
+
+class TimezoneTestCase(TestCase):
+    def test_now(self):
+        without_tz = datetime.datetime(2013, 8, 7, 22, 54, 52)
+        with_tz = without_tz.replace(tzinfo=Pacific)
+
+        with mock.patch('django.utils.timezone.now', return_value=with_tz):
+            self.assertEqual(now().isoformat(), '2013-08-08T00:54:52-05:00')
+
+        with mock.patch('django.utils.timezone.now', return_value=without_tz):
+            self.assertEqual(now().isoformat(), '2013-08-07T22:54:52')
