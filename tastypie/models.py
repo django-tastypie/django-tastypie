@@ -18,6 +18,7 @@ class ApiAccess(models.Model):
     url = models.TextField(blank=True, default='')
     request_method = models.CharField(max_length=10, blank=True, default='')
     accessed = models.PositiveIntegerField()
+
     class Meta:
         verbose_name_plural = 'api accesses'
 
