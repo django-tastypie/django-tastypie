@@ -1,4 +1,4 @@
-from settings_gis import *  # flake8: noqa
+from settings_gis import *  # noqa
 
 # Run `spatialite tastypie-spatialite.db "SELECT InitSpatialMetaData();"` before
 # trying spatialite on disk.

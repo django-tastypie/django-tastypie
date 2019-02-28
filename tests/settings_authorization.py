@@ -1,4 +1,4 @@
-from settings import *  # flake8: noqa
+from settings import *  # noqa
 
 INSTALLED_APPS.append('django.contrib.sites')
 INSTALLED_APPS.append('authorization')
