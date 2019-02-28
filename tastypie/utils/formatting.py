@@ -4,7 +4,7 @@ from django.utils import dateformat
 
 from tastypie.utils.timezone import make_naive, aware_datetime
 
-from dateutil.parser import parse as mk_datetime  # flake8: noqa
+from dateutil.parser import parse as mk_datetime  # noqa
 
 
 def format_datetime(dt):

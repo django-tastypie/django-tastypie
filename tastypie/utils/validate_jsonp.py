@@ -93,13 +93,13 @@ def is_valid_javascript_identifier(identifier, escape=r'\\u',
 
     first_char = identifier[0]
 
-    if not ((first_char in valid_jsid_chars) or
-            (ucd_cat(first_char) in valid_jsid_categories_start)):
+    if not ((first_char in valid_jsid_chars)
+            or (ucd_cat(first_char) in valid_jsid_categories_start)):
         return False
 
     for char in identifier[1:]:
-        if not ((char in valid_jsid_chars) or
-                (ucd_cat(char) in valid_jsid_categories)):
+        if not ((char in valid_jsid_chars)
+                or (ucd_cat(char) in valid_jsid_categories)):
             return False
 
     return True
