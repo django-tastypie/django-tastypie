@@ -1148,6 +1148,24 @@ class RequiredFKNoteResource(ModelResource):
         authorization = Authorization()
 
 
+class NoAttributeFKNoteResource(ModelResource):
+    editor = fields.ForeignKey(UserResource, None)
+
+    class Meta:
+        resource_name = 'noattrfknotes'
+        queryset = NoteWithEditor.objects.all()
+        authorization = Authorization()
+
+
+class FunctionAttributeFKNoteResource(ModelResource):
+    editor = fields.ForeignKey(UserResource, lambda bundle: User.objects.first(), null=True)
+
+    class Meta:
+        resource_name = 'fnattrfknotes'
+        queryset = NoteWithEditor.objects.all()
+        authorization = Authorization()
+
+
 class ThrottledNoteResource(NoteResource):
     class Meta:
         resource_name = 'throttlednotes'
@@ -1522,6 +1540,12 @@ class ModelResourceTestCase(TestCase):
 
         resource_6 = CustomPageNoteResource()
         self.assertEqual(resource_6._meta.paginator_class, CustomPaginator)
+
+        # FK fields with non-string attributes
+        resource_7 = NoAttributeFKNoteResource()
+        self.assertEqual(len(resource_7.fields), 9)
+        resource_8 = FunctionAttributeFKNoteResource()
+        self.assertEqual(len(resource_8.fields), 9)
 
     def test_can_create(self):
         resource_1 = NoteResource()
