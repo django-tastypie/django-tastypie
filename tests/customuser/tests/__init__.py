@@ -1,1 +1,1 @@
-from customuser.tests.custom_user import *  # flake8: noqa
+from customuser.tests.custom_user import *  # noqa

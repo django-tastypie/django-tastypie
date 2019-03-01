@@ -9,7 +9,6 @@ import traceback
 import warnings
 from wsgiref.handlers import format_date_time
 
-import django
 from django.conf import settings
 from django.conf.urls import url
 from django.core.exceptions import (
@@ -18,7 +17,6 @@ from django.core.exceptions import (
 from django.core.signals import got_request_exception
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.fields.related import ForeignKey
-from django.db import models
 try:
     from django.contrib.gis.db.models.fields import GeometryField
 except (ImproperlyConfigured, ImportError):
@@ -2298,7 +2296,7 @@ class BaseModelResource(Resource):
         if bundle_detail_data is None or (arg_detail_data is not None and str(bundle_detail_data) != str(arg_detail_data)):
             try:
                 lookup_kwargs = self.lookup_kwargs_with_identifiers(bundle, kwargs)
-            except:  # flake8: noqa
+            except:  # noqa
                 # if there is trouble hydrating the data, fall back to just
                 # using kwargs by itself (usually it only contains a "pk" key
                 # and this will work fine.

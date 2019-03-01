@@ -1,6 +1,6 @@
 import mock
 
-from django.contrib.auth.models import User  # flake8: noqa
+from django.contrib.auth.models import User  # noqa
 
 
 Choice = mock.MagicMock()
