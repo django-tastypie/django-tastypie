@@ -870,10 +870,21 @@ Mostly a hook, this uses the ``Serializer`` from ``Resource._meta``.
 
 .. method:: Resource.alter_list_data_to_serialize(self, request, data)
 
-A hook to alter list data just before it gets serialized & sent to the user.
+A hook to alter list data just before it gets serialized & sent to the user. 
 
 Useful for restructuring/renaming aspects of the what's going to be
-sent.
+sent. Occurs after any dehydration has by applied.
+
+As such this is a useful place to apply modifications which affect many
+list elements.
+
+Example::
+
+    def alter_list_data_to_serialize(self, request, data):
+        bar = some_expensive_call()
+        for obj in data['objects']:
+            obj.foo = bar
+        return data
 
 Should accommodate for a list of objects, generally also including
 meta data.
