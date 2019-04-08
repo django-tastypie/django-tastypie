@@ -2914,6 +2914,25 @@ class ModelResourceTestCase(TestCase):
         new_note = Note.objects.get(slug='cat-is-back-again')
         self.assertEqual(new_note.author, author)
 
+    def test_put_detail_with_always_return(self):
+        # Check for issue #1576
+        resource = AlwaysDataNoteResource()
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        resp = resource.get_detail(request, pk=1)
+        self.assertEqual(resp.status_code, 200)
+        resp = json.loads(resp.content.decode('utf-8'))
+
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+        request.set_body(json.dumps(resp))
+        putresp = resource.put_detail(request, pk=1)
+        self.assertEqual(putresp.status_code, 200)
+        data = json.loads(putresp.content.decode('utf-8'))
+
+        self.assertEqual(set(data.keys()), set(['title', 'slug', 'content', 'is_active', 'created', 'updated', 'id', 'resource_uri']))
+
     def test_put_detail_with_use_in(self):
         new_note = Note.objects.get(slug='another-post')
         new_note.author = User.objects.get(username='johndoe')
