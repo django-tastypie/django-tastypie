@@ -1,10 +1,10 @@
 sudo: false
+dist: xenial
 
 language: python
 
 python:
   - "2.7"
-  - "3.4"
   - "3.5"
   - "3.6"
 
@@ -13,8 +13,8 @@ env:
   - MODE=flake8-strict
   - MODE=docs
   - DJANGO_VERSION=dj111
-  - DJANGO_VERSION=dj20
   - DJANGO_VERSION=dj21
+  - DJANGO_VERSION=dj22
   - DJANGO_VERSION=djdev
 
 matrix:
@@ -22,20 +22,15 @@ matrix:
     - env: DJANGO_VERSION=djdev
     - env: MODE=flake8-strict
   exclude:
-    - python: "3.4"
-      env: MODE=flake8
-    - python: "3.4"
-      env: MODE=flake8-strict
-    - python: "3.4"
-      env: DJANGO_VERSION=djdev
-    - python: "3.4"
-      env: DJANGO_VERSION=dj21
     - python: "2.7"
       env: DJANGO_VERSION=djdev
     - python: "2.7"
-      env: DJANGO_VERSION=dj20
-    - python: "2.7"
       env: DJANGO_VERSION=dj21
+    - python: "2.7"
+      env: DJANGO_VERSION=dj22
+
+before_install:
+  - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 762E3157
 
 addons:
   apt:
@@ -43,8 +38,7 @@ addons:
     - binutils
     - libproj-dev
     - gdal-bin
-    - spatialite-bin
-    - libspatialite-dev
+    - libsqlite3-mod-spatialite
 
 cache:
   directories:
