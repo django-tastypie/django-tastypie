@@ -7,12 +7,15 @@ The following sites are a partial list of sites using Tastypie. We're always
 interested in adding more sites, so please open a GitHub Issue or Pull Request
 for this page and we'll add you to the list.
 
+Teachoo
+---------
+
+`Teachoo <https://www.teachoo.com>`_ uses Tastypie for its API
 
 LJWorld Marketplace
 -------------------
 
 * http://www2.ljworld.com/marketplace/api/v1/?format=json
-
 
 Forkinit
 --------
