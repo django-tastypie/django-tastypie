@@ -34,8 +34,7 @@ addons:
     - binutils
     - libproj-dev
     - gdal-bin
-    - spatialite-bin
-    - libspatialite-dev
+    - libsqlite3-mod-spatialite
 
 cache:
   directories:
