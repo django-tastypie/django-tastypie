@@ -28,6 +28,9 @@ matrix:
     - python: "2.7"
       env: DJANGO_VERSION=dj22
 
+before_install:
+  - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 762E3157
+
 addons:
   apt:
     packages:
