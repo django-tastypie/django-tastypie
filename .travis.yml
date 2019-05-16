@@ -41,7 +41,7 @@ addons:
     - binutils
     - libproj-dev
     - gdal-bin
-    - postgresql: "9.3"
+    - postgresql: "10"
 
 cache:
   directories:
