@@ -3,6 +3,8 @@ dist: xenial
 
 language: python
 
+services: postgresql
+
 python:
   - "2.7"
   - "3.5"
@@ -39,7 +41,7 @@ addons:
     - binutils
     - libproj-dev
     - gdal-bin
-    - libsqlite3-mod-spatialite
+    - postgresql: "9.3"
 
 cache:
   directories:
@@ -56,6 +58,11 @@ install:
 
 after_success:
     - coveralls
+
+before_script:
+  - psql -U postgres -c 'CREATE DATABASE tastypie_test;'
+  - psql -U postgres -c "CREATE EXTENSION postgis" -d tastypie_test
+  - psql -U postgres -c "CREATE EXTENSION postgis_topology" -d tastypie_test
 
 # command to run tests
 script:
