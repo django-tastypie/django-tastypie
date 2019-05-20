@@ -39,13 +39,11 @@ before_install:
   - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 762E3157
 
 addons:
-  postgresql: "11.2"
   apt:
     packages:
     - binutils
     - libproj-dev
     - gdal-bin
-    - postgresql-11
 
 cache:
   directories:
@@ -54,13 +52,12 @@ cache:
 before_cache:
   - rm -f $HOME/.cache/pip/log/debug.log
 
-# https://travis-ci.community/t/postgresql-11-2-cannot-connect/2680/5
+# Manual postgresql / postgis install
 before_install:
   - sudo apt-get update
   - sudo apt-get --yes remove postgresql\*
-  - sudo apt-get install -y postgresql-11 postgresql-client-11
-  - sudo cp /etc/postgresql/{9.6,11}/main/pg_hba.conf
-  - sudo service postgresql restart 11 
+  - sudo apt-get install -y postgresql-9.6-postgis-2.4
+  - sudo service postgresql restart 9.6
 
 # command to install dependencies
 install:
@@ -70,7 +67,6 @@ install:
 
 after_success:
     - coveralls
-
 
 before_script:
   - psql --version
