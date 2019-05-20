@@ -3,8 +3,6 @@ dist: xenial
 
 language: python
 
-services: postgresql
-
 python:
   - "2.7"
   - "3.5"
@@ -41,7 +39,7 @@ addons:
     - binutils
     - libproj-dev
     - gdal-bin
-    - postgresql: "9.3"
+    - postgresql-9.6-postgis-2.3
 
 cache:
   directories:
