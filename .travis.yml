@@ -34,13 +34,11 @@ before_install:
   - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 762E3157
 
 addons:
-  postgresql: "9.6"
   apt:
     packages:
     - binutils
     - libproj-dev
     - gdal-bin
-    - postgresql-9.6-postgis-2.3
 
 cache:
   directories:
