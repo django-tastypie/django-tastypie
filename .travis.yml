@@ -56,7 +56,7 @@ before_cache:
 before_install:
   - sudo apt-get update
   - sudo apt-get --yes remove postgresql\*
-  - sudo apt-get install -y postgresql-9.6-postgis-2.4
+  - sudo apt-get install -y postgis postgresql-9.6-postgis-2.4 postgresql-9.6-postgis-scripts
   - sudo service postgresql restart 9.6
 
 # command to install dependencies
