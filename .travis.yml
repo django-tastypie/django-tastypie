@@ -73,7 +73,6 @@ before_script:
   - psql -U postgres -c 'CREATE DATABASE tastypie_test;'
   - psql -U postgres -c "CREATE EXTENSION postgis" -d tastypie_test
   - psql -U postgres -c "CREATE EXTENSION postgis_topology" -d tastypie_test
-  - psql -c 'CREATE ROLE travis SUPERUSER LOGIN CREATEDB;' -U postgres
 
 # command to run tests
 script:
