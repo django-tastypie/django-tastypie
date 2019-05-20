@@ -1,5 +1,10 @@
-sudo: false
-dist: xenial
+sudo: true
+
+dist:
+  - xenial
+
+services:
+  - postgresql
 
 language: python
 
@@ -34,11 +39,13 @@ before_install:
   - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 762E3157
 
 addons:
+  postgresql: "11.2"
   apt:
     packages:
     - binutils
     - libproj-dev
     - gdal-bin
+    - postgresql-11
 
 cache:
   directories:
@@ -46,6 +53,14 @@ cache:
 
 before_cache:
   - rm -f $HOME/.cache/pip/log/debug.log
+
+# https://travis-ci.community/t/postgresql-11-2-cannot-connect/2680/5
+before_install:
+  - sudo apt-get update
+  - sudo apt-get --yes remove postgresql\*
+  - sudo apt-get install -y postgresql-11 postgresql-client-11
+  - sudo cp /etc/postgresql/{9.6,11}/main/pg_hba.conf
+  - sudo service postgresql restart 11 
 
 # command to install dependencies
 install:
@@ -56,10 +71,13 @@ install:
 after_success:
     - coveralls
 
+
 before_script:
+  - psql --version
   - psql -U postgres -c 'CREATE DATABASE tastypie_test;'
   - psql -U postgres -c "CREATE EXTENSION postgis" -d tastypie_test
   - psql -U postgres -c "CREATE EXTENSION postgis_topology" -d tastypie_test
+  - psql -c 'CREATE ROLE travis SUPERUSER LOGIN CREATEDB;' -U postgres
 
 # command to run tests
 script:
