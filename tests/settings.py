@@ -27,9 +27,9 @@ BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 MEDIA_ROOT = os.path.normpath(os.path.join(BASE_PATH, 'media'))
 
-DATABASE_ENGINE = 'sqlite3'
-DATABASE_NAME = 'tastypie.db'
-TEST_DATABASE_NAME = ''
+DATABASE_ENGINE = 'postgresql'
+DATABASE_NAME = 'tastypie'
+TEST_DATABASE_NAME = 'tastypie_test'
 
 # for forwards compatibility
 DATABASES = {
@@ -88,9 +88,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-if DJANGO_VERSION < DJANGO_11:
-    MIDDLEWARE_CLASSES = MIDDLEWARE
 
 if DJANGO_VERSION >= DJANGO_20:
     MIDDLEWARE.remove('django.contrib.auth.middleware.SessionAuthenticationMiddleware')
