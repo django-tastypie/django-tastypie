@@ -70,9 +70,9 @@ after_success:
 
 before_script:
   - psql --version
-  - psql -U postgres -c 'CREATE DATABASE tastypie_test;'
-  - psql -U postgres -c "CREATE EXTENSION postgis" -d tastypie_test
-  - psql -U postgres -c "CREATE EXTENSION postgis_topology" -d tastypie_test
+  - psql -U postgres -c 'CREATE DATABASE tastypie;'
+  - psql -U postgres -c "CREATE EXTENSION postgis" -d tastypie
+  - psql -U postgres -c "CREATE EXTENSION postgis_topology" -d tastypie
 
 # command to run tests
 script:
