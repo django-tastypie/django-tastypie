@@ -29,16 +29,12 @@ MEDIA_ROOT = os.path.normpath(os.path.join(BASE_PATH, 'media'))
 
 DATABASE_ENGINE = 'postgresql'
 DATABASE_NAME = 'tastypie'
-TEST_DATABASE_NAME = 'tastypie_test'
 
 # for forwards compatibility
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.%s' % DATABASE_ENGINE,
         'NAME': DATABASE_NAME,
-        'TEST': {
-            'NAME': TEST_DATABASE_NAME,
-        },
     }
 }
 
