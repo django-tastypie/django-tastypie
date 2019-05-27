@@ -28,17 +28,14 @@ BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 MEDIA_ROOT = os.path.normpath(os.path.join(BASE_PATH, 'media'))
 
 DATABASE_ENGINE = 'sqlite3'
-DATABASE_NAME = 'tastypie.db'
-TEST_DATABASE_NAME = ''
+DATABASE_NAME = 'tastypie'
+TEST_DATABASE_NAME = 'tastypie_test.db'
 
 # for forwards compatibility
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.%s' % DATABASE_ENGINE,
         'NAME': DATABASE_NAME,
-        'TEST': {
-            'NAME': TEST_DATABASE_NAME,
-        },
     }
 }
 
