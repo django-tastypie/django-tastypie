@@ -29,6 +29,8 @@ matrix:
       env: DJANGO_VERSION=dj21
     - python: "2.7"
       env: DJANGO_VERSION=dj22
+    - python: "3.5"
+      env: DJANGO_VERSION=djdev
 
 before_install:
   - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 762E3157
