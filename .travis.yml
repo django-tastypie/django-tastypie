@@ -1,4 +1,4 @@
-sudo: true
+sudo: false
 dist: xenial
 
 language: python
@@ -42,9 +42,6 @@ addons:
     - libproj-dev
     - gdal-bin
     - libsqlite3-mod-spatialite
-    - libsqlite3-0
-    - spatialite-bin
-    - libspatialite7
 
 cache:
   directories:
@@ -61,10 +58,6 @@ install:
 
 after_success:
     - coveralls
-
-# get some apt package info
-before_script:
-    - sudo apt show libsqlite3-0 libspatialite7 libsqlite3-mod-spatialite spatialite-bin
 
 # command to run tests
 script:
