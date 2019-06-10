@@ -295,7 +295,6 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
     def handle_patch_for_filefields(self, bundle, data_to_patch):
         obj = bundle.obj
-        data_to_patch_copy = data_to_patch.copy()
         fixed_data = {}
 
         for field in obj._meta.local_fields:
