@@ -231,7 +231,7 @@ class FileField(ApiField):
             return None
 
         if for_update:
-            # Use the internal value, not the url, when we're hydrating just to
+            # Use the internal value, not the url, when we're dehydrating just to
             # update the object in-place
             return value
 
