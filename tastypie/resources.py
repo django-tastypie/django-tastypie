@@ -301,7 +301,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             if isinstance(field, FileField):
                 fixed_data[field.name] = field._get_val_from_obj(obj).name
 
-        fixed_data.update(data_to_patch_copy)
+        fixed_data.update(data_to_patch)
         return fixed_data
 
     def _handle_500(self, request, exception):
