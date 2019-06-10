@@ -567,7 +567,7 @@ class RelatedField(ApiField):
 
         return self._to_class
 
-    def dehydrate_related(self, bundle, related_resource, for_list=True):
+    def dehydrate_related(self, bundle, related_resource, for_list=True, for_update=False):
         """
         Based on the ``full_resource``, returns either the endpoint or the data
         from ``full_dehydrate`` for the related resource.
@@ -584,7 +584,7 @@ class RelatedField(ApiField):
                 request=bundle.request,
                 objects_saved=bundle.objects_saved
             )
-            return related_resource.full_dehydrate(bundle)
+            return related_resource.full_dehydrate(bundle, for_update)
 
     def resource_from_uri(self, fk_resource, uri, request=None, related_obj=None, related_name=None):
         """
@@ -782,7 +782,7 @@ class ToOneField(RelatedField):
 
         fk_resource = self.get_related_resource(foreign_obj)
         fk_bundle = Bundle(obj=foreign_obj, request=bundle.request)
-        return self.dehydrate_related(fk_bundle, fk_resource, for_list=for_list)
+        return self.dehydrate_related(fk_bundle, fk_resource, for_list=for_list, for_update=for_update)
 
     def hydrate(self, bundle):
         value = super(ToOneField, self).hydrate(bundle)
@@ -870,7 +870,8 @@ class ToManyField(RelatedField):
             self.dehydrate_related(
                 Bundle(obj=m2m, request=bundle.request),
                 self.get_related_resource(m2m),
-                for_list=for_list
+                for_list=for_list,
+                for_update=for_update,
             )
             for m2m in the_m2ms
         ]
