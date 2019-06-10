@@ -115,7 +115,7 @@ class ApiField(object):
 
         return self._default
 
-    def dehydrate(self, bundle, for_list=True):
+    def dehydrate(self, bundle, for_list=True, for_update=False):
         """
         Takes data from the provided object and prepares it for the
         resource.
@@ -143,14 +143,14 @@ class ApiField(object):
             if callable(current_object):
                 current_object = current_object()
 
-            return self.convert(current_object)
+            return self.convert(current_object, for_update)
 
         if self.has_default():
             return self.convert(self.default)
         else:
             return None
 
-    def convert(self, value):
+    def convert(self, value, for_update=False):
         """
         Handles conversion between the data found and the type of the field.
 
@@ -210,7 +210,7 @@ class CharField(ApiField):
     dehydrated_type = 'string'
     help_text = 'Unicode string data. Ex: "Hello World"'
 
-    def convert(self, value):
+    def convert(self, value, for_update=False):
         if value is None:
             return None
 
@@ -226,9 +226,14 @@ class FileField(ApiField):
     dehydrated_type = 'string'
     help_text = 'A file URL as a string. Ex: "http://media.example.com/media/photos/my_photo.jpg"'
 
-    def convert(self, value):
+    def convert(self, value, for_update=False):
         if value is None:
             return None
+
+        if for_update:
+            # Use the internal value, not the url, when we're hydrating just to
+            # update the object in-place
+            return value
 
         try:
             # Try to return the URL if it's a ``File``, falling back to the string
@@ -248,7 +253,7 @@ class IntegerField(ApiField):
     dehydrated_type = 'integer'
     help_text = 'Integer data. Ex: 2673'
 
-    def convert(self, value):
+    def convert(self, value, for_update=False):
         if value is None:
             return None
 
@@ -262,7 +267,7 @@ class FloatField(ApiField):
     dehydrated_type = 'float'
     help_text = 'Floating point numeric data. Ex: 26.73'
 
-    def convert(self, value):
+    def convert(self, value, for_update=False):
         if value is None:
             return None
 
@@ -276,7 +281,7 @@ class DecimalField(ApiField):
     dehydrated_type = 'decimal'
     help_text = 'Fixed precision numeric data. Ex: 26.73'
 
-    def convert(self, value):
+    def convert(self, value, for_update=False):
         if value is None:
             return None
 
@@ -303,7 +308,7 @@ class BooleanField(ApiField):
     dehydrated_type = 'boolean'
     help_text = 'Boolean data. Ex: True'
 
-    def convert(self, value):
+    def convert(self, value, for_update=False):
         if value is None:
             return None
 
@@ -317,7 +322,7 @@ class ListField(ApiField):
     dehydrated_type = 'list'
     help_text = "A list of data. Ex: ['abc', 26.73, 8]"
 
-    def convert(self, value):
+    def convert(self, value, for_update=False):
         if value is None:
             return None
 
@@ -331,7 +336,7 @@ class DictField(ApiField):
     dehydrated_type = 'dict'
     help_text = "A dictionary of data. Ex: {'price': 26.73, 'name': 'Daniel'}"
 
-    def convert(self, value):
+    def convert(self, value, for_update=False):
         if value is None:
             return None
 
@@ -345,7 +350,7 @@ class DateField(ApiField):
     dehydrated_type = 'date'
     help_text = 'A date as a string. Ex: "2010-11-10"'
 
-    def convert(self, value):
+    def convert(self, value, for_update=False):
         if value is None:
             return None
 
@@ -382,7 +387,7 @@ class DateTimeField(ApiField):
     dehydrated_type = 'datetime'
     help_text = 'A date & time as a string. Ex: "2010-11-10T03:07:43"'
 
-    def convert(self, value):
+    def convert(self, value, for_update=False):
         if value is None:
             return None
 
@@ -751,7 +756,7 @@ class ToOneField(RelatedField):
                 # this gets the related_name of the one to one field of our model
                 self.related_name = related_field.related.field.name
 
-    def dehydrate(self, bundle, for_list=True):
+    def dehydrate(self, bundle, for_list=True, for_update=False):
         foreign_obj = None
 
         if callable(self.attribute):
@@ -827,7 +832,7 @@ class ToManyField(RelatedField):
             full_detail=full_detail
         )
 
-    def dehydrate(self, bundle, for_list=True):
+    def dehydrate(self, bundle, for_list=True, for_update=True):
         if not bundle.obj or not bundle.obj.pk:
             if not self.null:
                 raise ApiFieldError("The model '%r' does not have a primary key and can not be used in a ToMany context." % bundle.obj)
@@ -919,10 +924,10 @@ class TimeField(ApiField):
     dehydrated_type = 'time'
     help_text = 'A time as string. Ex: "20:05:23"'
 
-    def dehydrate(self, obj, for_list=True):
-        return self.convert(super(TimeField, self).dehydrate(obj))
+    def dehydrate(self, obj, for_list=True, for_update=False):
+        return self.convert(super(TimeField, self).dehydrate(obj, for_update=for_update))
 
-    def convert(self, value):
+    def convert(self, value, for_update=False):
         if isinstance(value, six.string_types):
             return self.to_time(value)
         return value

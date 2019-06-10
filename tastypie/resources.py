@@ -17,8 +17,6 @@ from django.core.exceptions import (
 from django.core.signals import got_request_exception
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.fields.related import ForeignKey
-from django.db.models import FileField
-
 try:
     from django.contrib.gis.db.models.fields import GeometryField
 except (ImproperlyConfigured, ImportError):
@@ -293,16 +291,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         elif isinstance(exception, UnsupportedFormat):
             return http.HttpBadRequest
 
-    def handle_patch_for_filefields(self, bundle, data_to_patch):
-        obj = bundle.obj
-        fixed_data = {}
-
-        for field in obj._meta.local_fields:
-            if isinstance(field, FileField):
-                fixed_data[field.name] = field._get_val_from_obj(obj).name
-
-        fixed_data.update(data_to_patch)
-        return fixed_data
+        return http.HttpApplicationError
 
     def _handle_500(self, request, exception):
         the_trace = traceback.format_exception(*sys.exc_info())
@@ -893,7 +882,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
     # Data preparation.
 
-    def full_dehydrate(self, bundle, for_list=False):
+    def full_dehydrate(self, bundle, for_list=False, for_update=False):
         """
         Given a bundle with an object instance, extract the information from it
         to populate the resource.
@@ -919,7 +908,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 field_object.api_name = api_name
                 field_object.resource_name = resource_name
 
-            data[field_name] = field_object.dehydrate(bundle, for_list=for_list)
+            data[field_name] = field_object.dehydrate(bundle, for_list=for_list, for_update=for_update)
 
             # Check for an optional method to do further dehydration.
             method = getattr(self, "dehydrate_%s" % field_name, None)
@@ -1637,10 +1626,9 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
                     # The object does exist, so this is an update-in-place.
                     bundle = self.build_bundle(obj=obj, request=request)
-                    bundle = self.full_dehydrate(bundle, for_list=True)
+                    bundle = self.full_dehydrate(bundle, for_list=True, for_update=True)
                     bundle = self.alter_detail_data_to_serialize(request, bundle)
-                    fixed_data = self.handle_patch_for_filefields(bundle, data)
-                    self.update_in_place(request, bundle, fixed_data)
+                    self.update_in_place(request, bundle, data)
                 except (ObjectDoesNotExist, MultipleObjectsReturned):
                     # The object referenced by resource_uri doesn't exist,
                     # so this is a create-by-PUT equivalent.
@@ -1705,13 +1693,12 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             return http.HttpMultipleChoices("More than one resource is found at this URI.")
 
         bundle = self.build_bundle(obj=obj, request=request)
-        bundle = self.full_dehydrate(bundle)
+        bundle = self.full_dehydrate(bundle, for_update=True)
         bundle = self.alter_detail_data_to_serialize(request, bundle)
 
         # Now update the bundle in-place.
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
-        fixed_deserialized = self.handle_patch_for_filefields(bundle, deserialized)
-        self.update_in_place(request, bundle, fixed_deserialized)
+        self.update_in_place(request, bundle, deserialized)
 
         if not self._meta.always_return_data:
             return http.HttpAccepted()
