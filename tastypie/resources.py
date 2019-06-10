@@ -17,7 +17,7 @@ from django.core.exceptions import (
 from django.core.signals import got_request_exception
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.fields.related import ForeignKey
-from django.db.models import ImageField, FileField
+from django.db.models import FileField
 
 try:
     from django.contrib.gis.db.models.fields import GeometryField
