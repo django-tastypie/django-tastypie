@@ -143,14 +143,23 @@ class ApiField(object):
             if callable(current_object):
                 current_object = current_object()
 
-            return self.convert(current_object, for_update)
+            if for_update and hasattr(self, 'convert_for_update'):
+                # Some fields behave differently on Retrieve vs Update; e.g. prepending URL
+                # If we don't allow for this, PATCH will read missing fields and write
+                # the fully modified versions back to the db.
+                return self.convert_for_update(current_object)
+            else:
+                return self.convert(current_object)
 
         if self.has_default():
-            return self.convert(self.default)
+            if for_update and hasattr(self, 'convert_for_update'):
+                return self.convert_for_update(self.default)
+            else:
+                return self.convert(self.default)
         else:
             return None
 
-    def convert(self, value, for_update=False):
+    def convert(self, value):
         """
         Handles conversion between the data found and the type of the field.
 
@@ -210,7 +219,7 @@ class CharField(ApiField):
     dehydrated_type = 'string'
     help_text = 'Unicode string data. Ex: "Hello World"'
 
-    def convert(self, value, for_update=False):
+    def convert(self, value):
         if value is None:
             return None
 
@@ -226,14 +235,16 @@ class FileField(ApiField):
     dehydrated_type = 'string'
     help_text = 'A file URL as a string. Ex: "http://media.example.com/media/photos/my_photo.jpg"'
 
-    def convert(self, value, for_update=False):
+    def convert_for_update(self, value):
+        """
+        During PATCH, don't modify the value to include the URL, or
+        it'll save that back to the field.
+        """
+        return value
+
+    def convert(self, value):
         if value is None:
             return None
-
-        if for_update:
-            # Use the internal value, not the url, when we're dehydrating just to
-            # update the object in-place
-            return value
 
         try:
             # Try to return the URL if it's a ``File``, falling back to the string
@@ -253,7 +264,7 @@ class IntegerField(ApiField):
     dehydrated_type = 'integer'
     help_text = 'Integer data. Ex: 2673'
 
-    def convert(self, value, for_update=False):
+    def convert(self, value):
         if value is None:
             return None
 
@@ -267,7 +278,7 @@ class FloatField(ApiField):
     dehydrated_type = 'float'
     help_text = 'Floating point numeric data. Ex: 26.73'
 
-    def convert(self, value, for_update=False):
+    def convert(self, value):
         if value is None:
             return None
 
@@ -281,7 +292,7 @@ class DecimalField(ApiField):
     dehydrated_type = 'decimal'
     help_text = 'Fixed precision numeric data. Ex: 26.73'
 
-    def convert(self, value, for_update=False):
+    def convert(self, value):
         if value is None:
             return None
 
@@ -308,7 +319,7 @@ class BooleanField(ApiField):
     dehydrated_type = 'boolean'
     help_text = 'Boolean data. Ex: True'
 
-    def convert(self, value, for_update=False):
+    def convert(self, value):
         if value is None:
             return None
 
@@ -322,7 +333,7 @@ class ListField(ApiField):
     dehydrated_type = 'list'
     help_text = "A list of data. Ex: ['abc', 26.73, 8]"
 
-    def convert(self, value, for_update=False):
+    def convert(self, value):
         if value is None:
             return None
 
@@ -336,7 +347,7 @@ class DictField(ApiField):
     dehydrated_type = 'dict'
     help_text = "A dictionary of data. Ex: {'price': 26.73, 'name': 'Daniel'}"
 
-    def convert(self, value, for_update=False):
+    def convert(self, value):
         if value is None:
             return None
 
@@ -350,7 +361,7 @@ class DateField(ApiField):
     dehydrated_type = 'date'
     help_text = 'A date as a string. Ex: "2010-11-10"'
 
-    def convert(self, value, for_update=False):
+    def convert(self, value):
         if value is None:
             return None
 
@@ -387,7 +398,7 @@ class DateTimeField(ApiField):
     dehydrated_type = 'datetime'
     help_text = 'A date & time as a string. Ex: "2010-11-10T03:07:43"'
 
-    def convert(self, value, for_update=False):
+    def convert(self, value):
         if value is None:
             return None
 
@@ -928,7 +939,7 @@ class TimeField(ApiField):
     def dehydrate(self, obj, for_list=True, for_update=False):
         return self.convert(super(TimeField, self).dehydrate(obj, for_update=for_update))
 
-    def convert(self, value, for_update=False):
+    def convert(self, value):
         if isinstance(value, six.string_types):
             return self.to_time(value)
         return value
