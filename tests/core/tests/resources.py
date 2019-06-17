@@ -1327,7 +1327,7 @@ class BlankMediaBitResource(ModelResource):
         return bundle
 
 
-class ALwaysDataBlankMediaBitResource(ModelResource):
+class AlwaysDataBlankMediaBitResource(ModelResource):
     # Allow ``note`` to be omitted, even though it's a required field.
     note = fields.ToOneField(NoteResource, 'note', blank=True)
 

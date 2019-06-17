@@ -33,7 +33,7 @@ class GeometryApiField(ApiField):
     def dehydrate(self, obj, for_list=False, for_update=False):
         return self.convert(super(GeometryApiField, self).dehydrate(obj))
 
-    def convert(self, value, for_update=False):
+    def convert(self, value):
         if value is None:
             return None
 
