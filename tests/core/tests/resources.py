@@ -3438,7 +3438,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(mediabit.title, "Boring Cat Picture")  # Title is the same as what it was set before
         self.assertEqual(mediabit.image.name, "lulz/catz_new.gif")  # imagefield stores new image
 
-        always_resource = ALwaysDataBlankMediaBitResource()
+        always_resource = AlwaysDataBlankMediaBitResource()
         request._raw_post_data = request._body = '{"title": "Cat is Funny Again!"}'
         resp = always_resource.patch_detail(request, pk=1)
         self.assertEqual(resp.status_code, 202)
