@@ -6,6 +6,7 @@ from collections import OrderedDict
 import copy
 import datetime
 from decimal import Decimal
+from io import BytesIO
 import json
 from mock import patch, Mock
 import sys
@@ -22,7 +23,7 @@ try:
     from django.urls import reverse
 except ImportError:
     from django.core.urlresolvers import reverse
-from django.http import HttpRequest, QueryDict, Http404
+from django.http import FileResponse, HttpRequest, QueryDict, Http404
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.utils import timezone
@@ -189,6 +190,14 @@ class NullableNameResource(Resource):
         detail_uri_name = 'name'
         resource_name = 'nullable_name'
         authorization = Authorization()
+
+
+class FileResource(Resource):
+    class Meta:
+        file_allowed_methods = ['get']
+
+    def get_file(self, request, **kwargs):
+        return FileResponse(BytesIO(b'file contents'))
 
 
 class MangledBasicResource(BasicResource):
@@ -894,6 +903,19 @@ class ResourceTestCase(TestCase):
         self.assertEquals(basic_resource_list[0]['date_joined'], u'2010-03-30T09:00:00')
 
         self.assertNotIn('view_count', basic_resource_list[0])
+
+    def test_dispatch(self):
+        resource = FileResource()
+        request = HttpRequest()
+        request.method = 'GET'
+
+        resp = resource.dispatch('file', request)
+        self.assertEqual(resp.status_code, 200)
+        content = b''
+        for chunk in resp.streaming_content:
+            content += chunk
+        self.assertEqual(content, b'file contents')
+
 
 
 # ====================
