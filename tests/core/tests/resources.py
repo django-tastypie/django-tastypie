@@ -917,7 +917,6 @@ class ResourceTestCase(TestCase):
         self.assertEqual(content, b'file contents')
 
 
-
 # ====================
 # Model-based tests...
 # ====================
