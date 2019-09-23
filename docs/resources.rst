@@ -1133,7 +1133,7 @@ The ``for_list`` parameter indicates the style of response being prepared:
       be called once for each object requested.
     - ``False`` indicates a response showing the details for an item
 
-This method is responsible for invoking the the :meth:`dehydrate` method of
+This method is responsible for invoking the :meth:`dehydrate` method of
 all the fields in the resource. Additionally, it calls
 :meth:`Resource.dehydrate`.
 
