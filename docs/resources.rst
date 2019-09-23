@@ -1138,7 +1138,7 @@ The ``for_update`` parameter indicates this operation is for a PATCH request;
       modified for external consumption (e.g. a url prepended for images)
     - ``False`` indicates a normal dehrydate operation
 
-This method is responsible for invoking the the :meth:`dehydrate` method of
+This method is responsible for invoking the :meth:`dehydrate` method of
 all the fields in the resource. Additionally, it calls
 :meth:`Resource.dehydrate`.
 
