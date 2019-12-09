@@ -64,7 +64,7 @@ from tastypie.compat import get_module_name, atomic_decorator
 def sanitize(text):
     # We put the single quotes back, due to their frequent usage in exception
     # messages.
-    return escape(text).replace('&#39;', "'").replace('&quot;', '"')
+    return escape(text).replace('&#39;', "'").replace('&quot;', '"').replace('&#x27;', "'")
 
 
 class ResourceOptions(object):
