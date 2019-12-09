@@ -4,6 +4,7 @@ from django.test.utils import CaptureQueriesContext
 from django.db import connections
 from decorator import contextmanager
 
+
 class TastyPieTestCase(TestCase):
 
     @contextmanager
@@ -15,6 +16,7 @@ class TastyPieTestCase(TestCase):
         else:
             msg = None
         self.assertLess(context.final_queries, value, msg=msg)
+
 
 class TestCaseWithFixture(TastyPieTestCase):
     fixtures = ['test_data.json']

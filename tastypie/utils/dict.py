@@ -2,6 +2,7 @@ from django.utils.encoding import smart_bytes
 
 import six
 
+
 def dict_strip_unicode_keys(uni_dict):
     """
     Converts a dict of unicode keys into a dict of ascii keys.

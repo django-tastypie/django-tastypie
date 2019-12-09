@@ -49,6 +49,6 @@ except ImportError:
 
 # compatability for force_text (deprecated) vs force_str (new)
 try:
-    from django.utils.encoding import force_str
+    from django.utils.encoding import force_str  # noqa
 except ImportError:
-    from django.utils.encoding import force_text as force_str
+    from django.utils.encoding import force_text as force_str  # noqa
