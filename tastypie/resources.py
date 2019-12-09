@@ -30,10 +30,11 @@ except ImportError:
         ReverseOneToOneDescriptor
 
 from django.http import HttpResponse, HttpResponseNotFound, Http404
-from django.utils import six
 from django.utils.cache import patch_cache_control, patch_vary_headers
 from django.utils.html import escape
 from django.views.decorators.csrf import csrf_exempt
+
+import six
 
 from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization

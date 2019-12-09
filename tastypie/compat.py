@@ -45,3 +45,10 @@ except ImportError:
 
     def unsalt_token(token):
         return token
+
+
+# compatability for force_text (deprecated) vs force_str (new)
+try:
+    from django.utils.encoding import force_str
+except ImportError:
+    from django.utils.encoding import force_text as force_str

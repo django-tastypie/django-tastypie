@@ -3,8 +3,8 @@ import time
 
 from django.conf import settings
 from django.test.client import Client
-from django.utils.encoding import force_text
 
+from tastypie.compat import force_str
 from tastypie.serializers import Serializer
 
 
@@ -484,7 +484,7 @@ class ResourceTestCaseMixin(object):
         """
         self.assertHttpOK(resp)
         self.assertTrue(resp['Content-Type'].startswith('application/json'))
-        self.assertValidJSON(force_text(resp.content))
+        self.assertValidJSON(force_str(resp.content))
 
     def assertValidXMLResponse(self, resp):
         """
@@ -497,7 +497,7 @@ class ResourceTestCaseMixin(object):
         """
         self.assertHttpOK(resp)
         self.assertTrue(resp['Content-Type'].startswith('application/xml'))
-        self.assertValidXML(force_text(resp.content))
+        self.assertValidXML(force_str(resp.content))
 
     def assertValidYAMLResponse(self, resp):
         """
@@ -510,7 +510,7 @@ class ResourceTestCaseMixin(object):
         """
         self.assertHttpOK(resp)
         self.assertTrue(resp['Content-Type'].startswith('text/yaml'))
-        self.assertValidYAML(force_text(resp.content))
+        self.assertValidYAML(force_str(resp.content))
 
     def assertValidPlistResponse(self, resp):
         """
@@ -523,7 +523,7 @@ class ResourceTestCaseMixin(object):
         """
         self.assertHttpOK(resp)
         self.assertTrue(resp['Content-Type'].startswith('application/x-plist'))
-        self.assertValidPlist(force_text(resp.content))
+        self.assertValidPlist(force_str(resp.content))
 
     def deserialize(self, resp):
         """
