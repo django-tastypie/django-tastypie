@@ -14,8 +14,8 @@ env:
   - MODE=flake8-strict
   - MODE=docs
   - DJANGO_VERSION=dj111
-  - DJANGO_VERSION=dj21
   - DJANGO_VERSION=dj22
+  - DJANGO_VERSION=dj30
   - DJANGO_VERSION=djdev
 
 matrix:
@@ -26,9 +26,9 @@ matrix:
     - python: "2.7"
       env: DJANGO_VERSION=djdev
     - python: "2.7"
-      env: DJANGO_VERSION=dj21
-    - python: "2.7"
       env: DJANGO_VERSION=dj22
+    - python: "2.7"
+      env: DJANGO_VERSION=dj30
     - python: "3.5"
       env: DJANGO_VERSION=djdev
 
