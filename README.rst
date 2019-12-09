@@ -35,7 +35,7 @@ Core
 ----
 
 * Python 2.7+ or Python 3.4+
-* Django - 1.11 (LTS), 2.0 (LTS) or 2.1 - the last two LTS and the last incremental release are supported.
+* Django - 1.11 (LTS), 2.1, or 2.2 (LTS). The last two LTS and the last incremental release are supported.
 * dateutil (http://labix.org/python-dateutil) >= 2.1
 
 Format Support
