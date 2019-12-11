@@ -61,5 +61,6 @@ after_success:
 
 # command to run tests
 script:
+    - apt list --installed
     - coverage erase
     - tox -e py${TRAVIS_PYTHON_VERSION/./}-${DJANGO_VERSION}${MODE}
