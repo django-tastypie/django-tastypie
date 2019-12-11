@@ -1,13 +1,10 @@
 import json
+
+from contextlib import contextmanager
+
 from django.test.testcases import TestCase
 from django.test.utils import CaptureQueriesContext
 from django.db import connections
-
-
-try:
-    from contextlib import contextmanager
-except ImportError:
-    from decorator import contextmanager
 
 
 class TastyPieTestCase(TestCase):
