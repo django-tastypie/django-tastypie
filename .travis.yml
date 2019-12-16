@@ -31,7 +31,6 @@ matrix:
       env: DJANGO_VERSION=dj30
     - python: "3.5"
       env: DJANGO_VERSION=djdev
-    - env: DJANGO_VERSION=dj30 MODE=docs
 
 before_install:
   - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 762E3157
