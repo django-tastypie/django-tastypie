@@ -34,7 +34,10 @@ matrix:
 
 before_install:
   - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 762E3157
-
+  - sudo add-apt-repository --yes ppa:ubuntugis/ppa
+  - sudo apt-get --quiet update
+  - sudo apt-get install --yes libgdal-dev gdal-bin
+  
 addons:
   apt:
     packages:
@@ -52,10 +55,11 @@ before_cache:
 
 # command to install dependencies
 install:
-    - pip install -U pip
-    - pip install -U wheel virtualenv
-    - pip install tox coveralls
-
+  - pip install -U pip
+  - pip install -U wheel virtualenv
+  - pip install tox coveralls
+  - pip install gdal==`gdal-config --version`
+  
 after_success:
     - coveralls
 
