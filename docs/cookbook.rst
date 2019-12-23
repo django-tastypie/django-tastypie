@@ -121,7 +121,7 @@ not include a valid ``resource_uri``:
 .. testcode::
 
     # views.py
-    from django.shortcuts import render_to_response
+    from django.shortcuts import render
     from myapp.api.resources import UserResource
 
 
@@ -135,7 +135,7 @@ not include a valid ``resource_uri``:
         user_bundle = res.build_bundle(request=request, obj=user)
         user_json = res.serialize(None, res.full_dehydrate(user_bundle), "application/json")
 
-        return render_to_response("myapp/user_detail.html", {
+        return render(request, "myapp/user_detail.html", {
             # Other things here.
             "user_json": user_json,
         })
@@ -179,7 +179,7 @@ parameter directly to the Resource:
 .. testcode::
 
     # views.py
-    from django.shortcuts import render_to_response
+    from django.shortcuts import render
     from myapp.api.resources import UserResource
 
 
@@ -209,7 +209,7 @@ Example of getting a list of users:
 
         list_json = res.serialize(None, bundles, "application/json")
 
-        return render_to_response('myapp/user_list.html', {
+        return render(request, 'myapp/user_list.html', {
             # Other things here.
             "list_json": list_json,
         })
