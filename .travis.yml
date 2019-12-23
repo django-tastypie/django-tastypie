@@ -30,6 +30,8 @@ matrix:
     - python: "2.7"
       env: DJANGO_VERSION=dj30
     - python: "3.5"
+      env: DJANGO_VERSION=dj30
+    - python: "3.5"
       env: DJANGO_VERSION=djdev
 
 before_install:
