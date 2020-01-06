@@ -4,7 +4,7 @@
 Python 3 Support
 ================
 
-As of Tastypie v0.10.0, it has been ported to support both Python 2 & Python 3
+From Tastypie v0.10.0 through v0.14.x, Tastypie supports both Python 2 & Python 3
 within the same codebase. This builds on top of what `six`_ & `Django`_ provide.
 
 No changes are required for anyone running an existing Tastypie
@@ -16,17 +16,10 @@ All tests pass under both Python 2 & 3.
 .. _`six`: http://pythonhosted.org/six/
 .. _`Django`: https://docs.djangoproject.com/en/dev/topics/python3/#str-and-unicode-methods
 
+From Tastypie v0.15 onward, support for Python 2 has been dropped.
 
 Incompatibilities
 =================
-
-Oauth Is Unsupported
---------------------
-
-Tastypie was depending on several Oauth libraries for that authentication
-mechanism. Unfortunately, none of them have been ported to Python 3. They're
-still usable from Python 2, but that will be blocked until the underlying
-libraries port (or an alternative can be found).
 
 Changed Requirements
 --------------------

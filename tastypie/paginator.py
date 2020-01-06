@@ -1,7 +1,5 @@
 from django.conf import settings
 
-import six
-
 from tastypie.exceptions import BadRequest
 
 try:
@@ -163,7 +161,7 @@ class Paginator(object):
         except AttributeError:
             request_params = {}
             for k, v in self.request_data.items():
-                if isinstance(v, six.text_type):
+                if isinstance(v, str):
                     request_params[k] = v.encode('utf-8')
                 else:
                     request_params[k] = v

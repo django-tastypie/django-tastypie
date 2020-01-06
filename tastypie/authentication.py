@@ -2,6 +2,7 @@ import base64
 from hashlib import sha1
 import hmac
 import time
+from urllib.parse import urlparse
 import uuid
 import warnings
 
@@ -11,11 +12,10 @@ from django.core.exceptions import ImproperlyConfigured
 from django.middleware.csrf import _sanitize_token, constant_time_compare
 from django.utils.translation import ugettext as _
 
-from six.moves.urllib.parse import urlparse
-
 from tastypie.compat import get_user_model, get_username_field, unsalt_token
 
 from tastypie.http import HttpUnauthorized
+
 
 try:
     import python_digest
