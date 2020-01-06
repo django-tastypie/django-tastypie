@@ -1,0 +1,9 @@
+v0.14.3
+=======
+
+:date: 2019-12-16
+
+Added support for Django 3.0; minor bugs and regressions fixed.
+Drops explicit support for Django 2.1 (non-LTS).
+
+This will be the last version to explicitly support Python 2.0.

@@ -931,7 +931,7 @@ class RelatedSaveCallsTest(TestCaseWithFixture):
         request._load_post_and_files = lambda *args, **kwargs: None
         request.set_body(json.dumps(data))
 
-        with self.assertNumQueries(8):
+        with self.withAssertNumQueriesLessThan(9):
             response = resource.wrap_view('dispatch_detail')(request, pk=c1.pk)
 
         self.assertEqual(response.status_code, 204, response.content)

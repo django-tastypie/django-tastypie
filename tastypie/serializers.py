@@ -6,21 +6,27 @@ import re
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.utils import six
-from django.utils.encoding import force_text, smart_bytes
+from django.utils.encoding import smart_bytes
 from django.core.serializers import json as djangojson
 
+import six
+
 from tastypie.bundle import Bundle
+from tastypie.compat import force_str
 from tastypie.exceptions import BadRequest, UnsupportedSerializationFormat,\
     UnsupportedDeserializationFormat
 from tastypie.utils import format_datetime, format_date, format_time,\
     make_naive
 
+
+import warnings
 try:
-    import defusedxml.lxml as lxml
-    from defusedxml.common import DefusedXmlException
-    from defusedxml.lxml import parse as parse_xml
-    from lxml.etree import Element, tostring, LxmlError
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        import defusedxml.lxml as lxml
+        from defusedxml.common import DefusedXmlException
+        from defusedxml.lxml import parse as parse_xml
+        from lxml.etree import Element, tostring, LxmlError
 except ImportError:
     lxml = None
 
@@ -279,7 +285,7 @@ class Serializer(object):
             raise UnsupportedDeserializationFormat(format)
 
         if isinstance(content, six.binary_type):
-            content = force_text(content)
+            content = force_str(content)
 
         return method(content)
 
@@ -311,7 +317,7 @@ class Serializer(object):
             to_simple = self.to_simple
             return {key: to_simple(val, options) for key, val in six.iteritems(data)}
         if stype == _STR:
-            return force_text(data)
+            return force_str(data)
         if stype == _LIST:
             to_simple = self.to_simple
             return [to_simple(item, options) for item in data]
@@ -368,7 +374,7 @@ class Serializer(object):
                 if isinstance(simple_data, six.text_type):
                     element.text = simple_data
                 else:
-                    element.text = force_text(simple_data)
+                    element.text = force_str(simple_data)
 
         return element
 

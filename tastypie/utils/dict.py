@@ -1,5 +1,6 @@
-from django.utils import six
 from django.utils.encoding import smart_bytes
+
+import six
 
 
 def dict_strip_unicode_keys(uni_dict):

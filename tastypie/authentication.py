@@ -10,8 +10,9 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.exceptions import ImproperlyConfigured
 from django.middleware.csrf import _sanitize_token, constant_time_compare
-from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import ugettext as _
+
+from six.moves.urllib.parse import urlparse
 
 from tastypie.compat import (
     get_user_model, get_username_field, unsalt_token, is_authenticated
