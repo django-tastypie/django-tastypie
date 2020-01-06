@@ -581,7 +581,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         if isinstance(auth_result, HttpResponse):
             raise ImmediateHttpResponse(response=auth_result)
 
-        if auth_result is not True:
+        if not auth_result:
             raise ImmediateHttpResponse(response=http.HttpUnauthorized())
 
     def throttle_check(self, request):
