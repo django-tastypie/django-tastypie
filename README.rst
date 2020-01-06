@@ -24,7 +24,7 @@ django-tastypie
 
 Creating delicious APIs for Django apps since 2010.
 
-Currently in beta (v0.14.2) but being used actively in production on several
+Currently in beta but being used actively in production on several
 sites.
 
 
@@ -34,8 +34,8 @@ Requirements
 Core
 ----
 
-* Python 2.7+ or Python 3.4+
-* Django - 1.11 (LTS), 2.0 (LTS) or 2.1 - the last two LTS and the last incremental release are supported.
+* Python 2.7+ or Python 3.4+ (Whatever is supported by your version of Django)
+* Django 1.11, 2.2 (LTS releases) or Django 3.0 (latest release)
 * dateutil (http://labix.org/python-dateutil) >= 2.1
 
 Format Support
