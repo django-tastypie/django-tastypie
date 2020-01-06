@@ -1,4 +1,3 @@
-from __future__ import unicode_literals
 import base64
 from hashlib import sha1
 import hmac
@@ -14,9 +13,8 @@ from django.utils.translation import ugettext as _
 
 from six.moves.urllib.parse import urlparse
 
-from tastypie.compat import (
-    get_user_model, get_username_field, unsalt_token, is_authenticated
-)
+from tastypie.compat import get_user_model, get_username_field, unsalt_token
+
 from tastypie.http import HttpUnauthorized
 
 try:
@@ -306,10 +304,10 @@ class SessionAuthentication(Authentication):
         # the serialized bodies.
 
         if request.method in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
-            return is_authenticated(request.user)
+            return request.user.is_authenticated
 
         if getattr(request, '_dont_enforce_csrf_checks', False):
-            return is_authenticated(request.user)
+            return request.user.is_authenticated
 
         csrf_token = _sanitize_token(request.COOKIES.get(settings.CSRF_COOKIE_NAME, ''))
 
@@ -331,7 +329,7 @@ class SessionAuthentication(Authentication):
                                      unsalt_token(csrf_token)):
             return False
 
-        return is_authenticated(request.user)
+        return request.user.is_authenticated
 
     def get_identifier(self, request):
         """

@@ -1,9 +1,9 @@
-from __future__ import unicode_literals
 import warnings
 from django.conf.urls import url, include
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse, HttpResponseBadRequest
-from tastypie.compat import reverse
+from django.urls import reverse
+
 from tastypie.exceptions import NotRegistered, BadRequest
 from tastypie.serializers import Serializer
 from tastypie.utils import is_valid_jsonp_callback_value, string_to_python, trailing_slash
@@ -11,7 +11,7 @@ from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.resources import Resource
 
 
-class Api(object):
+class Api():
     """
     Implements a registry to tie together the various resources that make up
     an API.

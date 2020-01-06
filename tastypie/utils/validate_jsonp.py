@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Placed into the Public Domain by tav <tav@espians.com>
 # Modified for Python 3 compatibility.
 

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from copy import copy, deepcopy
 from datetime import datetime
 import logging
@@ -16,12 +14,17 @@ from django.core.exceptions import (
 )
 from django.core.signals import got_request_exception
 from django.core.exceptions import ImproperlyConfigured
+from django.db.models.constants import LOOKUP_SEP
 from django.db.models.fields.related import ForeignKey
+from django.db.transaction import atomic
+from django.urls import get_script_prefix, reverse
+from django.urls.exceptions import NoReverseMatch, Resolver404
+
 try:
     from django.contrib.gis.db.models.fields import GeometryField
 except (ImproperlyConfigured, ImportError):
     GeometryField = None
-from django.db.models.constants import LOOKUP_SEP
+
 try:
     from django.db.models.fields.related import\
         SingleRelatedObjectDescriptor as ReverseOneToOneDescriptor
@@ -40,7 +43,6 @@ from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.bundle import Bundle
 from tastypie.cache import NoCache
-from tastypie.compat import NoReverseMatch, reverse, Resolver404, get_script_prefix
 from tastypie.constants import ALL, ALL_WITH_RELATIONS
 from tastypie.exceptions import (
     NotFound, BadRequest, InvalidFilterError, HydrationError, InvalidSortError,
@@ -58,7 +60,7 @@ from tastypie.utils import (
 )
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.validation import Validation
-from tastypie.compat import get_module_name, atomic_decorator
+from tastypie.compat import get_module_name
 
 
 def sanitize(text):
@@ -2356,7 +2358,7 @@ class BaseModelResource(Resource):
         self.authorized_delete_detail(self.get_object_list(bundle.request), bundle)
         bundle.obj.delete()
 
-    @atomic_decorator()
+    @atomic
     def patch_list(self, request, **kwargs):
         """
         An ORM-specific implementation of ``patch_list``.
