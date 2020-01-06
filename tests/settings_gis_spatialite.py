@@ -7,5 +7,4 @@ DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.spatialite'
 DATABASES['default']['NAME'] = 'tastypie-spatialite.db'
 
 
-# hack for travis-ci
-SPATIALITE_LIBRARY_PATH = 'mod_spatialite'
+SPATIALITE_LIBRARY_PATH = 'mod_spatialite.so'
