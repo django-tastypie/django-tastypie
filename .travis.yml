@@ -7,6 +7,7 @@ python:
   - "3.5"
   - "3.6"
   - "3.7"
+  - "3.8"
 
 env:
   - MODE=flake8
@@ -26,6 +27,8 @@ matrix:
       env: DJANGO_VERSION=dj30
     - python: "3.5"
       env: DJANGO_VERSION=djdev
+    - python: "3.8"
+      env: DJANGO_VERSION=dj111
 
 before_install:
   - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 762E3157
