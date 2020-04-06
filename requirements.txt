@@ -1,2 +1,6 @@
 python-dateutil>=2.1
 python-mimeparse>=0.1.4
+
+# jenkins
+twine==1.15.0
+credstash==1.16.1

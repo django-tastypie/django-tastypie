@@ -2093,7 +2093,12 @@ class BaseModelResource(Resource):
             except FieldDoesNotExist:
                 raise InvalidFilterError("The '%s' field is not a valid field name" % field_name)
 
-            query_terms = django_field.get_lookups().keys()
+            query_terms = {
+                'exact', 'iexact', 'contains', 'icontains', 'gt', 'gte', 'lt', 'lte', 'in',
+                'startswith', 'istartswith', 'endswith', 'iendswith', 'range', 'year',
+                'month', 'day', 'week_day', 'hour', 'minute', 'second', 'isnull', 'search',
+                'regex', 'iregex',
+            }
             if len(filter_bits) and filter_bits[-1] in query_terms:
                 filter_type = filter_bits.pop()
 
