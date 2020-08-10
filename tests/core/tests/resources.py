@@ -2148,7 +2148,7 @@ class ModelResourceTestCase(TestCase):
         # Check where the field name doesn't match the database relation.
         resource_4 = AnotherSubjectResource()
         self.assertEqual(resource_4.build_filters(filters={'notes__user__username__startswith': 'Daniel'}), {'notes__author__username__startswith': 'Daniel'})
-        
+
         resource_5 = AnotherNoteResource()
         self.assertEqual(resource_5.build_filters(filters={'media_bits__title__startswith': 'Daniel'}), {'media_bits__title__startswith': 'Daniel'})
 
