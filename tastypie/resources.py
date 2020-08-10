@@ -2006,6 +2006,20 @@ class BaseModelResource(Resource):
         if field_name not in self._meta.filtering:
             raise InvalidFilterError("The '%s' field does not allow filtering." % field_name)
 
+        if len(filter_bits) == 1:
+            # Validate filter types other than 'exact' that are supported by the field type
+            try:
+                django_field_name = self.fields[field_name].attribute
+                django_field = self._meta.object_class._meta.get_field(django_field_name)
+                if hasattr(django_field, 'field'):
+                    django_field = django_field.field  # related field
+            except FieldDoesNotExist:
+                raise InvalidFilterError("The '%s' field is not a valid field name" % field_name)
+
+            query_terms = django_field.get_lookups().keys()
+            if filter_bits[0] in query_terms:
+                filter_type = filter_bits.pop()
+
         # Check to see if it's an allowed lookup type.
         if self._meta.filtering[field_name] not in (ALL, ALL_WITH_RELATIONS):
             # Must be an explicit whitelist.
@@ -2027,9 +2041,10 @@ class BaseModelResource(Resource):
             # if any. We should ensure that all along the way, we're allowed
             # to filter on that field by the related resource.
             related_resource = self.fields[field_name].get_related_resource(None)
-            return [self.fields[field_name].attribute] + related_resource.check_filtering(filter_bits[0], filter_type, filter_bits[1:])
+            filter_type, lookup_bits = related_resource.check_filtering(filter_bits[0], filter_type, filter_bits[1:])
+            return (filter_type, [self.fields[field_name].attribute] + lookup_bits)
 
-        return [self.fields[field_name].attribute]
+        return (filter_type, [self.fields[field_name].attribute])
 
     def filter_value_to_python(self, value, field_name, filters, filter_expr,
             filter_type):
@@ -2093,12 +2108,8 @@ class BaseModelResource(Resource):
             except FieldDoesNotExist:
                 raise InvalidFilterError("The '%s' field is not a valid field name" % field_name)
 
-            query_terms = django_field.get_lookups().keys()
-            if len(filter_bits) and filter_bits[-1] in query_terms:
-                filter_type = filter_bits.pop()
-
             try:
-                lookup_bits = self.check_filtering(field_name, filter_type, filter_bits)
+                filter_type, lookup_bits = self.check_filtering(field_name, filter_type, filter_bits)
             except InvalidFilterError:
                 if ignore_bad_filters:
                     continue
