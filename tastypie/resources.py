@@ -2065,6 +2065,9 @@ class BaseModelResource(Resource):
     def get_query_terms(self, field_name):
         """ Helper to determine supported filter operations for a field """
 
+        if field_name not in self.fields:
+            raise InvalidFilterError("The '%s' field is not a valid field" % field_name)
+
         try:
             django_field_name = self.fields[field_name].attribute
             django_field = self._meta.object_class._meta.get_field(django_field_name)
@@ -2087,6 +2090,7 @@ class BaseModelResource(Resource):
         else:
             # A valid filter type
             return filter_bits[0]
+
     def build_filters(self, filters=None, ignore_bad_filters=False):
         """
         Given a dictionary of filters, create the necessary ORM-level filters.
@@ -2114,13 +2118,13 @@ class BaseModelResource(Resource):
         for filter_expr, value in filters.items():
             filter_bits = filter_expr.split(LOOKUP_SEP)
             field_name = filter_bits.pop(0)
-            filter_type = self.resolve_filter_type(field_name, filter_bits, 'exact')
 
             if field_name not in self.fields:
                 # It's not a field we know about. Move along citizen.
                 continue
 
             try:
+                filter_type = self.resolve_filter_type(field_name, filter_bits, 'exact')
                 lookup_bits = self.check_filtering(field_name, filter_type, filter_bits)
             except InvalidFilterError:
                 if ignore_bad_filters:

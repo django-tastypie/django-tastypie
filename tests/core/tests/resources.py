@@ -1118,7 +1118,7 @@ class DetailedNoteResource(ModelResource):
             'content': ['startswith', 'exact'],
             'title': ALL,
             'slug': ['exact'],
-            'user': ALL,
+            'user': ALL_WITH_RELATIONS,
             'hello_world': ['exact'],  # Note this is invalid for filtering.
         }
         ordering = ['title', 'slug', 'user']
@@ -2123,7 +2123,7 @@ class ModelResourceTestCase(TestCase):
 
         # Check where the field name doesn't match the database relation.
         resource_4 = AnotherSubjectResource()
-        self.assertEqual(resource_4.build_filters(filters={'notes__user__startswith': 'Daniel'}), {'notes__author__startswith': 'Daniel'})
+        self.assertEqual(resource_4.build_filters(filters={'notes__user__username__startswith': 'Daniel'}), {'notes__author__username__startswith': 'Daniel'})
 
         # Make sure build_filters works even on resources without queryset
         resource = NoQuerysetNoteResource()
@@ -2134,8 +2134,12 @@ class ModelResourceTestCase(TestCase):
         Test that a nonsensical filter fails validation.
         """
         resource = AnotherSubjectResource()
+
         # Make sure that fields that don't have attributes can't be filtered on.
         self.assertRaises(InvalidFilterError, resource.build_filters, filters={'notes__hello_world': 'News'})
+
+        # Make sure that fields that don't have related attributes can't be filtered on.
+        self.assertRaises(InvalidFilterError, resource.build_filters, filters={'notes__content__contains': 'News'})
 
     def test_custom_build_filters(self):
         """
