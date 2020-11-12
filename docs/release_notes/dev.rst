@@ -11,4 +11,4 @@ Major changes
 Bugfixes
 --------
 
-* Example Bugfix (Closes #PR_Number)
+* Fix related model filtering in `build_filters` and `check_filtering` (Closes #1618)
