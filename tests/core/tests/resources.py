@@ -50,7 +50,7 @@ from tastypie.validation import FormValidation
 
 from core.models import (
     Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord, Counter,
-    MyDefaultPKModel, MyUUIDModel, MyRelatedUUIDModel,
+    MyDefaultPKModel, MyUUIDModel, MyRelatedUUIDModel, BigAutoNowNote,
 )
 from core.tests.mocks import MockRequest
 from core.utils import adjust_schema, SimpleHandler
@@ -1057,6 +1057,19 @@ class AutoNowNoteResource(ModelResource):
         return '/api/v1/autonownotes/%s/' % bundle_or_obj.obj.id
 
 
+class BigAutoNowNoteResource(ModelResource):
+    class Meta:
+        resource_name = 'bigautonownotes'
+        queryset = BigAutoNowNote.objects.filter(is_active=True)
+        authorization = Authorization()
+
+    def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
+        if bundle_or_obj is None:
+            return '/api/v1/bigautonownotes/'
+
+        return '/api/v1/bigautonownotes/%s/' % bundle_or_obj.obj.id
+
+
 class CustomPaginator(Paginator):
     def page(self):
         data = super(CustomPaginator, self).page()
@@ -1637,6 +1650,20 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['updated'].null, False)
         self.assertEqual(annr.fields['updated'].readonly, False)
         self.assertEqual(annr.fields['updated'].unique, False)
+
+    def test_big_auto_field(self):
+        annr = BigAutoNowNoteResource()
+        self.assertEqual(len(annr.fields), 8)
+        self.assertEqual(sorted(annr.fields.keys()), ['content', 'created', 'id', 'is_active', 'resource_uri', 'slug', 'title', 'updated'])
+
+        self.assertTrue(isinstance(annr.fields['id'], fields.IntegerField))
+        self.assertEqual(annr.fields['id'].attribute, 'id')
+        self.assertEqual(annr.fields['id'].blank, True)
+        self.assertEqual(annr.fields['id']._default, '')
+        self.assertEqual(annr.fields['id'].instance_name, 'id')
+        self.assertEqual(annr.fields['id'].null, False)
+        self.assertEqual(annr.fields['id'].readonly, False)
+        self.assertEqual(annr.fields['id'].unique, True)
 
     def test_invalid_model_resource(self):
         """

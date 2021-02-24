@@ -37,6 +37,8 @@ from django.utils.cache import patch_cache_control, patch_vary_headers
 from django.utils.html import escape
 from django.views.decorators.csrf import csrf_exempt
 
+import six
+
 from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.bundle import Bundle
@@ -1911,7 +1913,7 @@ class BaseModelResource(Resource):
             result = fields.FloatField
         elif internal_type in ('DecimalField',):
             result = fields.DecimalField
-        elif internal_type in ('IntegerField', 'PositiveIntegerField', 'PositiveSmallIntegerField', 'SmallIntegerField', 'AutoField', 'BigIntegerField'):
+        elif internal_type in ('IntegerField', 'PositiveIntegerField', 'PositiveSmallIntegerField', 'SmallIntegerField', 'AutoField', 'BigIntegerField', 'BigAutoField'):
             result = fields.IntegerField
         elif internal_type in ('FileField', 'ImageField'):
             result = fields.FileField
@@ -2258,6 +2260,11 @@ class BaseModelResource(Resource):
         lookup parameters that can find them in the DB
         """
         lookup_kwargs = {}
+
+        # Handle detail_uri_name specially
+        if self._meta.detail_uri_name in kwargs:
+            lookup_kwargs[self._meta.detail_uri_name] = kwargs.pop(self._meta.detail_uri_name)
+
         bundle.obj = self.get_object_list(bundle.request).model()
         # Override data values, we rely on uri identifiers
         bundle.data.update(kwargs)
@@ -2267,10 +2274,6 @@ class BaseModelResource(Resource):
         bundle = self.hydrate(bundle)
 
         for identifier in kwargs:
-            if identifier == self._meta.detail_uri_name:
-                lookup_kwargs[identifier] = kwargs[identifier]
-                continue
-
             field_object = self.fields[identifier]
 
             # Skip readonly or related fields.
@@ -2298,7 +2301,7 @@ class BaseModelResource(Resource):
         if bundle_detail_data is None or (arg_detail_data is not None and str(bundle_detail_data) != str(arg_detail_data)):
             try:
                 lookup_kwargs = self.lookup_kwargs_with_identifiers(bundle, kwargs)
-            except:  # flake8: noqa
+            except:  # noqa
                 # if there is trouble hydrating the data, fall back to just
                 # using kwargs by itself (usually it only contains a "pk" key
                 # and this will work fine.
