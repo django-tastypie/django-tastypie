@@ -91,3 +91,5 @@ if DJANGO_VERSION < DJANGO_11:
 
 if DJANGO_VERSION >= DJANGO_20:
     MIDDLEWARE.remove('django.contrib.auth.middleware.SessionAuthenticationMiddleware')
+
+SECURE_REFERRER_POLICY = None
