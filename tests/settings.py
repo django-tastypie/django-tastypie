@@ -38,6 +38,7 @@ DATABASES = {
         'NAME': DATABASE_NAME,
     }
 }
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 ALLOWED_HOSTS = ['example.com']
 
