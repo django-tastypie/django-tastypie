@@ -9,13 +9,13 @@ import warnings
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.exceptions import ImproperlyConfigured
-from django.middleware.csrf import _sanitize_token, constant_time_compare
+from django.middleware.csrf import _sanitize_token, _compare_masked_tokens
 from django.utils.translation import ugettext as _
 
 from six.moves.urllib.parse import urlparse
 
 from tastypie.compat import (
-    get_user_model, get_username_field, unsalt_token, is_authenticated
+    get_user_model, get_username_field, is_authenticated
 )
 from tastypie.http import HttpUnauthorized
 
@@ -327,8 +327,7 @@ class SessionAuthentication(Authentication):
         request_csrf_token = request.META.get('HTTP_X_CSRFTOKEN', '')
         request_csrf_token = _sanitize_token(request_csrf_token)
 
-        if not constant_time_compare(unsalt_token(request_csrf_token),
-                                     unsalt_token(csrf_token)):
+        if not _compare_masked_tokens(request_csrf_token, csrf_token):
             return False
 
         return is_authenticated(request.user)
