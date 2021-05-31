@@ -40,3 +40,14 @@ if django.VERSION < (2, 2):
     from django.utils.encoding import force_text as force_str  # noqa
 else:
     from django.utils.encoding import force_str  # noqa
+
+
+# compat between django 3.0 and 3.2's csrf token comparison
+try:
+    from django.middleware.csrf import _compare_masked_tokens
+    compare_sanitized_tokens = _compare_masked_tokens
+except ImportError:
+    from django.middleware.csrf import _unsalt_cipher_token, constant_time_compare
+    def compare_sanitized_tokens(request_csrf_token, csrf_token):
+        return constant_time_compare(_unsalt_cipher_token(request_csrf_token),
+                                     _unsalt_cipher_token(csrf_token))
