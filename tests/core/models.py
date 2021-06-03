@@ -97,6 +97,13 @@ class AutoNowNote(models.Model):
         app_label = 'core'
 
 
+class BigAutoNowModel(models.Model):
+    id = models.BigAutoField(primary_key=True)
+
+    class Meta:
+        app_label = 'core'
+
+
 class Counter(models.Model):
     name = models.CharField(max_length=30)
     slug = models.SlugField(unique=True)
