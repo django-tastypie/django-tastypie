@@ -12,6 +12,7 @@ except ImportError:  # 1.8 backwards compat
 
 AUTH_USER_MODEL = settings.AUTH_USER_MODEL
 
+
 def get_username_field():
     return get_user_model().USERNAME_FIELD
 
@@ -37,6 +38,7 @@ try:
     compare_sanitized_tokens = _compare_masked_tokens
 except ImportError:
     from django.middleware.csrf import _unsalt_cipher_token, constant_time_compare
+
     def compare_sanitized_tokens(request_csrf_token, csrf_token):
         return constant_time_compare(_unsalt_cipher_token(request_csrf_token),
                                      _unsalt_cipher_token(csrf_token))
