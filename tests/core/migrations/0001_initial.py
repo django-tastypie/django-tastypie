@@ -114,4 +114,10 @@ class Migration(migrations.Migration):
             ],
             bases=('core.note',),
         ),
+        migrations.CreateModel(
+            name='BigAutoNowModel',
+            fields=[
+                ('id', models.BigAutoField(primary_key=True, serialize=False, verbose_name='ID')),
+            ],
+        ),
     ]
