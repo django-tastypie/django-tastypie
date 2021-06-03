@@ -4,18 +4,19 @@ dist: bionic
 language: python
 
 python:
-  - "2.7"
   - "3.5"
   - "3.6"
   - "3.7"
+  - "3.8"
 
 env:
   - MODE=flake8
   - MODE=flake8-strict
   - MODE=docs
-  - DJANGO_VERSION=dj111
   - DJANGO_VERSION=dj22
   - DJANGO_VERSION=dj30
+  - DJANGO_VERSION=dj31
+  - DJANGO_VERSION=dj32
   - DJANGO_VERSION=djdev
 
 matrix:
@@ -23,14 +24,18 @@ matrix:
     - env: DJANGO_VERSION=djdev
     - env: MODE=flake8-strict
   exclude:
-    - python: "2.7"
-      env: DJANGO_VERSION=djdev
-    - python: "2.7"
-      env: DJANGO_VERSION=dj22
-    - python: "2.7"
-      env: DJANGO_VERSION=dj30
+    - python: "3.5"
+      env: MODE=flake8
+    - python: "3.5"
+      env: MODE=flake8-strict
+    - python: "3.5"
+      env: MODE=flake8-docs
     - python: "3.5"
       env: DJANGO_VERSION=dj30
+    - python: "3.5"
+      env: DJANGO_VERSION=dj31
+    - python: "3.5"
+      env: DJANGO_VERSION=dj32
     - python: "3.5"
       env: DJANGO_VERSION=djdev
 

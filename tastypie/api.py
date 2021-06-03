@@ -9,6 +9,7 @@ from tastypie.serializers import Serializer
 from tastypie.utils import is_valid_jsonp_callback_value, string_to_python, trailing_slash
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.resources import Resource
+from django.urls.conf import re_path
 
 
 class Api(object):
@@ -103,7 +104,7 @@ class Api(object):
         ``Resources`` beneath it.
         """
         pattern_list = [
-            url(r"^(?P<api_name>%s)%s$" % (self.api_name, trailing_slash), self.wrap_view('top_level'), name="api_%s_top_level" % self.api_name),
+            re_path(r"^(?P<api_name>%s)%s$" % (self.api_name, trailing_slash), self.wrap_view('top_level'), name="api_%s_top_level" % self.api_name),
         ]
 
         for name in sorted(self._registry.keys()):

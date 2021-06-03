@@ -36,7 +36,7 @@ from tastypie.exceptions import (
     UnsupportedSerializationFormat, UnsupportedDeserializationFormat,
 )
 from tastypie import fields, http
-from tastypie.compat import is_authenticated, force_str
+from tastypie.compat import force_str
 from tastypie.paginator import Paginator
 from tastypie.resources import (
     ALL, ALL_WITH_RELATIONS, convert_post_to_put, convert_post_to_patch,
@@ -1338,7 +1338,7 @@ class TestOptionsResource(ModelResource):
 class PerUserAuthorization(Authorization):
     def read_list(self, object_list, bundle):
         if bundle.request and hasattr(bundle.request, 'user'):
-            if is_authenticated(bundle.request.user):
+            if bundle.request.user.is_authenticated:
                 object_list = object_list.filter(author=bundle.request.user)
             else:
                 object_list = object_list.none()
@@ -4937,7 +4937,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content.decode('utf-8'), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
         self.assertTrue(resp.has_header('Cache-Control'))
-        self.assertEqual(resp._headers['cache-control'], ('Cache-Control', 'no-cache'))
+        self.assertEqual(resp['Cache-Control'], 'no-cache')
 
         # Now as Ajax.
         request.META = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
@@ -4945,7 +4945,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content.decode('utf-8'), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
         self.assertTrue(resp.has_header('cache-control'))
-        self.assertEqual(resp._headers['cache-control'], ('Cache-Control', 'no-cache'))
+        self.assertEqual(resp['Cache-Control'], 'no-cache')
 
     def test_custom_paginator(self):
         mock_request = MockRequest()

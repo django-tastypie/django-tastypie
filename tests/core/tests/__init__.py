@@ -1,6 +1,6 @@
+import doctest
 import warnings
 warnings.simplefilter('ignore', Warning)  # noqa
-import doctest
 
 from core.tests.api import *  # noqa
 from core.tests.authentication import *  # noqa
