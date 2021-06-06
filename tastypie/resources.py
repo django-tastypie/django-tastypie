@@ -91,6 +91,7 @@ class ResourceOptions(object):
     urlconf_namespace = None
     default_format = 'application/json'
     filtering = {}
+    filter_aliases = {}
     ordering = []
     object_class = None
     queryset = None
@@ -1855,6 +1856,7 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
         # Add in the new fields.
         new_class.base_fields.update(new_class.get_fields(include_fields, excludes))
 
+
         if getattr(new_class._meta, 'include_absolute_url', True):
             if 'absolute_url' not in new_class.base_fields:
                 new_class.base_fields['absolute_url'] = fields.CharField(attribute='get_absolute_url', readonly=True)
@@ -2060,6 +2062,9 @@ class BaseModelResource(Resource):
         Valid values are either a list of Django filter types (i.e.
         ``['startswith', 'exact', 'lte']``), the ``ALL`` constant or the
         ``ALL_WITH_RELATIONS`` constant.
+
+        If aliases exist for the filters in the request in 'filter_aliases', it will be replaced with the filter mapped
+        to the alias.
         """
         # At the declarative level:
         #     filtering = {
@@ -2076,6 +2081,8 @@ class BaseModelResource(Resource):
         qs_filters = {}
 
         for filter_expr, value in filters.items():
+
+            filter_expr = self._meta.filter_aliases.get(filter_expr, filter_expr)
             filter_bits = filter_expr.split(LOOKUP_SEP)
             field_name = filter_bits.pop(0)
             filter_type = 'exact'

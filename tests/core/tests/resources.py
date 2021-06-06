@@ -924,6 +924,10 @@ class NoteResource(ModelResource):
             'title': ALL,
             'slug': ['exact'],
         }
+        filter_aliases = {
+            'titles': 'title__in',
+        }
+
         ordering = ['title', 'slug', 'resource_uri']
         queryset = Note.objects.filter(is_active=True)
         serializer = Serializer(formats=['json', 'jsonp', 'xml', 'yaml', 'plist'])
@@ -1256,6 +1260,9 @@ class AnotherSubjectResource(ModelResource):
         excludes = ['notes']
         filtering = {
             'notes': ALL_WITH_RELATIONS,
+        }
+        filter_aliases = {
+            'author_prefix': 'notes__user__startswith'
         }
         authorization = Authorization()
 
@@ -2163,6 +2170,25 @@ class ModelResourceTestCase(TestCase):
         resource = AnotherSubjectResource()
         # Make sure that fields that don't have attributes can't be filtered on.
         self.assertRaises(InvalidFilterError, resource.build_filters, filters={'notes__hello_world': 'News'})
+
+    def test_build_filters_alias(self):
+        """
+        Test filter aliases are replaced with the mapped filter
+        """
+        resource_1 = NoteResource()
+        self.assertEqual(resource_1.build_filters(filters={'title__exact': 'Hello world.'}), {'title__exact': 'Hello world.'})
+
+        alias_filter_name = 'titles'
+        actual_filter_name = 'title__in'
+        self.assertEqual(resource_1.build_filters(filters={alias_filter_name: 'foo,bar'}), {actual_filter_name: ['foo', 'bar']})
+
+        unexisting_alias_filter_name = 'unexisting_alias'
+        self.assertEqual(resource_1.build_filters(filters={unexisting_alias_filter_name: 'foo'}), {})
+
+        alias_filter_name = 'author_prefix'
+        actual_filter_name = 'notes__author__startswith'
+        resource_2 = AnotherSubjectResource()
+        self.assertEqual(resource_2.build_filters(filters={alias_filter_name: 'Daniel'}), {actual_filter_name: 'Daniel'})
 
     def test_custom_build_filters(self):
         """
