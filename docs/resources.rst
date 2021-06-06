@@ -288,7 +288,7 @@ A simple example::
         class Meta:
             queryset = Note.objects.all()
 
-        def dehydrate(self, bundle):
+        def dehydrate(self, bundle, **kwargs):
             # Include the request IP in the bundle.
             bundle.data['request_ip'] = bundle.request.META.get('REMOTE_ADDR')
             return bundle
@@ -300,7 +300,7 @@ A complex example::
             queryset = User.objects.all()
             excludes = ['email', 'password', 'is_staff', 'is_superuser']
 
-        def dehydrate(self, bundle):
+        def dehydrate(self, bundle, **kwargs):
             # If they're requesting their own record, add in their email address.
             if bundle.request.user.pk == bundle.obj.pk:
                 # Note that there isn't an ``email`` field on the ``Resource``.
@@ -1121,7 +1121,7 @@ simply override this method.
 ``full_dehydrate``
 ------------------
 
-.. method:: Resource.full_dehydrate(self, bundle, for_list=False)
+.. method:: Resource.full_dehydrate(self, bundle, for_list=False, for_update=False)
 
 Populate the bundle's :attr:`data` attribute.
 
@@ -1132,6 +1132,11 @@ The ``for_list`` parameter indicates the style of response being prepared:
     - ``True`` indicates a list of items. Note that :meth:`full_dehydrate` will
       be called once for each object requested.
     - ``False`` indicates a response showing the details for an item
+
+The ``for_update`` parameter indicates this operation is for a PATCH request;
+    - ``True`` indicates this is a PATCH, so fields loaded from the db should not be
+      modified for external consumption (e.g. a url prepended for images)
+    - ``False`` indicates a normal dehrydate operation
 
 This method is responsible for invoking the :meth:`dehydrate` method of
 all the fields in the resource. Additionally, it calls
@@ -1145,7 +1150,7 @@ and return it, but you may also return a completely new bundle.
 ``dehydrate``
 -------------
 
-.. method:: Resource.dehydrate(self, bundle)
+.. method:: Resource.dehydrate(self, bundle, for_list=False, for_update=False)
 
 A hook to allow a final manipulation of data once all fields/methods
 have built out the dehydrated data.

@@ -71,7 +71,7 @@ provide additional values:
         class Meta:
             queryset = MyModel.objects.all()
 
-        def dehydrate(self, bundle):
+        def dehydrate(self, bundle, **kwargs):
             bundle.data['custom_field'] = "Whatever you want"
             return bundle
 

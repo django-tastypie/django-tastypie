@@ -30,7 +30,7 @@ class GeometryApiField(ApiField):
             return value
         return json.dumps(value)
 
-    def dehydrate(self, obj, for_list=False):
+    def dehydrate(self, obj, for_list=False, for_update=False):
         return self.convert(super(GeometryApiField, self).dehydrate(obj))
 
     def convert(self, value):

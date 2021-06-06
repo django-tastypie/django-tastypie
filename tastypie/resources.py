@@ -883,7 +883,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
     # Data preparation.
 
-    def full_dehydrate(self, bundle, for_list=False):
+    def full_dehydrate(self, bundle, for_list=False, for_update=False):
         """
         Given a bundle with an object instance, extract the information from it
         to populate the resource.
@@ -909,7 +909,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                 field_object.api_name = api_name
                 field_object.resource_name = resource_name
 
-            data[field_name] = field_object.dehydrate(bundle, for_list=for_list)
+            data[field_name] = field_object.dehydrate(bundle, for_list=for_list, for_update=for_update)
 
             # Check for an optional method to do further dehydration.
             method = getattr(self, "dehydrate_%s" % field_name, None)
@@ -1627,7 +1627,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
                     # The object does exist, so this is an update-in-place.
                     bundle = self.build_bundle(obj=obj, request=request)
-                    bundle = self.full_dehydrate(bundle, for_list=True)
+                    bundle = self.full_dehydrate(bundle, for_list=True, for_update=True)
                     bundle = self.alter_detail_data_to_serialize(request, bundle)
                     self.update_in_place(request, bundle, data)
                 except (ObjectDoesNotExist, MultipleObjectsReturned):
@@ -1694,7 +1694,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             return http.HttpMultipleChoices("More than one resource is found at this URI.")
 
         bundle = self.build_bundle(obj=obj, request=request)
-        bundle = self.full_dehydrate(bundle)
+        bundle = self.full_dehydrate(bundle, for_update=True)
         bundle = self.alter_detail_data_to_serialize(request, bundle)
 
         # Now update the bundle in-place.

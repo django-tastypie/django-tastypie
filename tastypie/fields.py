@@ -117,7 +117,7 @@ class ApiField(object):
 
         return self._default
 
-    def dehydrate(self, bundle, for_list=True):
+    def dehydrate(self, bundle, for_list=True, for_update=False):
         """
         Takes data from the provided object and prepares it for the
         resource.
@@ -145,10 +145,19 @@ class ApiField(object):
             if callable(current_object):
                 current_object = current_object()
 
-            return self.convert(current_object)
+            if for_update and hasattr(self, 'convert_for_update'):
+                # Some fields behave differently on Retrieve vs Update; e.g. prepending URL
+                # If we don't allow for this, PATCH will read missing fields and write
+                # the fully modified versions back to the db.
+                return self.convert_for_update(current_object)
+            else:
+                return self.convert(current_object)
 
         if self.has_default():
-            return self.convert(self.default)
+            if for_update and hasattr(self, 'convert_for_update'):
+                return self.convert_for_update(self.default)
+            else:
+                return self.convert(self.default)
         else:
             return None
 
@@ -227,6 +236,13 @@ class FileField(ApiField):
     """
     dehydrated_type = 'string'
     help_text = 'A file URL as a string. Ex: "http://media.example.com/media/photos/my_photo.jpg"'
+
+    def convert_for_update(self, value):
+        """
+        During PATCH, don't modify the value to include the URL, or
+        it'll save that back to the field.
+        """
+        return value
 
     def convert(self, value):
         if value is None:
@@ -564,7 +580,7 @@ class RelatedField(ApiField):
 
         return self._to_class
 
-    def dehydrate_related(self, bundle, related_resource, for_list=True):
+    def dehydrate_related(self, bundle, related_resource, for_list=True, for_update=False):
         """
         Based on the ``full_resource``, returns either the endpoint or the data
         from ``full_dehydrate`` for the related resource.
@@ -581,7 +597,7 @@ class RelatedField(ApiField):
                 request=bundle.request,
                 objects_saved=bundle.objects_saved
             )
-            return related_resource.full_dehydrate(bundle)
+            return related_resource.full_dehydrate(bundle, for_update)
 
     def resource_from_uri(self, fk_resource, uri, request=None, related_obj=None, related_name=None):
         """
@@ -753,7 +769,7 @@ class ToOneField(RelatedField):
                 # this gets the related_name of the one to one field of our model
                 self.related_name = related_field.related.field.name
 
-    def dehydrate(self, bundle, for_list=True):
+    def dehydrate(self, bundle, for_list=True, for_update=False):
         foreign_obj = None
 
         if callable(self.attribute):
@@ -779,7 +795,7 @@ class ToOneField(RelatedField):
 
         fk_resource = self.get_related_resource(foreign_obj)
         fk_bundle = Bundle(obj=foreign_obj, request=bundle.request)
-        return self.dehydrate_related(fk_bundle, fk_resource, for_list=for_list)
+        return self.dehydrate_related(fk_bundle, fk_resource, for_list=for_list, for_update=for_update)
 
     def hydrate(self, bundle):
         value = super(ToOneField, self).hydrate(bundle)
@@ -829,7 +845,7 @@ class ToManyField(RelatedField):
             full_detail=full_detail
         )
 
-    def dehydrate(self, bundle, for_list=True):
+    def dehydrate(self, bundle, for_list=True, for_update=True):
         if not bundle.obj or not bundle.obj.pk:
             if not self.null:
                 raise ApiFieldError("The model '%r' does not have a primary key and can not be used in a ToMany context." % bundle.obj)
@@ -867,7 +883,8 @@ class ToManyField(RelatedField):
             self.dehydrate_related(
                 Bundle(obj=m2m, request=bundle.request),
                 self.get_related_resource(m2m),
-                for_list=for_list
+                for_list=for_list,
+                for_update=for_update,
             )
             for m2m in the_m2ms
         ]
@@ -921,8 +938,8 @@ class TimeField(ApiField):
     dehydrated_type = 'time'
     help_text = 'A time as string. Ex: "20:05:23"'
 
-    def dehydrate(self, obj, for_list=True):
-        return self.convert(super(TimeField, self).dehydrate(obj))
+    def dehydrate(self, obj, for_list=True, for_update=False):
+        return self.convert(super(TimeField, self).dehydrate(obj, for_update=for_update))
 
     def convert(self, value):
         if isinstance(value, six.string_types):
