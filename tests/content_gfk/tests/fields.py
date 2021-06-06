@@ -24,7 +24,7 @@ class ContentTypeFieldTestCase(TestCase):
     def test_get_related_resource(self):
         gfk_field = GenericForeignKeyField({
             Note: NoteResource,
-            Quote: QuoteResource
+            Quote: 'content_gfk.api.resources.QuoteResource'
         }, 'nofield')
 
         definition_1 = Definition.objects.create(
@@ -51,7 +51,7 @@ class ContentTypeFieldTestCase(TestCase):
 
         gfk_field = GenericForeignKeyField({
             Note: NoteResource,
-            Quote: QuoteResource
+            Quote: 'content_gfk.api.resources.QuoteResource'
         }, 'nofield')
 
         self.assertEqual(
@@ -65,7 +65,7 @@ class ContentTypeFieldTestCase(TestCase):
     def test_build_related_resource(self):
         gfk_field = GenericForeignKeyField({
             Note: NoteResource,
-            Quote: QuoteResource
+            Quote: 'content_gfk.api.resources.QuoteResource'
         }, 'nofield')
 
         quote_1 = Quote.objects.create(

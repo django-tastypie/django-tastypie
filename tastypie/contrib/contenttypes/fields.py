@@ -1,10 +1,13 @@
 from __future__ import unicode_literals
 from functools import partial
+import importlib
+
 from tastypie import fields
 from tastypie.resources import Resource
 from tastypie.exceptions import ApiFieldError
 from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import six
 from .resources import GenericResource
 
 
@@ -22,13 +25,34 @@ class GenericForeignKeyField(fields.ToOneField):
             raise ValueError('to field must have some values')
 
         for k, v in to.items():
-            if not issubclass(k, models.Model) or not issubclass(v, Resource):
+            if not issubclass(k, models.Model) or (not isinstance(v, six.string_types) and not issubclass(v, Resource)):
                 raise ValueError('to field must map django models to tastypie resources')
 
         super(GenericForeignKeyField, self).__init__(to, attribute, **kwargs)
 
+    def find_class(self, to_class):
+        # Only handle strings. Anything else is returned as-is
+        if not isinstance(to_class, six.string_types):
+            return to_class
+            
+        if to_class == 'self':
+            return self._resource
+            
+        if '.' in to_class:
+            # Try to import.
+            module_bits = to_class.split('.')
+            module_path, class_name = '.'.join(module_bits[:-1]), module_bits[-1]
+            # noinspection PyShadowingBuiltins
+            module = importlib.import_module(module_path)
+        else:
+            # We've got a bare class name here, which won't work (No AppCache
+            # to rely on). Try to throw a useful error.
+            raise ImportError("Tastypie requires a Python-style path (<module.module.Class>) to lazy load related resources. Only given '%s'." % to_class)
+
+        return getattr(module, class_name, None)
+
     def get_related_resource(self, related_instance):
-        self._to_class = self.to.get(type(related_instance), None)
+        self._to_class = self.find_class(self.to.get(type(related_instance), None))
 
         if self._to_class is None:
             raise TypeError('no resource for model %s' % type(related_instance))
@@ -40,7 +64,7 @@ class GenericForeignKeyField(fields.ToOneField):
         if self._to_class and not issubclass(GenericResource, self._to_class):
             return self._to_class
 
-        return partial(GenericResource, resources=self.to.values())
+        return partial(GenericResource, resources=[self.find_class(to_class) for to_class in self.to.values()])
 
     def resource_from_uri(self, fk_resource, uri, request=None, related_obj=None, related_name=None):
         try:
