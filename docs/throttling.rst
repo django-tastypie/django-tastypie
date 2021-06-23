@@ -116,7 +116,7 @@ An example of this might be::
 
         def prepend_urls(self):
             return [
-                url(r"^(?P<resource_name>%s)/search%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_search'), name="api_get_search"),
+                re_path(r"^(?P<resource_name>%s)/search%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_search'), name="api_get_search"),
             ]
 
         def search(self, request, **kwargs):

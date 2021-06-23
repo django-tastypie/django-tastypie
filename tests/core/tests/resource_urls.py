@@ -1,5 +1,5 @@
-from django.conf.urls import include, url
 from django.contrib.auth.models import User
+from django.urls import include, re_path
 from tastypie import fields
 from tastypie.resources import ModelResource
 from core.models import Note, Subject
@@ -33,5 +33,5 @@ api.register(UserResource())
 api.register(SubjectResource())
 
 urlpatterns = [
-    url(r'^api/', include(api.urls)),
+    re_path(r'^api/', include(api.urls)),
 ]
