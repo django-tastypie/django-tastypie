@@ -148,3 +148,26 @@ class MyRelatedUUIDModel(models.Model):
 
     class Meta:
         app_label = 'core'
+
+
+class MyContainerModel(models.Model):
+    name = models.CharField(max_length=128, blank=True, null=True)
+
+    class Meta:
+        app_label = 'core'
+
+
+class MyContainerItemModel(models.Model):
+    parent = models.ForeignKey(MyContainerModel, on_delete=models.CASCADE, related_name='item_set')
+    name = models.CharField(max_length=128, blank=True, null=True)
+
+    class Meta:
+        app_label = 'core'
+
+
+class MyContainerItemGroupingModel(models.Model):
+    parent = models.ForeignKey(MyContainerModel, on_delete=models.CASCADE, related_name='item_grouping_set')
+    grouping_item = models.ForeignKey(MyContainerItemModel, on_delete=models.CASCADE)
+
+    class Meta:
+        app_label = 'core'
