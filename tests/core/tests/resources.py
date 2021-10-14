@@ -5115,13 +5115,17 @@ class ModelResourceTestCase(TestCase):
                 {
                     'parent': resource_uri,
                     'name': 'container item 1'
-                },
-                {
-                    'parent': resource_uri,
-                    'name': 'container item 2'
                 }
             ],
-            'container_grouping_items': []
+            'container_grouping_items': [
+                {
+                    'parent': resource_uri,
+                    'grouping_item': {
+                        'parent': resource_uri,
+                        'name': 'container item 2'
+                    }
+                }
+            ]
         }))
 
         resp = container_resource.put_detail(request)
