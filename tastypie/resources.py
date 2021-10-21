@@ -2403,6 +2403,7 @@ class BaseModelResource(Resource):
 
         if obj_id not in bundle.objects_saved or bundle.obj._state.adding:
             bundle.obj.save()
+            obj_id = self.create_identifier(bundle.obj)
             bundle.objects_saved.add(obj_id)
 
         # Now pick up the M2M bits.
