@@ -14,7 +14,9 @@ jobs:
       matrix:
         python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
         django-version: ["2.2", "3.2", "4.0", "dev"]
-        mode: ["flake8", "flake8-strict", "docs", "tests"]
+        exclude:
+           - python-version: ["3.6", "3.7"]
+             django-version: ["4.0", "dev"]
 
     steps:
     - uses: actions/checkout@v2
@@ -34,5 +36,5 @@ jobs:
         coverage erase
     - name: Test with pytest
       run: |
-        tox -e py${{matrix.python-version}}-${{matrix.django-version}}-${{matrix.mode}}
+        tox -e py${{matrix.python-version}}-dj${{matrix.django-version}}
         
