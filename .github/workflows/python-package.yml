@@ -52,4 +52,7 @@ jobs:
     - name: Test with Tox
       run: |
         tox -e py${{matrix.python-version}}-dj${{matrix.django-version}}
+    - name: Upload coveralls
+      run: |
+        coveralls
         
