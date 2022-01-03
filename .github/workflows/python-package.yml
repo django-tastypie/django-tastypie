@@ -20,7 +20,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install OS dependencies
       run: |
-        apt install binutils libproj-dev gdal-bin libsqlite3-mod-spatialite
+        sudo apt install -y binutils libproj-dev gdal-bin libsqlite3-mod-spatialite
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
