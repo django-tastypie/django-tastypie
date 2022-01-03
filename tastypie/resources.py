@@ -55,7 +55,7 @@ from tastypie.serializers import Serializer
 from tastypie.throttle import BaseThrottle
 from tastypie.utils import (
     dict_strip_unicode_keys, is_valid_jsonp_callback_value, string_to_python,
-    trailing_slash, timezone,
+    trailing_slash,
 )
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.validation import Validation
