@@ -71,7 +71,7 @@ A basic example looks like:
 
     # urls.py
     # =======
-    from django.conf.urls import url, include
+    from django.urls.conf import re_path, include
     from tastypie.api import Api
     from myapp.api import EntryResource
 
@@ -80,7 +80,7 @@ A basic example looks like:
 
     urlpatterns = [
         # The normal jazz here then...
-        url(r'^api/', include(v1_api.urls)),
+        re_path(r'^api/', include(v1_api.urls)),
     ]
 
 That gets you a fully working, read-write API for the ``Entry`` model that

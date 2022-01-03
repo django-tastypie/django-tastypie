@@ -45,7 +45,7 @@ We'll assume that we're interacting with the following Tastypie code::
 
 
     # urls.py
-    from django.conf.urls import url, include
+    from django.urls.conf import re_path, include
     from tastypie.api import Api
     from myapp.api.resources import EntryResource, UserResource
 
@@ -55,8 +55,8 @@ We'll assume that we're interacting with the following Tastypie code::
 
     urlpatterns = [
         # The normal jazz here...
-        url(r'^blog/', include('myapp.urls')),
-        url(r'^api/', include(v1_api.urls)),
+        re_path(r'^blog/', include('myapp.urls')),
+        re_path(r'^api/', include(v1_api.urls)),
     ]
 
 Let's fire up a shell & start exploring the API!

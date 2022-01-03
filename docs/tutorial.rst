@@ -131,15 +131,15 @@ do this, we simply instantiate the resource in our URLconf and hook up its
 ``urls``::
 
     # urls.py
-    from django.conf.urls import url, include
+    from django.urls.conf import re_path, include
     from myapp.api import EntryResource
 
     entry_resource = EntryResource()
 
     urlpatterns = [
         # The normal jazz here...
-        url(r'^blog/', include('myapp.urls')),
-        url(r'^api/', include(entry_resource.urls)),
+        re_path(r'^blog/', include('myapp.urls')),
+        re_path(r'^api/', include(entry_resource.urls)),
     ]
 
 Now it's just a matter of firing up server (``./manage.py runserver``) and
@@ -258,7 +258,7 @@ We'll go back to our URLconf (``urls.py``) and change it to match the
 following::
 
     # urls.py
-    from django.conf.urls import url, include
+    from django.urls.conf import re_path, include
     from tastypie.api import Api
     from myapp.api import EntryResource, UserResource
 
@@ -268,8 +268,8 @@ following::
 
     urlpatterns = [
         # The normal jazz here...
-        url(r'^blog/', include('myapp.urls')),
-        url(r'^api/', include(v1_api.urls)),
+        re_path(r'^blog/', include('myapp.urls')),
+        re_path(r'^api/', include(v1_api.urls)),
     ]
 
 Note that we're now creating an :class:`~tastypie.api.Api` instance,
