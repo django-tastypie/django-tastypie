@@ -52,7 +52,13 @@ jobs:
     - name: Test with Tox
       run: |
         tox -e py${{matrix.python-version}}-dj${{matrix.django-version}}
-    - name: Upload coveralls
-      run: |
-        coveralls
-        
+
+  finish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}
+        parallel-finished: true        
