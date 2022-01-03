@@ -16,16 +16,16 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
-        django-version: ["2.2", "3.2", "4.0", "dev"]
+        django-version: ["2.2", "3.2", "4.0"]  # Todo: add "dev" back
         exclude:
            - python-version: "3.6"
              django-version: "4.0"
-           - python-version: "3.6"
-             django-version: "dev"
+#           - python-version: "3.6"
+#             django-version: "dev"
            - python-version: "3.7"
              django-version: "4.0"
-           - python-version: "3.7"
-             django-version: "dev"
+#           - python-version: "3.7"
+#             django-version: "dev"
 
     steps:
     - uses: actions/checkout@v2
