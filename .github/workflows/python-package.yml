@@ -43,7 +43,13 @@ jobs:
     - name: Erase cached coverage
       run: |
         coverage erase
-    - name: Test with pytest
+    - name: Flake8
+      run: |
+        tox -e py${{matrix.python-version}}-flake8
+    - name: Docs
+      run: |
+        tox -e py${{matrix.python-version}}-docs
+    - name: Test with Tox
       run: |
         tox -e py${{matrix.python-version}}-dj${{matrix.django-version}}
         
