@@ -1,4 +1,4 @@
-from django.conf.urls import url, include
+from django.urls.conf import include, re_path
 
 from tastypie.api import Api
 
@@ -12,5 +12,5 @@ v1_api.register(SiteResource())
 v1_api.register(UserResource())
 
 urlpatterns = [
-    url(r'^api/', include(v1_api.urls)),
+    re_path(r'^api/', include(v1_api.urls)),
 ]

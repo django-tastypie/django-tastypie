@@ -18,6 +18,7 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.exceptions import FieldError, MultipleObjectsReturned, ObjectDoesNotExist, ImproperlyConfigured
 from django.core import mail
+from time import mktime
 try:
     from django.urls import reverse
 except ImportError:
@@ -4183,10 +4184,10 @@ class ModelResourceTestCase(TestCase):
     @patch('tastypie.throttle.time')
     @override_settings(DEBUG=False)
     def test_check_datetime_throttling(self, mocked_time):
-        mocked_time.time.return_value = time.time()
 
         retry_after = datetime.datetime(year=2014, month=8, day=8, hour=8, minute=55, tzinfo=timezone.utc)
-        retry_after_str = 'Fri, 08 Aug 2014 14:55:00 GMT'
+        mocked_time.time.return_value = mktime(retry_after.timetuple())
+        retry_after_str = 'Fri, 08 Aug 2014 08:55:00 GMT'
 
         resource = ThrottledNoteResource()
         _orginal_throttle = resource._meta.throttle

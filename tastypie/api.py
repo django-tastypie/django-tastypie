@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 import warnings
-from django.conf.urls import url, include
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse, HttpResponseBadRequest
 from tastypie.compat import reverse
@@ -9,7 +8,7 @@ from tastypie.serializers import Serializer
 from tastypie.utils import is_valid_jsonp_callback_value, string_to_python, trailing_slash
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.resources import Resource
-from django.urls.conf import re_path
+from django.urls.conf import re_path, include
 
 
 class Api(object):
@@ -109,7 +108,7 @@ class Api(object):
 
         for name in sorted(self._registry.keys()):
             self._registry[name].api_name = self.api_name
-            pattern_list.append(url(r"^(?P<api_name>%s)/" % self.api_name, include(self._registry[name].urls)))
+            pattern_list.append(re_path(r"^(?P<api_name>%s)/" % self.api_name, include(self._registry[name].urls)))
 
         urlpatterns = self.prepend_urls()
 

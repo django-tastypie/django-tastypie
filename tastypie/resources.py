@@ -10,13 +10,14 @@ import warnings
 from wsgiref.handlers import format_date_time
 
 from django.conf import settings
-from django.conf.urls import url
 from django.core.exceptions import (
     ObjectDoesNotExist, MultipleObjectsReturned, ValidationError, FieldDoesNotExist
 )
 from django.core.signals import got_request_exception
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.fields.related import ForeignKey
+from django.urls.conf import re_path
+from tastypie.utils.timezone import make_naive_utc
 try:
     from django.contrib.gis.db.models.fields import GeometryField
 except (ImproperlyConfigured, ImportError):
@@ -40,7 +41,7 @@ from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.bundle import Bundle
 from tastypie.cache import NoCache
-from tastypie.compat import NoReverseMatch, reverse, Resolver404, get_script_prefix
+from tastypie.compat import NoReverseMatch, reverse, Resolver404, get_script_prefix, is_ajax
 from tastypie.constants import ALL, ALL_WITH_RELATIONS
 from tastypie.exceptions import (
     NotFound, BadRequest, InvalidFilterError, HydrationError, InvalidSortError,
@@ -54,7 +55,7 @@ from tastypie.serializers import Serializer
 from tastypie.throttle import BaseThrottle
 from tastypie.utils import (
     dict_strip_unicode_keys, is_valid_jsonp_callback_value, string_to_python,
-    trailing_slash,
+    trailing_slash, timezone,
 )
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.validation import Validation
@@ -240,7 +241,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                         # ``Cache-Control`` available then patch the header.
                         patch_cache_control(response, **self._meta.cache.cache_control())
 
-                if request.is_ajax() and not response.has_header("Cache-Control"):
+                if is_ajax(request) and not response.has_header("Cache-Control"):
                     # IE excessively caches XMLHttpRequests, so we're disabling
                     # the browser cache here.
                     # See http://www.enhanceie.com/ie/bugs.asp for details.
@@ -338,10 +339,10 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         The standard URLs this ``Resource`` should respond to.
         """
         return [
-            url(r"^(?P<resource_name>%s)%s$" % (self._meta.resource_name, trailing_slash), self.wrap_view('dispatch_list'), name="api_dispatch_list"),
-            url(r"^(?P<resource_name>%s)/schema%s$" % (self._meta.resource_name, trailing_slash), self.wrap_view('get_schema'), name="api_get_schema"),
-            url(r"^(?P<resource_name>%s)/set/(?P<%s_list>.*?)%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash), self.wrap_view('get_multiple'), name="api_get_multiple"),
-            url(r"^(?P<resource_name>%s)/(?P<%s>.*?)%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash), self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
+            re_path(r"^(?P<resource_name>%s)%s$" % (self._meta.resource_name, trailing_slash), self.wrap_view('dispatch_list'), name="api_dispatch_list"),
+            re_path(r"^(?P<resource_name>%s)/schema%s$" % (self._meta.resource_name, trailing_slash), self.wrap_view('get_schema'), name="api_get_schema"),
+            re_path(r"^(?P<resource_name>%s)/set/(?P<%s_list>.*?)%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash), self.wrap_view('get_multiple'), name="api_get_multiple"),
+            re_path(r"^(?P<resource_name>%s)/(?P<%s>.*?)%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash), self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
         ]
 
     def override_urls(self):
@@ -602,7 +603,9 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             if isinstance(throttle, int) and not isinstance(throttle, bool):
                 response['Retry-After'] = throttle
             elif isinstance(throttle, datetime):
-                response['Retry-After'] = format_date_time(mktime(throttle.timetuple()))
+                # change to UTC (GMT) and make naive, to avoid wsgiref also doing an implicit TZ conversion
+                throttle_utc = make_naive_utc(throttle)
+                response['Retry-After'] = format_date_time(mktime(throttle_utc.timetuple()))
 
             raise ImmediateHttpResponse(response=response)
 

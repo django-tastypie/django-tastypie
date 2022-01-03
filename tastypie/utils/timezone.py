@@ -19,6 +19,16 @@ def make_naive(value):
     return value
 
 
+def make_naive_utc(value):
+    """
+    Translate a datetime to UTC, then strip TZ info.
+    """
+    if settings.USE_TZ and timezone.is_aware(value):
+        utc_value = timezone.localtime(value, timezone.utc)
+        return make_naive(utc_value)
+    return value
+
+
 def now():
     d = timezone.now()
 
