@@ -19,6 +19,15 @@ def make_naive(value):
     return value
 
 
+def make_naive_utc(value):
+    """
+    Translate a datetime to UTC, then strip TZ info; useful as a last step before creating the
+    Retry-After header.
+    """
+    utc_value = timezone.localtime(value, timezone.utc)
+    return timezone.make_naive(utc_value)
+
+
 def now():
     d = timezone.now()
 

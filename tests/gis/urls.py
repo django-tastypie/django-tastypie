@@ -1,6 +1,6 @@
-from django.conf.urls import include, url
+from django.urls.conf import include, re_path
 
 
 urlpatterns = [
-    url(r'^api/', include('gis.api.urls')),
+    re_path(r'^api/', include('gis.api.urls')),
 ]

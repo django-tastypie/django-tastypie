@@ -34,8 +34,8 @@ Requirements
 Core
 ----
 
-* Python 2.7+ or Python 3.4+ (Whatever is supported by your version of Django)
-* Django 1.11, 2.2 (LTS releases) or Django 3.0 (latest release)
+* Python 3.6+, preferably 3.8+ (Whatever is supported by your version of Django)
+* Django 2.2, 3.2 (LTS releases) or Django 4.0 (latest release)
 * dateutil (http://labix.org/python-dateutil) >= 2.1
 
 Format Support
@@ -71,7 +71,7 @@ A basic example looks like:
 
     # urls.py
     # =======
-    from django.conf.urls import url, include
+    from django.urls.conf import re_path, include
     from tastypie.api import Api
     from myapp.api import EntryResource
 
@@ -80,7 +80,7 @@ A basic example looks like:
 
     urlpatterns = [
         # The normal jazz here then...
-        url(r'^api/', include(v1_api.urls)),
+        re_path(r'^api/', include(v1_api.urls)),
     ]
 
 That gets you a fully working, read-write API for the ``Entry`` model that
