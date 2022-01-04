@@ -52,19 +52,7 @@ jobs:
     - name: Test with Tox
       run: |
         tox -e py${{matrix.python-version}}-dj${{matrix.django-version}}
-    - name: Coveralls Parallel
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.github_token }}
-        flag-name: run-${{ matrix.python-version }}-${{ matrix.django-version}}
-        path-to-lcov: '.coverage'
-        parallel: true
-  finish:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-    - name: Coveralls Finished
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.github_token }}
-        parallel-finished: true        
+    - name: Upload coverage data to coveralls.io
+      run: coveralls --service=github
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}      
