@@ -6,8 +6,8 @@ django-tastypie
     :target: https://django-tastypie.readthedocs.io/
     :alt: Docs
 
-.. image:: https://travis-ci.org/django-tastypie/django-tastypie.svg?branch=master
-    :target: https://travis-ci.org/django-tastypie/django-tastypie
+.. image:: https://github.com/django-tastypie/django-tastypie/actions/workflows/python-package.yml/badge.svg)
+    :target: https://github.com/django-tastypie/django-tastypie/actions
     :alt: CI
 
 .. image:: https://coveralls.io/repos/django-tastypie/django-tastypie/badge.svg?service=github
