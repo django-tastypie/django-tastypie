@@ -72,5 +72,5 @@ if compare_sanitized_tokens is None:
 
         class InvalidTokenFormat(Exception):  # noqa
             pass
-    except ImportError:
-        raise ImportError("Couldn't find a way to compare csrf tokens safely")
+    except ImportError:  # pragma: no cover
+        raise ImportError("Couldn't find a way to compare csrf tokens safely")  # pragma: no cover
