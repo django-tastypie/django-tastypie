@@ -1,7 +1,7 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: Python package
+name: Test Matrix
 
 on:
   push:
@@ -54,5 +54,6 @@ jobs:
         tox -e py${{matrix.python-version}}-dj${{matrix.django-version}}
     - name: Upload coverage data to coveralls.io
       run: coveralls --service=github
+      continue-on-error: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}      
