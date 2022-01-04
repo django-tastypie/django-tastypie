@@ -4242,6 +4242,67 @@ class ModelResourceTestCase(TestCase):
 
         resource._meta.throttle = _orginal_throttle
 
+    @patch('tastypie.throttle.time')
+    @override_settings(DEBUG=False, USE_TZ=False)
+    def test_check_datetime_throttling_notz(self, mocked_time):
+
+        retry_after = datetime.datetime(year=2014, month=8, day=8, hour=8, minute=55, tzinfo=timezone.utc)
+        mocked_time.time.return_value = mktime(retry_after.timetuple())
+        retry_after_str = 'Fri, 08 Aug 2014 08:55:00 GMT'
+
+        resource = ThrottledNoteResource()
+        _orginal_throttle = resource._meta.throttle
+
+        class DatetimeThrottle(resource._meta.throttle.__class__):
+            def should_be_throttled(self, *args, **kwargs):
+                ret = super(DatetimeThrottle, self).should_be_throttled(*args, **kwargs)
+                if ret:
+                    return retry_after
+                return False
+        resource._meta.throttle = DatetimeThrottle(
+            throttle_at=resource._meta.throttle.throttle_at,
+            timeframe=resource._meta.throttle.timeframe,
+            expiration=resource._meta.throttle.expiration
+        )
+
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+
+        # Not throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 1)
+
+        # Not throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Throttled.
+        with self.assertRaises(ImmediateHttpResponse) as ctx:
+            resp = resource.dispatch('list', request)
+        e = ctx.exception
+        self.assertEqual(e.response.status_code, 429)
+        self.assertEqual(e.response['Retry-After'], retry_after_str)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Throttled.
+        with self.assertRaises(ImmediateHttpResponse) as ctx:
+            resp = resource.dispatch('list', request)
+        e = ctx.exception
+        self.assertEqual(e.response.status_code, 429)
+        self.assertEqual(e.response['Retry-After'], retry_after_str)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Check the ``wrap_view``.
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp['Retry-After'], retry_after_str)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        resource._meta.throttle = _orginal_throttle
+
     def test_generate_cache_key(self):
         resource = NoteResource(api_name='v1')
         self.assertEqual(resource.generate_cache_key(), 'v1:notes::')

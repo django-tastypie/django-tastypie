@@ -21,12 +21,11 @@ def make_naive(value):
 
 def make_naive_utc(value):
     """
-    Translate a datetime to UTC, then strip TZ info.
+    Translate a datetime to UTC, then strip TZ info; useful as a last step before creating the
+    Retry-After header.
     """
-    if settings.USE_TZ and timezone.is_aware(value):
-        utc_value = timezone.localtime(value, timezone.utc)
-        return make_naive(utc_value)
-    return value
+    utc_value = timezone.localtime(value, timezone.utc)
+    return timezone.make_naive(utc_value)
 
 
 def now():
