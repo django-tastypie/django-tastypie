@@ -54,5 +54,6 @@ jobs:
         tox -e py${{matrix.python-version}}-dj${{matrix.django-version}}
     - name: Upload coverage data to coveralls.io
       run: coveralls --service=github
+      continue-on-error: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}      
