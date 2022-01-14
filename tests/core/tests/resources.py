@@ -5587,4 +5587,3 @@ class ModelDeclarativeMetaclassTestCase(TestCase):
 
         resource = MyResource()
         resource._meta.object_class = Note
-
