@@ -1,4 +1,4 @@
-from django.conf.urls import include, url
+from django.urls.conf import include, re_path
 
 from core.tests.api import Api, NoteResource, UserResource
 
@@ -8,5 +8,5 @@ api.register(NoteResource())
 api.register(UserResource())
 
 urlpatterns = [
-    url(r'^api/', include(api.urls)),
+    re_path(r'^api/', include(api.urls)),
 ]

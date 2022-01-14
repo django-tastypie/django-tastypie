@@ -242,7 +242,7 @@ something like the following:
 .. testcode::
 
     # myapp/api/resources.py
-    from django.conf.urls import url
+    from django.urls.conf import re_path
     from django.contrib.auth.models import User
 
 
@@ -253,7 +253,7 @@ something like the following:
 
         def prepend_urls(self):
             return [
-                url(r"^(?P<resource_name>%s)/(?P<username>[\w\d_.-]+)/$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
+                re_path(r"^(?P<resource_name>%s)/(?P<username>[\w\d_.-]+)/$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
             ]
 
 .. testoutput::
@@ -285,13 +285,13 @@ Another alternative approach is to override the ``dispatch`` method:
             return super(MyModelResource, self).dispatch(request_type, request, **kwargs)
 
     # urls.py
-    from django.conf.urls import url, include
+    from django.urls.conf import re_path, include
 
     mymodel_resource = MyModelResource()
 
     urlpatterns = [
         # The normal jazz here, then...
-        url(r'^api/(?P<username>\w+)/', include(mymodel_resource.urls)),
+        re_path(r'^api/(?P<username>\w+)/', include(mymodel_resource.urls)),
     ]
 
 .. testoutput::
@@ -320,7 +320,7 @@ handle the children:
 
         def prepend_urls(self):
             return [
-                url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/children%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_children'), name="api_get_children"),
+                re_path(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/children%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_children'), name="api_get_children"),
             ]
 
         def get_children(self, request, **kwargs):
@@ -350,7 +350,7 @@ approach uses Haystack_, though you could hook it up to any search technology.
 We leave the CRUD methods of the resource alone, choosing to add a new endpoint
 at ``/api/v1/notes/search/``::
 
-    from django.conf.urls import url, include
+    from django.urls.conf import re_path, include
     from django.core.paginator import Paginator, InvalidPage
     from django.http import Http404
     from haystack.query import SearchQuerySet
@@ -366,7 +366,7 @@ at ``/api/v1/notes/search/``::
 
         def prepend_urls(self):
             return [
-                url(r"^(?P<resource_name>%s)/search%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_search'), name="api_get_search"),
+                re_path(r"^(?P<resource_name>%s)/search%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_search'), name="api_get_search"),
             ]
 
         def get_search(self, request, **kwargs):
@@ -560,10 +560,10 @@ of syntax additional to the default URL scheme:
             the response format as a file extension, e.g. /api/v1/users.json
             """
             return [
-                url(r"^(?P<resource_name>%s)\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('dispatch_list'), name="api_dispatch_list"),
-                url(r"^(?P<resource_name>%s)/schema\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('get_schema'), name="api_get_schema"),
-                url(r"^(?P<resource_name>%s)/set/(?P<pk_list>\w[\w/;-]*)\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('get_multiple'), name="api_get_multiple"),
-                url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
+                re_path(r"^(?P<resource_name>%s)\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('dispatch_list'), name="api_dispatch_list"),
+                re_path(r"^(?P<resource_name>%s)/schema\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('get_schema'), name="api_get_schema"),
+                re_path(r"^(?P<resource_name>%s)/set/(?P<pk_list>\w[\w/;-]*)\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('get_multiple'), name="api_get_multiple"),
+                re_path(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)\.(?P<format>\w+)$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
             ]
 
         def determine_format(self, request):

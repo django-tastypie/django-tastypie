@@ -1,4 +1,4 @@
-from django.conf.urls import include, url
+from django.urls.conf import include, re_path
 from tastypie.api import Api
 from slashless.api.resources import NoteResource, UserResource
 
@@ -8,5 +8,5 @@ api.register(NoteResource(), canonical=True)
 api.register(UserResource(), canonical=True)
 
 urlpatterns = [
-    url(r'^api/', include(api.urls)),
+    re_path(r'^api/', include(api.urls)),
 ]

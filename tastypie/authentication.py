@@ -10,12 +10,12 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.exceptions import ImproperlyConfigured
 from django.middleware.csrf import _sanitize_token
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 from six.moves.urllib.parse import urlparse
 
 from tastypie.compat import (
-    get_user_model, get_username_field, compare_sanitized_tokens
+    get_user_model, get_username_field, compare_sanitized_tokens, InvalidTokenFormat
 )
 from tastypie.http import HttpUnauthorized
 
@@ -325,7 +325,10 @@ class SessionAuthentication(Authentication):
                 return False
 
         request_csrf_token = request.META.get('HTTP_X_CSRFTOKEN', '')
-        request_csrf_token = _sanitize_token(request_csrf_token)
+        try:
+            request_csrf_token = _sanitize_token(request_csrf_token)
+        except InvalidTokenFormat:
+            return False
 
         if not compare_sanitized_tokens(request_csrf_token, csrf_token):
             return False
