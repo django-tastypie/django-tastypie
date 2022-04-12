@@ -80,7 +80,7 @@ The permissions required using ``DjangoAuthorization`` follow Django Admin's imp
 +---------------------------------+------------------+-----------------------------------------------+----------------------+
 | ``DELETE <resource>/``          | delete\_list     | ``delete``                                    | ``read_list``        |
 +---------------------------------+------------------+-----------------------------------------------+----------------------+
-| ``DELETE <resource>/``          | delete\_detail   | ``delete``                                    | ``read_detail``      |
+| ``DELETE <resource>/<id>``      | delete\_detail   | ``delete``                                    | ``read_detail``      |
 +---------------------------------+------------------+-----------------------------------------------+----------------------+
 
 (*) The permission check for ``create_detail`` is implemented in ``DjangoAuthorization``, however ModelResource does not provide an implementation and raises HttpNotImplemented.
