@@ -38,6 +38,7 @@ DATABASES = {
         'NAME': DATABASE_NAME,
     }
 }
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 ALLOWED_HOSTS = ['example.com']
 
@@ -91,3 +92,5 @@ if DJANGO_VERSION < DJANGO_11:
 
 if DJANGO_VERSION >= DJANGO_20:
     MIDDLEWARE.remove('django.contrib.auth.middleware.SessionAuthenticationMiddleware')
+
+SECURE_REFERRER_POLICY = None

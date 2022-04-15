@@ -1,9 +1,9 @@
-from django.conf.urls import include, url
+from django.urls.conf import include, re_path
 from core.tests.resources import NoteResource
 
 
 note_resource = NoteResource()
 
 urlpatterns = [
-    url(r'^', include(note_resource.urls)),
+    re_path(r'^', include(note_resource.urls)),
 ]

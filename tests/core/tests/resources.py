@@ -18,6 +18,7 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.exceptions import FieldError, MultipleObjectsReturned, ObjectDoesNotExist, ImproperlyConfigured
 from django.core import mail
+from time import mktime
 try:
     from django.urls import reverse
 except ImportError:
@@ -36,7 +37,7 @@ from tastypie.exceptions import (
     UnsupportedSerializationFormat, UnsupportedDeserializationFormat,
 )
 from tastypie import fields, http
-from tastypie.compat import is_authenticated, force_str
+from tastypie.compat import force_str
 from tastypie.paginator import Paginator
 from tastypie.resources import (
     ALL, ALL_WITH_RELATIONS, convert_post_to_put, convert_post_to_patch,
@@ -49,7 +50,8 @@ from tastypie.validation import FormValidation
 
 from core.models import (
     Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord, Counter,
-    MyDefaultPKModel, MyUUIDModel, MyRelatedUUIDModel,
+    MyDefaultPKModel, MyUUIDModel, MyRelatedUUIDModel, BigAutoNowModel, MyContainerItemModel,
+    MyContainerItemGroupingModel, MyContainerModel
 )
 from core.tests.mocks import MockRequest
 from core.utils import adjust_schema, SimpleHandler
@@ -1056,6 +1058,19 @@ class AutoNowNoteResource(ModelResource):
         return '/api/v1/autonownotes/%s/' % bundle_or_obj.obj.id
 
 
+class BigAutoNowModelResource(ModelResource):
+    class Meta:
+        resource_name = 'bigautonowmodels'
+        queryset = BigAutoNowModel.objects.all()
+        authorization = Authorization()
+
+    def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
+        if bundle_or_obj is None:
+            return '/api/v1/bigautonowmodels/'
+
+        return '/api/v1/bigautonowmodels/%s/' % bundle_or_obj.obj.id
+
+
 class CustomPaginator(Paginator):
     def page(self):
         data = super(CustomPaginator, self).page()
@@ -1338,7 +1353,7 @@ class TestOptionsResource(ModelResource):
 class PerUserAuthorization(Authorization):
     def read_list(self, object_list, bundle):
         if bundle.request and hasattr(bundle.request, 'user'):
-            if is_authenticated(bundle.request.user):
+            if bundle.request.user.is_authenticated:
                 object_list = object_list.filter(author=bundle.request.user)
             else:
                 object_list = object_list.none()
@@ -1447,6 +1462,39 @@ class CounterUpdateDetailResource(ModelResource):
     class Meta:
         queryset = Counter.objects.all()
         authorization = CounterAuthorization()
+
+
+class MyContainerItemModelResource(ModelResource):
+    parent = fields.ForeignKey('core.tests.resources.MyContainerModelResource', 'parent')
+
+    class Meta:
+        queryset = MyContainerItemModel.objects.all()
+        allowed_methods = ['get', 'put', 'post']
+        authorization = Authorization()
+        resource_name = 'my-container-item'
+
+
+class MyContainerItemGroupingModel(ModelResource):
+    parent = fields.ForeignKey('core.tests.resources.MyContainerModelResource', 'parent')
+    grouping_item = fields.ForeignKey(MyContainerItemModelResource, 'grouping_item')
+
+    class Meta:
+        queryset = MyContainerItemGroupingModel.objects.all()
+        allowed_methods = ['get', 'put', 'post']
+        authorization = Authorization()
+        resource_name = 'my-container-item-group'
+
+
+class MyContainerModelResource(ModelResource):
+    container_items = fields.ToManyField(MyContainerItemModelResource, 'item_set', blank=True)
+    container_grouping_items = fields.ToManyField(MyContainerItemGroupingModel, 'item_grouping_set', blank=True)
+
+    class Meta:
+        queryset = MyContainerModel.objects.all()
+        allowed_methods = ['get', 'put', 'post']
+        authorization = Authorization()
+        resource_name = 'my-container'
+        always_return_data = True
 
 
 @override_settings(ROOT_URLCONF='core.tests.resource_urls')
@@ -1660,6 +1708,20 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['updated'].null, False)
         self.assertEqual(annr.fields['updated'].readonly, False)
         self.assertEqual(annr.fields['updated'].unique, False)
+
+    def test_big_auto_field(self):
+        annr = BigAutoNowModelResource()
+        self.assertEqual(len(annr.fields), 2)
+        self.assertEqual(sorted(annr.fields.keys()), ['id', 'resource_uri'])
+
+        self.assertTrue(isinstance(annr.fields['id'], fields.IntegerField))
+        self.assertEqual(annr.fields['id'].attribute, 'id')
+        self.assertEqual(annr.fields['id'].blank, True)
+        self.assertEqual(annr.fields['id']._default, '')
+        self.assertEqual(annr.fields['id'].instance_name, 'id')
+        self.assertEqual(annr.fields['id'].null, False)
+        self.assertEqual(annr.fields['id'].readonly, False)
+        self.assertEqual(annr.fields['id'].unique, True)
 
     def test_invalid_model_resource(self):
         """
@@ -4160,10 +4222,71 @@ class ModelResourceTestCase(TestCase):
     @patch('tastypie.throttle.time')
     @override_settings(DEBUG=False)
     def test_check_datetime_throttling(self, mocked_time):
-        mocked_time.time.return_value = time.time()
 
         retry_after = datetime.datetime(year=2014, month=8, day=8, hour=8, minute=55, tzinfo=timezone.utc)
-        retry_after_str = 'Fri, 08 Aug 2014 14:55:00 GMT'
+        mocked_time.time.return_value = mktime(retry_after.timetuple())
+        retry_after_str = 'Fri, 08 Aug 2014 08:55:00 GMT'
+
+        resource = ThrottledNoteResource()
+        _orginal_throttle = resource._meta.throttle
+
+        class DatetimeThrottle(resource._meta.throttle.__class__):
+            def should_be_throttled(self, *args, **kwargs):
+                ret = super(DatetimeThrottle, self).should_be_throttled(*args, **kwargs)
+                if ret:
+                    return retry_after
+                return False
+        resource._meta.throttle = DatetimeThrottle(
+            throttle_at=resource._meta.throttle.throttle_at,
+            timeframe=resource._meta.throttle.timeframe,
+            expiration=resource._meta.throttle.expiration
+        )
+
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+
+        # Not throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 1)
+
+        # Not throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Throttled.
+        with self.assertRaises(ImmediateHttpResponse) as ctx:
+            resp = resource.dispatch('list', request)
+        e = ctx.exception
+        self.assertEqual(e.response.status_code, 429)
+        self.assertEqual(e.response['Retry-After'], retry_after_str)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Throttled.
+        with self.assertRaises(ImmediateHttpResponse) as ctx:
+            resp = resource.dispatch('list', request)
+        e = ctx.exception
+        self.assertEqual(e.response.status_code, 429)
+        self.assertEqual(e.response['Retry-After'], retry_after_str)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Check the ``wrap_view``.
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp['Retry-After'], retry_after_str)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        resource._meta.throttle = _orginal_throttle
+
+    @patch('tastypie.throttle.time')
+    @override_settings(DEBUG=False, USE_TZ=False)
+    def test_check_datetime_throttling_notz(self, mocked_time):
+
+        retry_after = datetime.datetime(year=2014, month=8, day=8, hour=8, minute=55, tzinfo=timezone.utc)
+        mocked_time.time.return_value = mktime(retry_after.timetuple())
+        retry_after_str = 'Fri, 08 Aug 2014 08:55:00 GMT'
 
         resource = ThrottledNoteResource()
         _orginal_throttle = resource._meta.throttle
@@ -4941,7 +5064,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content.decode('utf-8'), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
         self.assertTrue(resp.has_header('Cache-Control'))
-        self.assertEqual(resp._headers['cache-control'], ('Cache-Control', 'no-cache'))
+        self.assertEqual(resp['Cache-Control'], 'no-cache')
 
         # Now as Ajax.
         request.META = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
@@ -4949,7 +5072,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content.decode('utf-8'), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
         self.assertTrue(resp.has_header('cache-control'))
-        self.assertEqual(resp._headers['cache-control'], ('Cache-Control', 'no-cache'))
+        self.assertEqual(resp['Cache-Control'], 'no-cache')
 
     def test_custom_paginator(self):
         mock_request = MockRequest()
@@ -5040,6 +5163,39 @@ class ModelResourceTestCase(TestCase):
 
         response = resource.patch_list(request)
         self.assertEqual(response.status_code, 202)
+
+    def test_saves_when_a_single_resource_is_used_on_multiple_to_many_resources(self):
+        container_resource = MyContainerModelResource(api_name='v1')
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+
+        container = MyContainerModel.objects.create(name='test')
+        resource_uri = '/api/v1/my-container/%s/' % container.id
+
+        request.set_body(json.dumps({
+            'resource_uri': resource_uri,
+            'id': container.id,
+            'name': 'foo',
+            'container_items': [
+                {
+                    'parent': resource_uri,
+                    'name': 'container item 1'
+                }
+            ],
+            'container_grouping_items': [
+                {
+                    'parent': resource_uri,
+                    'grouping_item': {
+                        'parent': resource_uri,
+                        'name': 'container item 2'
+                    }
+                }
+            ]
+        }))
+
+        resp = container_resource.put_detail(request)
+        self.assertEqual(resp.status_code, 200)
 
 
 class BasicAuthResourceTestCase(TestCase):
