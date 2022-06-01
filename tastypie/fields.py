@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import datetime
 from dateutil.parser import parse
 import decimal
@@ -16,11 +14,9 @@ except ImportError:
         ReverseOneToOneDescriptor
 from django.utils import datetime_safe
 
-import six
-
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
-from tastypie.utils import dict_strip_unicode_keys, make_aware
+from tastypie.utils import make_aware
 
 
 class NOT_PROVIDED:
@@ -83,7 +79,7 @@ class ApiField(object):
         self._resource = None
         self.attribute = attribute
         # Check for `__` in the field for looking through the relation.
-        self._attrs = attribute.split('__') if attribute is not None and isinstance(attribute, six.string_types) else []
+        self._attrs = attribute.split('__') if attribute is not None and isinstance(attribute, str) else []
         self._default = default
         self.null = null
         self.blank = blank
@@ -216,7 +212,7 @@ class CharField(ApiField):
         if value is None:
             return None
 
-        return six.text_type(value)
+        return str(value)
 
 
 class FileField(ApiField):
@@ -351,7 +347,7 @@ class DateField(ApiField):
         if value is None:
             return None
 
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             try:
                 year, month, day = value[:10].split('-')
 
@@ -388,7 +384,7 @@ class DateTimeField(ApiField):
         if value is None:
             return None
 
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             try:
                 year, month, day = value[:10].split('-')
                 hour, minute, second = value[11:19].split(':')
@@ -403,7 +399,7 @@ class DateTimeField(ApiField):
         value = super(DateTimeField, self).hydrate(bundle)
 
         if value and not hasattr(value, 'year'):
-            if isinstance(value, six.string_types):
+            if isinstance(value, str):
                 try:
                     # Try to rip a date/datetime out of it.
                     value = make_aware(parse(value))
@@ -535,7 +531,7 @@ class RelatedField(ApiField):
         if self._to_class:
             return self._to_class
 
-        if not isinstance(self.to, six.string_types):
+        if not isinstance(self.to, str):
             self._to_class = self.to
             return self._to_class
 
@@ -610,7 +606,6 @@ class RelatedField(ApiField):
         resource is created using that data.
         """
         # Try to hydrate the data provided.
-        data = dict_strip_unicode_keys(data)
         obj = None
         if getattr(fk_resource._meta, 'include_resource_uri', True) and 'resource_uri' in data:
             uri = data['resource_uri']
@@ -688,7 +683,7 @@ class RelatedField(ApiField):
         if isinstance(value, Bundle):
             # Already hydrated, probably nested bundles. Just return.
             return value
-        elif isinstance(value, six.string_types):
+        elif isinstance(value, str):
             # We got a URI. Load the object and assign it.
             return self.resource_from_uri(fk_resource, value, **kwargs)
         elif isinstance(value, dict):
@@ -742,7 +737,7 @@ class ToOneField(RelatedField):
 
     def contribute_to_class(self, cls, name):
         super(ToOneField, self).contribute_to_class(cls, name)
-        if not self.related_name and isinstance(self.attribute, six.string_types):
+        if not self.related_name and isinstance(self.attribute, str):
             related_field = getattr(self._resource._meta.object_class, self.attribute, None)
             if isinstance(related_field, ReverseOneToOneDescriptor):
                 # This is the case when we are writing to a reverse one to one field.
@@ -759,7 +754,7 @@ class ToOneField(RelatedField):
         if callable(self.attribute):
             previous_obj = bundle.obj
             foreign_obj = self.attribute(bundle)
-        elif isinstance(self.attribute, six.string_types):
+        elif isinstance(self.attribute, str):
             foreign_obj = bundle.obj
 
             for attr in self._attrs:
@@ -842,7 +837,7 @@ class ToManyField(RelatedField):
 
         if callable(self.attribute):
             the_m2ms = self.attribute(bundle)
-        elif isinstance(self.attribute, six.string_types):
+        elif isinstance(self.attribute, str):
             the_m2ms = bundle.obj
 
             for attr in self._attrs:
@@ -925,7 +920,7 @@ class TimeField(ApiField):
         return self.convert(super(TimeField, self).dehydrate(obj))
 
     def convert(self, value):
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             return self.to_time(value)
         return value
 

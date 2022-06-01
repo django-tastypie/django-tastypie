@@ -1,4 +1,3 @@
-from __future__ import unicode_literals
 import base64
 from hashlib import sha1
 import hmac
@@ -12,7 +11,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.middleware.csrf import _sanitize_token
 from django.utils.translation import gettext as _
 
-from six.moves.urllib.parse import urlparse
+from urllib.parse import urlparse
 
 from tastypie.compat import (
     get_user_model, get_username_field, compare_sanitized_tokens, InvalidTokenFormat
