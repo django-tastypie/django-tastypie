@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import django
 from django.conf import settings
 from django.contrib.auth import get_user_model  # noqa
@@ -25,8 +23,6 @@ def is_ajax(request):
     """
     Handle multiple ways of detecting an ajax request.  Probably nearly useless.
     """
-    if hasattr(request, 'is_ajax'):
-        return request.is_ajax()
     return request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'
 
 

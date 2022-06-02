@@ -1,6 +1,3 @@
-from __future__ import unicode_literals
-
-
 __author__ = 'Daniel Lindsley & the Tastypie core team'
 
 VERSION = (0, 14, 4)

@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 import base64
 from collections import OrderedDict
 import copy
 import datetime
 from decimal import Decimal
 import json
-from mock import patch, Mock
+from unittest.mock import patch, Mock
 import sys
 import time
 from unittest import skipIf

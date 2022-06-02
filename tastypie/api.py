@@ -1,4 +1,3 @@
-from __future__ import unicode_literals
 import warnings
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse, HttpResponseBadRequest

@@ -1,4 +1,3 @@
-from __future__ import unicode_literals
 from tastypie.bundle import Bundle
 from tastypie.resources import ModelResource
 from tastypie.exceptions import NotFound

@@ -1,15 +1,11 @@
-from __future__ import unicode_literals
-
 from django.conf import settings
-
-import six
 
 
 _trailing_slash = '/?' if getattr(settings, 'TASTYPIE_ALLOW_MISSING_SLASH', False) else '/'
 
 
 # for backwards compatibility where 3rd parties still call this like a function.
-class CallableUnicode(six.text_type):
+class CallableUnicode(str):
     def __call__(self):
         return self
 

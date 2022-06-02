@@ -7,6 +7,7 @@ copied to the release notes for the next release.
 Major changes
 -------------
 
+remove python 2 code, including the six library, and instances of __future__. Also moved to the unittest mock library.
 
 Bugfixes
 --------

@@ -1,15 +1,12 @@
-from __future__ import unicode_literals
-
 import datetime
 import json
 import re
+import io
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.encoding import smart_bytes
 from django.core.serializers import json as djangojson
-
-import six
 
 from tastypie.bundle import Bundle
 from tastypie.compat import force_str
@@ -98,6 +95,8 @@ _TIME = 7
 
 _SIMPLETYPES = {
     float: _NUM,
+    int: _NUM,
+    str: _STR,
     bool: _NUM,
     dict: _DICT,
     list: _LIST,
@@ -107,12 +106,6 @@ _SIMPLETYPES = {
     datetime.date: _DATE,
     datetime.time: _TIME,
 }
-
-for integer_type in six.integer_types:
-    _SIMPLETYPES[integer_type] = _NUM
-
-for string_type in six.string_types:
-    _SIMPLETYPES[string_type] = _STR
 
 
 class Serializer(object):
@@ -284,7 +277,7 @@ class Serializer(object):
         if method is None:
             raise UnsupportedDeserializationFormat(format)
 
-        if isinstance(content, six.binary_type):
+        if isinstance(content, bytes):
             content = force_str(content)
 
         return method(content)
@@ -315,7 +308,7 @@ class Serializer(object):
             return data
         if stype == _DICT:
             to_simple = self.to_simple
-            return {key: to_simple(val, options) for key, val in six.iteritems(data)}
+            return {key: to_simple(val, options) for key, val in data.items()}
         if stype == _STR:
             return force_str(data)
         if stype == _LIST:
@@ -323,7 +316,7 @@ class Serializer(object):
             return [to_simple(item, options) for item in data]
         if stype == _BUNDLE:
             to_simple = self.to_simple
-            return {key: to_simple(val, options) for key, val in six.iteritems(data.data)}
+            return {key: to_simple(val, options) for key, val in data.data.items()}
         if stype == _DATETIME:
             return self.format_datetime(data)
         if stype == _DATE:
@@ -371,7 +364,7 @@ class Serializer(object):
                 element.set('type', get_type_string(simple_data))
 
             if data_type != 'null':
-                if isinstance(simple_data, six.text_type):
+                if isinstance(simple_data, str):
                     element.text = simple_data
                 else:
                     element.text = force_str(simple_data)
@@ -482,7 +475,7 @@ class Serializer(object):
             # See http://lxml.de/parsing.html, "Python unicode strings".
             content = XML_ENCODING.sub('', content)
             parsed = parse_xml(
-                six.StringIO(content),
+                io.StringIO(content),
                 forbid_dtd=forbid_dtd,
                 forbid_entities=forbid_entities
             )
@@ -534,7 +527,7 @@ class Serializer(object):
             raise ImproperlyConfigured(
                 "Usage of the plist aspects requires biplist.")
 
-        if isinstance(content, six.text_type):
+        if isinstance(content, str):
             content = smart_bytes(content)
 
         return biplist.readPlistFromString(content)
@@ -546,7 +539,7 @@ def get_type_string(data):
     """
     data_type = type(data)
 
-    if data_type in six.integer_types:
+    if data_type == int:
         return 'integer'
     elif data_type == float:
         return 'float'
@@ -558,5 +551,5 @@ def get_type_string(data):
         return 'hash'
     elif data is None:
         return 'null'
-    elif isinstance(data, six.string_types):
+    elif isinstance(data, str):
         return 'string'

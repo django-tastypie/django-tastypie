@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from copy import copy, deepcopy
 from datetime import datetime
 import logging
@@ -35,8 +33,6 @@ from django.utils.cache import patch_cache_control, patch_vary_headers
 from django.utils.html import escape
 from django.views.decorators.csrf import csrf_exempt
 
-import six
-
 from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.bundle import Bundle
@@ -54,7 +50,7 @@ from tastypie.paginator import Paginator
 from tastypie.serializers import Serializer
 from tastypie.throttle import BaseThrottle
 from tastypie.utils import (
-    dict_strip_unicode_keys, is_valid_jsonp_callback_value, string_to_python,
+    is_valid_jsonp_callback_value, string_to_python,
     trailing_slash,
 )
 from tastypie.utils.mime import determine_format, build_content_type
@@ -121,10 +117,7 @@ class ResourceOptions(object):
         if overrides.get('detail_allowed_methods', None) is None:
             overrides['detail_allowed_methods'] = allowed_methods
 
-        if six.PY3:
-            return object.__new__(type('ResourceOptions', (cls,), overrides))
-        else:
-            return object.__new__(type(b'ResourceOptions', (cls,), overrides))
+        return object.__new__(type('ResourceOptions', (cls,), overrides))
 
 
 class DeclarativeMetaclass(type):
@@ -183,7 +176,7 @@ class DeclarativeMetaclass(type):
         return new_class
 
 
-class Resource(six.with_metaclass(DeclarativeMetaclass)):
+class Resource(metaclass=DeclarativeMetaclass):
     """
     Handles the data, request dispatch and responding to requests.
 
@@ -297,18 +290,13 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
     def _handle_500(self, request, exception):
         the_trace = traceback.format_exception(*sys.exc_info())
-        if six.PY2:
-            the_trace = [
-                six.text_type(line, 'utf-8')
-                for line in the_trace
-            ]
         the_trace = u'\n'.join(the_trace)
 
         response_class = self.get_response_class_for_exception(request, exception)
 
         if settings.DEBUG:
             data = {
-                "error_message": sanitize(six.text_type(exception)),
+                "error_message": sanitize(str(exception)),
                 "traceback": the_trace,
             }
         else:
@@ -1407,7 +1395,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         """
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
-        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+        bundle = self.build_bundle(data=deserialized, request=request)
         updated_bundle = self.obj_create(bundle, **self.remove_api_resource_names(kwargs))
         location = self.get_resource_uri(updated_bundle)
 
@@ -1453,7 +1441,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         bundles_seen = []
 
         for object_data in deserialized[self._meta.collection_name]:
-            bundle = self.build_bundle(data=dict_strip_unicode_keys(object_data), request=request)
+            bundle = self.build_bundle(data=object_data, request=request)
 
             # Attempt to be transactional, deleting any previously created
             # objects if validation fails.
@@ -1497,7 +1485,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         """
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
-        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+        bundle = self.build_bundle(data=deserialized, request=request)
 
         try:
             updated_bundle = self.obj_update(bundle=bundle, **self.remove_api_resource_names(kwargs))
@@ -1637,13 +1625,13 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                     # The object referenced by resource_uri doesn't exist,
                     # so this is a create-by-PUT equivalent.
                     data = self.alter_deserialized_detail_data(request, data)
-                    bundle = self.build_bundle(data=dict_strip_unicode_keys(data), request=request)
+                    bundle = self.build_bundle(data=data, request=request)
                     self.obj_create(bundle=bundle)
             else:
                 # There's no resource URI, so this is a create call just
                 # like a POST to the list resource.
                 data = self.alter_deserialized_detail_data(request, data)
-                bundle = self.build_bundle(data=dict_strip_unicode_keys(data), request=request)
+                bundle = self.build_bundle(data=data, request=request)
                 self.obj_create(bundle=bundle)
 
             bundles_seen.append(bundle)
@@ -1718,7 +1706,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         """
         Update the object in original_bundle in-place using new_data.
         """
-        original_bundle.data.update(**dict_strip_unicode_keys(new_data))
+        original_bundle.data.update(**new_data)
 
         # Now we've got a bundle with the new data sitting in it and we're
         # we're basically in the same spot as a PUT request. SO the rest of this
@@ -2113,7 +2101,7 @@ class BaseModelResource(Resource):
             qs_filter = "%s%s%s" % (db_field_name, LOOKUP_SEP, filter_type)
             qs_filters[qs_filter] = value
 
-        return dict_strip_unicode_keys(qs_filters)
+        return qs_filters
 
     def apply_sorting(self, obj_list, options=None):
         """
@@ -2522,7 +2510,7 @@ class BaseModelResource(Resource):
             # Get the manager.
             related_mngr = None
 
-            if isinstance(field_object.attribute, six.string_types):
+            if isinstance(field_object.attribute, str):
                 related_mngr = getattr(bundle.obj, field_object.attribute)
             elif callable(field_object.attribute):
                 related_mngr = field_object.attribute(bundle)
@@ -2557,7 +2545,7 @@ class BaseModelResource(Resource):
             related_mngr.add(*related_objs)
 
 
-class ModelResource(six.with_metaclass(ModelDeclarativeMetaclass, BaseModelResource)):
+class ModelResource(BaseModelResource, metaclass=ModelDeclarativeMetaclass):
     pass
 
 
