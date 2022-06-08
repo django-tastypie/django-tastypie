@@ -103,9 +103,9 @@ Contributors:
 * Danny Roberts (dannyroberts) for very small change addressing noisy RemovedInDjango20Warning warnings
 * Sam Thompson (georgedorn) for ongoing maintenance and release management.
 * Matt Briançon (mattbriancon) for various patches
+* Daniel Harvey (dharvey-consbio) for various patches
 * Blayze Wilhelm (blayzen-w) for a small patch that fixed an issue with saving (PR #1628)
 * Ryan Young (ryanneilyoung) for removing python 2 code
-
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
 

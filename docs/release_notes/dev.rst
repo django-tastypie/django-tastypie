@@ -12,4 +12,4 @@ remove python 2 code, including the six library, and instances of __future__. Al
 Bugfixes
 --------
 
-* Example Bugfix (Closes #PR_Number)
+* Fix related model filtering in `build_filters` and `check_filtering` (Closes #1618)
