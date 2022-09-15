@@ -11,4 +11,4 @@ Major changes
 Bugfixes
 --------
 
-* Example Bugfix (Closes #PR_Number)
+* Fix for multiple related models on POST/PUT triggering a 500 (#1627 + #1628)
