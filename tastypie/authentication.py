@@ -8,7 +8,10 @@ import warnings
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.exceptions import ImproperlyConfigured
-from django.middleware.csrf import _sanitize_token
+try:
+    from django.middleware.csrf import _check_token_format as _sanitize_token
+except ImportError:
+    from django.middleware.csrf import _sanitize_token
 from django.utils.translation import gettext as _
 
 from urllib.parse import urlparse
