@@ -202,10 +202,10 @@ class MangledBasicResource(BasicResource):
         if isinstance(data_dict, dict):
             if 'meta' in data_dict:
                 # Get rid of the "meta".
-                del(data_dict['meta'])
+                del data_dict['meta']
                 # Rename the objects.
                 data_dict['testobjects'] = copy.copy(data_dict['objects'])
-                del(data_dict['objects'])
+                del data_dict['objects']
 
         return data_dict
 
