@@ -162,12 +162,12 @@ class DeclarativeMetaclass(type):
             if 'resource_uri' not in new_class.base_fields:
                 new_class.base_fields['resource_uri'] = fields.CharField(readonly=True, verbose_name="resource uri")
         elif 'resource_uri' in new_class.base_fields and 'resource_uri' not in attrs:
-            del(new_class.base_fields['resource_uri'])
+            del new_class.base_fields['resource_uri']
 
         if abstract and 'resource_uri' not in attrs:
             # abstract classes don't have resource_uris unless explicitly provided
             if 'resource_uri' in new_class.base_fields:
-                del(new_class.base_fields['resource_uri'])
+                del new_class.base_fields['resource_uri']
 
         for field_name, field_object in new_class.base_fields.items():
             if hasattr(field_object, 'contribute_to_class'):
@@ -512,7 +512,7 @@ class Resource(metaclass=DeclarativeMetaclass):
 
         for key in ['api_name', 'resource_name']:
             try:
-                del(kwargs_subset[key])
+                del kwargs_subset[key]
             except KeyError:
                 pass
 
@@ -1839,9 +1839,9 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
             if field_name in new_class.declared_fields:
                 continue
             if specified_fields is not None and field_name not in include_fields:
-                del(new_class.base_fields[field_name])
+                del new_class.base_fields[field_name]
             if field_name in excludes:
-                del(new_class.base_fields[field_name])
+                del new_class.base_fields[field_name]
 
         # Add in the new fields.
         new_class.base_fields.update(new_class.get_fields(include_fields, excludes))
@@ -1850,7 +1850,7 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
             if 'absolute_url' not in new_class.base_fields:
                 new_class.base_fields['absolute_url'] = fields.CharField(attribute='get_absolute_url', readonly=True)
         elif 'absolute_url' in new_class.base_fields and 'absolute_url' not in attrs:
-            del(new_class.base_fields['absolute_url'])
+            del new_class.base_fields['absolute_url']
 
         return new_class
 

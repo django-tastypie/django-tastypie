@@ -12,4 +12,4 @@ remove python 2 code, including the six library, and instances of __future__. Al
 Bugfixes
 --------
 
-* Example Bugfix (Closes #PR_Number)
+* Fix for multiple related models on POST/PUT triggering a 500 (#1627 + #1628)
