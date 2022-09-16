@@ -8,12 +8,15 @@ import warnings
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.exceptions import ImproperlyConfigured
+
 try:
     from django.middleware.csrf import _check_token_format
-    _sanitize_token=None
+
+    _sanitize_token = None
 except ImportError:
     from django.middleware.csrf import _sanitize_token
-    _check_token_format=None
+
+    _check_token_format = None
 from django.utils.translation import gettext as _
 
 from urllib.parse import urlparse
@@ -299,6 +302,7 @@ class SessionAuthentication(Authentication):
 
     Requires a valid CSRF token.
     """
+
     def is_authenticated(self, request, **kwargs):
         """
         Checks to make sure the user is logged in & has a Django session.
@@ -383,7 +387,8 @@ class DigestAuthentication(Authentication):
         self.realm = realm
 
         if python_digest is None:
-            raise ImproperlyConfigured("The 'python_digest' package could not be imported. It is required for use with the 'DigestAuthentication' class.")
+            raise ImproperlyConfigured(
+                "The 'python_digest' package could not be imported. It is required for use with the 'DigestAuthentication' class.")
 
     def _unauthorized(self):
         response = HttpUnauthorized()
@@ -486,14 +491,17 @@ class OAuthAuthentication(Authentication):
     This does *NOT* provide OAuth authentication in your API, strictly
     consumption.
     """
+
     def __init__(self, **kwargs):
         super(OAuthAuthentication, self).__init__(**kwargs)
 
         if oauth2 is None:
-            raise ImproperlyConfigured("The 'python-oauth2' package could not be imported. It is required for use with the 'OAuthAuthentication' class.")
+            raise ImproperlyConfigured(
+                "The 'python-oauth2' package could not be imported. It is required for use with the 'OAuthAuthentication' class.")
 
         if oauth_provider is None:
-            raise ImproperlyConfigured("The 'django-oauth-plus' package could not be imported. It is required for use with the 'OAuthAuthentication' class.")
+            raise ImproperlyConfigured(
+                "The 'django-oauth-plus' package could not be imported. It is required for use with the 'OAuthAuthentication' class.")
 
     def is_authenticated(self, request, **kwargs):
         from oauth_provider.store import store
@@ -503,9 +511,11 @@ class OAuthAuthentication(Authentication):
             consumer = store.get_consumer(request, oauth_request, oauth_request.get_parameter('oauth_consumer_key'))
 
             try:
-                token = store.get_access_token(request, oauth_request, consumer, oauth_request.get_parameter('oauth_token'))
+                token = store.get_access_token(request, oauth_request, consumer,
+                                               oauth_request.get_parameter('oauth_token'))
             except oauth_provider.store.InvalidTokenError:
-                return oauth_provider.utils.send_oauth_error(oauth2.Error(_('Invalid access token: %s') % oauth_request.get_parameter('oauth_token')))
+                return oauth_provider.utils.send_oauth_error(
+                    oauth2.Error(_('Invalid access token: %s') % oauth_request.get_parameter('oauth_token')))
 
             try:
                 self.validate_token(request, consumer, token)
@@ -520,7 +530,8 @@ class OAuthAuthentication(Authentication):
                 request.user = user
                 return True
 
-            return oauth_provider.utils.send_oauth_error(oauth2.Error(_('You are not allowed to access this resource.')))
+            return oauth_provider.utils.send_oauth_error(
+                oauth2.Error(_('You are not allowed to access this resource.')))
 
         return oauth_provider.utils.send_oauth_error(oauth2.Error(_('Invalid request parameters.')))
 
@@ -557,6 +568,7 @@ class MultiAuthentication(object):
     """
     An authentication backend that tries a number of backends in order.
     """
+
     def __init__(self, *backends, **kwargs):
         super(MultiAuthentication, self).__init__(**kwargs)
         self.backends = backends
