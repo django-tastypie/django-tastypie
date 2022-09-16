@@ -340,7 +340,10 @@ class SessionAuthentication(Authentication):
         except InvalidTokenFormat:
             return False
 
-        if not compare_sanitized_tokens(request_csrf_token, csrf_token):
+        try:
+            if not compare_sanitized_tokens(request_csrf_token, csrf_token):
+                return False
+        except AssertionError:
             return False
 
         return request.user.is_authenticated

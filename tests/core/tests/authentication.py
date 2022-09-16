@@ -256,11 +256,9 @@ class SessionAuthenticationTestCase(TestCase):
         request.COOKIES = {
             settings.CSRF_COOKIE_NAME: 'abcdef1234567890abcdef1234567890'
         }
-        request.META = {
-            'HTTP_X_CSRFTOKEN': 'abcdef1234567890abcdef1234567890'
-        }
-        request.META['HTTP_HOST'] = 'example.com'
-        request.META['HTTP_REFERER'] = ''
+        request.META = {'HTTP_X_CSRFTOKEN': 'abcdef1234567890abcdef1234567890',
+                        'HTTP_HOST': 'example.com',
+                        'HTTP_REFERER': ''}
         request.user = User.objects.get(username='johndoe')
         self.assertFalse(auth.is_authenticated(request))
 
