@@ -315,7 +315,6 @@ class SessionAuthentication(Authentication):
 
         csrf_token = check_token_format(csrf_token)
 
-
         if request.is_secure():
             referer = request.META.get('HTTP_REFERER')
 
