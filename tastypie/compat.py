@@ -70,7 +70,6 @@ if compare_sanitized_tokens is None:
     try:
         from django.middleware.csrf import _unsalt_cipher_token, constant_time_compare
 
-
         def compare_sanitized_tokens(request_csrf_token, csrf_token):
             return constant_time_compare(_unsalt_cipher_token(request_csrf_token),
                                          _unsalt_cipher_token(csrf_token))
