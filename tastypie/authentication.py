@@ -328,10 +328,7 @@ class SessionAuthentication(Authentication):
 
         request_csrf_token = request.META.get('HTTP_X_CSRFTOKEN', '')
         try:
-            if _sanitize_token:
-                request_csrf_token = _sanitize_token(request_csrf_token)
-            else:
-                _check_token_format(csrf_token)
+            request_csrf_token = check_token_format(request_csrf_token)
         except InvalidTokenFormat:
             return False
 
