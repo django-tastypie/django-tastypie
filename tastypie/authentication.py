@@ -8,15 +8,8 @@ import warnings
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.exceptions import ImproperlyConfigured
+from compat import check_token_format
 
-try:
-    from django.middleware.csrf import _check_token_format
-
-    _sanitize_token = None
-except ImportError:
-    from django.middleware.csrf import _sanitize_token
-
-    _check_token_format = None
 from django.utils.translation import gettext as _
 
 from urllib.parse import urlparse
@@ -319,10 +312,9 @@ class SessionAuthentication(Authentication):
         if getattr(request, '_dont_enforce_csrf_checks', False):
             return request.user.is_authenticated
         csrf_token = request.COOKIES.get(settings.CSRF_COOKIE_NAME, '')
-        if _sanitize_token:
-            csrf_token = _sanitize_token(csrf_token)
-        else:
-            _check_token_format(csrf_token)
+
+        csrf_token = check_token_format(csrf_token)
+
 
         if request.is_secure():
             referer = request.META.get('HTTP_REFERER')

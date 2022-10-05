@@ -7,6 +7,18 @@ try:
 except ImportError:  # 1.8 backwards compat
     from django.core.urlresolvers import NoReverseMatch, reverse, Resolver404, get_script_prefix  # noqa
 
+# Django 4.0 had a private _sanitize_token function whose signature is/was different than
+# the 4.1 version (_check_token_format) - import the correct one and define a compatability
+# function.
+try:
+    from django.middleware.csrf import _check_token_format
+
+    _sanitize_token = None
+except ImportError:
+    from django.middleware.csrf import _sanitize_token
+
+    _check_token_format = None
+
 
 AUTH_USER_MODEL = settings.AUTH_USER_MODEL
 
@@ -70,3 +82,11 @@ if compare_sanitized_tokens is None:
             pass
     except ImportError:  # pragma: no cover
         raise ImportError("Couldn't find a way to compare csrf tokens safely")  # pragma: no cover
+
+
+def check_token_format(csrf_token):
+    if _sanitize_token:
+        csrf_token = _sanitize_token(csrf_token)
+    else:
+        _check_token_format(csrf_token)
+    return csrf_token
