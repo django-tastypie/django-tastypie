@@ -10,14 +10,10 @@ except ImportError:  # 1.8 backwards compat
 # Django 4.0 had a private _sanitize_token function whose signature is/was different than
 # the 4.1 version (_check_token_format) - import the correct one and define a compatability
 # function.
-try:
-    from django.middleware.csrf import _check_token_format
-
-    _sanitize_token = None
-except ImportError:
+if django.VERSION < (4, 1):
     from django.middleware.csrf import _sanitize_token
-
-    _check_token_format = None
+else:
+    from django.middleware.csrf import _check_token_format
 
 AUTH_USER_MODEL = settings.AUTH_USER_MODEL
 
@@ -64,7 +60,6 @@ if compare_sanitized_tokens is None:
 
         compare_sanitized_tokens = _compare_masked_tokens
 
-
         class InvalidTokenFormat(Exception):  # noqa
             pass
     except ImportError:
@@ -74,6 +69,7 @@ if compare_sanitized_tokens is None:
 if compare_sanitized_tokens is None:
     try:
         from django.middleware.csrf import _unsalt_cipher_token, constant_time_compare
+
 
         def compare_sanitized_tokens(request_csrf_token, csrf_token):
             return constant_time_compare(_unsalt_cipher_token(request_csrf_token),
@@ -88,9 +84,9 @@ if compare_sanitized_tokens is None:
 
 def check_token_format(csrf_token):
     """
-    Handle the pre-4.0 version of sanitizing the token as well as the post-4.0 version of the same.
+    Handle the pre-4.1 version of sanitizing the token as well as the post-4.0 version of the same.
     """
-    if _sanitize_token:
+    if django.VERSION < (4, 1):
         csrf_token = _sanitize_token(csrf_token)
     else:
         _check_token_format(csrf_token)
