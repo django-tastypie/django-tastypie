@@ -8,12 +8,11 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.http import HttpRequest
 from django.test import TestCase
 
-from tastypie.authentication import Authentication, BasicAuthentication,\
-    ApiKeyAuthentication, SessionAuthentication, DigestAuthentication,\
+from tastypie.authentication import Authentication, BasicAuthentication, \
+    ApiKeyAuthentication, SessionAuthentication, DigestAuthentication, \
     OAuthAuthentication, MultiAuthentication
 from tastypie.http import HttpUnauthorized
 from tastypie.models import ApiKey, create_api_key
-
 
 # Be tricky.
 from tastypie.authentication import python_digest, oauth2, oauth_provider
@@ -90,21 +89,24 @@ class BasicAuthenticationTestCase(TestCase):
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass'.encode('utf-8')).decode('utf-8')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass'.encode('utf-8')).decode(
+            'utf-8')
         self.assertEqual(auth.is_authenticated(request), True)
 
         # Regression: Password with colon.
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass:word')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass:word'.encode('utf-8')).decode('utf-8')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass:word'.encode('utf-8')).decode(
+            'utf-8')
         self.assertEqual(auth.is_authenticated(request), True)
 
         # Capitalization shouldn't matter.
         john_doe = User.objects.get(username='johndoe')
         john_doe.set_password('pass:word')
         john_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'bAsIc %s' % base64.b64encode('johndoe:pass:word'.encode('utf-8')).decode('utf-8')
+        request.META['HTTP_AUTHORIZATION'] = 'bAsIc %s' % base64.b64encode('johndoe:pass:word'.encode('utf-8')).decode(
+            'utf-8')
         self.assertEqual(auth.is_authenticated(request), True)
 
     def test_check_active_true(self):
@@ -114,7 +116,8 @@ class BasicAuthenticationTestCase(TestCase):
         bob_doe = User.objects.get(username='bobdoe')
         bob_doe.set_password('pass')
         bob_doe.save()
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('bobdoe:pass'.encode('utf-8')).decode('utf-8')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('bobdoe:pass'.encode('utf-8')).decode(
+            'utf-8')
         auth_res = auth.is_authenticated(request)
         # is_authenticated() returns HttpUnauthorized for inactive users in Django >= 1.10, False for < 1.10
         self.assertTrue(auth_res is False or isinstance(auth_res, HttpUnauthorized))
@@ -256,11 +259,9 @@ class SessionAuthenticationTestCase(TestCase):
         request.COOKIES = {
             settings.CSRF_COOKIE_NAME: 'abcdef1234567890abcdef1234567890'
         }
-        request.META = {
-            'HTTP_X_CSRFTOKEN': 'abcdef1234567890abcdef1234567890'
-        }
-        request.META['HTTP_HOST'] = 'example.com'
-        request.META['HTTP_REFERER'] = ''
+        request.META = {'HTTP_X_CSRFTOKEN': 'abcdef1234567890abcdef1234567890',
+                        'HTTP_HOST': 'example.com',
+                        'HTTP_REFERER': ''}
         request.user = User.objects.get(username='johndoe')
         self.assertFalse(auth.is_authenticated(request))
 
@@ -573,7 +574,8 @@ class MultiAuthenticationTestCase(TestCase):
         john_doe.set_password('pass')
         john_doe.save()
 
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass'.encode('utf-8')).decode('utf-8')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('johndoe:pass'.encode('utf-8')).decode(
+            'utf-8')
 
         self.assertEqual(auth.is_authenticated(request), True)
         self.assertEqual(auth.get_identifier(request), john_doe.username)
@@ -586,7 +588,8 @@ class MultiAuthenticationTestCase(TestCase):
         john_doe.set_password('pass')
         john_doe.save()
 
-        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('john doe:pass'.encode('utf-8')).decode('utf-8')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic %s' % base64.b64encode('john doe:pass'.encode('utf-8')).decode(
+            'utf-8')
 
         self.assertEqual(auth.is_authenticated(request), True)
         self.assertEqual(auth.get_identifier(request), john_doe.username)

@@ -609,7 +609,7 @@ their own.:
 
 
     class UserModelAdmin(UserAdmin):
-        inlines = UserAdmin.inlines + [ApiKeyInline]
+        inlines = list(UserAdmin.inlines) + [ApiKeyInline]
 
 
     admin.site.unregister(User)
