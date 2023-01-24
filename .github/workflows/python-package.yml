@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
-        django-version: ["2.2", "3.2", "4.0", "4.1"]  # Todo: add "dev" back
+        django-version: ["3.2", "4.0", "4.1"]  # Todo: add "dev" back
         exclude:
            - python-version: "3.6"
              django-version: "4.0"
@@ -60,4 +60,5 @@ jobs:
       run: coveralls --service=github
       continue-on-error: true
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}      
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
