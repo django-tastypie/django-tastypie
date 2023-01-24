@@ -60,4 +60,5 @@ jobs:
       run: coveralls --service=github
       continue-on-error: true
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}      
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
