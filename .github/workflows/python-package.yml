@@ -11,12 +11,12 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04  # TODO: update to ubuntu-latest when django drops python 3.6
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
-        django-version: ["2.2", "3.2", "4.0", "4.1"]  # Todo: add "dev" back
+        django-version: ["3.2", "4.0", "4.1"]  # Todo: add "dev" back
         exclude:
            - python-version: "3.6"
              django-version: "4.0"
@@ -38,7 +38,7 @@ jobs:
         sudo apt install -y binutils libproj-dev gdal-bin libsqlite3-mod-spatialite
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -60,4 +60,5 @@ jobs:
       run: coveralls --service=github
       continue-on-error: true
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}      
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
