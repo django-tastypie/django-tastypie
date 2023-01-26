@@ -41,7 +41,7 @@ setup(
         'python-mimeparse >= 0.1.4, != 1.5',
         'python-dateutil >= 2.1',
     ],
-    tests_require=['mock', 'PyYAML', 'lxml', 'defusedxml'],
+    tests_require=['PyYAML', 'lxml', 'defusedxml'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
