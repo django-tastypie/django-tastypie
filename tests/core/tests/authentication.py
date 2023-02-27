@@ -249,9 +249,9 @@ class SessionAuthenticationTestCase(TestCase):
         request.META = {}
         request.user = User.objects.get(username='johndoe')
         self.assertEqual(auth.is_authenticated(request), True)
-        
+
         # Masked token
-        request.method =  'POST'
+        request.method = 'POST'
         request.COOKIES = {
             settings.CSRF_COOKIE_NAME: _mask_cipher_secret('abcdef1234567890abcdef1234567890'),
         }
@@ -259,7 +259,7 @@ class SessionAuthenticationTestCase(TestCase):
             'HTTP_X_CSRFTOKEN': _mask_cipher_secret('abcdef1234567890abcdef1234567890'),
         }
         self.assertEqual(auth.is_authenticated(request), True)
-        
+
         # Secure & wrong referrer.
         class SecureRequest(HttpRequest):
             def _get_scheme(self):
