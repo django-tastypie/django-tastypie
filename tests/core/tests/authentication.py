@@ -251,7 +251,7 @@ class SessionAuthenticationTestCase(TestCase):
         self.assertEqual(auth.is_authenticated(request), True)
         
         # Masked token
-        request.method = 'POST'
+        request.method =  'POST'
         request.COOKIES = {
             settings.CSRF_COOKIE_NAME: _mask_cipher_secret('abcdef1234567890abcdef1234567890'),
         }
