@@ -6,7 +6,7 @@ from unittest import skipIf
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.http import HttpRequest
-from django.middle.csrf import _mask_cipher_secret
+from django.middleware.csrf import _mask_cipher_secret
 from django.test import TestCase
 
 from tastypie.authentication import Authentication, BasicAuthentication, \
