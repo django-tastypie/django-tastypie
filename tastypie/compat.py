@@ -47,14 +47,9 @@ compare_sanitized_tokens = None
 
 # django 4.0
 try:
-    from django.middleware.csrf import _does_token_match, _unmask_cipher_token, CSRF_TOKEN_LENGTH, InvalidTokenFormat  # noqa
+    from django.middleware.csrf import _does_token_match, InvalidTokenFormat
 
-    def compare_sanitized_tokens(request_csrf_token, csrf_token):
-        csrf_secret = csrf_token
-        if len(csrf_token) == CSRF_TOKEN_LENGTH:
-            csrf_secret = _unmask_cipher_token(csrf_token)
-        return _does_token_match(request_csrf_token, csrf_secret)
-
+    compare_sanitized_tokens = _does_token_match
 except ImportError:
     pass
 
