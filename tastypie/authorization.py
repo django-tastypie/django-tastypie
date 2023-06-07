@@ -188,7 +188,10 @@ class DjangoAuthorization(Authorization):
         Checks for both view and change permissions as both allow reading as per Django conventions:
         https://docs.djangoproject.com/en/4.2/topics/auth/default/#permissions-and-authorization
         """
-        return self.perm_obj_checks(bundle.request, 'view', bundle.obj) or self.perm_obj_checks(bundle.request, 'change', bundle.obj)
+        try:
+            return self.perm_obj_checks(bundle.request, 'view', bundle.obj)
+        except Unauthorized:
+            return self.perm_obj_checks(bundle.request, 'change', bundle.obj)
 
     def create_list(self, object_list, bundle):
         return self.perm_list_checks(bundle.request, 'add', object_list)
