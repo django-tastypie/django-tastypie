@@ -68,7 +68,7 @@ The permissions required using ``DjangoAuthorization`` follow Django Admin's imp
 +=================================+==================+===============================================+======================+
 | ``POST <resource>/``            | create\_list     | ``add``                                       |                      |
 +---------------------------------+------------------+-----------------------------------------------+----------------------+
-| ``POST <resource>/<id>`` (\*)   | create\_detail   | ``add``                                       |                      |
+| ``POST <resource>/<id>``        | create\_detail   | ``add``                                       |                      |
 +---------------------------------+------------------+-----------------------------------------------+----------------------+
 | ``GET <resource>/``             | read\_list       | ``view``/``change``                           | ``update_list``      |
 +---------------------------------+------------------+-----------------------------------------------+----------------------+
@@ -82,9 +82,6 @@ The permissions required using ``DjangoAuthorization`` follow Django Admin's imp
 +---------------------------------+------------------+-----------------------------------------------+----------------------+
 | ``DELETE <resource>/<id>``      | delete\_detail   | ``delete``                                    |                      |
 +---------------------------------+------------------+-----------------------------------------------+----------------------+
-
-(*) The permission check for ``create_detail`` is implemented in ``DjangoAuthorization``, however ModelResource does not provide an implementation and raises HttpNotImplemented.
-
 
 Notes:
 
