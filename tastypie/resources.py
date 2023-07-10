@@ -2227,7 +2227,7 @@ class BaseModelResource(Resource):
             self.authorized_read_detail(object_list, bundle)
             return bundle.obj
         except ValueError:
-            raise NotFound("Invalid resource lookup data provided (mismatched type).")
+            raise BadRequest("Invalid resource lookup data provided (mismatched type).")
 
     def obj_create(self, bundle, **kwargs):
         """
