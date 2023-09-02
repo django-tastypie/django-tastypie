@@ -6,8 +6,8 @@ from tastypie.authorization import Authorization
 
 from core.models import Note, MediaBit
 
-from related_resource.models import Bone, Category, Contact, ContactGroup,\
-    ExtraData, Person, Company, Product, Address, Dog, DogHouse, Forum,\
+from related_resource.models import Bone, Category, Contact, ContactGroup, \
+    ExtraData, Person, Company, Product, Address, Dog, DogHouse, Forum, \
     Job, Label, Order, OrderItem, Payment, Post, Tag, Taggable, TaggableTag
 
 

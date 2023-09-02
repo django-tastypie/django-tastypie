@@ -2,7 +2,7 @@ from django.urls.conf import include, re_path
 
 from tastypie.api import Api
 
-from validation.api.resources import NoteResource, UserResource,\
+from validation.api.resources import NoteResource, UserResource, \
     AnnotatedNoteResource
 
 
