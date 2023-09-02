@@ -312,7 +312,10 @@ class SessionAuthentication(Authentication):
             return request.user.is_authenticated
         csrf_token = request.COOKIES.get(settings.CSRF_COOKIE_NAME, '')
 
-        csrf_token = check_token_format(csrf_token)
+        try:
+            csrf_token = check_token_format(csrf_token)
+        except InvalidTokenFormat:
+            return False
 
         if request.is_secure():
             referer = request.META.get('HTTP_REFERER')
