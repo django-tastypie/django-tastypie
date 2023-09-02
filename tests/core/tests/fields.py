@@ -9,8 +9,8 @@ from django.http import HttpRequest
 
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
-from tastypie.fields import NOT_PROVIDED, ApiField, BooleanField, CharField,\
-    DateField, DateTimeField, DecimalField, DictField, FileField, FloatField,\
+from tastypie.fields import NOT_PROVIDED, ApiField, BooleanField, CharField, \
+    DateField, DateTimeField, DecimalField, DictField, FileField, FloatField, \
     IntegerField, ListField, TimeField, ToOneField, ToManyField
 from tastypie.resources import ALL, ModelResource
 from tastypie.utils import aware_datetime

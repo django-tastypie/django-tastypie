@@ -7,6 +7,3 @@ copied to the release notes for the next release.
 Major changes
 -------------
 
-* Drop support for Django 2.2
-* Add support (in development) for Django 4.2
-

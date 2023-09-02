@@ -10,9 +10,9 @@ from django.core.serializers import json as djangojson
 
 from tastypie.bundle import Bundle
 from tastypie.compat import force_str
-from tastypie.exceptions import BadRequest, UnsupportedSerializationFormat,\
+from tastypie.exceptions import BadRequest, UnsupportedSerializationFormat, \
     UnsupportedDeserializationFormat
-from tastypie.utils import format_datetime, format_date, format_time,\
+from tastypie.utils import format_datetime, format_date, format_time, \
     make_naive
 
 
