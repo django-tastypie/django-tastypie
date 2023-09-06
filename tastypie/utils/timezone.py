@@ -1,7 +1,7 @@
 import datetime
 from django.conf import settings
 from django.utils import timezone
-from datetime.timezone import utc
+from datetime import timezone as dt_timezone
 
 
 def make_aware(value):
@@ -23,7 +23,7 @@ def make_naive_utc(value):
     Translate a datetime to UTC, then strip TZ info; useful as a last step before creating the
     Retry-After header.
     """
-    utc_value = timezone.localtime(value, utc)
+    utc_value = timezone.localtime(value, dt_timezone.utc)
     return timezone.make_naive(utc_value)
 
 
