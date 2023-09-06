@@ -24,8 +24,7 @@ except ImportError:
 from django.http import HttpRequest, QueryDict, Http404
 from django.test import TestCase
 from django.test.utils import override_settings
-from django.utils import timezone
-
+from datetime import timezone
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
 from tastypie.bundle import Bundle
