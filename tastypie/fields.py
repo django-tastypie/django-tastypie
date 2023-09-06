@@ -12,7 +12,6 @@ try:
 except ImportError:
     from django.db.models.fields.related_descriptors import\
         ReverseOneToOneDescriptor
-from django.utils import datetime_safe
 
 from tastypie.bundle import Bundle
 from tastypie.exceptions import ApiFieldError, NotFound
@@ -351,7 +350,7 @@ class DateField(ApiField):
             try:
                 year, month, day = value[:10].split('-')
 
-                return datetime_safe.date(int(year), int(month), int(day))
+                return datetime.date(int(year), int(month), int(day))
             except ValueError:
                 raise ApiFieldError("Date provided to '%s' field doesn't appear to be a valid date string: '%s'" % (self.instance_name, value))
 
@@ -389,7 +388,7 @@ class DateTimeField(ApiField):
                 year, month, day = value[:10].split('-')
                 hour, minute, second = value[11:19].split(':')
 
-                return make_aware(datetime_safe.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second)))
+                return make_aware(datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second)))
             except ValueError:
                 raise ApiFieldError("Datetime provided to '%s' field doesn't appear to be a valid datetime string: '%s'" % (self.instance_name, value))
 
