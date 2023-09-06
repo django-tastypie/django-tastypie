@@ -64,11 +64,12 @@ jobs:
     - name: Test with Tox
       run: |
         tox -e py${{matrix.python-version}}-dj${{matrix.django-version}}
-      if: ${{matrix.django-version}} != "dev"
+      if: ${{matrix.django-version != 'dev'}}
     - name: Test with Tox (Dev)
+      if: ${{matrix.django-version == 'dev'}}
       run: |
-        - tox -e py${{matrix.python-version}}-dj${{matrix.django-version}}
-      if: ${{matrix.django-version}} == "dev"
+        tox -e py${{matrix.python-version}}-dj${{matrix.django-version}}
+      continue-on-error: true
     - name: Upload coverage data to coveralls.io
       run: coveralls --service=github
       continue-on-error: true
