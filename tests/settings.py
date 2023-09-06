@@ -55,7 +55,6 @@ SECRET_KEY = 'verysecret'
 
 # weaker password hashing shoulod allow for faster tests
 PASSWORD_HASHERS = (
-    'django.contrib.auth.hashers.CryptPasswordHasher',
     'django.contrib.auth.hashers.PBKDF2PasswordHasher',
     'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
     'django.contrib.auth.hashers.BCryptPasswordHasher',
