@@ -14,8 +14,22 @@ if django.VERSION < (4, 1):
     from django.middleware.csrf import _sanitize_token
 else:
     from django.middleware.csrf import _check_token_format
+if django.VERSION < (5, 0):
+    from django.utils import datetime_safe as dj_datetime_safe
+else:
+    import datetime
 
 AUTH_USER_MODEL = settings.AUTH_USER_MODEL
+
+
+def datetime_safe(*args, **kwargs):
+    """
+    Django 5.0 eliminated the former datetime_safe function, this provide
+    some level of backwards compatability for existing tastypie use cases
+    """
+    if django.VERSION < (5, 0):
+        return dj_datetime_safe(*args, **kwargs)
+    return datetime(*args, **kwargs)
 
 
 def get_username_field():
@@ -60,6 +74,7 @@ if compare_sanitized_tokens is None:
 
         compare_sanitized_tokens = _compare_masked_tokens
 
+
         class InvalidTokenFormat(Exception):  # noqa
             pass
     except ImportError:
@@ -69,6 +84,7 @@ if compare_sanitized_tokens is None:
 if compare_sanitized_tokens is None:
     try:
         from django.middleware.csrf import _unsalt_cipher_token, constant_time_compare
+
 
         def compare_sanitized_tokens(request_csrf_token, csrf_token):
             return constant_time_compare(_unsalt_cipher_token(request_csrf_token),

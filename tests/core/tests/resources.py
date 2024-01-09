@@ -3666,7 +3666,7 @@ class ModelResourceTestCase(TestCase):
         request.method = 'GET'
 
         # Patch the ``created/updated`` defaults for testability.
-        with patch.object(resource.fields['created'], '_default', new=aware_datetime(2011, 9, 24, 0, 2)),\
+        with patch.object(resource.fields['created'], '_default', new=aware_datetime(2011, 9, 24, 0, 2)), \
                 patch.object(resource.fields['updated'], '_default', new=aware_datetime(2011, 9, 24, 0, 2)):
             resp = resource.get_schema(request)
 

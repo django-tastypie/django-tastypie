@@ -1,0 +1,9 @@
+v0.14.5
+=======
+
+:date: 2023-01-24
+
+Bugfix for data loss prevention exception when same uri is used in multiple to-many resources in a payload.
+Doc fix for delete_detail
+More cleanup for python 2 EOL
+Added support for Django 4.1.

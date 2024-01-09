@@ -1,11 +1,11 @@
 from tastypie.api import Api
 
-from related_resource.api.resources import NoteResource, UserResource,\
-    CategoryResource, TagResource, TaggableTagResource, TaggableResource,\
-    ExtraDataResource, FreshNoteResource, FreshMediaBitResource,\
-    ForumResource, CompanyResource, ProductResource, AddressResource,\
-    PersonResource, DogResource, DogHouseResource, BoneResource,\
-    LabelResource, PostResource, OrderResource, OrderItemResource,\
+from related_resource.api.resources import NoteResource, UserResource, \
+    CategoryResource, TagResource, TaggableTagResource, TaggableResource, \
+    ExtraDataResource, FreshNoteResource, FreshMediaBitResource, \
+    ForumResource, CompanyResource, ProductResource, AddressResource, \
+    PersonResource, DogResource, DogHouseResource, BoneResource, \
+    LabelResource, PostResource, OrderResource, OrderItemResource, \
     NoteWithUpdatableUserResource, ContactResource, ContactGroupResource
 
 

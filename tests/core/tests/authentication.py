@@ -471,6 +471,8 @@ class MultiAuthenticationTestCase(TestCase):
         self.assertEqual(session_auth.is_authenticated(request1), True)
         # api key auth should fail because of invalid api key
         self.assertEqual(isinstance(api_key_auth.is_authenticated(request2), HttpUnauthorized), True)
+        # multi auth should fail because there is no valid auth
+        self.assertEqual(isinstance(auth.is_authenticated(request2), HttpUnauthorized), True)
 
         # multi auth shouldn't change users if api key auth fails
         # multi auth passes since session auth is valid
