@@ -14,22 +14,16 @@ if django.VERSION < (4, 1):
     from django.middleware.csrf import _sanitize_token
 else:
     from django.middleware.csrf import _check_token_format
+
+
+# Django 5.0 eliminated the former datetime_safe function, this provides
+# some level of backwards compatability for existing tastypie use cases
 if django.VERSION < (5, 0):
-    from django.utils import datetime_safe as dj_datetime_safe
+    from django.utils import datetime_safe
 else:
-    import datetime
+    import datetime as datetime_safe
 
 AUTH_USER_MODEL = settings.AUTH_USER_MODEL
-
-
-def datetime_safe(*args, **kwargs):
-    """
-    Django 5.0 eliminated the former datetime_safe function, this provide
-    some level of backwards compatability for existing tastypie use cases
-    """
-    if django.VERSION < (5, 0):
-        return dj_datetime_safe(*args, **kwargs)
-    return datetime(*args, **kwargs)
 
 
 def get_username_field():
