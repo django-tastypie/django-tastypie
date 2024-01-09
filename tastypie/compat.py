@@ -19,9 +19,9 @@ else:
 # Django 5.0 eliminated the former datetime_safe function, this provides
 # some level of backwards compatability for existing tastypie use cases
 if django.VERSION < (5, 0):
-    from django.utils import datetime_safe
+    from django.utils import datetime_safe  # noqa: F401
 else:
-    import datetime as datetime_safe
+    import datetime as datetime_safe  # noqa: F401
 
 AUTH_USER_MODEL = settings.AUTH_USER_MODEL
 
