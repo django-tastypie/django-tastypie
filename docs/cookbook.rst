@@ -91,8 +91,7 @@ modifying ``get_object_list``:
 
 .. testcode::
 
-    from datetime import timezone
-
+    from django.utils import timezone
     from myapp.models import MyModel
 
 
