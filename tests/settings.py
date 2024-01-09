@@ -55,14 +55,14 @@ CACHE_BACKEND = 'locmem://'
 SECRET_KEY = 'verysecret'
 
 # weaker password hashing shoulod allow for faster tests
-PASSWORD_HASHERS = (
+PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.CryptPasswordHasher',
     'django.contrib.auth.hashers.PBKDF2PasswordHasher',
     'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
     'django.contrib.auth.hashers.BCryptPasswordHasher',
     'django.contrib.auth.hashers.SHA1PasswordHasher',
     'django.contrib.auth.hashers.MD5PasswordHasher',
-)
+]
 # Django 5.0 removed this hasher
 if DJANGO_VERSION >= DJANGO_42:
     PASSWORD_HASHERS.remove('django.contrib.auth.hashers.CryptPasswordHasher')
