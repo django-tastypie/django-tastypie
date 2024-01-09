@@ -12,6 +12,7 @@ DJANGO_20 = StrictVersion('2.0')
 DJANGO_11 = StrictVersion('1.11')
 DJANGO_19 = StrictVersion('1.9')
 DJANGO_18 = StrictVersion('1.8')
+DJANGO_42 = StrictVersion('4.2')
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -62,6 +63,10 @@ PASSWORD_HASHERS = (
     'django.contrib.auth.hashers.SHA1PasswordHasher',
     'django.contrib.auth.hashers.MD5PasswordHasher',
 )
+# Django 5.0 removed this hasher
+if DJANGO_VERSION >= DJANGO_42:
+    PASSWORD_HASHERS.remove('django.contrib.auth.hashers.CryptPasswordHasher')
+
 
 LOGGING = {
     'version': 1,
