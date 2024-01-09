@@ -30,6 +30,8 @@ jobs:
              django-version: "4.2"
            - python-version: "3.7"
              django-version: "4.2"
+           - python-version: "3.6"
+             django-version: "5.0"
            - python-version: "3.7"
              django-version: "5.0"
            - python-version: "3.8"
