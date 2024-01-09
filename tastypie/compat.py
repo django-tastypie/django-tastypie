@@ -16,8 +16,6 @@ if django.VERSION < (4, 1):
 else:
     from django.middleware.csrf import _check_token_format
 
-
-
 # Django 5.0 eliminated the former datetime_safe function, this provides
 # some level of backwards compatability for existing tastypie use cases
 if django.VERSION < (5, 0):
