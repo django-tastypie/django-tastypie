@@ -1,6 +1,6 @@
 import datetime
+from tastypie.compat import timezone
 from django.conf import settings
-from django.utils import timezone
 
 
 def make_aware(value):
