@@ -64,7 +64,7 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.MD5PasswordHasher',
 ]
 # Django 5.0 removed this hasher
-if DJANGO_VERSION >= DJANGO_42:
+if DJANGO_VERSION > DJANGO_42:
     PASSWORD_HASHERS.remove('django.contrib.auth.hashers.CryptPasswordHasher')
 
 
