@@ -1,5 +1,5 @@
 ===============
-django-tastypie
+Django-Tastypie
 ===============
 
 .. image:: https://readthedocs.org/projects/django-tastypie/badge/
