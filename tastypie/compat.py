@@ -1,6 +1,7 @@
 import django
 from django.conf import settings
 from django.contrib.auth import get_user_model  # noqa
+from django.utils import timezone
 
 try:
     from django.urls import NoReverseMatch, reverse, Resolver404, get_script_prefix  # noqa
@@ -14,6 +15,17 @@ if django.VERSION < (4, 1):
     from django.middleware.csrf import _sanitize_token
 else:
     from django.middleware.csrf import _check_token_format
+
+# Django 5.0 eliminated the former datetime_safe function, this provides
+# some level of backwards compatability for existing tastypie use cases
+if django.VERSION < (5, 0):
+    from django.utils import datetime_safe  # noqa: F401
+else:
+    import datetime as datetime_safe  # noqa: F401
+    # Django 5.0 removed this alias - restore it for backwards compatability.
+    # Django 5.0 essentially completed a lot of the move to zoneinfo, prior to that
+    # this was an alias that was added in 4.0.
+    timezone.utc = datetime_safe.timezone.utc
 
 AUTH_USER_MODEL = settings.AUTH_USER_MODEL
 
@@ -73,7 +85,6 @@ if compare_sanitized_tokens is None:
         def compare_sanitized_tokens(request_csrf_token, csrf_token):
             return constant_time_compare(_unsalt_cipher_token(request_csrf_token),
                                          _unsalt_cipher_token(csrf_token))
-
 
         class InvalidTokenFormat(Exception):  # noqa
             pass

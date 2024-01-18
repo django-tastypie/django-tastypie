@@ -105,7 +105,7 @@ Contributors:
 * Matt Briançon (mattbriancon) for various patches
 * Blayze Wilhelm (blayzen-w) for a small patch that fixed an issue with saving (PR #1628)
 * Ryan Young (ryanneilyoung) for removing python 2 code
-* Chander Ganesan (chander) for minor patches
+* Chander Ganesan (chander) for minor patches, added support for django 4.1 and 5.0
 
 
 Thanks to Tav for providing validate_jsonp.py, placed in public domain.
