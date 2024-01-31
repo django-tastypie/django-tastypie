@@ -302,19 +302,19 @@ class ResourceTestCase(TestCase):
     def test_fields(self):
         basic = BasicResource()
         self.assertEqual(len(basic.fields), 4)
-        self.assert_('name' in basic.fields)
+        self.assertIn('name', basic.fields)
         self.assertEqual(isinstance(basic.fields['name'], fields.CharField), True)
         self.assertEqual(basic.fields['name']._resource, basic.__class__)
         self.assertEqual(basic.fields['name'].instance_name, 'name')
-        self.assert_('view_count' in basic.fields)
+        self.assertIn('view_count', basic.fields)
         self.assertEqual(isinstance(basic.fields['view_count'], fields.IntegerField), True)
         self.assertEqual(basic.fields['view_count']._resource, basic.__class__)
         self.assertEqual(basic.fields['view_count'].instance_name, 'view_count')
-        self.assert_('date_joined' in basic.fields)
+        self.assertIn('date_joined', basic.fields)
         self.assertEqual(isinstance(basic.fields['date_joined'], fields.DateTimeField), True)
         self.assertEqual(basic.fields['date_joined']._resource, basic.__class__)
         self.assertEqual(basic.fields['date_joined'].instance_name, 'date_joined')
-        self.assert_('resource_uri' in basic.fields)
+        self.assertIn('resource_uri', basic.fields)
         self.assertEqual(isinstance(basic.fields['resource_uri'], fields.CharField), True)
         self.assertEqual(basic.fields['resource_uri']._resource, basic.__class__)
         self.assertEqual(basic.fields['resource_uri'].instance_name, 'resource_uri')
@@ -322,35 +322,35 @@ class ResourceTestCase(TestCase):
 
         another = AnotherBasicResource()
         self.assertEqual(len(another.fields), 8)
-        self.assert_('name' in another.fields)
+        self.assertIn('name', another.fields)
         self.assertEqual(isinstance(another.name, fields.CharField), True)
         self.assertEqual(another.fields['name']._resource, another.__class__)
         self.assertEqual(another.fields['name'].instance_name, 'name')
-        self.assert_('view_count' in another.fields)
+        self.assertIn('view_count', another.fields)
         self.assertEqual(isinstance(another.view_count, fields.IntegerField), True)
         self.assertEqual(another.fields['view_count']._resource, another.__class__)
         self.assertEqual(another.fields['view_count'].instance_name, 'view_count')
-        self.assert_('date_joined' in another.fields)
+        self.assertIn('date_joined', another.fields)
         self.assertEqual(isinstance(another.date_joined, fields.DateField), True)
         self.assertEqual(another.fields['date_joined']._resource, another.__class__)
         self.assertEqual(another.fields['date_joined'].instance_name, 'date_joined')
-        self.assert_('is_active' in another.fields)
+        self.assertIn('is_active', another.fields)
         self.assertEqual(isinstance(another.is_active, fields.BooleanField), True)
         self.assertEqual(another.fields['is_active']._resource, another.__class__)
         self.assertEqual(another.fields['is_active'].instance_name, 'is_active')
-        self.assert_('aliases' in another.fields)
+        self.assertIn('aliases', another.fields)
         self.assertEqual(isinstance(another.aliases, fields.ListField), True)
         self.assertEqual(another.fields['aliases']._resource, another.__class__)
         self.assertEqual(another.fields['aliases'].instance_name, 'aliases')
-        self.assert_('meta' in another.fields)
+        self.assertIn('meta', another.fields)
         self.assertEqual(isinstance(another.meta, fields.DictField), True)
         self.assertEqual(another.fields['meta']._resource, another.__class__)
         self.assertEqual(another.fields['meta'].instance_name, 'meta')
-        self.assert_('owed' in another.fields)
+        self.assertIn('owed', another.fields)
         self.assertEqual(isinstance(another.owed, fields.DecimalField), True)
         self.assertEqual(another.fields['owed']._resource, another.__class__)
         self.assertEqual(another.fields['owed'].instance_name, 'owed')
-        self.assert_('resource_uri' in another.fields)
+        self.assertIn('resource_uri', another.fields)
         self.assertEqual(isinstance(another.resource_uri, fields.CharField), True)
         self.assertEqual(another.fields['resource_uri']._resource, another.__class__)
         self.assertEqual(another.fields['resource_uri'].instance_name, 'resource_uri')
@@ -358,15 +358,15 @@ class ResourceTestCase(TestCase):
 
         nouri = NoUriBasicResource()
         self.assertEqual(len(nouri.fields), 3)
-        self.assert_('name' in nouri.fields)
+        self.assertIn('name', nouri.fields)
         self.assertEqual(isinstance(nouri.name, fields.CharField), True)
         self.assertEqual(nouri.fields['name']._resource, nouri.__class__)
         self.assertEqual(nouri.fields['name'].instance_name, 'name')
-        self.assert_('view_count' in nouri.fields)
+        self.assertIn('view_count', nouri.fields)
         self.assertEqual(isinstance(nouri.view_count, fields.IntegerField), True)
         self.assertEqual(nouri.fields['view_count']._resource, nouri.__class__)
         self.assertEqual(nouri.fields['view_count'].instance_name, 'view_count')
-        self.assert_('date_joined' in nouri.fields)
+        self.assertIn('date_joined', nouri.fields)
         self.assertEqual(isinstance(nouri.date_joined, fields.DateTimeField), True)
         self.assertEqual(nouri.fields['date_joined']._resource, nouri.__class__)
         self.assertEqual(nouri.fields['date_joined'].instance_name, 'date_joined')
@@ -553,7 +553,7 @@ class ResourceTestCase(TestCase):
         empty_null_bundle = Bundle(obj=obj, data={})
         hydrated = nullable.full_hydrate(empty_null_bundle)
 
-        self.assertEquals(hydrated.obj.name, "Daniel")
+        self.assertEqual(hydrated.obj.name, "Daniel")
 
     def test_full_hydrate__can_put_null_to_clear_related_value(self):
         class RelatedBasicResource(BasicResource):
@@ -890,8 +890,8 @@ class ResourceTestCase(TestCase):
         request.method = 'GET'
 
         basic_resource_list = json.loads(force_str(basic.get_list(request).content))['objects']
-        self.assertEquals(basic_resource_list[0]['name'], 'Daniel')
-        self.assertEquals(basic_resource_list[0]['date_joined'], u'2010-03-30T09:00:00')
+        self.assertEqual(basic_resource_list[0]['name'], 'Daniel')
+        self.assertEqual(basic_resource_list[0]['date_joined'], u'2010-03-30T09:00:00')
 
         self.assertNotIn('view_count', basic_resource_list[0])
 
@@ -1622,7 +1622,7 @@ class ModelResourceTestCase(TestCase):
         # some related bits here & self-referential bits later on.
         resource_1 = RelatedNoteResource()
         self.assertEqual(len(resource_1.fields), 8)
-        self.assert_('author' in resource_1.fields)
+        self.assertIn('author', resource_1.fields)
         self.assertTrue(isinstance(resource_1.fields['author'], fields.ToOneField))
         self.assertEqual(resource_1.fields['author']._resource, resource_1.__class__)
         self.assertEqual(resource_1.fields['author'].instance_name, 'author')
@@ -4522,9 +4522,9 @@ class ModelResourceTestCase(TestCase):
         }, obj=Counter())
         cr.obj_create(counter_bundle)
 
-        self.assertEquals(counter_bundle._create_auth_call_count, 1)
-        self.assertEquals(counter_bundle.obj.name, "About")
-        self.assertEquals(counter_bundle.obj.slug, "about")
+        self.assertEqual(counter_bundle._create_auth_call_count, 1)
+        self.assertEqual(counter_bundle.obj.name, "About")
+        self.assertEqual(counter_bundle.obj.slug, "about")
 
     def test_obj_update(self):
         self.assertEqual(Note.objects.all().count(), 6)
@@ -4688,9 +4688,9 @@ class ModelResourceTestCase(TestCase):
         cr.obj_update(counter_bundle, pk=1)
 
         counter = Counter.objects.get(pk=1)
-        self.assertEquals(counter_bundle._update_auth_call_count, 1)
-        self.assertEquals(counter_bundle.obj.name, "Signups")
-        self.assertEquals(counter_bundle.obj.slug, "signups")
+        self.assertEqual(counter_bundle._update_auth_call_count, 1)
+        self.assertEqual(counter_bundle.obj.name, "Signups")
+        self.assertEqual(counter_bundle.obj.slug, "signups")
 
     def test_lookup_kwargs_with_identifiers__field_without_attr(self):
         """

@@ -18,5 +18,5 @@ class NamespacedViewsTestCase(TestCaseWithFixture):
 
         self.assertRaises(NoReverseMatch, reverse, 'api_v1_top_level')
         self.assertRaises(NoReverseMatch, reverse, 'special:api_v1_top_level')
-        self.assertEquals(reverse('special:api_v1_top_level', kwargs={'api_name': 'v1'}), '/api/v1/')
-        self.assertEquals(reverse('special:api_dispatch_list', kwargs={'api_name': 'v1', 'resource_name': 'notes'}), '/api/v1/notes/')
+        self.assertEqual(reverse('special:api_v1_top_level', kwargs={'api_name': 'v1'}), '/api/v1/')
+        self.assertEqual(reverse('special:api_dispatch_list', kwargs={'api_name': 'v1', 'resource_name': 'notes'}), '/api/v1/notes/')
