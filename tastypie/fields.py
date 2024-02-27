@@ -907,11 +907,35 @@ class ManyToManyField(ToManyField):
 
 class OneToManyField(ToManyField):
     """
-    A convenience subclass for those who prefer to mirror ``django.db.models``.
+    Provides access to data that is related within the database via a one to many relation.
+
+    This subclass requires the ``reverse`` name of the relation.
     """
-    pass
+
+    def __init__(self, to, attribute, reverse, related_name=None, default=NOT_PROVIDED, null=False, blank=False, readonly=False, full=False, unique=False, help_text=None):
+        """
+        The ``reverse`` argument should specify the the name of the backwares relation. Required.
+        """
+        super(ToManyField, self).__init__(to, attribute, related_name=related_name, default=default, null=null, blank=blank, readonly=readonly, full=full, unique=unique, help_text=help_text)
+        self.reverse = reverse
+
+    def hydrate_m2m(self, bundle):
+        m2m_hydrated = super(OneToManyField, self).hydrate_m2m(bundle)
+
+        for m2m_bundle in m2m_hydrated:
+            # Leaky abstractions for the loss.
+            if hasattr(m2m_bundle.obj.__class__, self.reverse):
+                setattr(m2m_bundle.obj, self.reverse, bundle.obj)
+
+        return m2m_hydrated
+
+    def resource_from_data(self, fk_resource, data, request=None):
+        data = dict_strip_unicode_keys(data)
+        fk_bundle = fk_resource.build_bundle(data=data, request=request)
+        return fk_resource.full_hydrate(fk_bundle)
 
 
+    
 class TimeField(ApiField):
     dehydrated_type = 'time'
     help_text = 'A time as string. Ex: "20:05:23"'
