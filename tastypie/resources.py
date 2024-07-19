@@ -1691,14 +1691,14 @@ class Resource(metaclass=DeclarativeMetaclass):
         # Now update the bundle in-place.
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         # Create a place to store the names of those fields we want to update
-        bundle.update_fields = [];
-        bundle.m2m_update_fields = [];
+        bundle.update_fields = []
+        bundle.m2m_update_fields = []
         # When we get to the obj.save() stage, we need to know which fields have changed
         # Otherwise we can't do a proper update.  Thus,
         # For every key in deserialized (e.g. the fields submitted in the PATCH)
         for key in deserialized:
             # If the key is a property of the object, lets add it to the list, except:
-            if hasattr(bundle.obj,key):
+            if hasattr(bundle.obj, key):
                 # Can't update_fields an m2m field, so instead add it to patch_m2m_fields
                 if getattr(self.fields[key], 'is_m2m', False):
                     bundle.m2m_update_fields.append(key)
@@ -2411,7 +2411,7 @@ class BaseModelResource(Resource):
         obj_id = self.create_identifier(bundle.obj)
 
         if obj_id not in bundle.objects_saved or bundle.obj._state.adding:
-            if hasattr(bundle,'update_fields'):
+            if hasattr(bundle, 'update_fields'):
                 bundle.obj.save(update_fields=bundle.update_fields)
             else:
                 bundle.obj.save()
@@ -2531,14 +2531,14 @@ class BaseModelResource(Resource):
             # If this is a PATCH, make sure that this field name is one of the
             # patched fields (recorded in the update_fields property of the bundle).
             # Otherwise, we do not want to save / recreate this field.
-            if hasattr(bundle,'update_fields'):
+            if hasattr(bundle, 'update_fields'):
                 # This bundle is from a PATCH, we should not save an M2M field
                 # unless it was present in the PATCH
                 if field_name not in bundle.m2m_update_fields:
-                    continue # Skip this field_name
-                else: # this field name WAS in the patch, lets save it.
+                    continue  # Skip this field_name
+                else:  # this field name WAS in the patch, lets save it.
                     pass
-            else: # Not a PATCH operation, carry on normally.
+            else:  # Not a PATCH operation, carry on normally.
                 pass
 
             # Get the manager.
