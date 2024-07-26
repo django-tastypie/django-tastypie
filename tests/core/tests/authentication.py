@@ -6,6 +6,7 @@ from unittest import skipIf
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.http import HttpRequest
+from django.middleware.csrf import _mask_cipher_secret
 from django.test import TestCase
 
 from tastypie.authentication import Authentication, BasicAuthentication, \
@@ -247,6 +248,16 @@ class SessionAuthenticationTestCase(TestCase):
         request.method = 'GET'
         request.META = {}
         request.user = User.objects.get(username='johndoe')
+        self.assertEqual(auth.is_authenticated(request), True)
+
+        # Masked token
+        request.method = 'POST'
+        request.COOKIES = {
+            settings.CSRF_COOKIE_NAME: _mask_cipher_secret('abcdef1234567890abcdef1234567890'),
+        }
+        request.META = {
+            'HTTP_X_CSRFTOKEN': _mask_cipher_secret('abcdef1234567890abcdef1234567890'),
+        }
         self.assertEqual(auth.is_authenticated(request), True)
 
         # Secure & wrong referrer.
