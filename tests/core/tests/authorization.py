@@ -95,6 +95,7 @@ class DjangoAuthorizationTestCase(TestCase):
 
     def setUp(self):
         super(DjangoAuthorizationTestCase, self).setUp()
+        self.view = Permission.objects.get_by_natural_key('view_note', 'core', 'note')
         self.add = Permission.objects.get_by_natural_key('add_note', 'core', 'note')
         self.change = Permission.objects.get_by_natural_key('change_note', 'core', 'note')
         self.delete = Permission.objects.get_by_natural_key('delete_note', 'core', 'note')
@@ -128,6 +129,33 @@ class DjangoAuthorizationTestCase(TestCase):
         self.assertEqual(len(auth.delete_list(resource.get_object_list(bundle.request), bundle)), 0)
         self.assertRaises(Unauthorized, auth.delete_detail, resource.get_object_list(bundle.request)[0], bundle)
 
+    def test_view_perm(self):
+        request = HttpRequest()
+        request.user = self.user
+
+        # give view permission
+        request.user.user_permissions.add(self.view)
+
+        resource = DjangoNoteResource()
+        auth = resource._meta.authorization
+        bundle = resource.build_bundle(request=request)
+
+        bundle.request.method = 'GET'
+        self.assertEqual(len(auth.read_list(resource.get_object_list(bundle.request), bundle)), 4)
+        self.assertTrue(auth.read_detail(resource.get_object_list(bundle.request)[0], bundle))
+
+        bundle.request.method = 'POST'
+        self.assertEqual(len(auth.create_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.create_detail, resource.get_object_list(bundle.request)[0], bundle)
+
+        bundle.request.method = 'PUT'
+        self.assertEqual(len(auth.update_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.update_detail, resource.get_object_list(bundle.request)[0], bundle)
+
+        bundle.request.method = 'DELETE'
+        self.assertEqual(len(auth.delete_list(resource.get_object_list(bundle.request), bundle)), 0)
+        self.assertRaises(Unauthorized, auth.delete_detail, resource.get_object_list(bundle.request)[0], bundle)
+
     def test_add_perm(self):
         request = HttpRequest()
         request.user = self.user
@@ -135,8 +163,6 @@ class DjangoAuthorizationTestCase(TestCase):
         # give add permission
         request.user.user_permissions.add(self.add)
 
-        request = HttpRequest()
-        request.user = self.user
         resource = DjangoNoteResource()
         auth = resource._meta.authorization
         bundle = resource.build_bundle(request=request)
@@ -215,6 +241,7 @@ class DjangoAuthorizationTestCase(TestCase):
         request = HttpRequest()
         request.user = self.user
 
+        request.user.user_permissions.add(self.view)
         request.user.user_permissions.add(self.add)
         request.user.user_permissions.add(self.change)
         request.user.user_permissions.add(self.delete)
