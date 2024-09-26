@@ -51,9 +51,6 @@ class ApiConcurrentPatchTestCase(LiveServerTestCase):
         data2 = {'slug': 'new_slug'}
         data3 = {'content': 'new_content'}
 
-        # Get headers for authentication
-
-
         # Create threads to simulate concurrent requests
         thread1 = threading.Thread(target=patch_request, args=(data1,))
         thread2 = threading.Thread(target=patch_request, args=(data2,))
@@ -76,4 +73,3 @@ class ApiConcurrentPatchTestCase(LiveServerTestCase):
         self.assertEqual(self.note.title, "new_title")
         self.assertEqual(self.note.slug, "new_slug")
         self.assertEqual(self.note.content, "new_content")
-
