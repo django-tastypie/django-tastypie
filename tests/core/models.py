@@ -1,3 +1,4 @@
+import time
 from itertools import count
 import uuid
 
@@ -46,6 +47,13 @@ class Note(models.Model):
     class Meta:
         app_label = 'core'
 
+
+class SlowNote(Note):
+    class Meta:
+        proxy = True
+    def save(self, *args, **kwargs):
+        time.sleep(1)
+        return super(SlowNote, self).save(*args, **kwargs)
 
 class NoteWithEditor(Note):
     editor = models.ForeignKey(AUTH_USER_MODEL, related_name='notes_edited',
