@@ -51,6 +51,7 @@ class Note(models.Model):
 class SlowNote(Note):
     class Meta:
         proxy = True
+        app_label = 'core'
 
     def save(self, *args, **kwargs):
         time.sleep(1)
