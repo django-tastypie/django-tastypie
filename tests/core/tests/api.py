@@ -22,6 +22,7 @@ class NoteResource(ModelResource):
         queryset = Note.objects.filter(is_active=True)
         authorization = Authorization()
 
+
 class SlowNoteResource(ModelResource):
     class Meta:
         resource_name = 'slownotes'
