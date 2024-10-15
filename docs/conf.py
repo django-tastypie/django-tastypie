@@ -108,7 +108,7 @@ pygments_style = 'sphinx'
 html_theme = 'default'
 
 try:
-    import sphinx_rtd_theme
+    import sphinx_rtd_theme  # noqa
 except ImportError:
     pass
 else:
