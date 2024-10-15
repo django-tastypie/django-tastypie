@@ -17,6 +17,7 @@ from core.tests.utils import *  # noqa
 from core.tests.validation import *  # noqa
 from core.tests.race_condition import *  # noqa
 
+
 # Explicitly add doctests to suite; Django's test runner stopped
 # running them automatically around version 1.6
 def load_tests(loader, tests, ignore):
