@@ -11,29 +11,13 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04  # TODO: update to ubuntu-latest when django drops python 3.6
+    runs-on: ubuntu-22.04  # TODO: update to ubuntu-latest when django drops python 3.6
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
-        django-version: ["3.2", "4.0", "4.1", "4.2", "5.0"]  # Todo: add "dev" back
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        django-version: ["4.0", "4.1", "4.2", "5.0"]  # Todo: add "dev" back
         exclude:
-           - python-version: "3.6"
-             django-version: "4.0"
-           - python-version: "3.7"
-             django-version: "4.0"
-           - python-version: "3.6"
-             django-version: "4.1"
-           - python-version: "3.7"
-             django-version: "4.1"
-           - python-version: "3.6"
-             django-version: "4.2"
-           - python-version: "3.7"
-             django-version: "4.2"
-           - python-version: "3.6"
-             django-version: "5.0"
-           - python-version: "3.7"
-             django-version: "5.0"
            - python-version: "3.8"
              django-version: "5.0"
            - python-version: "3.9"
