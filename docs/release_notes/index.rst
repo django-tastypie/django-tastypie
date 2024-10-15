@@ -5,6 +5,7 @@ Release Notes
    :maxdepth: 1
 
    dev
+   v0.15.0
    v0.14.7
    v0.14.6
    v0.14.5

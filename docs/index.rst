@@ -83,8 +83,8 @@ Requirements
 Core
 ----
 
-* Python 3.6+, preferably 3.8+ (Whatever is supported by your version of Django)
-* Django 2.2, 3.2 (LTS releases) or Django 4.0 (latest release)
+* Python 3.8+ (Whatever is supported by your version of Django)
+* Django 4.2+ (may work with other versions, but the most recent LTS is our priority)
 * dateutil (http://labix.org/python-dateutil) >= 2.1
 
 Format Support

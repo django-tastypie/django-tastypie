@@ -1,5 +1,11 @@
-Master (v0.9.16)
-================
+v0.15.0
+=======
+
+[2024-10-15] 2444fce - PATCH requests no longer save entire objects, instead only updating fields specified in the payload. This is correct behavior and an unusual edge case, but has been broken for more than a decade so existing workarounds may break as a result.
+
+
+v0.9.16
+======
 
 [2012-12-11] abc0bef - Changed response code of PUT with always_return_data=True from 202 to 200
 
