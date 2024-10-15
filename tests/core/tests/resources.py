@@ -936,6 +936,18 @@ class NoteResource(ModelResource):
         return '/api/v1/notes/%s/' % bundle_or_obj.obj.id
 
 
+class AnotherNoteResource(ModelResource):
+    media_bits = fields.ToManyField('tests.core.tests.resources.MediaBitResource', 'media_bits',
+        related_name='note', null=True)
+
+    class Meta:
+        resource_name = 'notes'
+        filtering = {
+            'media_bits': ALL_WITH_RELATIONS,
+        }
+        queryset = Note.objects.filter()
+
+
 class NoQuerysetNoteResource(ModelResource):
     class Meta:
         resource_name = 'noqsnotes'
@@ -1132,7 +1144,7 @@ class DetailedNoteResource(ModelResource):
             'content': ['startswith', 'exact'],
             'title': ALL,
             'slug': ['exact'],
-            'user': ALL,
+            'user': ALL_WITH_RELATIONS,
             'hello_world': ['exact'],  # Note this is invalid for filtering.
         }
         ordering = ['title', 'slug', 'user']
@@ -1299,6 +1311,18 @@ class NullableRelatedNoteResource(AnotherRelatedNoteResource):
 class NullableBlankRelatedNoteResource(AnotherRelatedNoteResource):
     author = fields.ForeignKey(UserResource, 'author', null=True, blank=True)
     subjects = fields.ManyToManyField(SubjectResource, 'subjects', null=True)
+
+
+class MediaBitResource(ModelResource):
+    note = fields.ToOneField(NoteResource, 'note')
+
+    class Meta:
+        queryset = MediaBit.objects.all()
+        resource_name = 'mediabit'
+        filtering = {
+            'title': ALL,
+        }
+        authorization = Authorization()
 
 
 class NullableMediaBitResource(ModelResource):
@@ -2184,7 +2208,10 @@ class ModelResourceTestCase(TestCase):
 
         # Check where the field name doesn't match the database relation.
         resource_4 = AnotherSubjectResource()
-        self.assertEqual(resource_4.build_filters(filters={'notes__user__startswith': 'Daniel'}), {'notes__author__startswith': 'Daniel'})
+        self.assertEqual(resource_4.build_filters(filters={'notes__user__username__startswith': 'Daniel'}), {'notes__author__username__startswith': 'Daniel'})
+
+        resource_5 = AnotherNoteResource()
+        self.assertEqual(resource_5.build_filters(filters={'media_bits__title__startswith': 'Daniel'}), {'media_bits__title__startswith': 'Daniel'})
 
         # Make sure build_filters works even on resources without queryset
         resource = NoQuerysetNoteResource()
