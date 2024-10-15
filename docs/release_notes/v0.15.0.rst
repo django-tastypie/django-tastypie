@@ -1,0 +1,8 @@
+v0.15.0
+=======
+
+:date: 2024-10-15
+
+- Officially supports Django 5.1 (though no changes were necessary)
+- Dropped official support for Django 3.2.
+- #1617 Fixed a longstanding race condition in PATCH requests that saved entire objects rather than only applying changes from the sent payload
