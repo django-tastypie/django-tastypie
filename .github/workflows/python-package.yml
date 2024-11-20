@@ -20,6 +20,8 @@ jobs:
         exclude:
            - python-version: "3.8"
              django-version: "5.0"
+           - python-version: "3.8"
+             django-version: "5.1"
            - python-version: "3.9"
              django-version: "5.0"
            - python-version: "3.9"
