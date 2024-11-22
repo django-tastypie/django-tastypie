@@ -130,11 +130,6 @@ class DjangoAuthorization(Authorization):
     on, as that's all the more granular Django's permission setup gets.
     """
 
-    # By default, following `ModelAdmin` "convention", `app.change_model` is used
-    # `django.contrib.auth.models.Permission` as perm code for viewing and updating.
-    # https://docs.djangoproject.com/es/1.9/topics/auth/default/#permissions-and-authorization
-    READ_PERM_CODE = 'change'
-
     def base_checks(self, request, model_klass):
         # If it doesn't look like a model, we can't check permissions.
         if not model_klass or not getattr(model_klass, '_meta', None):
@@ -182,10 +177,21 @@ class DjangoAuthorization(Authorization):
         raise Unauthorized("You are not allowed to access that resource.")
 
     def read_list(self, object_list, bundle):
-        return self.perm_list_checks(bundle.request, self.READ_PERM_CODE, object_list)
+        """
+        Checks for both view and change permissions as both allow reading as per Django conventions:
+        https://docs.djangoproject.com/en/4.2/topics/auth/default/#permissions-and-authorization
+        """
+        return self.perm_list_checks(bundle.request, 'view', object_list) or self.perm_list_checks(bundle.request, 'change', object_list)
 
     def read_detail(self, object_list, bundle):
-        return self.perm_obj_checks(bundle.request, self.READ_PERM_CODE, bundle.obj)
+        """
+        Checks for both view and change permissions as both allow reading as per Django conventions:
+        https://docs.djangoproject.com/en/4.2/topics/auth/default/#permissions-and-authorization
+        """
+        try:
+            return self.perm_obj_checks(bundle.request, 'view', bundle.obj)
+        except Unauthorized:
+            return self.perm_obj_checks(bundle.request, 'change', bundle.obj)
 
     def create_list(self, object_list, bundle):
         return self.perm_list_checks(bundle.request, 'add', object_list)

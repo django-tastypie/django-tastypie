@@ -68,34 +68,27 @@ The permissions required using ``DjangoAuthorization`` follow Django Admin's imp
 +=================================+==================+===============================================+======================+
 | ``POST <resource>/``            | create\_list     | ``add``                                       |                      |
 +---------------------------------+------------------+-----------------------------------------------+----------------------+
-| ``POST <resource>/<id>`` (\*)   | create\_detail   | ``add``                                       |                      |
+| ``POST <resource>/<id>``        | create\_detail   | ``add``                                       |                      |
 +---------------------------------+------------------+-----------------------------------------------+----------------------+
-| ``GET <resource>/``             | read\_list       | ``change``                                    |                      |
+| ``GET <resource>/``             | read\_list       | ``view``/``change``                           | ``update_list``      |
 +---------------------------------+------------------+-----------------------------------------------+----------------------+
-| ``GET <resouce>/<id>``          | read\_detail     | ``change``                                    |                      |
+| ``GET <resouce>/<id>``          | read\_detail     | ``view``/``change``                           | ``update_detail``    |
 +---------------------------------+------------------+-----------------------------------------------+----------------------+
-| ``PUT <resource>/``             | update\_list     | ``change``                                    | ``read_list``        |
+| ``PUT <resource>/``             | update\_list     | ``change``                                    |                      |
 +---------------------------------+------------------+-----------------------------------------------+----------------------+
-| ``PUT <resource>/<id>``         | update\_detail   | ``change``                                    | ``read_detail``      |
+| ``PUT <resource>/<id>``         | update\_detail   | ``change``                                    |                      |
 +---------------------------------+------------------+-----------------------------------------------+----------------------+
-| ``DELETE <resource>/``          | delete\_list     | ``delete``                                    | ``read_list``        |
+| ``DELETE <resource>/``          | delete\_list     | ``delete``                                    |                      |
 +---------------------------------+------------------+-----------------------------------------------+----------------------+
-| ``DELETE <resource>/<id>``      | delete\_detail   | ``delete``                                    | ``read_detail``      |
+| ``DELETE <resource>/<id>``      | delete\_detail   | ``delete``                                    |                      |
 +---------------------------------+------------------+-----------------------------------------------+----------------------+
-
-(*) The permission check for ``create_detail`` is implemented in ``DjangoAuthorization``, however ModelResource does not provide an implementation and raises HttpNotImplemented.
-
 
 Notes:
 
 * The actual permission checked is `<app_label>.<permission>_<model>` where app_label is derived from the resource's model (e.g. `myapp.change_foomodel`)
 * `PUT` may revert to `POST` behavior and create new object(s) if the object(s) are not found. In this case the respective `create` permissions are required, instead of the usual `update` permissions.
-* Requiring `change` for both read and update is such to keep consistent with Django Admin. To override this behavior and require a custom permission, override DjangoAuthorization as follows::
+* Checking both `change` and `read` for read is such to keep consistent with Django Admin. Only one of either permissions is required.
 
-    class CustomDjangoAuthorization(DjangoAuthorization):
-        READ_PERM_CODE = 'view` # matching respective Permission.codename
-    
-    
 The ``Authorization`` API
 =========================
 
