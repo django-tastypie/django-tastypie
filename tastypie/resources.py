@@ -29,6 +29,7 @@ except ImportError:
         ReverseOneToOneDescriptor
 
 from django.http import HttpResponse, HttpResponseNotFound, Http404
+from django.http.response import HttpResponseBase
 from django.utils.cache import patch_cache_control, patch_vary_headers
 from django.utils.html import escape
 from django.views.decorators.csrf import csrf_exempt
@@ -250,7 +251,7 @@ class Resource(metaclass=DeclarativeMetaclass):
             except Exception as e:
                 # Prevent muting non-django's exceptions
                 # i.e. RequestException from 'requests' library
-                if hasattr(e, 'response') and isinstance(e.response, HttpResponse):
+                if hasattr(e, 'response') and isinstance(e.response, HttpResponseBase):
                     return e.response
 
                 # A real, non-expected exception.
@@ -275,7 +276,7 @@ class Resource(metaclass=DeclarativeMetaclass):
         """
         Can be overridden to customize response classes used for uncaught
         exceptions. Should always return a subclass of
-        ``django.http.HttpResponse``.
+        ``django.http.response.HttpResponseBase``.
         """
         if isinstance(exception, (NotFound, ObjectDoesNotExist, Http404)):
             return HttpResponseNotFound
@@ -493,7 +494,7 @@ class Resource(metaclass=DeclarativeMetaclass):
         # If what comes back isn't a ``HttpResponse``, assume that the
         # request was accepted and that some action occurred. This also
         # prevents Django from freaking out.
-        if not isinstance(response, HttpResponse):
+        if not isinstance(response, HttpResponseBase):
             return http.HttpNoContent()
 
         return response
@@ -565,7 +566,7 @@ class Resource(metaclass=DeclarativeMetaclass):
         # Authenticate the request as needed.
         auth_result = self._meta.authentication.is_authenticated(request)
 
-        if isinstance(auth_result, HttpResponse):
+        if isinstance(auth_result, HttpResponseBase):
             raise ImmediateHttpResponse(response=auth_result)
 
         if auth_result is not True:
