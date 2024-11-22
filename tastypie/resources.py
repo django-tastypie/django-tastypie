@@ -18,7 +18,7 @@ from django.urls.conf import re_path
 from tastypie.utils.timezone import make_naive_utc
 try:
     from django.contrib.gis.db.models.fields import GeometryField
-except (ImproperlyConfigured, ImportError):
+except (ImproperlyConfigured, ImportError, AttributeError):
     GeometryField = None
 from django.db.models.constants import LOOKUP_SEP
 try:
