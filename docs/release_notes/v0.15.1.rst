@@ -1,0 +1,4 @@
+v0.15.1
+=======
+
+A point release to simply clarify compatibility with Django 5.2 and add it to the test matrix.  No code changes were found to be necessary.
