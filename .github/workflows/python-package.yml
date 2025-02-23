@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04  # TODO: update to ubuntu-latest when django drops python 3.6
+    runs-on: ubuntu-24.04  # TODO: update to ubuntu-latest when django drops python 3.6
     strategy:
       fail-fast: false
       matrix:
