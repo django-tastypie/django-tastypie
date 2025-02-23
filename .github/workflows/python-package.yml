@@ -15,17 +15,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-        django-version: ["4.0", "4.1", "4.2", "5.0", "5.1"]  # Todo: add "dev" back
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        django-version: ["4.0", "4.1", "4.2", "5.0", "5.1", "5.2"]  # Todo: add "dev" back
         exclude:
            - python-version: "3.8"
              django-version: "5.0"
            - python-version: "3.8"
              django-version: "5.1"
+           - python-version: "3.8"
+             django-version: "5.2"
            - python-version: "3.9"
              django-version: "5.0"
            - python-version: "3.9"
              django-version: "5.1"
+           - python-version: "3.9"
+             django-version: "5.2"
 #           - python-version: "3.6"
 #             django-version: "dev"
 #           - python-version: "3.7"
