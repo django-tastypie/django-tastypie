@@ -2555,9 +2555,18 @@ class BaseModelResource(Resource):
             if hasattr(related_mngr, 'clear'):
                 # FIXME: Dupe the original bundle, copy in the new object &
                 #        check the perms on that (using the related resource)?
-
-                # Clear it out, just to be safe.
-                related_mngr.clear()
+                extant_ids = bundle.obj.professions.values_list(
+                    'pk', flat=True
+                )
+                extant_ids = set(extant_ids)
+                new_ids = [b.obj.pk for b in bundle.data[field_name]]
+                new_ids = set(new_ids)
+                to_add = new_ids.difference(extant_ids)
+                to_remove = extant_ids.difference(new_ids)
+                to_add = related_mngr.filter(pk__in=to_add)
+                to_remove = related_mngr.filter(pk__in=to_remove)
+                related_mngr.add(*to_add)
+                related_mngr.remove(*to_remove)
 
             related_objs = []
 
