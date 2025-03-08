@@ -186,18 +186,6 @@ class BasicAuthentication(Authentication):
         request.user = user
         return True
 
-    def get_identifier(self, request):
-        """
-        Provides a unique string identifier for the requestor.
-
-        This implementation returns the user's basic auth username.
-        """
-        try:
-            username = self.extract_credentials(request)[0]
-        except ValueError:
-            username = ''
-        return username or 'nouser'
-
 
 class ApiKeyAuthentication(Authentication):
     """
@@ -271,18 +259,6 @@ class ApiKeyAuthentication(Authentication):
 
         return True
 
-    def get_identifier(self, request):
-        """
-        Provides a unique string identifier for the requestor.
-
-        This implementation returns the user's username.
-        """
-        try:
-            username = self.extract_credentials(request)[0]
-        except ValueError:
-            username = ''
-        return username or 'nouser'
-
 
 class SessionAuthentication(Authentication):
     """
@@ -341,15 +317,6 @@ class SessionAuthentication(Authentication):
             return False
 
         return request.user.is_authenticated
-
-    def get_identifier(self, request):
-        """
-        Provides a unique string identifier for the requestor.
-
-        This implementation returns the user's username.
-        """
-
-        return getattr(request.user, get_username_field())
 
 
 class DigestAuthentication(Authentication):
@@ -459,18 +426,6 @@ class DigestAuthentication(Authentication):
             return False
 
         return key.key
-
-    def get_identifier(self, request):
-        """
-        Provides a unique string identifier for the requestor.
-
-        This implementation returns the user's username.
-        """
-        if hasattr(request, 'user'):
-            if hasattr(request.user, 'username'):
-                return request.user.username
-
-        return 'nouser'
 
 
 class OAuthAuthentication(Authentication):
@@ -583,14 +538,3 @@ class MultiAuthentication(object):
                     return check
 
         return unauthorized
-
-    def get_identifier(self, request):
-        """
-        Provides a unique string identifier for the requestor.
-
-        This implementation returns a combination of IP address and hostname.
-        """
-        try:
-            return request._authentication_backend.get_identifier(request)
-        except AttributeError:
-            return 'nouser'
