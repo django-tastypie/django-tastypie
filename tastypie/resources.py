@@ -363,8 +363,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         """
         return []
 
-    @property
-    def urls(self):
+    def get_urls(self):
         """
         The endpoints this ``Resource`` responds to.
 
@@ -381,6 +380,19 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
         urls += self.base_urls()
         return urls
+
+    @property
+    def urls(self):
+        """
+        Provides URLconf details for the ``Resource`` and all registered
+        ``Fields``.
+        
+        Used by ``Api.urls`` for including ``Resource`` URLs in the root
+        URLconf.
+        
+        This property is required for Django 5.2+ compatibility.
+        """
+        return self.get_urls()
 
     def determine_format(self, request):
         """
