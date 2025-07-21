@@ -371,6 +371,18 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         Mostly a standard URLconf, this is suitable for either automatic use
         when registered with an ``Api`` class or for including directly in
         a URLconf should you choose to.
+        
+        This property is required for Django 5.2+ compatibility.
+        """
+        return self.get_urls()
+
+    def get_urls(self):
+        """
+        The endpoints this ``Resource`` responds to.
+
+        Mostly a standard URLconf, this is suitable for either automatic use
+        when registered with an ``Api`` class or for including directly in
+        a URLconf should you choose to.
         """
         urls = self.prepend_urls()
 
