@@ -11,7 +11,7 @@ from wsgiref.handlers import format_date_time
 
 import django
 from django.conf import settings
-from django.conf.urls import url
+from django.urls import re_path as url
 from django.core.exceptions import (
     ObjectDoesNotExist, MultipleObjectsReturned, ValidationError, FieldDoesNotExist
 )
