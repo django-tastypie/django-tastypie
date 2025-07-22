@@ -31,7 +31,7 @@ try:
 except ImportError:
     # Django 5.2+ removed django.utils.six
     from urllib.parse import urlparse
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 from tastypie.compat import (
     get_user_model, get_username_field, unsalt_token, is_authenticated
