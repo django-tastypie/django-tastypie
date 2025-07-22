@@ -9,7 +9,6 @@ import re
 
 from unicodedata import category
 
-from django.utils import six
 
 # -----------------------------------------------------------------------------
 # javascript identifier unicode categories and "exceptional" chars
@@ -65,9 +64,9 @@ def is_valid_javascript_identifier(identifier, escape=r'\\u',
     if not identifier:
         return False
 
-    if not isinstance(identifier, six.text_type):
+    if not isinstance(identifier, str):
         try:
-            identifier = six.text_type(identifier, 'utf-8')
+            identifier = str(identifier, 'utf-8')
         except UnicodeDecodeError:
             return False
 
@@ -81,7 +80,7 @@ def is_valid_javascript_identifier(identifier, escape=r'\\u',
             if len(segment) < 4:
                 return False
             try:
-                add_char(six.unichr(int('0x' + segment[:4], 16)))
+                add_char(chr(int('0x' + segment[:4], 16)))
             except Exception:
                 return False
             add_char(segment[4:])
