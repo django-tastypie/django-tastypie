@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 import warnings
-from django.conf.urls import url, include
+from django.urls import re_path as url, include
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse, HttpResponseBadRequest
 from tastypie.compat import reverse
