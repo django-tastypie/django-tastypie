@@ -26,7 +26,11 @@ except ImportError:
             return ''
         # Keep only alphanumeric characters
         return ''.join(c for c in token if c.isalnum())
-from django.utils.six.moves.urllib.parse import urlparse
+try:
+    from django.utils.six.moves.urllib.parse import urlparse
+except ImportError:
+    # Django 5.2+ removed django.utils.six
+    from urllib.parse import urlparse
 from django.utils.translation import ugettext as _
 
 from tastypie.compat import (

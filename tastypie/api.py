@@ -108,7 +108,7 @@ class Api(object):
 
         for name in sorted(self._registry.keys()):
             self._registry[name].api_name = self.api_name
-            pattern_list.append(url(r"^(?P<api_name>%s)/" % self.api_name, include(self._registry[name].urls)))
+            pattern_list.append(url(r"^(?P<api_name>%s)/" % self.api_name, include(self._registry[name].url_patterns)))
 
         urlpatterns = self.prepend_urls()
 

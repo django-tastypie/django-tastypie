@@ -886,14 +886,14 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         found_at = chomped_uri.rfind(self._meta.resource_name, 0, end_of_resource_name)
         chomped_uri = chomped_uri[found_at:]
         try:
-            for url_resolver in getattr(self, 'urls', []):
+            for url_resolver in getattr(self, 'url_patterns', []):
                 result = url_resolver.resolve(chomped_uri)
 
                 if result is not None:
                     view, args, kwargs = result
                     break
             else:
-                raise Resolver404("URI not found in 'self.urls'.")
+                raise Resolver404("URI not found in 'self.url_patterns'.")
         except Resolver404:
             raise NotFound("The URL provided '%s' was not a link to a valid resource." % uri)
 
