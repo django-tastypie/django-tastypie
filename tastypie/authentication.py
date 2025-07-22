@@ -9,7 +9,23 @@ import warnings
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.exceptions import ImproperlyConfigured
-from django.middleware.csrf import _sanitize_token, constant_time_compare
+try:
+    from django.middleware.csrf import _sanitize_token, constant_time_compare
+except ImportError:
+    # Django 5.2+ removed _sanitize_token
+    from django.middleware.csrf import constant_time_compare
+    
+    def _sanitize_token(token):
+        """
+        Replacement for Django's removed _sanitize_token function.
+        For Django 5.2+ compatibility.
+        """
+        # Remove any non-alphanumeric characters and return the token
+        # This is a simplified version of what Django used to do
+        if not token:
+            return ''
+        # Keep only alphanumeric characters
+        return ''.join(c for c in token if c.isalnum())
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import ugettext as _
 
