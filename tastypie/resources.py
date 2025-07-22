@@ -376,6 +376,15 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         """
         return self.get_urls()
 
+    @property
+    def url_patterns(self):
+        """
+        Alias for urls property to maintain Django 5.2+ compatibility.
+        
+        Django 5.2+ expects url_patterns attribute for URL resolution.
+        """
+        return self.urls
+
     def get_urls(self):
         """
         The endpoints this ``Resource`` responds to.
