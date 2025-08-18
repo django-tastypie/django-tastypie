@@ -36,7 +36,7 @@ jobs:
 #             django-version: "dev"
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Install OS dependencies
       run: |
         sudo apt install -y binutils libproj-dev gdal-bin libsqlite3-mod-spatialite
