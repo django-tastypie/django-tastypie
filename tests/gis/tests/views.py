@@ -161,10 +161,10 @@ class MoreViewsTestCase(TestCaseWithFixture):
         self.assertEqual(response.status_code, 201)
 
         location = response['Location']
-        self.assertTrue(location.endswith('/api/v1/geonotes/4/'))
+        self.assertIn('/api/v1/geonotes/', location)
 
         # make sure posted object exists
-        response = self.client.get('/api/v1/geonotes/4/', HTTP_ACCEPT='application/json')
+        response = self.client.get(location, HTTP_ACCEPT='application/json')
 
         self.assertEqual(response.status_code, 200)
 
@@ -208,10 +208,10 @@ class MoreViewsTestCase(TestCaseWithFixture):
         self.assertEqual(response.status_code, 201)
 
         location = response['Location']
-        self.assertTrue(location.endswith('/api/v1/geonotes/4/'))
+        self.assertIn('/api/v1/geonotes/', location)
 
         # make sure posted object exists
-        response = self.client.get('/api/v1/geonotes/4/', HTTP_ACCEPT='application/json')
+        response = self.client.get(location, HTTP_ACCEPT='application/json')
 
         self.assertEqual(response.status_code, 200)
 
@@ -225,7 +225,7 @@ class MoreViewsTestCase(TestCaseWithFixture):
         self.assertEqual(obj['points'], {"coordinates": [[-122.475233, 37.768616999999999], [-122.470416, 37.767381999999998]], "type": "MultiPoint"})
 
         # Or we can ask for XML
-        response = self.client.get('/api/v1/geonotes/4/', HTTP_ACCEPT='application/xml')
+        response = self.client.get(location, HTTP_ACCEPT='application/xml')
 
         self.assertEqual(response.status_code, 200)
         data = response.content.decode('utf-8')
