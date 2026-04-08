@@ -213,7 +213,7 @@ class PostResource(ModelResource):
 
 class PaymentResource(ModelResource):
     job = fields.ToOneField('related_resource.api.resources.JobResource',
-        'job')
+        'job', null=True)
 
     class Meta:
         queryset = Payment.objects.all()
