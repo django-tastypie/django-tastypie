@@ -1,5 +1,5 @@
 import datetime
-import mock
+from unittest import mock
 from pytz.reference import Pacific
 
 from django.http import HttpRequest

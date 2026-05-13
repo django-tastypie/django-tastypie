@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 import base64
 from collections import OrderedDict
 import copy
@@ -8,7 +6,7 @@ import datetime
 from decimal import Decimal
 from io import BytesIO
 import json
-from mock import patch, Mock
+from unittest.mock import patch, Mock
 import sys
 import time
 from unittest import skipIf
@@ -19,6 +17,7 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.exceptions import FieldError, MultipleObjectsReturned, ObjectDoesNotExist, ImproperlyConfigured
 from django.core import mail
+from time import mktime
 try:
     from django.urls import reverse
 except ImportError:
@@ -26,7 +25,8 @@ except ImportError:
 from django.http import FileResponse, HttpRequest, QueryDict, Http404
 from django.test import TestCase
 from django.test.utils import override_settings
-from django.utils import timezone
+
+from tastypie.compat import timezone
 
 from tastypie.authentication import BasicAuthentication
 from tastypie.authorization import Authorization
@@ -37,7 +37,7 @@ from tastypie.exceptions import (
     UnsupportedSerializationFormat, UnsupportedDeserializationFormat,
 )
 from tastypie import fields, http
-from tastypie.compat import is_authenticated, force_str
+from tastypie.compat import force_str
 from tastypie.paginator import Paginator
 from tastypie.resources import (
     ALL, ALL_WITH_RELATIONS, convert_post_to_put, convert_post_to_patch,
@@ -50,7 +50,8 @@ from tastypie.validation import FormValidation
 
 from core.models import (
     Note, NoteWithEditor, Subject, MediaBit, AutoNowNote, DateRecord, Counter,
-    MyDefaultPKModel, MyUUIDModel, MyRelatedUUIDModel,
+    MyDefaultPKModel, MyUUIDModel, MyRelatedUUIDModel, BigAutoNowModel, MyContainerItemModel,
+    MyContainerItemGroupingModel, MyContainerModel
 )
 from core.tests.mocks import MockRequest
 from core.utils import adjust_schema, SimpleHandler
@@ -210,10 +211,10 @@ class MangledBasicResource(BasicResource):
         if isinstance(data_dict, dict):
             if 'meta' in data_dict:
                 # Get rid of the "meta".
-                del(data_dict['meta'])
+                del data_dict['meta']
                 # Rename the objects.
                 data_dict['testobjects'] = copy.copy(data_dict['objects'])
-                del(data_dict['objects'])
+                del data_dict['objects']
 
         return data_dict
 
@@ -310,19 +311,19 @@ class ResourceTestCase(TestCase):
     def test_fields(self):
         basic = BasicResource()
         self.assertEqual(len(basic.fields), 4)
-        self.assert_('name' in basic.fields)
+        self.assertIn('name', basic.fields)
         self.assertEqual(isinstance(basic.fields['name'], fields.CharField), True)
         self.assertEqual(basic.fields['name']._resource, basic.__class__)
         self.assertEqual(basic.fields['name'].instance_name, 'name')
-        self.assert_('view_count' in basic.fields)
+        self.assertIn('view_count', basic.fields)
         self.assertEqual(isinstance(basic.fields['view_count'], fields.IntegerField), True)
         self.assertEqual(basic.fields['view_count']._resource, basic.__class__)
         self.assertEqual(basic.fields['view_count'].instance_name, 'view_count')
-        self.assert_('date_joined' in basic.fields)
+        self.assertIn('date_joined', basic.fields)
         self.assertEqual(isinstance(basic.fields['date_joined'], fields.DateTimeField), True)
         self.assertEqual(basic.fields['date_joined']._resource, basic.__class__)
         self.assertEqual(basic.fields['date_joined'].instance_name, 'date_joined')
-        self.assert_('resource_uri' in basic.fields)
+        self.assertIn('resource_uri', basic.fields)
         self.assertEqual(isinstance(basic.fields['resource_uri'], fields.CharField), True)
         self.assertEqual(basic.fields['resource_uri']._resource, basic.__class__)
         self.assertEqual(basic.fields['resource_uri'].instance_name, 'resource_uri')
@@ -330,35 +331,35 @@ class ResourceTestCase(TestCase):
 
         another = AnotherBasicResource()
         self.assertEqual(len(another.fields), 8)
-        self.assert_('name' in another.fields)
+        self.assertIn('name', another.fields)
         self.assertEqual(isinstance(another.name, fields.CharField), True)
         self.assertEqual(another.fields['name']._resource, another.__class__)
         self.assertEqual(another.fields['name'].instance_name, 'name')
-        self.assert_('view_count' in another.fields)
+        self.assertIn('view_count', another.fields)
         self.assertEqual(isinstance(another.view_count, fields.IntegerField), True)
         self.assertEqual(another.fields['view_count']._resource, another.__class__)
         self.assertEqual(another.fields['view_count'].instance_name, 'view_count')
-        self.assert_('date_joined' in another.fields)
+        self.assertIn('date_joined', another.fields)
         self.assertEqual(isinstance(another.date_joined, fields.DateField), True)
         self.assertEqual(another.fields['date_joined']._resource, another.__class__)
         self.assertEqual(another.fields['date_joined'].instance_name, 'date_joined')
-        self.assert_('is_active' in another.fields)
+        self.assertIn('is_active', another.fields)
         self.assertEqual(isinstance(another.is_active, fields.BooleanField), True)
         self.assertEqual(another.fields['is_active']._resource, another.__class__)
         self.assertEqual(another.fields['is_active'].instance_name, 'is_active')
-        self.assert_('aliases' in another.fields)
+        self.assertIn('aliases', another.fields)
         self.assertEqual(isinstance(another.aliases, fields.ListField), True)
         self.assertEqual(another.fields['aliases']._resource, another.__class__)
         self.assertEqual(another.fields['aliases'].instance_name, 'aliases')
-        self.assert_('meta' in another.fields)
+        self.assertIn('meta', another.fields)
         self.assertEqual(isinstance(another.meta, fields.DictField), True)
         self.assertEqual(another.fields['meta']._resource, another.__class__)
         self.assertEqual(another.fields['meta'].instance_name, 'meta')
-        self.assert_('owed' in another.fields)
+        self.assertIn('owed', another.fields)
         self.assertEqual(isinstance(another.owed, fields.DecimalField), True)
         self.assertEqual(another.fields['owed']._resource, another.__class__)
         self.assertEqual(another.fields['owed'].instance_name, 'owed')
-        self.assert_('resource_uri' in another.fields)
+        self.assertIn('resource_uri', another.fields)
         self.assertEqual(isinstance(another.resource_uri, fields.CharField), True)
         self.assertEqual(another.fields['resource_uri']._resource, another.__class__)
         self.assertEqual(another.fields['resource_uri'].instance_name, 'resource_uri')
@@ -366,15 +367,15 @@ class ResourceTestCase(TestCase):
 
         nouri = NoUriBasicResource()
         self.assertEqual(len(nouri.fields), 3)
-        self.assert_('name' in nouri.fields)
+        self.assertIn('name', nouri.fields)
         self.assertEqual(isinstance(nouri.name, fields.CharField), True)
         self.assertEqual(nouri.fields['name']._resource, nouri.__class__)
         self.assertEqual(nouri.fields['name'].instance_name, 'name')
-        self.assert_('view_count' in nouri.fields)
+        self.assertIn('view_count', nouri.fields)
         self.assertEqual(isinstance(nouri.view_count, fields.IntegerField), True)
         self.assertEqual(nouri.fields['view_count']._resource, nouri.__class__)
         self.assertEqual(nouri.fields['view_count'].instance_name, 'view_count')
-        self.assert_('date_joined' in nouri.fields)
+        self.assertIn('date_joined', nouri.fields)
         self.assertEqual(isinstance(nouri.date_joined, fields.DateTimeField), True)
         self.assertEqual(nouri.fields['date_joined']._resource, nouri.__class__)
         self.assertEqual(nouri.fields['date_joined'].instance_name, 'date_joined')
@@ -561,7 +562,7 @@ class ResourceTestCase(TestCase):
         empty_null_bundle = Bundle(obj=obj, data={})
         hydrated = nullable.full_hydrate(empty_null_bundle)
 
-        self.assertEquals(hydrated.obj.name, "Daniel")
+        self.assertEqual(hydrated.obj.name, "Daniel")
 
     def test_full_hydrate__can_put_null_to_clear_related_value(self):
         class RelatedBasicResource(BasicResource):
@@ -898,8 +899,8 @@ class ResourceTestCase(TestCase):
         request.method = 'GET'
 
         basic_resource_list = json.loads(force_str(basic.get_list(request).content))['objects']
-        self.assertEquals(basic_resource_list[0]['name'], 'Daniel')
-        self.assertEquals(basic_resource_list[0]['date_joined'], u'2010-03-30T09:00:00')
+        self.assertEqual(basic_resource_list[0]['name'], 'Daniel')
+        self.assertEqual(basic_resource_list[0]['date_joined'], u'2010-03-30T09:00:00')
 
         self.assertNotIn('view_count', basic_resource_list[0])
 
@@ -1075,6 +1076,19 @@ class AutoNowNoteResource(ModelResource):
             return '/api/v1/autonownotes/'
 
         return '/api/v1/autonownotes/%s/' % bundle_or_obj.obj.id
+
+
+class BigAutoNowModelResource(ModelResource):
+    class Meta:
+        resource_name = 'bigautonowmodels'
+        queryset = BigAutoNowModel.objects.all()
+        authorization = Authorization()
+
+    def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_list'):
+        if bundle_or_obj is None:
+            return '/api/v1/bigautonowmodels/'
+
+        return '/api/v1/bigautonowmodels/%s/' % bundle_or_obj.obj.id
 
 
 class CustomPaginator(Paginator):
@@ -1359,7 +1373,7 @@ class TestOptionsResource(ModelResource):
 class PerUserAuthorization(Authorization):
     def read_list(self, object_list, bundle):
         if bundle.request and hasattr(bundle.request, 'user'):
-            if is_authenticated(bundle.request.user):
+            if bundle.request.user.is_authenticated:
                 object_list = object_list.filter(author=bundle.request.user)
             else:
                 object_list = object_list.none()
@@ -1468,6 +1482,39 @@ class CounterUpdateDetailResource(ModelResource):
     class Meta:
         queryset = Counter.objects.all()
         authorization = CounterAuthorization()
+
+
+class MyContainerItemModelResource(ModelResource):
+    parent = fields.ForeignKey('core.tests.resources.MyContainerModelResource', 'parent')
+
+    class Meta:
+        queryset = MyContainerItemModel.objects.all()
+        allowed_methods = ['get', 'put', 'post']
+        authorization = Authorization()
+        resource_name = 'my-container-item'
+
+
+class MyContainerItemGroupingModel(ModelResource):
+    parent = fields.ForeignKey('core.tests.resources.MyContainerModelResource', 'parent')
+    grouping_item = fields.ForeignKey(MyContainerItemModelResource, 'grouping_item')
+
+    class Meta:
+        queryset = MyContainerItemGroupingModel.objects.all()
+        allowed_methods = ['get', 'put', 'post']
+        authorization = Authorization()
+        resource_name = 'my-container-item-group'
+
+
+class MyContainerModelResource(ModelResource):
+    container_items = fields.ToManyField(MyContainerItemModelResource, 'item_set', blank=True)
+    container_grouping_items = fields.ToManyField(MyContainerItemGroupingModel, 'item_grouping_set', blank=True)
+
+    class Meta:
+        queryset = MyContainerModel.objects.all()
+        allowed_methods = ['get', 'put', 'post']
+        authorization = Authorization()
+        resource_name = 'my-container'
+        always_return_data = True
 
 
 @override_settings(ROOT_URLCONF='core.tests.resource_urls')
@@ -1596,7 +1643,7 @@ class ModelResourceTestCase(TestCase):
         # some related bits here & self-referential bits later on.
         resource_1 = RelatedNoteResource()
         self.assertEqual(len(resource_1.fields), 8)
-        self.assert_('author' in resource_1.fields)
+        self.assertIn('author', resource_1.fields)
         self.assertTrue(isinstance(resource_1.fields['author'], fields.ToOneField))
         self.assertEqual(resource_1.fields['author']._resource, resource_1.__class__)
         self.assertEqual(resource_1.fields['author'].instance_name, 'author')
@@ -1681,6 +1728,20 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(annr.fields['updated'].null, False)
         self.assertEqual(annr.fields['updated'].readonly, False)
         self.assertEqual(annr.fields['updated'].unique, False)
+
+    def test_big_auto_field(self):
+        annr = BigAutoNowModelResource()
+        self.assertEqual(len(annr.fields), 2)
+        self.assertEqual(sorted(annr.fields.keys()), ['id', 'resource_uri'])
+
+        self.assertTrue(isinstance(annr.fields['id'], fields.IntegerField))
+        self.assertEqual(annr.fields['id'].attribute, 'id')
+        self.assertEqual(annr.fields['id'].blank, True)
+        self.assertEqual(annr.fields['id']._default, '')
+        self.assertEqual(annr.fields['id'].instance_name, 'id')
+        self.assertEqual(annr.fields['id'].null, False)
+        self.assertEqual(annr.fields['id'].readonly, False)
+        self.assertEqual(annr.fields['id'].unique, True)
 
     def test_invalid_model_resource(self):
         """
@@ -3627,7 +3688,7 @@ class ModelResourceTestCase(TestCase):
         request.method = 'GET'
 
         # Patch the ``created/updated`` defaults for testability.
-        with patch.object(resource.fields['created'], '_default', new=aware_datetime(2011, 9, 24, 0, 2)),\
+        with patch.object(resource.fields['created'], '_default', new=aware_datetime(2011, 9, 24, 0, 2)), \
                 patch.object(resource.fields['updated'], '_default', new=aware_datetime(2011, 9, 24, 0, 2)):
             resp = resource.get_schema(request)
 
@@ -4177,10 +4238,71 @@ class ModelResourceTestCase(TestCase):
     @patch('tastypie.throttle.time')
     @override_settings(DEBUG=False)
     def test_check_datetime_throttling(self, mocked_time):
-        mocked_time.time.return_value = time.time()
 
         retry_after = datetime.datetime(year=2014, month=8, day=8, hour=8, minute=55, tzinfo=timezone.utc)
-        retry_after_str = 'Fri, 08 Aug 2014 14:55:00 GMT'
+        mocked_time.time.return_value = mktime(retry_after.timetuple())
+        retry_after_str = 'Fri, 08 Aug 2014 08:55:00 GMT'
+
+        resource = ThrottledNoteResource()
+        _orginal_throttle = resource._meta.throttle
+
+        class DatetimeThrottle(resource._meta.throttle.__class__):
+            def should_be_throttled(self, *args, **kwargs):
+                ret = super(DatetimeThrottle, self).should_be_throttled(*args, **kwargs)
+                if ret:
+                    return retry_after
+                return False
+        resource._meta.throttle = DatetimeThrottle(
+            throttle_at=resource._meta.throttle.throttle_at,
+            timeframe=resource._meta.throttle.timeframe,
+            expiration=resource._meta.throttle.expiration
+        )
+
+        request = HttpRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'GET'
+
+        # Not throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 1)
+
+        # Not throttled.
+        resp = resource.dispatch('list', request)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Throttled.
+        with self.assertRaises(ImmediateHttpResponse) as ctx:
+            resp = resource.dispatch('list', request)
+        e = ctx.exception
+        self.assertEqual(e.response.status_code, 429)
+        self.assertEqual(e.response['Retry-After'], retry_after_str)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Throttled.
+        with self.assertRaises(ImmediateHttpResponse) as ctx:
+            resp = resource.dispatch('list', request)
+        e = ctx.exception
+        self.assertEqual(e.response.status_code, 429)
+        self.assertEqual(e.response['Retry-After'], retry_after_str)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        # Check the ``wrap_view``.
+        resp = resource.wrap_view('dispatch_list')(request)
+        self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp['Retry-After'], retry_after_str)
+        self.assertEqual(len(cache.get('noaddr_nohost_accesses')), 2)
+
+        resource._meta.throttle = _orginal_throttle
+
+    @patch('tastypie.throttle.time')
+    @override_settings(DEBUG=False, USE_TZ=False)
+    def test_check_datetime_throttling_notz(self, mocked_time):
+
+        retry_after = datetime.datetime(year=2014, month=8, day=8, hour=8, minute=55, tzinfo=timezone.utc)
+        mocked_time.time.return_value = mktime(retry_after.timetuple())
+        retry_after_str = 'Fri, 08 Aug 2014 08:55:00 GMT'
 
         resource = ThrottledNoteResource()
         _orginal_throttle = resource._meta.throttle
@@ -4421,9 +4543,9 @@ class ModelResourceTestCase(TestCase):
         }, obj=Counter())
         cr.obj_create(counter_bundle)
 
-        self.assertEquals(counter_bundle._create_auth_call_count, 1)
-        self.assertEquals(counter_bundle.obj.name, "About")
-        self.assertEquals(counter_bundle.obj.slug, "about")
+        self.assertEqual(counter_bundle._create_auth_call_count, 1)
+        self.assertEqual(counter_bundle.obj.name, "About")
+        self.assertEqual(counter_bundle.obj.slug, "about")
 
     def test_obj_update(self):
         self.assertEqual(Note.objects.all().count(), 6)
@@ -4587,9 +4709,9 @@ class ModelResourceTestCase(TestCase):
         cr.obj_update(counter_bundle, pk=1)
 
         counter = Counter.objects.get(pk=1)
-        self.assertEquals(counter_bundle._update_auth_call_count, 1)
-        self.assertEquals(counter_bundle.obj.name, "Signups")
-        self.assertEquals(counter_bundle.obj.slug, "signups")
+        self.assertEqual(counter_bundle._update_auth_call_count, 1)
+        self.assertEqual(counter_bundle.obj.name, "Signups")
+        self.assertEqual(counter_bundle.obj.slug, "signups")
 
     def test_lookup_kwargs_with_identifiers__field_without_attr(self):
         """
@@ -4958,7 +5080,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content.decode('utf-8'), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
         self.assertTrue(resp.has_header('Cache-Control'))
-        self.assertEqual(resp._headers['cache-control'], ('Cache-Control', 'no-cache'))
+        self.assertEqual(resp['Cache-Control'], 'no-cache')
 
         # Now as Ajax.
         request.META = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
@@ -4966,7 +5088,7 @@ class ModelResourceTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content.decode('utf-8'), '{"content": "This is my very first post using my shiny new API. Pretty sweet, huh?", "created": "2010-03-30T20:05:00", "id": 1, "is_active": true, "resource_uri": "/api/v1/notes/1/", "slug": "first-post", "title": "First Post!", "updated": "2010-03-30T20:05:00"}')
         self.assertTrue(resp.has_header('cache-control'))
-        self.assertEqual(resp._headers['cache-control'], ('Cache-Control', 'no-cache'))
+        self.assertEqual(resp['Cache-Control'], 'no-cache')
 
     def test_custom_paginator(self):
         mock_request = MockRequest()
@@ -5057,6 +5179,39 @@ class ModelResourceTestCase(TestCase):
 
         response = resource.patch_list(request)
         self.assertEqual(response.status_code, 202)
+
+    def test_saves_when_a_single_resource_is_used_on_multiple_to_many_resources(self):
+        container_resource = MyContainerModelResource(api_name='v1')
+        request = MockRequest()
+        request.GET = {'format': 'json'}
+        request.method = 'PUT'
+
+        container = MyContainerModel.objects.create(name='test')
+        resource_uri = '/api/v1/my-container/%s/' % container.id
+
+        request.set_body(json.dumps({
+            'resource_uri': resource_uri,
+            'id': container.id,
+            'name': 'foo',
+            'container_items': [
+                {
+                    'parent': resource_uri,
+                    'name': 'container item 1'
+                }
+            ],
+            'container_grouping_items': [
+                {
+                    'parent': resource_uri,
+                    'grouping_item': {
+                        'parent': resource_uri,
+                        'name': 'container item 2'
+                    }
+                }
+            ]
+        }))
+
+        resp = container_resource.put_detail(request)
+        self.assertEqual(resp.status_code, 200)
 
 
 class BasicAuthResourceTestCase(TestCase):

@@ -7,8 +7,3 @@ copied to the release notes for the next release.
 Major changes
 -------------
 
-
-Bugfixes
---------
-
-* Example Bugfix (Closes #PR_Number)

@@ -1,6 +1,6 @@
+import doctest
 import warnings
 warnings.simplefilter('ignore', Warning)  # noqa
-import doctest
 
 from core.tests.api import *  # noqa
 from core.tests.authentication import *  # noqa
@@ -15,6 +15,7 @@ from core.tests.serializers import *  # noqa
 from core.tests.throttle import *  # noqa
 from core.tests.utils import *  # noqa
 from core.tests.validation import *  # noqa
+from core.tests.race_condition import *  # noqa
 
 
 # Explicitly add doctests to suite; Django's test runner stopped

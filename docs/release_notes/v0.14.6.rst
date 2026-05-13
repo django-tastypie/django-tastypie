@@ -1,0 +1,7 @@
+v0.14.6
+=======
+
+:date: 2023-09-02
+
+Fix for crash under Session-based auth when CRSF token is lost.
+Added support for Django 4.2.

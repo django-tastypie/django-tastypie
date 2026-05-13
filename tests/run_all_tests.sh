@@ -3,7 +3,7 @@
 PYTHONPATH=$PWD:$PWD/..${PYTHONPATH:+:$PYTHONPATH}
 export PYTHONPATH
 
-VERSION=`django-admin.py --version`
+VERSION=`django-admin --version`
 arrIN=(${VERSION//./ })
 major=${arrIN[0]}
 minor=${arrIN[1]}

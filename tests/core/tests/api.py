@@ -6,11 +6,12 @@ from django.test import TestCase
 from django.test.utils import override_settings
 
 from tastypie.api import Api
+from tastypie.authorization import Authorization
 from tastypie.exceptions import NotRegistered, BadRequest
 from tastypie.resources import ModelResource
 from tastypie.serializers import Serializer
 
-from core.models import Note
+from core.models import Note, SlowNote
 from core.utils import adjust_schema
 User = get_user_model()
 
@@ -19,6 +20,14 @@ class NoteResource(ModelResource):
     class Meta:
         resource_name = 'notes'
         queryset = Note.objects.filter(is_active=True)
+        authorization = Authorization()
+
+
+class SlowNoteResource(ModelResource):
+    class Meta:
+        resource_name = 'slownotes'
+        queryset = SlowNote.objects.filter(is_active=True)
+        authorization = Authorization()
 
 
 class UserResource(ModelResource):

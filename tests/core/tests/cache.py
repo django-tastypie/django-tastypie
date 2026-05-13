@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from django.core.cache import cache
 from django.test import TestCase

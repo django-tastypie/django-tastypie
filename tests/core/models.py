@@ -1,3 +1,4 @@
+import time
 from itertools import count
 import uuid
 
@@ -45,6 +46,16 @@ class Note(models.Model):
 
     class Meta:
         app_label = 'core'
+
+
+class SlowNote(Note):
+    class Meta:
+        proxy = True
+        app_label = 'core'
+
+    def save(self, *args, **kwargs):
+        time.sleep(1)
+        return super(SlowNote, self).save(*args, **kwargs)
 
 
 class NoteWithEditor(Note):
@@ -97,6 +108,13 @@ class AutoNowNote(models.Model):
         app_label = 'core'
 
 
+class BigAutoNowModel(models.Model):
+    id = models.BigAutoField(primary_key=True)
+
+    class Meta:
+        app_label = 'core'
+
+
 class Counter(models.Model):
     name = models.CharField(max_length=30)
     slug = models.SlugField(unique=True)
@@ -138,6 +156,29 @@ class MyUUIDModel(models.Model):
 class MyRelatedUUIDModel(models.Model):
     myuuidmodels = models.ManyToManyField(MyUUIDModel)
     content = models.TextField(blank=True, default='')
+
+    class Meta:
+        app_label = 'core'
+
+
+class MyContainerModel(models.Model):
+    name = models.CharField(max_length=128, blank=True, null=True)
+
+    class Meta:
+        app_label = 'core'
+
+
+class MyContainerItemModel(models.Model):
+    parent = models.ForeignKey(MyContainerModel, on_delete=models.CASCADE, related_name='item_set')
+    name = models.CharField(max_length=128, blank=True, null=True)
+
+    class Meta:
+        app_label = 'core'
+
+
+class MyContainerItemGroupingModel(models.Model):
+    parent = models.ForeignKey(MyContainerModel, on_delete=models.CASCADE, related_name='item_grouping_set')
+    grouping_item = models.ForeignKey(MyContainerItemModel, on_delete=models.CASCADE)
 
     class Meta:
         app_label = 'core'

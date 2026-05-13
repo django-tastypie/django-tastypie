@@ -1,6 +1,6 @@
 from tastypie.api import Api
-from basic.api.resources import NoteResource, UserResource, BustedResource,\
-    CachedUserResource, PublicCachedUserResource, PrivateCachedUserResource,\
+from basic.api.resources import NoteResource, UserResource, BustedResource, \
+    CachedUserResource, PublicCachedUserResource, PrivateCachedUserResource, \
     CacheDisabledUserResource, SlugBasedNoteResource, SessionUserResource
 
 

@@ -1,4 +1,3 @@
-from __future__ import unicode_literals
 import base64
 from hashlib import sha1
 import hmac
@@ -9,13 +8,13 @@ import warnings
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core.exceptions import ImproperlyConfigured
-from django.middleware.csrf import _sanitize_token, constant_time_compare
-from django.utils.translation import ugettext as _
 
-from six.moves.urllib.parse import urlparse
+from django.utils.translation import gettext as _
+
+from urllib.parse import urlparse
 
 from tastypie.compat import (
-    get_user_model, get_username_field, unsalt_token, is_authenticated
+    get_user_model, get_username_field, compare_sanitized_tokens, InvalidTokenFormat, check_token_format
 )
 from tastypie.http import HttpUnauthorized
 
@@ -295,6 +294,7 @@ class SessionAuthentication(Authentication):
 
     Requires a valid CSRF token.
     """
+
     def is_authenticated(self, request, **kwargs):
         """
         Checks to make sure the user is logged in & has a Django session.
@@ -306,12 +306,16 @@ class SessionAuthentication(Authentication):
         # the serialized bodies.
 
         if request.method in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
-            return is_authenticated(request.user)
+            return request.user.is_authenticated
 
         if getattr(request, '_dont_enforce_csrf_checks', False):
-            return is_authenticated(request.user)
+            return request.user.is_authenticated
+        csrf_token = request.COOKIES.get(settings.CSRF_COOKIE_NAME, '')
 
-        csrf_token = _sanitize_token(request.COOKIES.get(settings.CSRF_COOKIE_NAME, ''))
+        try:
+            csrf_token = check_token_format(csrf_token)
+        except InvalidTokenFormat:
+            return False
 
         if request.is_secure():
             referer = request.META.get('HTTP_REFERER')
@@ -325,13 +329,18 @@ class SessionAuthentication(Authentication):
                 return False
 
         request_csrf_token = request.META.get('HTTP_X_CSRFTOKEN', '')
-        request_csrf_token = _sanitize_token(request_csrf_token)
-
-        if not constant_time_compare(unsalt_token(request_csrf_token),
-                                     unsalt_token(csrf_token)):
+        try:
+            request_csrf_token = check_token_format(request_csrf_token)
+        except InvalidTokenFormat:
             return False
 
-        return is_authenticated(request.user)
+        try:
+            if not compare_sanitized_tokens(request_csrf_token, csrf_token):
+                return False
+        except AssertionError:
+            return False
+
+        return request.user.is_authenticated
 
     def get_identifier(self, request):
         """
@@ -368,7 +377,8 @@ class DigestAuthentication(Authentication):
         self.realm = realm
 
         if python_digest is None:
-            raise ImproperlyConfigured("The 'python_digest' package could not be imported. It is required for use with the 'DigestAuthentication' class.")
+            raise ImproperlyConfigured(
+                "The 'python_digest' package could not be imported. It is required for use with the 'DigestAuthentication' class.")
 
     def _unauthorized(self):
         response = HttpUnauthorized()
@@ -471,14 +481,17 @@ class OAuthAuthentication(Authentication):
     This does *NOT* provide OAuth authentication in your API, strictly
     consumption.
     """
+
     def __init__(self, **kwargs):
         super(OAuthAuthentication, self).__init__(**kwargs)
 
         if oauth2 is None:
-            raise ImproperlyConfigured("The 'python-oauth2' package could not be imported. It is required for use with the 'OAuthAuthentication' class.")
+            raise ImproperlyConfigured(
+                "The 'python-oauth2' package could not be imported. It is required for use with the 'OAuthAuthentication' class.")
 
         if oauth_provider is None:
-            raise ImproperlyConfigured("The 'django-oauth-plus' package could not be imported. It is required for use with the 'OAuthAuthentication' class.")
+            raise ImproperlyConfigured(
+                "The 'django-oauth-plus' package could not be imported. It is required for use with the 'OAuthAuthentication' class.")
 
     def is_authenticated(self, request, **kwargs):
         from oauth_provider.store import store
@@ -488,9 +501,11 @@ class OAuthAuthentication(Authentication):
             consumer = store.get_consumer(request, oauth_request, oauth_request.get_parameter('oauth_consumer_key'))
 
             try:
-                token = store.get_access_token(request, oauth_request, consumer, oauth_request.get_parameter('oauth_token'))
+                token = store.get_access_token(request, oauth_request, consumer,
+                                               oauth_request.get_parameter('oauth_token'))
             except oauth_provider.store.InvalidTokenError:
-                return oauth_provider.utils.send_oauth_error(oauth2.Error(_('Invalid access token: %s') % oauth_request.get_parameter('oauth_token')))
+                return oauth_provider.utils.send_oauth_error(
+                    oauth2.Error(_('Invalid access token: %s') % oauth_request.get_parameter('oauth_token')))
 
             try:
                 self.validate_token(request, consumer, token)
@@ -505,7 +520,8 @@ class OAuthAuthentication(Authentication):
                 request.user = user
                 return True
 
-            return oauth_provider.utils.send_oauth_error(oauth2.Error(_('You are not allowed to access this resource.')))
+            return oauth_provider.utils.send_oauth_error(
+                oauth2.Error(_('You are not allowed to access this resource.')))
 
         return oauth_provider.utils.send_oauth_error(oauth2.Error(_('Invalid request parameters.')))
 
@@ -542,6 +558,7 @@ class MultiAuthentication(object):
     """
     An authentication backend that tries a number of backends in order.
     """
+
     def __init__(self, *backends, **kwargs):
         super(MultiAuthentication, self).__init__(**kwargs)
         self.backends = backends

@@ -1,4 +1,3 @@
-from __future__ import unicode_literals
 from functools import partial
 from tastypie import fields
 from tastypie.resources import Resource

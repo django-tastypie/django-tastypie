@@ -1,8 +1,8 @@
-from django.conf.urls import include, url
+from django.urls.conf import include, re_path
 
 from tastypie.api import Api
 
-from validation.api.resources import NoteResource, UserResource,\
+from validation.api.resources import NoteResource, UserResource, \
     AnnotatedNoteResource
 
 
@@ -12,5 +12,5 @@ api.register(UserResource(), canonical=True)
 api.register(AnnotatedNoteResource(), canonical=True)
 
 urlpatterns = [
-    url(r'^api/', include(api.urls)),
+    re_path(r'^api/', include(api.urls)),
 ]

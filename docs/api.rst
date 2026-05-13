@@ -17,7 +17,7 @@ Quick Start
 A sample api definition might look something like (usually located in a
 URLconf)::
 
-    from django.conf.urls import url, include
+    from django.urls.conf import re_path, include
     from tastypie.api import Api
     from myapp.api.resources import UserResource, EntryResource
 
@@ -27,7 +27,7 @@ URLconf)::
 
     # Standard bits...
     urlpatterns = [
-        url(r'^api/', include(v1_api.urls)),
+        re_path(r'^api/', include(v1_api.urls)),
     ]
 
 For namespaced urls see :ref:`namespaces`

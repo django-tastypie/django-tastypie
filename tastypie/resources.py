@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from copy import copy, deepcopy
 from datetime import datetime
 import logging
@@ -10,13 +8,14 @@ import warnings
 from wsgiref.handlers import format_date_time
 
 from django.conf import settings
-from django.conf.urls import url
 from django.core.exceptions import (
     ObjectDoesNotExist, MultipleObjectsReturned, ValidationError, FieldDoesNotExist
 )
 from django.core.signals import got_request_exception
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.fields.related import ForeignKey
+from django.urls.conf import re_path
+from tastypie.utils.timezone import make_naive_utc
 try:
     from django.contrib.gis.db.models.fields import GeometryField
 except (ImproperlyConfigured, ImportError):
@@ -35,13 +34,11 @@ from django.utils.cache import patch_cache_control, patch_vary_headers
 from django.utils.html import escape
 from django.views.decorators.csrf import csrf_exempt
 
-import six
-
 from tastypie.authentication import Authentication
 from tastypie.authorization import ReadOnlyAuthorization
 from tastypie.bundle import Bundle
 from tastypie.cache import NoCache
-from tastypie.compat import NoReverseMatch, reverse, Resolver404, get_script_prefix
+from tastypie.compat import NoReverseMatch, reverse, Resolver404, get_script_prefix, is_ajax
 from tastypie.constants import ALL, ALL_WITH_RELATIONS
 from tastypie.exceptions import (
     NotFound, BadRequest, InvalidFilterError, HydrationError, InvalidSortError,
@@ -54,7 +51,7 @@ from tastypie.paginator import Paginator
 from tastypie.serializers import Serializer
 from tastypie.throttle import BaseThrottle
 from tastypie.utils import (
-    dict_strip_unicode_keys, is_valid_jsonp_callback_value, string_to_python,
+    is_valid_jsonp_callback_value, string_to_python,
     trailing_slash,
 )
 from tastypie.utils.mime import determine_format, build_content_type
@@ -121,10 +118,7 @@ class ResourceOptions(object):
         if overrides.get('detail_allowed_methods', None) is None:
             overrides['detail_allowed_methods'] = allowed_methods
 
-        if six.PY3:
-            return object.__new__(type('ResourceOptions', (cls,), overrides))
-        else:
-            return object.__new__(type(b'ResourceOptions', (cls,), overrides))
+        return object.__new__(type('ResourceOptions', (cls,), overrides))
 
 
 class DeclarativeMetaclass(type):
@@ -169,12 +163,12 @@ class DeclarativeMetaclass(type):
             if 'resource_uri' not in new_class.base_fields:
                 new_class.base_fields['resource_uri'] = fields.CharField(readonly=True, verbose_name="resource uri")
         elif 'resource_uri' in new_class.base_fields and 'resource_uri' not in attrs:
-            del(new_class.base_fields['resource_uri'])
+            del new_class.base_fields['resource_uri']
 
         if abstract and 'resource_uri' not in attrs:
             # abstract classes don't have resource_uris unless explicitly provided
             if 'resource_uri' in new_class.base_fields:
-                del(new_class.base_fields['resource_uri'])
+                del new_class.base_fields['resource_uri']
 
         for field_name, field_object in new_class.base_fields.items():
             if hasattr(field_object, 'contribute_to_class'):
@@ -183,7 +177,7 @@ class DeclarativeMetaclass(type):
         return new_class
 
 
-class Resource(six.with_metaclass(DeclarativeMetaclass)):
+class Resource(metaclass=DeclarativeMetaclass):
     """
     Handles the data, request dispatch and responding to requests.
 
@@ -241,7 +235,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                         # ``Cache-Control`` available then patch the header.
                         patch_cache_control(response, **self._meta.cache.cache_control())
 
-                if request.is_ajax() and not response.has_header("Cache-Control"):
+                if is_ajax(request) and not response.has_header("Cache-Control"):
                     # IE excessively caches XMLHttpRequests, so we're disabling
                     # the browser cache here.
                     # See http://www.enhanceie.com/ie/bugs.asp for details.
@@ -297,18 +291,13 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
     def _handle_500(self, request, exception):
         the_trace = traceback.format_exception(*sys.exc_info())
-        if six.PY2:
-            the_trace = [
-                six.text_type(line, 'utf-8')
-                for line in the_trace
-            ]
         the_trace = u'\n'.join(the_trace)
 
         response_class = self.get_response_class_for_exception(request, exception)
 
         if settings.DEBUG:
             data = {
-                "error_message": sanitize(six.text_type(exception)),
+                "error_message": sanitize(str(exception)),
                 "traceback": the_trace,
             }
         else:
@@ -339,10 +328,10 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         The standard URLs this ``Resource`` should respond to.
         """
         return [
-            url(r"^(?P<resource_name>%s)%s$" % (self._meta.resource_name, trailing_slash), self.wrap_view('dispatch_list'), name="api_dispatch_list"),
-            url(r"^(?P<resource_name>%s)/schema%s$" % (self._meta.resource_name, trailing_slash), self.wrap_view('get_schema'), name="api_get_schema"),
-            url(r"^(?P<resource_name>%s)/set/(?P<%s_list>.*?)%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash), self.wrap_view('get_multiple'), name="api_get_multiple"),
-            url(r"^(?P<resource_name>%s)/(?P<%s>.*?)%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash), self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
+            re_path(r"^(?P<resource_name>%s)%s$" % (self._meta.resource_name, trailing_slash), self.wrap_view('dispatch_list'), name="api_dispatch_list"),
+            re_path(r"^(?P<resource_name>%s)/schema%s$" % (self._meta.resource_name, trailing_slash), self.wrap_view('get_schema'), name="api_get_schema"),
+            re_path(r"^(?P<resource_name>%s)/set/(?P<%s_list>.*?)%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash), self.wrap_view('get_multiple'), name="api_get_multiple"),
+            re_path(r"^(?P<resource_name>%s)/(?P<%s>.*?)%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash), self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
         ]
 
     def override_urls(self):
@@ -524,7 +513,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
         for key in ['api_name', 'resource_name']:
             try:
-                del(kwargs_subset[key])
+                del kwargs_subset[key]
             except KeyError:
                 pass
 
@@ -603,7 +592,9 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
             if isinstance(throttle, int) and not isinstance(throttle, bool):
                 response['Retry-After'] = throttle
             elif isinstance(throttle, datetime):
-                response['Retry-After'] = format_date_time(mktime(throttle.timetuple()))
+                # change to UTC (GMT) and make naive, to avoid wsgiref also doing an implicit TZ conversion
+                throttle_utc = make_naive_utc(throttle)
+                response['Retry-After'] = format_date_time(mktime(throttle_utc.timetuple()))
 
             raise ImmediateHttpResponse(response=response)
 
@@ -1405,7 +1396,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         """
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
-        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+        bundle = self.build_bundle(data=deserialized, request=request)
         updated_bundle = self.obj_create(bundle, **self.remove_api_resource_names(kwargs))
         location = self.get_resource_uri(updated_bundle)
 
@@ -1451,7 +1442,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         bundles_seen = []
 
         for object_data in deserialized[self._meta.collection_name]:
-            bundle = self.build_bundle(data=dict_strip_unicode_keys(object_data), request=request)
+            bundle = self.build_bundle(data=object_data, request=request)
 
             # Attempt to be transactional, deleting any previously created
             # objects if validation fails.
@@ -1495,7 +1486,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         """
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
         deserialized = self.alter_deserialized_detail_data(request, deserialized)
-        bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+        bundle = self.build_bundle(data=deserialized, request=request)
 
         try:
             updated_bundle = self.obj_update(bundle=bundle, **self.remove_api_resource_names(kwargs))
@@ -1635,13 +1626,13 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
                     # The object referenced by resource_uri doesn't exist,
                     # so this is a create-by-PUT equivalent.
                     data = self.alter_deserialized_detail_data(request, data)
-                    bundle = self.build_bundle(data=dict_strip_unicode_keys(data), request=request)
+                    bundle = self.build_bundle(data=data, request=request)
                     self.obj_create(bundle=bundle)
             else:
                 # There's no resource URI, so this is a create call just
                 # like a POST to the list resource.
                 data = self.alter_deserialized_detail_data(request, data)
-                bundle = self.build_bundle(data=dict_strip_unicode_keys(data), request=request)
+                bundle = self.build_bundle(data=data, request=request)
                 self.obj_create(bundle=bundle)
 
             bundles_seen.append(bundle)
@@ -1700,6 +1691,24 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
 
         # Now update the bundle in-place.
         deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+        # Create a place to store the names of those fields we want to update
+        bundle.update_fields = []
+        bundle.m2m_update_fields = []
+        # When we get to the obj.save() stage, we need to know which fields have changed
+        # Otherwise we can't do a proper update.  Thus,
+        # For every key in deserialized (e.g. the fields submitted in the PATCH)
+        for key in deserialized:
+            # If the key is a property of the object, lets add it to the list, except:
+            if hasattr(bundle.obj, key):
+                # Can't update_fields an m2m field, so instead add it to patch_m2m_fields
+                if getattr(self.fields[key], 'is_m2m', False):
+                    bundle.m2m_update_fields.append(key)
+                    continue
+                # Don't add if it is the id/pk field, can't patch that.
+                if key == 'id' or key == 'pk':
+                    continue
+                # No more checks.  Add it.
+                bundle.update_fields.append(key)
         self.update_in_place(request, bundle, deserialized)
 
         if not self._meta.always_return_data:
@@ -1716,7 +1725,7 @@ class Resource(six.with_metaclass(DeclarativeMetaclass)):
         """
         Update the object in original_bundle in-place using new_data.
         """
-        original_bundle.data.update(**dict_strip_unicode_keys(new_data))
+        original_bundle.data.update(**new_data)
 
         # Now we've got a bundle with the new data sitting in it and we're
         # we're basically in the same spot as a PUT request. SO the rest of this
@@ -1849,9 +1858,9 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
             if field_name in new_class.declared_fields:
                 continue
             if specified_fields is not None and field_name not in include_fields:
-                del(new_class.base_fields[field_name])
+                del new_class.base_fields[field_name]
             if field_name in excludes:
-                del(new_class.base_fields[field_name])
+                del new_class.base_fields[field_name]
 
         # Add in the new fields.
         new_class.base_fields.update(new_class.get_fields(include_fields, excludes))
@@ -1860,7 +1869,7 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
             if 'absolute_url' not in new_class.base_fields:
                 new_class.base_fields['absolute_url'] = fields.CharField(attribute='get_absolute_url', readonly=True)
         elif 'absolute_url' in new_class.base_fields and 'absolute_url' not in attrs:
-            del(new_class.base_fields['absolute_url'])
+            del new_class.base_fields['absolute_url']
 
         return new_class
 
@@ -1911,7 +1920,7 @@ class BaseModelResource(Resource):
             result = fields.FloatField
         elif internal_type in ('DecimalField',):
             result = fields.DecimalField
-        elif internal_type in ('IntegerField', 'PositiveIntegerField', 'PositiveSmallIntegerField', 'SmallIntegerField', 'AutoField', 'BigIntegerField'):
+        elif internal_type in ('IntegerField', 'PositiveIntegerField', 'PositiveSmallIntegerField', 'SmallIntegerField', 'AutoField', 'BigIntegerField', 'BigAutoField'):
             result = fields.IntegerField
         elif internal_type in ('FileField', 'ImageField'):
             result = fields.FileField
@@ -2111,7 +2120,7 @@ class BaseModelResource(Resource):
             qs_filter = "%s%s%s" % (db_field_name, LOOKUP_SEP, filter_type)
             qs_filters[qs_filter] = value
 
-        return dict_strip_unicode_keys(qs_filters)
+        return qs_filters
 
     def apply_sorting(self, obj_list, options=None):
         """
@@ -2403,7 +2412,11 @@ class BaseModelResource(Resource):
         obj_id = self.create_identifier(bundle.obj)
 
         if obj_id not in bundle.objects_saved or bundle.obj._state.adding:
-            bundle.obj.save()
+            if hasattr(bundle, 'update_fields'):
+                bundle.obj.save(update_fields=bundle.update_fields)
+            else:
+                bundle.obj.save()
+            obj_id = self.create_identifier(bundle.obj)
             bundle.objects_saved.add(obj_id)
 
         # Now pick up the M2M bits.
@@ -2516,10 +2529,23 @@ class BaseModelResource(Resource):
             if field_object.readonly:
                 continue
 
+            # If this is a PATCH, make sure that this field name is one of the
+            # patched fields (recorded in the update_fields property of the bundle).
+            # Otherwise, we do not want to save / recreate this field.
+            if hasattr(bundle, 'update_fields'):
+                # This bundle is from a PATCH, we should not save an M2M field
+                # unless it was present in the PATCH
+                if field_name not in bundle.m2m_update_fields:
+                    continue  # Skip this field_name
+                else:  # this field name WAS in the patch, lets save it.
+                    pass
+            else:  # Not a PATCH operation, carry on normally.
+                pass
+
             # Get the manager.
             related_mngr = None
 
-            if isinstance(field_object.attribute, six.string_types):
+            if isinstance(field_object.attribute, str):
                 related_mngr = getattr(bundle.obj, field_object.attribute)
             elif callable(field_object.attribute):
                 related_mngr = field_object.attribute(bundle)
@@ -2554,7 +2580,7 @@ class BaseModelResource(Resource):
             related_mngr.add(*related_objs)
 
 
-class ModelResource(six.with_metaclass(ModelDeclarativeMetaclass, BaseModelResource)):
+class ModelResource(BaseModelResource, metaclass=ModelDeclarativeMetaclass):
     pass
 
 

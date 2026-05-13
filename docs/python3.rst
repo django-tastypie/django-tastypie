@@ -4,17 +4,13 @@
 Python 3 Support
 ================
 
-As of Tastypie v0.10.0, it has been ported to support both Python 2 & Python 3
-within the same codebase. This builds on top of what `six`_ & `Django`_ provide.
+Tastypie has been ported to support only Python 3 within the codebase.
 
 No changes are required for anyone running an existing Tastypie
 installation. The API is completely backward-compatible, so you should be able
 to run your existing software without modification.
 
-All tests pass under both Python 2 & 3.
-
-.. _`six`: http://pythonhosted.org/six/
-.. _`Django`: https://docs.djangoproject.com/en/dev/topics/python3/#str-and-unicode-methods
+All tests pass under Python 3.
 
 
 Incompatibilities

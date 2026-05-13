@@ -1,5 +1,5 @@
 from tastypie.api import Api
-from content_gfk.api.resources import NoteResource, QuoteResource,\
+from content_gfk.api.resources import NoteResource, QuoteResource, \
     RatingResource, DefinitionResource
 
 

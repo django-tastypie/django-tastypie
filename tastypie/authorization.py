@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from tastypie.exceptions import Unauthorized
 from tastypie.compat import get_module_name
 

@@ -1,0 +1,3 @@
+Sphinx~=7.1.2
+sphinx-rtd-theme~=3.0.1
+mock~=5.1.0

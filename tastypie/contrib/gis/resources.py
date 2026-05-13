@@ -1,7 +1,5 @@
 # See COPYING file in this directory.
 # Some code originally from django-boundaryservice
-from __future__ import unicode_literals
-
 import json
 
 try:

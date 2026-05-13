@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.utils import dateformat
 
 from tastypie.utils.timezone import make_naive, aware_datetime

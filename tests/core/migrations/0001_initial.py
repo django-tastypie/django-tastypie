@@ -114,4 +114,37 @@ class Migration(migrations.Migration):
             ],
             bases=('core.note',),
         ),
+        migrations.CreateModel(
+            name='BigAutoNowModel',
+            fields=[
+                ('id', models.BigAutoField(primary_key=True, serialize=False, verbose_name='ID')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='MyContainerModel',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(blank=True, max_length=128, null=True)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='MyContainerItemModel',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(blank=True, max_length=128, null=True)),
+                ('parent', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='item_set',
+                                             to='core.mycontainermodel')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='MyContainerItemGroupingModel',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('grouping_item',
+                 models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.mycontaineritemmodel')),
+                ('parent',
+                 models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='item_grouping_set',
+                                   to='core.mycontainermodel')),
+            ],
+        ),
     ]

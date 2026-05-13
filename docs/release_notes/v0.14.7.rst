@@ -1,0 +1,6 @@
+v0.14.7
+=======
+
+:date: 2024-04-23
+
+Added support for Django 5.0; in particular fixes for the django project retiring django.utils.datetime_safe

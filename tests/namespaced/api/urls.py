@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.conf.urls import include, url
+from django.urls.conf import include, re_path
 from tastypie.api import NamespacedApi
 from namespaced.api.resources import NamespacedNoteResource, NamespacedUserResource
 
@@ -14,5 +14,5 @@ else:
     included = include(api.urls, namespace='special')
 
 urlpatterns = [
-    url(r'^api/', included),
+    re_path(r'^api/', included),
 ]
