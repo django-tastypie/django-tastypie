@@ -9,7 +9,7 @@ except ImportError:  # 1.8 backwards compat
     from django.core.urlresolvers import NoReverseMatch, reverse, Resolver404, get_script_prefix  # noqa
 
 # Django 4.0 had a private _sanitize_token function whose signature is/was different than
-# the 4.1 version (_check_token_format) - import the correct one and define a compatability
+# the 4.1 version (_check_token_format) - import the correct one and define a compatibility
 # function.
 if django.VERSION < (4, 1):
     from django.middleware.csrf import _sanitize_token
@@ -17,12 +17,12 @@ else:
     from django.middleware.csrf import _check_token_format
 
 # Django 5.0 eliminated the former datetime_safe function, this provides
-# some level of backwards compatability for existing tastypie use cases
+# some level of backwards compatibility for existing tastypie use cases
 if django.VERSION < (5, 0):
     from django.utils import datetime_safe  # noqa: F401
 else:
     import datetime as datetime_safe  # noqa: F401
-    # Django 5.0 removed this alias - restore it for backwards compatability.
+    # Django 5.0 removed this alias - restore it for backwards compatibility.
     # Django 5.0 essentially completed a lot of the move to zoneinfo, prior to that
     # this was an alias that was added in 4.0.
     timezone.utc = datetime_safe.timezone.utc
