@@ -36,13 +36,13 @@ jobs:
 #             django-version: "dev"
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Install OS dependencies
       run: |
         sudo apt install -y binutils libproj-dev gdal-bin libsqlite3-mod-spatialite
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
