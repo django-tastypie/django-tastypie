@@ -182,8 +182,10 @@ class ApiField(object):
                     pass
             if self.instance_name:
                 try:
-                    if hasattr(bundle.obj, self.instance_name):
-                        return getattr(bundle.obj, self.instance_name)
+                    val = getattr(bundle.obj, self.instance_name, None)
+
+                    if val is not None:
+                        return val
                 except ObjectDoesNotExist:
                     pass
             if self.has_default():

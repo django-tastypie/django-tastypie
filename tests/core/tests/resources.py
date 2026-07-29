@@ -972,7 +972,7 @@ class AlwaysDataNoteResource(NoteResource):
 
 
 class AlwaysDataNoteResourceUseIn(NoteResource):
-    author = fields.CharField(attribute='author__username', use_in="detail")
+    author = fields.CharField(attribute='author__username', use_in="detail", null=True)
     constant = fields.IntegerField(default=20, use_in="list")
 
     class Meta:
@@ -983,7 +983,7 @@ class AlwaysDataNoteResourceUseIn(NoteResource):
 
 
 class NoteResourceNonUniqueDetailUriName(NoteResource):
-    author = fields.CharField(attribute='author__username', use_in="detail")
+    author = fields.CharField(attribute='author__username', use_in="detail", null=True)
     constant = fields.IntegerField(default=20, use_in="list")
 
     class Meta:
