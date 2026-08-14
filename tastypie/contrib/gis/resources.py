@@ -44,10 +44,11 @@ class GeometryApiField(ApiField):
         return json.loads(value.geojson)
 
 
-class ModelResource(resources.ModelResource):
+class GeometryModelMixin(object):
     """
-    ModelResource subclass that handles geometry fields as GeoJSON.
+    ModelResource mixin that handles geometry fields as GeoJSON.
     """
+
     @classmethod
     def api_field_from_django_field(cls, f, default=CharField):
         """
@@ -56,11 +57,11 @@ class ModelResource(resources.ModelResource):
         if isinstance(f, GeometryField):
             return GeometryApiField
 
-        return super(ModelResource, cls).api_field_from_django_field(f, default)
+        return super(GeometryModelMixin, cls).api_field_from_django_field(f, default)
 
     def filter_value_to_python(self, value, field_name, filters, filter_expr,
             filter_type):
-        value = super(ModelResource, self).filter_value_to_python(
+        value = super(GeometryModelMixin, self).filter_value_to_python(
             value, field_name, filters, filter_expr, filter_type)
 
         # If we are filtering on a GeometryApiField then we should try
@@ -73,3 +74,9 @@ class ModelResource(resources.ModelResource):
             except ValueError:
                 pass
         return value
+
+
+class ModelResource(GeometryModelMixin, resources.ModelResource):
+    """
+    ModelResource subclass that handles geometry fields as GeoJSON.
+    """
