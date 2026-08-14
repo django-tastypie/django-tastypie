@@ -889,7 +889,7 @@ class Resource(metaclass=DeclarativeMetaclass):
             # If it's not for use in this mode, skip
             field_use_in = field_object.use_in
             if callable(field_use_in):
-                if not field_use_in(bundle):
+                if not field_use_in(bundle, use_in):
                     continue
             else:
                 if field_use_in not in ['all', 'list' if for_list else 'detail']:
