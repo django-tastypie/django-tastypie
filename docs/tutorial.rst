@@ -59,8 +59,8 @@ your project or ``PYTHONPATH``.
 
   1. Download the dependencies:
 
-    * Python 2.7+ or Python 3.4+
-    * Django 1.8+
+    * Python 3.8+ (as supported by your version of Django)
+    * Django 4.2+ including 5.2 (the last one or two LTS releases are the priority)
     * ``python-mimeparse`` 0.1.4+ (http://pypi.python.org/pypi/python-mimeparse)
     * ``dateutil`` (http://labix.org/python-dateutil)
     * **OPTIONAL** - ``lxml`` (http://lxml.de/) and ``defusedxml``  (https://pypi.python.org/pypi/defusedxml) if using the XML serializer

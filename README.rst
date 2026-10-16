@@ -83,9 +83,10 @@ A basic example looks like:
         re_path(r'^api/', include(v1_api.urls)),
     ]
 
-That gets you a fully working, read-write API for the ``Entry`` model that
-supports all CRUD operations in a RESTful way. JSON/XML/YAML support is already
-there, and it's easy to add related data/authentication/caching.
+That gets you a working, read-only API for the ``Entry`` model. To enable
+write operations, configure authorization as described in the tutorial.
+JSON/XML/YAML support is already there, and it's easy to add related
+data/authentication/caching.
 
 You can find more in the documentation at
 https://django-tastypie.readthedocs.io/.

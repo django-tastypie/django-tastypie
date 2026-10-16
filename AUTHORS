@@ -8,6 +8,7 @@ Primary authors:
 
 Contributors:
 
+* dajiaohuang for correcting the README API description and tutorial requirements.
 * mdornseif for various patches
 * Jeff Triplett (jefftriplett) for various reports/patches.
 * Christian Klein (cklein) for the work on alphanumeric PK support.
