@@ -2,7 +2,6 @@
 import datetime
 from decimal import Decimal
 from unittest import mock
-from unittest import skipIf
 import yaml
 
 from django.core.exceptions import ImproperlyConfigured
@@ -15,15 +14,6 @@ from tastypie.serializers import _get_default_formats, Serializer
 from tastypie.resources import ModelResource
 
 from core.models import Note
-
-try:
-    import biplist
-except ImportError:
-    biplist = None
-
-
-skipIfNoBiplist = skipIf(biplist is None, 'biplist not present')
-
 
 class UnsafeObject(object):
     pass
@@ -52,17 +42,17 @@ class AnotherNoteResource(ModelResource):
 
 
 class GetDefaultFormatsTestCase(TestCase):
-    @mock.patch.multiple('tastypie.serializers', lxml=True, yaml=True, biplist=True)
+    @mock.patch.multiple('tastypie.serializers', lxml=True, yaml=True)
     def test_all(self):
         formats = _get_default_formats()
 
         self.assertEqual(formats, ['json', 'xml', 'yaml', 'plist'])
 
-    @mock.patch.multiple('tastypie.serializers', lxml=False, yaml=False, biplist=False)
-    def test_json_only(self):
+    @mock.patch.multiple('tastypie.serializers', lxml=False, yaml=False)
+    def test_json_and_plist_only(self):
         formats = _get_default_formats()
 
-        self.assertEqual(formats, ['json'])
+        self.assertEqual(formats, ['json', 'plist'])
 
 
 class SerializerTestCase(TestCase):
@@ -388,14 +378,12 @@ class SerializerTestCase(TestCase):
                                     {'callback': 'callback'})
         self.assertEqual(jsonp, u'callback({"foo": "Hello \\u2028\\u2029world!"})')
 
-    @skipIfNoBiplist
     def test_to_plist(self):
         serializer = Serializer()
 
         sample_1 = self.get_sample1()
-        self.assertTrue(serializer.to_plist(sample_1).startswith(b'bplist00bybiplist1.0'))
+        self.assertTrue(serializer.to_plist(sample_1).startswith(b'bplist00'))
 
-    @skipIfNoBiplist
     def test_from_plist(self):
         serializer = Serializer()
 
