@@ -14,6 +14,7 @@ from tastypie.exceptions import BadRequest, UnsupportedSerializationFormat, \
     UnsupportedDeserializationFormat
 from tastypie.utils import format_datetime, format_date, format_time, \
     make_naive
+import plistlib
 
 
 import warnings
@@ -31,12 +32,6 @@ try:
     import yaml
 except ImportError:
     yaml = None
-
-try:
-    import biplist
-except ImportError:
-    biplist = None
-
 
 XML_ENCODING = re.compile(r'<\?xml.*?\?>', re.IGNORECASE)
 
@@ -79,8 +74,8 @@ def _get_default_formats():
         formats.append('xml')
     if yaml:
         formats.append('yaml')
-    if biplist:
-        formats.append('plist')
+
+    formats.append('plist')
     return formats
 
 
@@ -118,7 +113,7 @@ class Serializer(object):
         * jsonp (Disabled by default)
         * xml
         * yaml
-        * plist (see https://bitbucket.org/wooster/biplist)
+        * plist
 
     It was designed to make changing behavior easy, either by overridding the
     various format methods (i.e. ``to_json``), by changing the
@@ -512,25 +507,18 @@ class Serializer(object):
         """
         options = options or {}
 
-        if biplist is None:
-            raise ImproperlyConfigured(
-                "Usage of the plist aspects requires biplist.")
-
-        return biplist.writePlistToString(self.to_simple(data, options))
+        return plistlib.dumps(self.to_simple(data, options), fmt=plistlib.FMT_BINARY)
 
     def from_plist(self, content):
         """
         Given some binary plist data, returns a Python dictionary of the
         decoded data.
         """
-        if biplist is None:
-            raise ImproperlyConfigured(
-                "Usage of the plist aspects requires biplist.")
 
         if isinstance(content, str):
             content = smart_bytes(content)
 
-        return biplist.readPlistFromString(content)
+        return plistlib.loads(content)
 
 
 def get_type_string(data):

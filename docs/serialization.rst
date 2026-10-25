@@ -41,7 +41,7 @@ The default ``Serializer`` supports the following formats:
 * jsonp (Disabled by default)
 * xml
 * yaml
-* plist (see https://bitbucket.org/wooster/biplist)
+* plist (via Python's built-in plistlib, see https://docs.python.org/3/library/plistlib.html)
 
 Not everyone wants to install or support all the serialization options. If you
 would like to customize the list of supported formats for your entire site

@@ -43,7 +43,7 @@ Format Support
 
 * XML: lxml 3 (http://lxml.de/) and defusedxml (https://pypi.python.org/pypi/defusedxml)
 * YAML: pyyaml (http://pyyaml.org/)
-* binary plist: biplist (https://bitbucket.org/wooster/biplist)
+* binary plist: plistlib, part of the Python standard library (https://docs.python.org/3/library/plistlib.html)
 
 Optional
 --------

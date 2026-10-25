@@ -1,5 +1,4 @@
 -r ../requirements.txt
-biplist
 coverage
 defusedxml
 lxml
